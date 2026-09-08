@@ -6,7 +6,7 @@
     "dev": "npm run dev --prefix bahcelab-frontend",
     "build": "npm run build --prefix bahcelab-frontend",
     "lint": "npm run lint --prefix bahcelab-frontend",
-    "preview": "npm run preview --prefix bahcelab-frontend",
+    "preview": "npm run build --prefix bahcelab-frontend && npm run preview --prefix bahcelab-frontend",
     "postinstall": "npm install --prefix bahcelab-frontend"
   }
 }
