@@ -70,7 +70,7 @@ export function PlanningNavbar({
   const area = formatArea(plan.draftLand.areaM2)
 
   return (
-    <header className="shrink-0 border-b border-planning-border bg-planning-panel">
+    <header className="shrink-0 rounded-xl border border-planning-border bg-planning-panel">
       {/* Üst satır: başlık + bahçe meta */}
       <div className="flex items-center justify-between gap-4 px-5 py-2.5">
         <div className="min-w-0">

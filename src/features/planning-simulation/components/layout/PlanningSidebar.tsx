@@ -28,7 +28,7 @@ export function PlanningSidebar({
   onSave,
 }: PlanningSidebarProps) {
   return (
-    <aside className="flex h-full min-h-0 w-[260px] shrink-0 flex-col gap-2 overflow-hidden border-r border-planning-border bg-planning-panel p-2">
+    <aside className="flex h-full min-h-0 w-[260px] shrink-0 flex-col gap-2 overflow-hidden rounded-xl border border-planning-border bg-planning-panel p-2.5">
       <PlanningCard
         compact
         fill

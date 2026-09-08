@@ -39,11 +39,3 @@ export const PLANNING_STEPS: PlanningStepDefinition[] = [
     description: 'Gelişim & Hasat',
   },
 ]
-
-export const FEATURE_FOOTER_ITEMS = [
-  { label: 'Akıllı Planlama', description: 'Araziye özel planlama' },
-  { label: 'Dikim Optimizasyonu', description: 'Gerçek grid hesabı' },
-  { label: 'Bakım Yönetimi', description: 'Plan düzeyinde bakım' },
-  { label: 'Gelişim Simülasyonu', description: 'Zaman çizelgesi' },
-  { label: 'Verim Tahmini', description: 'Senaryo simülasyonu' },
-] as const

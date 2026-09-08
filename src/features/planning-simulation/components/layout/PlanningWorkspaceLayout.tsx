@@ -2,7 +2,6 @@ import type { WorkspaceMapOverlay } from '../../fixtures/workspaceDemo.fixture'
 import type { PlanningStepId, PlanningToolId, PlantingSubStepId, SimulationPlan, VisualizationMode } from '../../types'
 import { PlanningCard } from '../shared/PlanningCard'
 import { ContextPanel } from './ContextPanel'
-import { FeatureFooter } from './FeatureFooter'
 import { GrowthSimulationTimeline } from './GrowthSimulationTimeline'
 import { MetricsBar } from './MetricsBar'
 import { PlanningNavbar } from './PlanningNavbar'
@@ -37,14 +36,14 @@ export function PlanningWorkspaceLayout({
   mapOverlay,
 }: PlanningWorkspaceLayoutProps) {
   return (
-    <div className="flex h-screen flex-col bg-planning-bg">
+    <div className="box-border flex h-screen flex-col gap-3 overflow-hidden bg-planning-bg p-4">
       <PlanningNavbar
         plan={plan}
         currentStep={currentStep}
         completedSteps={completedSteps}
       />
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 gap-3">
         <PlanningSidebar
           currentStep={currentStep}
           completedSteps={completedSteps}
@@ -79,8 +78,6 @@ export function PlanningWorkspaceLayout({
 
         <ContextPanel plan={plan} />
       </div>
-
-      <FeatureFooter />
     </div>
   )
 }
