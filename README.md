@@ -30,7 +30,13 @@ make backend-dev          # http://localhost:8001
 # Frontend (ayrı terminal)
 npm install
 cp bahcelab-frontend/.env.example bahcelab-frontend/.env
-npm run dev               # http://localhost:5173/planning
+npm run dev               # http://localhost:5173/planning (geliştirme — DevTools'ta src/ görünür, normal)
+```
+
+Canlıya yakın test / demo için production build kullan (`dist/` servis edilir; `src/`, `node_modules/` DevTools'ta görünmez):
+
+```bash
+npm run preview           # build + production önizleme (4173 doluysa 4174, …)
 ```
 
 Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API_MODE=real`). Vite `/api` isteklerini `http://localhost:8001`'e proxy eder. Mock moda dönmek için `.env` içinde `VITE_PLANNING_API_MODE=mock` yap.
