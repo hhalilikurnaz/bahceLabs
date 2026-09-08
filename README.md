@@ -1,59 +1,52 @@
-# BahçeLab Frontend — Phase 1 B
+# BahçeLab Web
 
-Planning & Simulation modülü. Boş araziden hasada kadar akıllı planlama workspace'i.
+Monorepo — Planning & Simulation full-stack ürün.
 
-## Tech Stack
+```
+bahcelab-web/
+├── bahcelab-frontend/   React 19 + Vite + TypeScript
+├── bahcelab-backend/    Python 3.12 + FastAPI + PostGIS
+├── docs/                Paylaşılan dokümantasyon
+├── docker-compose.yml   PostgreSQL + PostGIS
+└── Makefile             Dev workflow
+```
 
-- React 19 + TypeScript (strict)
-- Vite
-- Tailwind CSS v4
-- Zustand + TanStack Query
-- React Router
-
-## Başlangıç
+## Hızlı Başlangıç
 
 ```bash
+# Veritabanı
+make docker-up
+
+# Backend
+make backend-install
+cp bahcelab-backend/.env.example bahcelab-backend/.env
+make db-migrate
+make backend-dev          # http://localhost:8000
+
+# Frontend (ayrı terminal)
 npm install
-npm run dev
+npm run dev               # http://localhost:5173/planning
 ```
-
-Tarayıcıda: `http://localhost:5173/planning`
-
-## Ortam Değişkenleri
-
-```bash
-cp .env.example .env
-```
-
-| Variable | Default | Açıklama |
-|----------|---------|----------|
-| `VITE_PLANNING_API_MODE` | `mock` | `mock` veya `real` |
 
 ## Komutlar
 
-```bash
-npm run dev      # Geliştirme sunucusu
-npm run build    # Production build
-npm run lint     # Lint kontrolü
-npm run preview  # Build önizleme
-```
+| Komut | Açıklama |
+|-------|----------|
+| `make docker-up` | PostgreSQL + PostGIS başlat |
+| `make backend-dev` | FastAPI dev server |
+| `make backend-test` | Backend testleri |
+| `npm run dev` | Frontend dev server |
+| `npm run build` | Frontend production build |
 
 ## Dokümantasyon
 
 - [Ana Plan](docs/plan.md)
-- [Referans Görsel](docs/reference-design.md)
-- [İlerleme & Backlog](docs/progress.md)
-- [Agent Rehberi](docs/development/agent-guide.md)
+- [Backend Plan](docs/backend/plan.md)
+- [İlerleme](docs/progress.md)
+- [API Contract](docs/api/planning-api-contract.md)
 
 ## Branch
 
 ```
 feature/phase-1-b-planning-simulation
 ```
-
-## Route'lar
-
-| Route | Açıklama |
-|-------|----------|
-| `/planning` | Plan listesi / yeni plan |
-| `/planning/:planId` | Planning workspace |

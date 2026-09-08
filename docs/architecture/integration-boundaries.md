@@ -52,8 +52,8 @@ Controlled mutation: Garden/Parcel/Tree creation
 ## Dosya İzolasyonu
 
 ```
-src/features/planning-simulation/   ← B (yeni, izole)
-src/features/garden-core/           ← A (mevcut, dokunulmaz)
+bahcelab-frontend/src/features/planning-simulation/   ← B (yeni, izole)
+bahcelab-frontend/src/features/garden-core/           ← A (mevcut, dokunulmaz)
 src/modules/map/                    ← Paylaşılan (read-only reuse)
 ```
 

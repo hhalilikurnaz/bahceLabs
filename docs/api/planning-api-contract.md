@@ -107,7 +107,7 @@
 ## Frontend Adapter
 
 ```typescript
-// src/features/planning-simulation/api/index.ts
+// bahcelab-frontend/src/features/planning-simulation/api/index.ts
 const useMock = import.meta.env.VITE_PLANNING_API_MODE !== 'real'
 export const planningApi = useMock ? planningApiMock : planningApiReal
 ```

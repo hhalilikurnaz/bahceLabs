@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+bahcelab-frontend/node_modules
+bahcelab-frontend/dist
+bahcelab-frontend/dist-ssr
+bahcelab-frontend/.env
 *.local
 
 # Editor directories and files
@@ -22,3 +26,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+.venv/
+bahcelab-backend/.env
+bahcelab-backend/.pytest_cache/
+bahcelab-backend/.ruff_cache/
+bahcelab-backend/*.egg-info/

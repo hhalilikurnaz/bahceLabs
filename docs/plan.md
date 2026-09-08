@@ -210,7 +210,7 @@ Tarayıcıda şu senaryo gerçekten çalışıyorsa B tamamlanmış sayılır:
 ## Dosya Yapısı
 
 ```
-src/features/planning-simulation/
+bahcelab-frontend/src/features/planning-simulation/
 ├── api/           # API client + mock
 ├── components/
 │   ├── layout/    # Shell bileşenleri

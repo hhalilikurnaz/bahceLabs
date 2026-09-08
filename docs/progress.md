@@ -14,7 +14,7 @@
 | Aktif aşama | **B0 — Foundation** |
 | Tamamlanan aşamalar | B0 (kısmen) |
 | Sonraki aşama | B0 verify → B1 |
-| Backend durumu | Henüz bağlı değil (mock API) |
+| Backend durumu | **BE0 scaffold hazır** — Docker + migrate ile çalışır |
 | Referans UI | Layout shell hazır — mockup: `docs/reference-design.md` |
 
 ---
@@ -71,7 +71,7 @@
 | 5 | Polygon draw + validation | B2 | ⬜ | |
 | 6 | Ürün seçimi UI | B3 | ⬜ | |
 | 7 | Dikim spacing input | B4 | ⬜ | |
-| 8 | Planting grid calculation (backend) | B4 | ⬜ | Halil |
+| 8 | Planting grid calculation (backend) | B4 | ⬜ | BE4 |
 | 9 | Planting points haritada | B4 | ⬜ | |
 
 ### P1 — Önemli (B5–B8)
@@ -95,17 +95,23 @@
 | 19 | Accessibility | B10 | ⬜ | |
 | 20 | E2E tests | B10 | ⬜ | |
 
-### Backend (Halil — paralel)
+### Backend (ekip — paralel)
 
-| # | Görev | Durum | Not |
-|---|-------|-------|-----|
-| B-1 | SimulationPlan domain + migration | ⬜ | |
-| B-2 | Planting calculation engine | ⬜ | |
-| B-3 | Product/Variety/Rootstock API | ⬜ | |
-| B-4 | Maintenance plan API | ⬜ | |
-| B-5 | Growth simulation API | ⬜ | |
-| B-6 | Plan CRUD API | ⬜ | |
-| B-7 | Apply-to-garden endpoint | ⬜ | B10'da |
+> Detaylı plan: [backend/plan.md](./backend/plan.md)
+
+| # | Görev | Aşama | Durum | Not |
+|---|-------|-------|-------|-----|
+| BE0 | Foundation: scaffold, migration, plan CRUD | BE0 | ✅ | FastAPI + Alembic |
+| BE1 | Garden read integration (Phase 1 A) | BE1 | ⬜ | A merge sonrası |
+| BE2 | Geometry validation + area/perimeter | BE2 | ✅ | Shapely + pyproj WGS84 |
+| BE3 | Product/Variety/Rootstock catalog | BE3 | ✅ | Citrus seed data |
+| BE4 | Planting calculation engine | BE4 | ⬜ | **En kritik — sıradaki** |
+| BE5 | Planting summary / KPI | BE5 | ⬜ | BE4'e bağlı |
+| BE6 | Maintenance plan API | BE6 | ⬜ | |
+| BE7 | Growth simulation API | BE7 | ⬜ | |
+| BE8 | Visualization data (plan response) | BE8 | ⬜ | |
+| BE9 | Plan full CRUD | BE9 | 🔄 | PATCH/DELETE hazır, list test bekliyor |
+| BE10 | Apply-to-garden endpoint | BE10 | ⬜ | Son aşama |
 
 ---
 
@@ -113,7 +119,8 @@
 
 | Blocker | Etki | Çözüm |
 |---------|------|-------|
-| Backend henüz hazır değil | Hesaplamalar yapılamaz | Mock API kullanılıyor |
+| Backend henüz bağlı değil (frontend) | Hesaplamalar yapılamaz | BE0 hazır — `make docker-up && make db-migrate && make backend-dev` |
+| Docker Desktop kapalı | DB + integration test çalışmaz | Docker'ı başlat |
 | Phase 1 A kodu bu repoda yok | Garden seçimi yapılamaz | B1'de placeholder, A merge sonrası bağlanacak |
 | MapLibre henüz kurulmadı | Harita görselleştirme yok | B2'de kurulacak |
 
@@ -126,7 +133,8 @@
 | 2026-09-08 | React + TypeScript + Vite | Sağlam, güvenli, rahat geliştirme |
 | 2026-09-08 | Tailwind CSS v4 | Hızlı styling, design token desteği |
 | 2026-09-08 | Zustand (planning) + ayrı map store (gelecek) | State ayrımı |
-| 2026-09-08 | Mock API adapter pattern | Backend hazır olunca swap |
+| 2026-09-08 | Monorepo `bahcelab-web` | `bahcelab-frontend/` + `bahcelab-backend/` yan yana |
+| 2026-09-08 | Backend: Python + FastAPI | BE4 geo engine için Shapely + pyproj |
 | 2026-09-08 | Hard-code KPI yasak | Anti-fabrication kuralı |
 
 ---
