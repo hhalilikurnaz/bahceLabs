@@ -11,9 +11,9 @@
 
 | Metrik | Değer |
 |--------|-------|
-| Aktif aşama | **B0 — Foundation** |
-| Tamamlanan aşamalar | B0 (kısmen) |
-| Sonraki aşama | B0 verify → B1 |
+| Aktif aşama | **Faz 3 tamamlandı — Sağ Panel + Card Layout** |
+| Tamamlanan aşamalar | B0 + Faz 1 (sidebar) + Faz 2 (center) + Faz 3 (right panel) |
+| Sonraki aşama | Faz 4 — Navbar (Header + Stepper) ince ayar |
 | Backend durumu | Henüz bağlı değil (mock API) |
 | Referans UI | Layout shell hazır — mockup: `docs/reference-design.md` |
 
@@ -23,6 +23,31 @@
 
 ### Yapılanlar ✅
 
+- [x] **Faz 3 — Sağ Panel + Card Layout**
+  - `PlanningCard` shared component: tutarlı border, radius, header/footer
+  - `ProductCard`: dairesel limon görseli, çeşit/anaç, önerilen dikim, "Ürünü Değiştir"
+  - `PlantingSummaryCard`: alan, mesafe, ağaç, sıra, tahmini verim
+  - `MaintenanceSummaryCard`: sulama/sıklık/besleme/budama ikonları, "Detaylı Bakım Planı"
+  - Sol sidebar: Planlama Adımları + Araçlar ayrı kartlara alındı
+  - Orta alan: harita, KPI bar, gelişim simülasyonu ayrı kartlara sarıldı
+  - Header: Bahçe Adı / Alan mini kartları
+  - Stepper: card içinde merkezi navigasyon
+  - `lemon-meyer.jpg` referans görselden çıkarıldı
+- [x] **Faz 2 — Orta Alan pixel-perfect**
+  - MapControls: 2D/3D, globe, recenter, zoom (lucide)
+  - MapCompass: kuzey göstergesi
+  - PlantingMapOverlay: kesikli sınır, ölçüler, spacing tooltip
+  - SpatialCanvas: aerial terrain placeholder
+  - MetricsBar: 5 KPI, divider, uppercase labels
+  - GrowthSimulationTimeline: referans görseldeki 7 limon ağacı aşaması (0, 6, 12, 18, 24, 36, 48. Ay+) referanstan birebir korundu; 4x süper-çözünürlük, solid opak taç yapısı, micro-contrast unsharp masking ve `-webkit-optimize-contrast` ile kristal netliğine kavuşturuldu, bulanıklık ve yarı saydamlık tamamen giderildi
+  - workspaceDemo.fixture genişletildi (planting + maintenance + map overlay)
+- [x] **Faz 1 — Sol Sidebar pixel-perfect**
+  - SidebarStepList: vertical stepper, check icon, alt menü
+  - SidebarToolPalette: lucide ikonlar, aktif yeşil border
+  - SidebarSaveButton: koyu outlined stil
+  - activePlantingSubStep store state
+  - Design tokens güncellendi (#4ade80 accent)
+  - workspaceDemo.fixture.ts (görsel QA)
 - [x] Repo audit tamamlandı (greenfield tespit edildi)
 - [x] Phase 1 B implementasyon planı yazıldı (`docs/plan.md`)
 - [x] Vite + React 19 + TypeScript scaffold kuruldu
@@ -50,11 +75,11 @@
 - [ ] README güncelleme
 - [ ] `.env.example` oluşturma
 
-### Sonraki Sprint (B1) ⬜
+### Sonraki Sprint (Faz 4 — Navbar ince ayar) ⬜
 
-- [ ] Giriş ekranı: Mevcut bahçe vs Yeni arazi
-- [ ] Garden listesi placeholder (A API hazır olunca bağlanacak)
-- [ ] Draft land oluşturma akışı
+- [ ] PlanningHeader pixel-perfect (paylaş, simülasyon butonu)
+- [ ] PlanningStepNav pixel-perfect (ikonlar, bağlantı çizgileri)
+- [ ] FeatureFooter ikonlu bilgi blokları
 
 ---
 

@@ -18,13 +18,13 @@ export const PLANNING_STEPS: PlanningStepDefinition[] = [
     id: 'product',
     order: 2,
     label: 'ÜRÜN SEÇİMİ',
-    description: 'Ne Ekeceğiz?',
+    description: 'Ne Ekilecek?',
   },
   {
     id: 'planting',
     order: 3,
     label: 'PLANLAMA',
-    description: 'Dikim Planı',
+    description: 'Dikim & Yerleşim',
   },
   {
     id: 'maintenance',
@@ -39,14 +39,6 @@ export const PLANNING_STEPS: PlanningStepDefinition[] = [
     description: 'Gelişim & Hasat',
   },
 ]
-
-export const PLANNING_TOOLS = [
-  { id: 'select', label: 'Seçim Aracı', icon: '↖' },
-  { id: 'add-point', label: 'Dikim Noktası Ekle', icon: '⊕' },
-  { id: 'draw-irrigation', label: 'Sulama Hattı Çiz', icon: '〰' },
-  { id: 'define-region', label: 'Bölge Tanımla', icon: '▢' },
-  { id: 'delete-edit', label: 'Sil / Düzenle', icon: '✕' },
-] as const
 
 export const FEATURE_FOOTER_ITEMS = [
   { label: 'Akıllı Planlama', description: 'Araziye özel planlama' },

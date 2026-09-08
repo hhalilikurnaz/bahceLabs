@@ -13,44 +13,46 @@ export function PlanningStepNav({
   onStepClick,
 }: PlanningStepNavProps) {
   return (
-    <nav className="flex items-center justify-center gap-2 border-b border-planning-border px-4 py-3">
-      {PLANNING_STEPS.map((step, index) => {
-        const isActive = step.id === currentStep
-        const isCompleted = completedSteps.includes(step.id)
-        const isLast = index === PLANNING_STEPS.length - 1
+    <nav className="shrink-0 border-b border-planning-border bg-planning-panel px-4 py-1.5">
+      <div className="flex items-center justify-center gap-1">
+        {PLANNING_STEPS.map((step, index) => {
+          const isActive = step.id === currentStep
+          const isCompleted = completedSteps.includes(step.id)
+          const isLast = index === PLANNING_STEPS.length - 1
 
-        return (
-          <div key={step.id} className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onStepClick?.(step.id)}
-              className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-planning-accent/15 text-planning-accent'
-                  : isCompleted
-                    ? 'text-planning-success'
-                    : 'text-planning-text-dim'
-              }`}
-            >
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
+          return (
+            <div key={step.id} className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onStepClick?.(step.id)}
+                className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
                   isActive
-                    ? 'bg-planning-accent text-planning-bg'
+                    ? 'bg-planning-accent/15 text-planning-accent'
                     : isCompleted
-                      ? 'bg-planning-success/20 text-planning-success'
-                      : 'bg-planning-border text-planning-text-dim'
+                      ? 'text-planning-success'
+                      : 'text-planning-text-dim'
                 }`}
               >
-                {isCompleted && !isActive ? '✓' : step.order}
-              </span>
-              <span>{step.label}</span>
-            </button>
-            {!isLast && (
-              <span className="text-planning-border">›</span>
-            )}
-          </div>
-        )
-      })}
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] ${
+                    isActive
+                      ? 'bg-planning-accent text-planning-bg'
+                      : isCompleted
+                        ? 'bg-planning-success/20 text-planning-success'
+                        : 'bg-planning-border text-planning-text-dim'
+                  }`}
+                >
+                  {isCompleted && !isActive ? '✓' : step.order}
+                </span>
+                <span className="whitespace-nowrap">{step.label}</span>
+              </button>
+              {!isLast && (
+                <span className="text-[10px] text-planning-border">›</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </nav>
   )
 }

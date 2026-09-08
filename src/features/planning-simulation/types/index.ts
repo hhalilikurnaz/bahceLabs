@@ -27,6 +27,8 @@ export type PlanningToolId =
   | 'define-region'
   | 'delete-edit'
 
+export type PlantingSubStepId = 'spacing' | 'irrigation' | 'fertilization'
+
 export interface GeoJsonPolygon {
   type: 'Polygon'
   coordinates: number[][][]
