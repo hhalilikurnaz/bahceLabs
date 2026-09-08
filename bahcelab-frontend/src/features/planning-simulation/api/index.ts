@@ -1,7 +1,7 @@
+import { isPlanningApiMock } from './config'
 import { planningApiMock } from './planningApi.mock'
+import { planningApiReal } from './planningApi.real'
 
-const useMock = import.meta.env.VITE_PLANNING_API_MODE !== 'real'
+export const planningApi = isPlanningApiMock() ? planningApiMock : planningApiReal
 
-export const planningApi = useMock ? planningApiMock : planningApiMock
-
-// Backend hazır olduğunda planningApi.real.ts buraya bağlanacak.
+export type { PlanningApi } from './planningApi.types'

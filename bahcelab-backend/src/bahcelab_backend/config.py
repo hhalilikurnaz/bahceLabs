@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://bahcelab:bahcelab@localhost:5432/bahcelab"
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8001
     api_debug: bool = True
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     require_workspace_header: bool = True

@@ -75,5 +75,3 @@ export const planningApiMock = {
     return updated
   },
 }
-
-export type PlanningApi = typeof planningApiMock

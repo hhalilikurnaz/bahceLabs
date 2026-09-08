@@ -27,7 +27,7 @@ export const usePlanningStore = create<PlanningState>((set) => ({
   activePlantingSubStep: 'spacing',
   activeTool: 'select',
   visualizationMode: '3d',
-  setPlan: (plan) => set({ plan }),
+  setPlan: (plan) => set({ plan, currentStep: plan.currentStep }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setActivePlantingSubStep: (subStep) => set({ activePlantingSubStep: subStep }),
   setActiveTool: (tool) => set({ activeTool: tool }),

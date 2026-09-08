@@ -28,7 +28,7 @@ db-revision:
 	cd bahcelab-backend && alembic revision --autogenerate -m "$(msg)"
 
 backend-dev:
-	cd bahcelab-backend && uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port 8000
+	cd bahcelab-backend && uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port 8001
 
 backend-test:
 	cd bahcelab-backend && pytest -v

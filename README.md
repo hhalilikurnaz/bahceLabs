@@ -13,7 +13,11 @@ bahcelab-web/
 
 ## Hızlı Başlangıç
 
+Tüm `make` komutlarını monorepo **kök dizininden** (`bahcelab-web/`) çalıştır. `bahcelab-backend/` veya `bahcelab-frontend/` içine girip `make` kullanma — `Makefile` sadece kökte.
+
 ```bash
+cd bahcelab-web   # repo kökü
+
 # Veritabanı
 make docker-up
 
@@ -21,19 +25,22 @@ make docker-up
 make backend-install
 cp bahcelab-backend/.env.example bahcelab-backend/.env
 make db-migrate
-make backend-dev          # http://localhost:8000
+make backend-dev          # http://localhost:8001
 
 # Frontend (ayrı terminal)
 npm install
+cp bahcelab-frontend/.env.example bahcelab-frontend/.env
 npm run dev               # http://localhost:5173/planning
 ```
+
+Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API_MODE=real`). Vite `/api` isteklerini `http://localhost:8001`'e proxy eder. Mock moda dönmek için `.env` içinde `VITE_PLANNING_API_MODE=mock` yap.
 
 ## Komutlar
 
 | Komut | Açıklama |
 |-------|----------|
 | `make docker-up` | PostgreSQL + PostGIS başlat |
-| `make backend-dev` | FastAPI dev server |
+| `make backend-dev` | FastAPI dev server (port 8001) |
 | `make backend-test` | Backend testleri |
 | `npm run dev` | Frontend dev server |
 | `npm run build` | Frontend production build |
