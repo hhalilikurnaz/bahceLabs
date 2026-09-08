@@ -35,10 +35,10 @@
 ## Dosya Oluşturma Kuralları
 
 ```
-Yeni component  → src/features/planning-simulation/components/{area}/
-Yeni hook       → src/features/planning-simulation/hooks/
-Yeni type       → src/features/planning-simulation/types/
-Yeni API        → src/features/planning-simulation/api/
+Yeni component  → bahcelab-frontend/src/features/planning-simulation/components/{area}/
+Yeni hook       → bahcelab-frontend/src/features/planning-simulation/hooks/
+Yeni type       → bahcelab-frontend/src/features/planning-simulation/types/
+Yeni API        → bahcelab-frontend/src/features/planning-simulation/api/
 Yeni test       → tests/{unit|e2e}/planning/
 Yeni doc        → docs/{area}/
 ```

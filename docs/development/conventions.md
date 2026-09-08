@@ -10,7 +10,7 @@
 ## Klasör Kuralları
 
 ```
-src/features/planning-simulation/   ← B domain, izole
+bahcelab-frontend/src/features/planning-simulation/   ← B domain, izole
 src/shared/                         ← Ortak UI primitives
 src/lib/                            ← Utility fonksiyonlar
 ```

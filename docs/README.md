@@ -17,6 +17,7 @@ Bu klasör, **Planning & Simulation** modülünün tek kaynak dokümantasyonudur
 | [frontend/design-tokens.md](./frontend/design-tokens.md) | Tasarım token'ları |
 | [frontend/component-map.md](./frontend/component-map.md) | Component hiyerarşisi |
 | [api/planning-api-contract.md](./api/planning-api-contract.md) | Backend API contract |
+| [backend/plan.md](./backend/plan.md) | **Backend implementasyon planı** |
 | [development/conventions.md](./development/conventions.md) | Kodlama kuralları |
 | [development/anti-fabrication.md](./development/anti-fabrication.md) | Hard-code yasakları |
 | [development/agent-guide.md](./development/agent-guide.md) | AI agent'lar için rehber |
@@ -25,6 +26,15 @@ Bu klasör, **Planning & Simulation** modülünün tek kaynak dokümantasyonudur
 
 ```
 feature/phase-1-b-planning-simulation
+```
+
+## Monorepo Yapısı
+
+```
+bahcelab-web/
+├── bahcelab-frontend/
+├── bahcelab-backend/
+└── docs/
 ```
 
 ## Tech Stack
