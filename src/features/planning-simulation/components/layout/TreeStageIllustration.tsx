@@ -55,7 +55,7 @@ export function TreeStageIllustration({
         height={config.height}
         className={`pointer-events-none object-contain transition-all duration-200 ${
           isHighlighted
-            ? 'drop-shadow-[0_0_16px_rgba(74,222,128,0.45)]'
+            ? 'drop-shadow-[0_0_16px_rgba(146,196,100,0.4)]'
             : 'drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]'
         }`}
         style={{

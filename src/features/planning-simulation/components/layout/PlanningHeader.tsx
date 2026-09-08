@@ -63,7 +63,7 @@ export function PlanningHeader({ plan }: PlanningHeaderProps) {
         </button>
         <button
           type="button"
-          className="rounded-md bg-planning-accent px-3 py-1.5 text-[10px] font-semibold text-planning-bg shadow-[0_0_12px_rgba(74,222,128,0.2)]"
+          className="rounded-md bg-planning-accent px-3 py-1.5 text-[10px] font-semibold text-planning-bg shadow-[0_0_12px_rgba(146,196,100,0.2)]"
         >
           ▶ Simülasyonu Başlat
         </button>

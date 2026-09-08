@@ -34,7 +34,7 @@ export function PlantingMapOverlay({
           className="absolute inset-4 opacity-40"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(74,222,128,0.9) 1px, transparent 1px)',
+              'radial-gradient(circle, rgba(146,196,100,0.85) 1px, transparent 1px)',
             backgroundSize: '18px 18px',
           }}
         />

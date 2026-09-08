@@ -46,7 +46,7 @@ export function GrowthSimulationTimeline() {
           type="button"
           onClick={() => setIsPlaying((p) => !p)}
           aria-label={isPlaying ? 'Duraklat' : 'Simülasyonu Oynat'}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-planning-accent/80 bg-[#122018] text-planning-accent shadow-[0_0_12px_rgba(74,222,128,0.2)] transition-all hover:scale-105 hover:bg-planning-accent/20 focus:outline-none"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-planning-accent/80 bg-[#122018] text-planning-accent shadow-[0_0_12px_rgba(146,196,100,0.22)] transition-all hover:scale-105 hover:bg-planning-accent/20 focus:outline-none"
         >
           {isPlaying ? (
             <Pause className="h-4 w-4" fill="currentColor" />
@@ -65,7 +65,7 @@ export function GrowthSimulationTimeline() {
               style={{ top: '74px' }}
             >
               <div
-                className="h-full bg-planning-accent shadow-[0_0_8px_rgba(74,222,128,0.6)] transition-all duration-300"
+                className="h-full bg-planning-accent shadow-[0_0_8px_rgba(146,196,100,0.5)] transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -95,7 +95,7 @@ export function GrowthSimulationTimeline() {
                     {isActive ? (
                       <div className="relative flex items-center justify-center">
                         <span className="absolute h-6 w-6 animate-ping rounded-full bg-planning-accent opacity-30" />
-                        <span className="h-3.5 w-3.5 rounded-full border-2 border-white bg-planning-accent shadow-[0_0_10px_rgba(74,222,128,0.9)]" />
+                        <span className="h-3.5 w-3.5 rounded-full border-2 border-white bg-planning-accent shadow-[0_0_10px_rgba(146,196,100,0.75)]" />
                       </div>
                     ) : (
                       <div

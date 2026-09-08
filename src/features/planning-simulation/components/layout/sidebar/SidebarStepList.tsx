@@ -83,14 +83,16 @@ export function SidebarStepList({
 
         return (
           <li key={step.id} className="flex gap-2.5">
-            <div className="flex w-[18px] flex-col items-center self-stretch">
+            <div className="flex w-6 flex-col items-center self-stretch">
               <StepNumberCircle status={status} order={index + 1} />
               {!isLast && (
                 <div
-                  className={`my-1.5 w-px flex-1 ${
+                  className={`my-1.5 w-0.5 flex-1 rounded-full ${
                     status === 'completed'
-                      ? 'bg-planning-accent/35'
-                      : 'bg-planning-border'
+                      ? 'bg-planning-accent/55'
+                      : status === 'active'
+                        ? 'bg-planning-accent/25'
+                        : 'bg-planning-border'
                   }`}
                 />
               )}
@@ -109,11 +111,15 @@ export function SidebarStepList({
                 </p>
 
                 {status === 'completed' && (
-                  <Check
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-planning-accent"
-                    strokeWidth={2.5}
+                  <span
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-planning-border bg-planning-surface"
                     aria-hidden
-                  />
+                  >
+                    <Check
+                      className="h-3 w-3 text-planning-accent"
+                      strokeWidth={2.5}
+                    />
+                  </span>
                 )}
               </div>
 
@@ -170,7 +176,7 @@ function StepNumberCircle({
   if (status === 'completed' || status === 'active') {
     return (
       <span
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-planning-accent text-[9px] font-bold leading-none text-planning-bg"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-planning-accent text-[11px] font-bold leading-none text-planning-bg"
         aria-hidden
       >
         {order}
@@ -180,7 +186,7 @@ function StepNumberCircle({
 
   return (
     <span
-      className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-planning-border bg-planning-surface text-[9px] font-semibold leading-none text-planning-text-dim"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-planning-border bg-planning-surface text-[11px] font-semibold leading-none text-planning-text-dim"
       aria-hidden
     >
       {order}
