@@ -1,3 +1,4 @@
+import { getStubGarden } from '../fixtures/stubGardens.fixture'
 import type { SimulationPlan } from '../types'
 
 function emptyPlan(id: string): SimulationPlan {
@@ -52,9 +53,24 @@ export const planningApiMock = {
     return plan
   },
 
-  async createPlan(name: string): Promise<SimulationPlan> {
+  async createPlan(name: string, gardenId?: string | null): Promise<SimulationPlan> {
     const id = crypto.randomUUID()
-    const plan = { ...emptyPlan(id), name }
+    const garden = gardenId ? getStubGarden(gardenId) : undefined
+    const plan: SimulationPlan = {
+      ...emptyPlan(id),
+      name,
+      gardenId: gardenId ?? null,
+      draftLand: garden
+        ? {
+            geometry: garden.geometry,
+            areaM2: garden.areaM2,
+            perimeterM: null,
+            locationLabel: garden.locationLabel,
+            validationStatus: 'valid',
+            validationMessage: null,
+          }
+        : emptyPlan(id).draftLand,
+    }
     plans.set(id, plan)
     return plan
   },

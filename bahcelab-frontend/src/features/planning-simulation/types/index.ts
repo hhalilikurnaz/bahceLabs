@@ -34,6 +34,15 @@ export interface GeoJsonPolygon {
   coordinates: number[][][]
 }
 
+/** Phase 1 A garden summary — read-only in B1 */
+export interface Garden {
+  id: string
+  name: string
+  locationLabel: string | null
+  areaM2: number | null
+  geometry: GeoJsonPolygon | null
+}
+
 export interface PlanningLand {
   geometry: GeoJsonPolygon | null
   areaM2: number | null
