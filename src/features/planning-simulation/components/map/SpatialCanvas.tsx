@@ -13,7 +13,11 @@ interface SpatialCanvasProps {
     boundaryWidthM: number | null
     boundaryHeightM: number | null
   }
+  bleedBottom?: number
 }
+
+const MAP_BLEED_X = 18
+const MAP_BLEED_TOP = 12
 
 export function SpatialCanvas({
   mode,
@@ -21,9 +25,19 @@ export function SpatialCanvas({
   hasGeometry,
   plantingPlan,
   mapOverlay,
+  bleedBottom = 0,
 }: SpatialCanvasProps) {
   return (
-    <div className="relative h-full min-h-[320px] overflow-hidden rounded-[inherit] bg-[#0a120a]">
+    <div className="relative h-full min-h-[320px] w-full">
+      <div
+        className="absolute z-0 overflow-hidden rounded-[inherit] bg-[#0a120a]"
+        style={{
+          top: -MAP_BLEED_TOP,
+          left: -MAP_BLEED_X,
+          right: -MAP_BLEED_X,
+          bottom: bleedBottom > 0 ? -bleedBottom : 0,
+        }}
+      >
       {hasGeometry ? (
         <>
           {/* Aerial terrain placeholder — MapLibre / gerçek imagery B8'de */}
@@ -59,6 +73,7 @@ export function SpatialCanvas({
           />
         </div>
       )}
+      </div>
     </div>
   )
 }

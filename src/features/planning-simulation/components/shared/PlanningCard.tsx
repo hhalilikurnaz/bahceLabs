@@ -34,7 +34,7 @@ export function PlanningCard({
         <header
           className={`shrink-0 border-b border-planning-border-subtle ${headerPadding}`}
         >
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-planning-text-dim">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-planning-text-muted">
             {title}
           </h2>
         </header>

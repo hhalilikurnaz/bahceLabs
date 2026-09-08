@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ChevronRight,
   Droplets,
   LayoutGrid,
   Leaf,
@@ -61,6 +62,18 @@ function HeaderField({
   )
 }
 
+function StepArrow() {
+  return (
+    <span
+      className="flex shrink-0 items-center px-2.5 text-planning-text-dim/50"
+      aria-hidden
+    >
+      <span className="h-px w-8 bg-current opacity-70" />
+      <ChevronRight className="-ml-1 h-3 w-3" strokeWidth={1.5} />
+    </span>
+  )
+}
+
 export function PlanningNavbar({
   plan,
   currentStep,
@@ -74,7 +87,7 @@ export function PlanningNavbar({
       {/* Üst satır: başlık + bahçe meta */}
       <div className="flex items-center justify-between gap-4 px-5 py-2.5">
         <div className="min-w-0">
-          <h1 className="text-[13px] font-semibold tracking-wide text-planning-text">
+          <h1 className="text-[15px] font-bold tracking-[0.05em] text-planning-text">
             DİJİTAL BAHÇE PLANLAMA &amp; SİMÜLASYON
           </h1>
           <p className="mt-0.5 text-[10px] text-planning-text-muted">
@@ -106,7 +119,7 @@ export function PlanningNavbar({
 
       {/* Alt satır: stepper + simülasyon butonu */}
       <div className="flex items-center justify-between gap-4 border-t border-planning-border-subtle px-5 py-2">
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+        <nav className="flex min-w-0 flex-1 items-center overflow-x-auto">
           {PLANNING_STEPS.map((step, index) => {
             const isActive = step.id === currentStep
             const isCompleted = completedSteps.includes(step.id)
@@ -114,7 +127,7 @@ export function PlanningNavbar({
             const Icon = STEP_ICONS[step.id]
 
             return (
-              <div key={step.id} className="flex items-center gap-1">
+              <div key={step.id} className="flex items-center">
                 <button
                   type="button"
                   onClick={() => onStepClick?.(step.id)}
@@ -148,11 +161,7 @@ export function PlanningNavbar({
                   </span>
                 </button>
 
-                {!isLast && (
-                  <span className="px-0.5 text-[11px] text-planning-border">
-                    ›
-                  </span>
-                )}
+                {!isLast && <StepArrow />}
               </div>
             )
           })}
