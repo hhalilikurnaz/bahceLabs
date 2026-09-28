@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
-import { BahcelabMark } from '../shared/BahcelabMark'
+import { BahcelabBrandLogo } from '@/features/marketing/components/BahcelabBrandLogo'
 
 interface PlanningEntryShellProps {
   children: ReactNode
@@ -24,13 +24,9 @@ export function PlanningEntryShell({
     <div className="relative flex h-dvh flex-col overflow-hidden bg-planning-bg">
       <header className="relative z-20 shrink-0 border-b border-planning-border bg-planning-panel backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3.5 px-6 py-4 sm:px-10">
-          <div className="flex items-center gap-3.5">
-            <BahcelabMark />
-            <div>
-              <p className="text-[14px] font-semibold text-planning-text">BahçeLab</p>
-              <p className="text-[11px] text-planning-text-muted">Planlama ve Simülasyon</p>
-            </div>
-          </div>
+          <Link to="/" className="inline-flex shrink-0 items-center no-underline">
+            <BahcelabBrandLogo tone="light" height={34} />
+          </Link>
           <div className="flex items-center gap-3 text-[12px]">
             {user && (
               <span className="hidden text-planning-text-muted sm:inline">{user.name}</span>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   BarChart3,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
   Play,
   Share2,
 } from 'lucide-react'
+import { BahcelabBrandLogo } from '@/features/marketing/components/BahcelabBrandLogo'
 import { PLANNING_STEPS } from '../../constants/planningSteps'
 import type { PlanningStepId, SimulationPlan } from '../../types'
 
@@ -86,7 +88,11 @@ export function PlanningNavbar({
     <header className="shrink-0 rounded-xl border border-planning-border bg-planning-panel">
       {/* Üst satır: başlık + bahçe meta */}
       <div className="flex items-center justify-between gap-4 px-5 py-2.5">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link to="/" className="inline-flex shrink-0 no-underline" aria-label="BahçeLab ana sayfa">
+            <BahcelabBrandLogo tone="light" height={30} />
+          </Link>
+          <div className="min-w-0 border-l border-planning-border pl-4">
           <h1 className="text-[15px] font-bold tracking-[0.05em] text-planning-text">
             DİJİTAL BAHÇE PLANLAMA &amp; SİMÜLASYON
           </h1>
@@ -94,6 +100,7 @@ export function PlanningNavbar({
             Boş araziden hasada kadar akıllı planlama, dikim, bakım ve sonuç
             simülasyonu.
           </p>
+          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
