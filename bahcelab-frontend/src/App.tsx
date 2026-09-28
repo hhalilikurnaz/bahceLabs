@@ -1,4 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
+import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { BlogPage } from '@/features/marketing/pages/BlogPage'
 import { LandingPage } from '@/features/marketing/pages/LandingPage'
 import { PlanningListPage } from '@/features/planning-simulation/pages/PlanningListPage'
@@ -9,8 +12,24 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/blog" element={<BlogPage />} />
-      <Route path="/planning" element={<PlanningListPage />} />
-      <Route path="/planning/:planId" element={<PlanningWorkspacePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/planning"
+        element={
+          <ProtectedRoute>
+            <PlanningListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/planning/:planId"
+        element={
+          <ProtectedRoute>
+            <PlanningWorkspacePage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

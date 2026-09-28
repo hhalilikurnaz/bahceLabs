@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BahcelabBrandLogo } from './BahcelabBrandLogo'
 
-const REGISTRATION_OPEN = false
-
 interface MarketingNavbarProps {
   /** Hero üzerinde şeffaf; kaydırınca opak şerit */
   variant?: 'over-hero' | 'solid'
@@ -49,28 +47,18 @@ export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps)
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed rounded-lg border border-white/20 px-3 py-2 text-[12px] font-medium text-[#f3efe4]/70 sm:px-3.5"
-            title="Çok yakında"
+          <Link
+            to="/login"
+            className="rounded-lg border border-white/20 px-3 py-2 text-[12px] font-medium text-[#f3efe4] no-underline transition-colors hover:bg-white/10 sm:px-3.5"
           >
             Giriş yap
-          </button>
-          {REGISTRATION_OPEN ? (
-            <button
-              type="button"
-              className="rounded-lg bg-[#f3efe4] px-3 py-2 text-[12px] font-semibold text-[#06140d] sm:px-3.5"
-            >
-              Kayıt ol
-            </button>
-          ) : (
-            <span
-              className="rounded-lg border border-[#a3e635]/35 bg-[#a3e635]/10 px-3 py-2 text-[11px] font-semibold text-[#c9f27a] sm:text-[12px]"
-            >
-              Kayıtlar çok yakında
-            </span>
-          )}
+          </Link>
+          <Link
+            to="/register"
+            className="rounded-lg bg-[#f3efe4] px-3 py-2 text-[12px] font-semibold text-[#06140d] no-underline transition-opacity hover:opacity-90 sm:px-3.5"
+          >
+            Kayıt ol
+          </Link>
         </div>
       </div>
     </header>
