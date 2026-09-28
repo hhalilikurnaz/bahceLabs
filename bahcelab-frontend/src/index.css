@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   --color-planning-bg: #0b0f0b;
   --color-planning-surface: #141414;
   --color-planning-panel: #161616;
@@ -15,6 +17,7 @@
   --color-planning-success: #92c464;
   --color-planning-warning: #fbbf24;
   --color-planning-error: #f87171;
+  --color-marketing-cream: #f7f4ee;
 }
 
 * {
@@ -29,15 +32,93 @@ body,
 }
 
 body {
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--color-planning-bg);
   color: var(--color-planning-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+:root {
+  --marketing-strip-slant: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.marketing-strip-top-flat {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.marketing-strip-top-slant-down {
+  clip-path: polygon(0 var(--marketing-strip-slant), 100% 0, 100% 100%, 0 100%);
+}
+
+.marketing-strip-top-slant-up {
+  clip-path: polygon(0 0, 100% var(--marketing-strip-slant), 100% 100%, 0 100%);
+}
+
+.marketing-strip-overlap {
+  margin-top: calc(-1 * var(--marketing-strip-slant) - 1px);
+}
+
+@keyframes marketing-accent-drift-left {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(5px, -6px, 0);
+  }
+}
+
+@keyframes marketing-accent-drift-right {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-5px, -6px, 0);
+  }
+}
+
+.marketing-accent-drift-left {
+  animation: marketing-accent-drift-left 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.marketing-accent-drift-right {
+  animation: marketing-accent-drift-right 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes marketing-scroll-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 0.95;
+  }
+}
+
+.marketing-scroll-cue {
+  animation: marketing-scroll-cue 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-accent-drift-left,
+  .marketing-accent-drift-right,
+  .marketing-scroll-cue {
+    animation: none;
+  }
 }
