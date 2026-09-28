@@ -2,7 +2,17 @@
 
 Referans görselden çıkarılan token'lar. `src/index.css` içinde `@theme` olarak tanımlı.
 
-## Renkler
+## Marketing (kurumsal site)
+
+| Token | CSS Variable | Hex | Kullanım |
+|-------|-------------|-----|----------|
+| Cream surface | `--color-marketing-cream` | `#f7f4ee` | Landing şeritleri, footer |
+
+Şerit eğimi: `:root { --marketing-strip-slant: clamp(2.5rem, 6vw, 4.5rem); }` — `marketing-strip-top-*`, `marketing-strip-overlap` sınıfları.
+
+Tipografi: `--font-sans` (Inter), `--font-heading` (Plus Jakarta Sans).
+
+## Renkler (planlama)
 
 | Token | CSS Variable | Hex | Kullanım |
 |-------|-------------|-----|----------|

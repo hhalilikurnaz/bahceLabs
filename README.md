@@ -30,8 +30,10 @@ make backend-dev          # http://localhost:8001
 # Frontend (ayrı terminal)
 npm install
 cp bahcelab-frontend/.env.example bahcelab-frontend/.env
-npm run dev               # http://localhost:5173/planning (geliştirme — DevTools'ta src/ görünür, normal)
+npm run dev               # http://localhost:5173/ (landing; port doluysa 5174, …)
 ```
+
+**Sayfalar:** `/` tanıtım, `/blog`, `/login`, `/register`, `/planning` (giriş gerekli). Detay: [docs/frontend/marketing-and-auth.md](docs/frontend/marketing-and-auth.md).
 
 Canlıya yakın test / demo için production build kullan (`dist/` servis edilir; `src/`, `node_modules/` DevTools'ta görünmez):
 
@@ -56,6 +58,7 @@ Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API
 - [Ana Plan](docs/plan.md)
 - [Backend Plan](docs/backend/plan.md)
 - [İlerleme](docs/progress.md)
+- [Marketing & auth](docs/frontend/marketing-and-auth.md)
 - [API Contract](docs/api/planning-api-contract.md)
 
 ## Branch

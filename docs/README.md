@@ -16,6 +16,7 @@ Bu klasör, **Planning & Simulation** modülünün tek kaynak dokümantasyonudur
 | [frontend/phase-1-b-screen-spec.md](./frontend/phase-1-b-screen-spec.md) | Ekran layout ve bileşen spec |
 | [frontend/design-tokens.md](./frontend/design-tokens.md) | Tasarım token'ları |
 | [frontend/component-map.md](./frontend/component-map.md) | Component hiyerarşisi |
+| [frontend/marketing-and-auth.md](./frontend/marketing-and-auth.md) | Kurumsal site, giriş/kayıt, routing |
 | [api/planning-api-contract.md](./api/planning-api-contract.md) | Backend API contract |
 | [backend/plan.md](./backend/plan.md) | **Backend implementasyon planı** |
 | [development/conventions.md](./development/conventions.md) | Kodlama kuralları |

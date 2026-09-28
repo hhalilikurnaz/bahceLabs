@@ -2,8 +2,8 @@
 
 > Günlük güncellenir. Agent'lar ve ekip için canlı durum takibi.
 
-**Branch (aktif):** `dev`  
-**Feature branch:** `feature/phase-1-b-planning-simulation`  
+**Branch (aktif):** `main` (marketing + auth `main`’e merge edildi)  
+**Feature branch:** `feature/phase-1-b-planning-simulation` (planlama geçmişi)  
 **Başlangıç:** 2026-09-08
 
 ---
@@ -17,18 +17,43 @@
 | Sonraki aşama | **B2 — Arazi tanımı (MapLibre + polygon)** |
 | Backend durumu | **BE0 çalışır** — Docker + migrate + real API (`8001`) |
 | Frontend API | Real mod varsayılan — Vite `/api` → backend |
-| Planlama giriş sayfası | `/planning` — Planlama Merkezi (rehber + yeni plan + devam) |
+| Planlama giriş sayfası | `/planning` — Planlama Merkezi (giriş gerekli) |
+| Kurumsal site | `/` landing, `/blog` placeholder — `docs/frontend/marketing-and-auth.md` |
+| Auth (frontend) | `/login`, `/register` — localStorage stub; backend auth yok |
 | Referans UI (workspace) | Layout shell hazır — `docs/reference-design.md` |
 
 ### Nerede kaldık?
 
 ```
-/planning          → Planlama Merkezi (B1) ✅
+/                  → Kurumsal landing (marketing) ✅
+/blog              → Blog placeholder ✅
+/login, /register  → Giriş / kayıt (frontend stub) ✅
+/planning          → Planlama Merkezi (B1) ✅ — ProtectedRoute
 /planning/:planId  → Workspace shell (B0) ✅ — harita/polygon henüz yok (B2)
 Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sırada
 ```
 
-**Bir sonraki iş:** B2 — MapLibre entegrasyonu, haritada polygon çizimi, `POST /planning/plans/{id}/land` bağlantısı.
+**Bir sonraki iş:** B2 — MapLibre entegrasyonu, haritada polygon çizimi, `POST /planning/plans/{id}/land` bağlantısı. Paralel: Phase 1 A backend auth → `AuthContext` gerçek API.
+
+---
+
+## 2026-09-28 — Kurumsal site + auth + marka
+
+### Yapılanlar ✅
+
+- [x] **Marketing landing** — hero, diagonal şeritler, misyon (problem + `MissionOutcomeCards`), footer watermark
+- [x] **Routing** — `/` landing; `/blog`; planlama `/planning` altında
+- [x] **Auth UI** — `/login`, `/register` (split layout: sol görsel, sağ form); `ProtectedRoute` planlama rotaları
+- [x] **Navbar** — marketing’te giriş/kayıt; planlama shell’de çıkış + `BahcelabBrandLogo`
+- [x] **Marka** — sekme başlığı, `favicon.png`, tüm navbar’larda `BahcelabBrandLogo`
+- [x] **Tasarım token** — `--color-marketing-cream`; şerit clip/overlap CSS değişkenleri
+- [x] Dokümantasyon: [frontend/marketing-and-auth.md](./frontend/marketing-and-auth.md)
+
+### Bilinen sınırlamalar ⬜
+
+- [ ] Backend kullanıcı auth (JWT/session) — kayıt verisi yalnızca `localStorage`
+- [ ] Blog CMS entegrasyonu
+- [ ] Landing’den planlama CTA (ürün hazır olunca)
 
 ---
 
@@ -98,7 +123,7 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 - [x] `Garden` domain tipi eklendi
 - [x] `planningApi.mock` — `createPlan(name, gardenId?)` + stub bahçeden `draftLand` doldurma
 - [x] **Kaldığınız yerden devam** — yalnızca **real API** (`planningApiReal.listPlans()`)
-- [x] BahçeLab marka: `BahcelabMark` bileşeni + `favicon.svg` (yaprak ikon)
+- [x] BahçeLab marka: header’da logo (güncel: `BahcelabBrandLogo` — `bahcelab-logo.png`)
 
 ### B1 — UI bileşenleri
 
@@ -109,7 +134,7 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 | Yeni plan | `PlanningStartSection.tsx` | Yeni arazi / kayıtlı bahçe seçimi |
 | Devam | `ContinuePlansSection.tsx` | Real API plan listesi |
 | Bahçe listesi | `GardenListPanel.tsx` | Mevcut bahçe seçim ekranı |
-| Marka | `BahcelabMark.tsx` | Header logosu |
+| Marka | `BahcelabBrandLogo` (marketing) | Header / navbar logosu |
 
 ### UX kararları (bugün)
 
@@ -206,7 +231,9 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 | 2026-09-08 | Monorepo `bahcelab-web` | Frontend + backend yan yana |
 | 2026-09-08 | Backend port 8001 | macOS AirPlay 8000 çakışması |
 | 2026-09-08 | `make` yalnızca repo kökünden | Alt klasörde Makefile yok |
-| 2026-09-08 | `/planning` = modül rehberi, ayrı landing yok | B1 kapsamında yeterli |
+| 2026-09-08 | `/planning` = modül rehberi, ayrı landing yok | B1 kapsamında yeterli (2026-09-28’de `/` landing eklendi) |
+| 2026-09-28 | `/` kurumsal landing; planlama auth ile korumalı | Yayın öncesi tanıtım + erken erişim |
+| 2026-09-28 | Auth frontend stub (localStorage) | Backend Phase 1 A bekleniyor |
 | 2026-09-08 | Plan geçmişi yalnızca real API | Mock sahte veri göstermez |
 | 2026-09-08 | B1 önce B2'den | Kullanıcı yolunu netleştir, sonra harita |
 | 2026-09-08 | Hard-code KPI yasak | Anti-fabrication kuralı |
