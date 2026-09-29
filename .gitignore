@@ -14,6 +14,7 @@ bahcelab-frontend/node_modules
 bahcelab-frontend/dist
 bahcelab-frontend/dist-ssr
 bahcelab-frontend/.env
+.reference-bahceLabs/
 *.local
 
 # Editor directories and files

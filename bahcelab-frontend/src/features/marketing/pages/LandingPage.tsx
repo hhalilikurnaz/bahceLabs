@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react'
 import { BarChart3, Brain, Cpu, Leaf, LineChart, Sprout, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import heroImage from '@/assets/marketing/hero-orchard-drones.jpg'
-import { BahcelabBrandLogo } from '../components/BahcelabBrandLogo'
 import {
   DiagonalStripSection,
   StripTextContent,
   textSideForStripEdge,
 } from '../components/DiagonalStripSection'
-import { HeroScrollCue } from '../components/HeroScrollCue'
+import { JourneyHero } from '../journey/JourneyHero'
 import { MarketingFooter } from '../components/MarketingFooter'
 import { MissionOutcomeCards } from '../components/MissionOutcomeCards'
 import { MarketingNavbar } from '../components/MarketingNavbar'
@@ -38,62 +36,18 @@ const pillars = [
 
 export function LandingPage() {
   return (
-    <div className="bg-[#06140d] text-[#f3efe4]">
+    <div className="bg-[#0e1a12] text-[#f3efe4]">
       <MarketingNavbar variant="over-hero" />
 
-      <section
-        className="fixed inset-0 z-0 flex min-h-dvh items-center justify-center"
-        aria-label="BahçeLab tanıtım hero"
-      >
-        <img
-          src={heroImage}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[#06140d]/40" aria-hidden />
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-[#06140d]/75 via-[#06140d]/25 to-[#06140d]/80"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_45%,rgba(6,20,13,0.72),transparent)]"
-          aria-hidden
-        />
-        <HeroScrollCue />
-        <div
-          className="relative z-10 mx-auto w-full max-w-5xl -translate-y-[clamp(1.5rem,5vh,3.5rem)] px-5 text-center sm:px-10"
-        >
-          <div className="mb-6 flex justify-center sm:mb-7">
-            <BahcelabBrandLogo
-              tone="light"
-              className="mx-auto w-auto max-w-[min(85vw,20rem)] object-contain object-center sm:max-w-[22rem]"
-              style={{ height: 'clamp(3.5rem, 10vw, 5.5rem)' }}
-            />
-          </div>
-          <h1
-            className="mx-auto max-w-[18ch] text-balance text-[clamp(2.75rem,7.5vw,5rem)] font-extrabold leading-[1.04] tracking-[-0.045em] text-[#fffef9] [text-shadow:0_6px_40px_rgba(6,20,13,0.7)] sm:max-w-[20ch] lg:text-[5.25rem] lg:leading-[1.02]"
-          >
-            Üretim verimini yükseltmek, bitkiyi anlamaktan geçer.
-          </h1>
-          <p
-            className="mx-auto mt-7 max-w-2xl text-pretty text-[clamp(1.1rem,2.3vw,1.375rem)] font-semibold leading-[1.55] text-[#faf8f2] [text-shadow:0_3px_24px_rgba(6,20,13,0.55)] sm:mt-8 sm:max-w-xl"
-          >
-            <span className="font-bold text-[#ecf7b8]">Yapay zeka destekli</span> ve{' '}
-            <span className="font-bold text-[#ecf7b8]">veriye dayalı</span> bir yaklaşımla, tarımda
-            sürdürülebilir büyümeyi güçlendirmek için çalışıyoruz.
-          </p>
-        </div>
-      </section>
+      <JourneyHero />
 
-      <div className="relative z-10 h-dvh pointer-events-none" aria-hidden />
-
-      <main className="relative z-20 -mt-2 overflow-x-clip text-[#1a241c]">
+      <main className="relative z-20 -mt-[100dvh] overflow-x-clip text-[#1a241c]">
         <DiagonalStripSection
           id="misyon"
           tone="cream"
           topEdge="flat"
           overlap={false}
-          className="rounded-t-[2rem] border-t border-[#e8e4d9]/40 shadow-[0_-24px_80px_rgba(0,0,0,0.45)] sm:rounded-t-[2.75rem]"
+          className="rounded-t-[2rem] border-t border-[#e8e4d9]/40 bg-[#f7f4ee] shadow-[0_-32px_100px_rgba(0,0,0,0.55)] sm:rounded-t-[2.75rem]"
           glyph={{ icon: Target, label: 'Misyon' }}
         >
           <StripTextContent
