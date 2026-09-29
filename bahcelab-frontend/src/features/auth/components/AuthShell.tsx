@@ -4,14 +4,19 @@ import heroImage from '@/assets/marketing/hero-orchard-drones.jpg'
 import { BahcelabBrandLogo } from '@/features/marketing/components/BahcelabBrandLogo'
 
 export const authFieldClass =
-  'mt-1.5 w-full rounded-xl border border-[#0c2418]/12 bg-[#faf9f5] px-3.5 py-3 text-[14px] text-[#0c2418] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition-shadow placeholder:text-[#5c665d]/50 focus:border-[#2d6b45]/35 focus:bg-white focus:ring-2 focus:ring-[#2d6b45]/20'
+  'mt-1.5 w-full rounded-lg border border-[#0c2418]/12 bg-white px-3.5 py-3 text-[14px] text-[#0c2418] outline-none transition-[border-color,box-shadow] placeholder:text-[#5c665d]/50 focus:border-[#2d6b45]/40 focus:ring-2 focus:ring-[#2d6b45]/15'
 
 export const authLabelClass = 'text-[12px] font-medium tracking-wide text-[#4b554c]'
 
 export const authPrimaryButtonClass =
-  'w-full rounded-xl bg-[#0c2418] px-4 py-3.5 text-[14px] font-semibold text-[#f3efe4] shadow-[0_8px_24px_rgba(6,20,13,0.22)] transition-[transform,opacity] hover:opacity-95 active:scale-[0.99] disabled:opacity-55 disabled:shadow-none'
+  'w-full rounded-lg border border-[#0c2418]/15 bg-[#0c2418] px-4 py-3.5 text-[14px] font-medium text-[#f3efe4] transition-opacity hover:opacity-90 disabled:opacity-55'
 
 type AuthVariant = 'login' | 'register'
+
+const cardEyebrow: Record<AuthVariant, string> = {
+  login: 'BahçeLab · Giriş',
+  register: 'BahçeLab · Kayıt',
+}
 
 const panelCopy: Record<
   AuthVariant,
@@ -103,37 +108,40 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
         </p>
       </aside>
 
-      <section className="relative flex min-h-dvh flex-col bg-marketing-cream">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_80%_70%_at_50%_-20%,rgba(45,107,69,0.08),transparent)] lg:hidden"
-          aria-hidden
-        />
-
-        <header className="relative border-b border-[#0c2418]/8 px-5 py-4 lg:border-none lg:px-10 lg:pt-10">
-          <Link to="/" className="inline-flex no-underline lg:hidden">
-            <BahcelabBrandLogo tone="dark" height={30} className="brightness-0" />
-          </Link>
-          <Link
-            to="/"
-            className="hidden text-[13px] font-medium text-[#5c665d] no-underline hover:text-[#0c2418] lg:inline-flex"
-          >
-            ← Ana sayfa
-          </Link>
+      <section className="relative flex min-h-dvh flex-col bg-[#e4ede0]">
+        <header className="relative px-5 py-5 sm:px-8 lg:px-12 lg:pt-10">
+          <div className="mx-auto flex w-full max-w-[28rem] items-center justify-between gap-4 lg:max-w-[30rem]">
+            <Link to="/" className="inline-flex no-underline lg:hidden">
+              <BahcelabBrandLogo tone="dark" height={30} className="brightness-0" />
+            </Link>
+            <Link
+              to="/"
+              className="ml-auto text-[13px] font-medium text-[#4b554c] no-underline transition-colors hover:text-[#0c2418] lg:ml-0"
+            >
+              ← Ana sayfa
+            </Link>
+          </div>
         </header>
 
-        <main className="relative flex flex-1 flex-col justify-center px-5 pb-10 pt-6 sm:px-10 lg:px-14 lg:pb-14">
-          <div className="mx-auto w-full max-w-[26rem]">
-            <div className="lg:rounded-2xl lg:border lg:border-[#0c2418]/8 lg:bg-white/45 lg:p-8 lg:shadow-[0_20px_50px_rgba(12,36,24,0.06)] xl:p-9">
-              <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[#0c2418] sm:text-[1.65rem]">
-                {title}
-              </h1>
-              <p className="mt-2 text-[14px] leading-relaxed text-[#5c665d]">{subtitle}</p>
-              <div className="mt-7">{children}</div>
+        <main className="relative flex flex-1 flex-col justify-center px-5 pb-10 pt-2 sm:px-8 lg:px-12 lg:pb-14">
+          <div className="mx-auto w-full max-w-[28rem] lg:max-w-[30rem]">
+            <div
+              className="overflow-hidden rounded-[1.25rem] border border-[#0c2418]/12 bg-marketing-cream sm:rounded-[1.5rem]"
+            >
+              <div className="border-b border-[#0c2418]/8 bg-[#f7f4ee]/90 px-6 py-6 sm:px-8 sm:py-7">
+                <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#2d6b45]/80">
+                  {cardEyebrow[variant]}
+                </p>
+                <h1 className="mt-2 text-balance text-[clamp(1.5rem,4vw,1.75rem)] font-semibold tracking-[-0.03em] text-[#0c2418]">
+                  {title}
+                </h1>
+                <p className="mt-2 text-[14px] leading-relaxed text-[#4b554c]">{subtitle}</p>
+              </div>
+
+              <div className="px-6 py-7 sm:px-8 sm:py-8">{children}</div>
             </div>
 
-            {footer && (
-              <p className="mt-6 text-center text-[13px] text-[#5c665d] lg:mt-8">{footer}</p>
-            )}
+            {footer && <p className="mt-6 text-center text-[13px] leading-relaxed text-[#4b554c]">{footer}</p>}
           </div>
         </main>
       </section>

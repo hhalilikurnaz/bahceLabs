@@ -60,7 +60,7 @@ export function RegisterPage() {
         {error && (
           <p
             role="alert"
-            className="rounded-xl border border-red-500/25 bg-red-500/8 px-3.5 py-2.5 text-[13px] text-red-900"
+            className="rounded-lg border border-red-500/25 bg-red-500/8 px-3.5 py-2.5 text-[13px] text-red-900"
           >
             {error}
           </p>
