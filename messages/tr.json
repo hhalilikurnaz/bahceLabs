@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "title": "BahçeLab | Narenciye bahçeniz için yapay zekâ",
+    "description": "BahçeLab, drone ve uydu görüntülerini yapay zekâyla işleyerek narenciye bahçenizdeki her ağacın sağlığını, rekoltesini ve su ihtiyacını tek haritada gösterir."
+  },
+  "nav": {
+    "features": "Özellikler",
+    "how": "Nasıl çalışır",
+    "who": "Kimler için",
+    "story": "Hikâyemiz",
+    "demo": "Demo talep et",
+    "language": "Dil"
+  },
+  "hero": {
+    "eyebrow": "Narenciye bahçeleri için yapay zekâ",
+    "title": "Bahçeni ağaç ağaç tanı.",
+    "subtitle": "BahçeLab, drone ve uydu görüntülerini yapay zekâyla işler; her ağacın sağlığını, rekoltesini ve su ihtiyacını tek bir haritada gösterir.",
+    "cta": "Demo talep et",
+    "secondary": "Nasıl çalışır?",
+    "scroll": "Kaydırın",
+    "transition": [
+      "Drone bahçenin üzerinden geçer.",
+      "Her ağaç tek tek tespit edilir.",
+      "Bahçeniz dijital haritaya dönüşür."
+    ]
+  },
+  "features": {
+    "kicker": "Tek platform, ağaç ölçeğinde bilgi",
+    "title": "Uçuştan karara, bahçenin tamamı elinizin altında",
+    "sampleNote": "Görseller temsilidir ve örnek veri içerir.",
+    "steps": [
+      {
+        "tag": "Dijital Bahçe",
+        "title": "Her ağacın kalıcı bir kimliği var",
+        "body": "Bahçeniz parsel, blok ve ağaç düzeyinde haritalanır. Gözlem, ilaçlama, gübreleme ve sulama kayıtları ilgili ağaca ve konuma bağlanır."
+      },
+      {
+        "tag": "Ağaç tespiti",
+        "title": "Drone görüntüsünden ağaç envanteri",
+        "body": "Multispektral drone görüntülerinden her ağacın konumu, taç büyüklüğü ve yüksekliği çıkarılır. Sonraki uçuşlarda aynı ağaç yeniden tanınır, değişim izlenir."
+      },
+      {
+        "tag": "Belirti tespiti",
+        "title": "Sorunu bahçeye yayılmadan görün",
+        "body": "Yapay zekâ sararma, dal kuruması ve kuruma belirtisi gösteren ağaçları işaretler. Sahada kontrol edilmesi gereken ağaçlar konumlarıyla listelenir."
+      },
+      {
+        "tag": "Rekolte tahmini",
+        "title": "Hasattan önce blok bazında tahmin",
+        "body": "Ağaç sayısı, taç ölçüleri ve bitki indeksleriyle her blok için rekolte tahmin edilir. Hasat ve satış planı erkenden yapılır."
+      },
+      {
+        "tag": "Akıllı sulama",
+        "title": "Su, ihtiyacı olan bloğa",
+        "body": "Toprak nemi sensörleri ve blok bazlı vanalarla sulama sabit takvim yerine ölçülen ihtiyaca göre yapılır. Karar her zaman üreticinin onayıyla uygulanır."
+      },
+      {
+        "tag": "AI Copilot",
+        "title": "Bahçenize kendi dilinizde soru sorun",
+        "body": "“Hangi blokta su stresi var?” gibi sorulara bahçenizin kendi verisine dayanan ve kaynağını gösteren yanıtlar alın.",
+        "question": "Bu hafta hangi bloklara öncelik vermeliyim?",
+        "answer": "B3'te 6 ağaçta sararma belirtisi var ve toprak nemi düşük. Önce B3'ü kontrol edin."
+      }
+    ]
+  },
+  "how": {
+    "kicker": "Nasıl çalışır",
+    "title": "Dört adımda veriden sahaya",
+    "steps": [
+      {
+        "title": "Uçuş",
+        "body": "Drone ve uydu görüntüleri sezon boyunca düzenli olarak toplanır."
+      },
+      {
+        "title": "Analiz",
+        "body": "Yapay zekâ ağaçları tespit eder, sağlık ve gelişim değişimini izler."
+      },
+      {
+        "title": "Öneri",
+        "body": "Öncelikli bloklar, saha görevleri ve sulama önerileri çıkarılır."
+      },
+      {
+        "title": "Uygulama",
+        "body": "Öneriler üreticinin onayıyla sahada uygulanır, sonuç ölçülür."
+      }
+    ]
+  },
+  "who": {
+    "kicker": "Kimler için",
+    "title": "Bahçeden kooperatife, herkes aynı haritada",
+    "items": [
+      {
+        "title": "Üreticiler",
+        "body": "Bahçesinin neresinde sorun olduğunu erken ve konumuyla görmek, girdiyi ihtiyaç olan yere vermek isteyenler."
+      },
+      {
+        "title": "Kooperatifler",
+        "body": "Üyelerinin bahçelerini tek panelden izlemek, bölgesel risk ve rekolte görünümü oluşturmak isteyenler."
+      },
+      {
+        "title": "Tarım danışmanları",
+        "body": "Takip ettikleri bahçeleri sahaya gitmeden görmek ve ziyaretlerini önceliklendirmek isteyenler."
+      }
+    ]
+  },
+  "origin": {
+    "kicker": "Hikâyemiz",
+    "title": "Bahçeden çıktık, bahçe için geliştiriyoruz",
+    "body": "BahçeLab, Mersin Erdemli'de limon üreticisi bir ailenin bahçesinde doğdu. Sulamanın, ilaçlamanın ve hasadın ne kadar çok tahmine dayandığını yıllarca bizzat yaşadık. Şimdi yazılım ve yapay zekâ birikimimizi bu sorunları çözmek için kullanıyoruz.",
+    "stats": [
+      {
+        "value": "%48",
+        "label": "Türkiye limon üretiminde Mersin'in payı (TEPGE, 2025)"
+      },
+      {
+        "value": "847",
+        "label": "İlk pilot bahçemizdeki ağaç sayısı"
+      },
+      {
+        "value": "1 ağaç",
+        "label": "Analizlerimizin en küçük birimi"
+      }
+    ]
+  },
+  "demo": {
+    "kicker": "Pilot program",
+    "title": "Bahçenizi birlikte haritalayalım",
+    "subtitle": "Pilot programa katılmak veya platformu görmek için formu doldurun, size dönüş yapalım.",
+    "fields": {
+      "name": "Ad soyad",
+      "phone": "Telefon",
+      "email": "E-posta",
+      "role": "Siz kimsiniz?",
+      "roles": {
+        "farmer": "Üretici",
+        "coop": "Kooperatif",
+        "advisor": "Tarım danışmanı",
+        "other": "Diğer"
+      },
+      "region": "İl / ilçe",
+      "area": "Bahçe büyüklüğü (dekar)",
+      "message": "Mesajınız (isteğe bağlı)",
+      "consent": "Kişisel verilerimin, talebime dönüş yapılması amacıyla KVKK Aydınlatma Metni kapsamında işlenmesini kabul ediyorum.",
+      "consentLink": "Aydınlatma metnini okuyun"
+    },
+    "submit": "Demo talep et",
+    "sending": "Gönderiliyor…",
+    "success": "Teşekkürler! Talebiniz bize ulaştı, en kısa sürede dönüş yapacağız.",
+    "error": "Bir sorun oluştu. Lütfen tekrar deneyin veya {email} adresine yazın.",
+    "required": "Lütfen zorunlu alanları doldurun."
+  },
+  "footer": {
+    "tagline": "Narenciye bahçeleri için yapay zekâ destekli bahçe yönetimi.",
+    "location": "Erdemli, Mersin",
+    "privacy": "KVKK Aydınlatma Metni",
+    "rights": "Tüm hakları saklıdır."
+  },
+  "kvkk": {
+    "title": "KVKK Aydınlatma Metni",
+    "intro": "Bu metin, bahcelabs.com üzerindeki demo talep formu aracılığıyla paylaştığınız kişisel verilerin işlenmesine ilişkindir.",
+    "items": [
+      "İşlenen veriler: ad soyad, telefon, e-posta, il/ilçe, bahçe büyüklüğü ve mesajınız.",
+      "Amaç: demo ve pilot program talebinize dönüş yapmak ve sizinle iletişim kurmak.",
+      "Hukuki sebep: açık rızanız ve talebinizin karşılanması için gerekli olması.",
+      "Saklama: talebiniz sonuçlandıktan sonra en fazla 2 yıl saklanır, ardından silinir.",
+      "Haklarınız: 6698 sayılı Kanun'un 11. maddesi kapsamındaki haklarınız için {email} adresine başvurabilirsiniz."
+    ],
+    "back": "Ana sayfaya dön"
+  },
+  "canvas": {
+    "block": "B",
+    "moisture": "Nem",
+    "tons": "t",
+    "aria": "Kuşbakışı narenciye bahçesi üzerinde ağaç tespiti, sağlık, rekolte ve sulama katmanlarını gösteren animasyon",
+    "legend": {
+      "trees": "Tespit edilen ağaç",
+      "healthy": "Sağlıklı",
+      "stress": "Sararma belirtisi",
+      "dry": "Kuruma belirtisi",
+      "wet": "Yeterli nem",
+      "low": "Düşük nem",
+      "yield": "Blok rekolte tahmini",
+      "blocks": "Blok sınırı"
+    }
+  },
+  "journey": {
+    "detected": "ağaç tespit edildi",
+    "cards": {
+      "twin": {
+        "title": "Ağaç B3-S2-A05",
+        "rows": [
+          [
+            "Blok / Sıra",
+            "B3 / 2"
+          ],
+          [
+            "Tür",
+            "Limon"
+          ],
+          [
+            "Yaş",
+            "15"
+          ],
+          [
+            "Son ilaçlama",
+            "12 gün önce"
+          ],
+          [
+            "Son sulama",
+            "2 gün önce"
+          ]
+        ]
+      },
+      "detect": {
+        "title": "Ağaç tespit edildi",
+        "rows": [
+          [
+            "Taç çapı",
+            "4,8 m"
+          ],
+          [
+            "Yükseklik",
+            "3,6 m"
+          ],
+          [
+            "Taç hacmi",
+            "31 m³"
+          ],
+          [
+            "Güven",
+            "%97"
+          ]
+        ]
+      },
+      "health": {
+        "title": "Sararma belirtisi",
+        "rows": [
+          [
+            "Etkilenen taç",
+            "%38"
+          ],
+          [
+            "NDVI",
+            "0,41 (blok ort. 0,72)"
+          ],
+          [
+            "İlk görülme",
+            "6 gün önce"
+          ],
+          [
+            "Öneri",
+            "Sahada kontrol"
+          ]
+        ]
+      },
+      "yield": {
+        "title": "Rekolte tahmini",
+        "rows": [
+          [
+            "Meyve sayısı",
+            "~520"
+          ],
+          [
+            "Tahmini verim",
+            "~110 kg"
+          ],
+          [
+            "B3 blok toplamı",
+            "18,4 t"
+          ]
+        ]
+      }
+    }
+  }
+}

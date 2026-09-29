@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "title": "BahçeLab | AI for your citrus orchard",
+    "description": "BahçeLab turns drone and satellite imagery into tree-level insight, showing the health, expected yield and water needs of every tree in your citrus orchard on a single map."
+  },
+  "nav": {
+    "features": "Features",
+    "how": "How it works",
+    "who": "Who it's for",
+    "story": "Our story",
+    "demo": "Request a demo",
+    "language": "Language"
+  },
+  "hero": {
+    "eyebrow": "AI for citrus orchards",
+    "title": "Know your orchard, tree by tree.",
+    "subtitle": "BahçeLab processes drone and satellite imagery with AI and shows the health, expected yield and water needs of every tree on a single map.",
+    "cta": "Request a demo",
+    "secondary": "How it works",
+    "scroll": "Scroll",
+    "transition": [
+      "The drone flies over the orchard.",
+      "Every tree is detected, one by one.",
+      "Your orchard becomes a digital map."
+    ]
+  },
+  "features": {
+    "kicker": "One platform, tree-level insight",
+    "title": "From flight to decision, your whole orchard at hand",
+    "sampleNote": "Visuals are illustrative and use sample data.",
+    "steps": [
+      {
+        "tag": "Digital Orchard",
+        "title": "Every tree gets a permanent identity",
+        "body": "Your orchard is mapped at parcel, block and tree level. Scouting, spraying, fertilising and irrigation records are linked to the right tree and location."
+      },
+      {
+        "tag": "Tree detection",
+        "title": "A tree inventory from drone imagery",
+        "body": "The position, canopy size and height of every tree are extracted from multispectral drone imagery. The same tree is recognised in later flights so change can be tracked."
+      },
+      {
+        "tag": "Symptom detection",
+        "title": "Spot problems before they spread",
+        "body": "AI flags trees showing yellowing, branch dieback or decline. Trees that need a field check are listed with their exact location."
+      },
+      {
+        "tag": "Yield forecast",
+        "title": "Block-level forecasts before harvest",
+        "body": "Tree counts, canopy metrics and vegetation indices are combined to forecast yield for each block, so harvest and sales can be planned early."
+      },
+      {
+        "tag": "Smart irrigation",
+        "title": "Water where it is needed",
+        "body": "Soil moisture sensors and block-level valves let irrigation follow measured need instead of a fixed calendar. Every action is applied with the grower's approval."
+      },
+      {
+        "tag": "AI Copilot",
+        "title": "Ask your orchard questions in your own language",
+        "body": "Get answers to questions like “Which block is under water stress?” based on your orchard's own data, with sources shown.",
+        "question": "Which blocks should I prioritise this week?",
+        "answer": "Block B3 has yellowing on 6 trees and low soil moisture. Check B3 first."
+      }
+    ]
+  },
+  "how": {
+    "kicker": "How it works",
+    "title": "From data to field in four steps",
+    "steps": [
+      {
+        "title": "Fly",
+        "body": "Drone and satellite imagery is collected regularly throughout the season."
+      },
+      {
+        "title": "Analyse",
+        "body": "AI detects trees and tracks changes in health and growth."
+      },
+      {
+        "title": "Recommend",
+        "body": "Priority blocks, field tasks and irrigation recommendations are generated."
+      },
+      {
+        "title": "Act",
+        "body": "Recommendations are applied in the field with the grower's approval and results are measured."
+      }
+    ]
+  },
+  "who": {
+    "kicker": "Who it's for",
+    "title": "From orchard to cooperative, everyone on the same map",
+    "items": [
+      {
+        "title": "Growers",
+        "body": "Who want to see early, and with location, where problems are, and put inputs only where they are needed."
+      },
+      {
+        "title": "Cooperatives",
+        "body": "Who want to monitor members' orchards from one dashboard and build a regional view of risk and yield."
+      },
+      {
+        "title": "Agronomists",
+        "body": "Who want to see the orchards they follow without a site visit and prioritise their field time."
+      }
+    ]
+  },
+  "origin": {
+    "kicker": "Our story",
+    "title": "Grown in the orchard, built for the orchard",
+    "body": "BahçeLab was born in the orchard of a lemon-growing family in Erdemli, Mersin. For years we saw first-hand how much of irrigation, spraying and harvest planning relies on guesswork. Now we are using our software and AI experience to solve these problems.",
+    "stats": [
+      {
+        "value": "48%",
+        "label": "Mersin's share of Türkiye's lemon production (TEPGE, 2025)"
+      },
+      {
+        "value": "847",
+        "label": "Trees in our first pilot orchard"
+      },
+      {
+        "value": "1 tree",
+        "label": "The smallest unit of our analysis"
+      }
+    ]
+  },
+  "demo": {
+    "kicker": "Pilot programme",
+    "title": "Let's map your orchard together",
+    "subtitle": "Fill in the form to join the pilot programme or see the platform, and we will get back to you.",
+    "fields": {
+      "name": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "role": "You are a…",
+      "roles": {
+        "farmer": "Grower",
+        "coop": "Cooperative",
+        "advisor": "Agronomist",
+        "other": "Other"
+      },
+      "region": "Region",
+      "area": "Orchard size (decares)",
+      "message": "Message (optional)",
+      "consent": "I agree that my personal data may be processed to respond to my request, as described in the privacy notice.",
+      "consentLink": "Read the privacy notice"
+    },
+    "submit": "Request a demo",
+    "sending": "Sending…",
+    "success": "Thank you! We have received your request and will get back to you shortly.",
+    "error": "Something went wrong. Please try again or write to {email}.",
+    "required": "Please fill in the required fields."
+  },
+  "footer": {
+    "tagline": "AI-powered orchard management for citrus growers.",
+    "location": "Erdemli, Mersin, Türkiye",
+    "privacy": "Privacy notice",
+    "rights": "All rights reserved."
+  },
+  "kvkk": {
+    "title": "Privacy notice",
+    "intro": "This notice covers the personal data you share through the demo request form on bahcelabs.com.",
+    "items": [
+      "Data processed: full name, phone, email, region, orchard size and your message.",
+      "Purpose: to respond to your demo or pilot programme request and to contact you.",
+      "Legal basis: your explicit consent and the need to fulfil your request.",
+      "Retention: kept for at most 2 years after your request is concluded, then deleted.",
+      "Your rights: you may exercise your rights under Turkish Law No. 6698 (KVKK) by writing to {email}."
+    ],
+    "back": "Back to home"
+  },
+  "canvas": {
+    "block": "B",
+    "moisture": "Moisture",
+    "tons": "t",
+    "aria": "Animation of a citrus orchard from above showing tree detection, health, yield and irrigation layers",
+    "legend": {
+      "trees": "Detected tree",
+      "healthy": "Healthy",
+      "stress": "Yellowing",
+      "dry": "Decline",
+      "wet": "Adequate moisture",
+      "low": "Low moisture",
+      "yield": "Block yield forecast",
+      "blocks": "Block boundary"
+    }
+  },
+  "journey": {
+    "detected": "trees detected",
+    "cards": {
+      "twin": {
+        "title": "Tree B3-S2-A05",
+        "rows": [
+          [
+            "Block / Row",
+            "B3 / 2"
+          ],
+          [
+            "Species",
+            "Lemon"
+          ],
+          [
+            "Age",
+            "15"
+          ],
+          [
+            "Last spraying",
+            "12 days ago"
+          ],
+          [
+            "Last irrigation",
+            "2 days ago"
+          ]
+        ]
+      },
+      "detect": {
+        "title": "Tree detected",
+        "rows": [
+          [
+            "Canopy diameter",
+            "4.8 m"
+          ],
+          [
+            "Height",
+            "3.6 m"
+          ],
+          [
+            "Canopy volume",
+            "31 m³"
+          ],
+          [
+            "Confidence",
+            "97%"
+          ]
+        ]
+      },
+      "health": {
+        "title": "Yellowing detected",
+        "rows": [
+          [
+            "Affected canopy",
+            "38%"
+          ],
+          [
+            "NDVI",
+            "0.41 (block avg. 0.72)"
+          ],
+          [
+            "First seen",
+            "6 days ago"
+          ],
+          [
+            "Action",
+            "Check in the field"
+          ]
+        ]
+      },
+      "yield": {
+        "title": "Yield estimate",
+        "rows": [
+          [
+            "Fruit count",
+            "~520"
+          ],
+          [
+            "Estimated yield",
+            "~110 kg"
+          ],
+          [
+            "Block B3 total",
+            "18.4 t"
+          ]
+        ]
+      }
+    }
+  }
+}

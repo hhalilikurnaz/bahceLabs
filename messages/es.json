@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "title": "BahçeLab | IA para su huerto de cítricos",
+    "description": "BahçeLab procesa imágenes de dron y satélite con IA y muestra en un solo mapa la salud, la cosecha estimada y las necesidades de agua de cada árbol de su huerto de cítricos."
+  },
+  "nav": {
+    "features": "Funciones",
+    "how": "Cómo funciona",
+    "who": "Para quién",
+    "story": "Nuestra historia",
+    "demo": "Solicitar demo",
+    "language": "Idioma"
+  },
+  "hero": {
+    "eyebrow": "IA para huertos de cítricos",
+    "title": "Conozca su huerto, árbol a árbol.",
+    "subtitle": "BahçeLab procesa imágenes de dron y satélite con IA y muestra en un solo mapa la salud, la cosecha estimada y las necesidades de agua de cada árbol.",
+    "cta": "Solicitar demo",
+    "secondary": "Cómo funciona",
+    "scroll": "Desplácese",
+    "transition": [
+      "El dron sobrevuela el huerto.",
+      "Cada árbol se detecta uno por uno.",
+      "Su huerto se convierte en un mapa digital."
+    ]
+  },
+  "features": {
+    "kicker": "Una plataforma, información a nivel de árbol",
+    "title": "Del vuelo a la decisión, todo su huerto a mano",
+    "sampleNote": "Las imágenes son ilustrativas y contienen datos de ejemplo.",
+    "steps": [
+      {
+        "tag": "Huerto Digital",
+        "title": "Cada árbol tiene una identidad permanente",
+        "body": "Su huerto se cartografía a nivel de parcela, bloque y árbol. Los registros de observación, tratamientos, abonado y riego se vinculan al árbol y a su ubicación."
+      },
+      {
+        "tag": "Detección de árboles",
+        "title": "Inventario de árboles a partir de imágenes de dron",
+        "body": "De las imágenes multiespectrales de dron se obtienen la posición, el tamaño de copa y la altura de cada árbol. En vuelos posteriores se reconoce el mismo árbol y se sigue su evolución."
+      },
+      {
+        "tag": "Detección de síntomas",
+        "title": "Vea los problemas antes de que se extiendan",
+        "body": "La IA marca los árboles con amarilleamiento, secado de ramas o decaimiento. Los árboles que requieren revisión en campo se listan con su ubicación exacta."
+      },
+      {
+        "tag": "Previsión de cosecha",
+        "title": "Previsión por bloque antes de la cosecha",
+        "body": "Con el número de árboles, las medidas de copa y los índices de vegetación se estima la cosecha de cada bloque, para planificar la recolección y la venta con antelación."
+      },
+      {
+        "tag": "Riego inteligente",
+        "title": "El agua, donde se necesita",
+        "body": "Con sensores de humedad del suelo y válvulas por bloque, el riego sigue la necesidad medida en lugar de un calendario fijo. Cada acción se aplica con la aprobación del agricultor."
+      },
+      {
+        "tag": "AI Copilot",
+        "title": "Pregunte a su huerto en su propio idioma",
+        "body": "Obtenga respuestas a preguntas como «¿Qué bloque sufre estrés hídrico?» basadas en los datos de su propio huerto y con las fuentes indicadas.",
+        "question": "¿A qué bloques debo dar prioridad esta semana?",
+        "answer": "El bloque B3 tiene amarilleamiento en 6 árboles y baja humedad del suelo. Revise primero B3."
+      }
+    ]
+  },
+  "how": {
+    "kicker": "Cómo funciona",
+    "title": "De los datos al campo en cuatro pasos",
+    "steps": [
+      {
+        "title": "Vuelo",
+        "body": "Se recogen imágenes de dron y satélite de forma periódica durante la campaña."
+      },
+      {
+        "title": "Análisis",
+        "body": "La IA detecta los árboles y sigue los cambios de salud y crecimiento."
+      },
+      {
+        "title": "Recomendación",
+        "body": "Se generan bloques prioritarios, tareas de campo y recomendaciones de riego."
+      },
+      {
+        "title": "Aplicación",
+        "body": "Las recomendaciones se aplican en campo con la aprobación del agricultor y se mide el resultado."
+      }
+    ]
+  },
+  "who": {
+    "kicker": "Para quién",
+    "title": "Del huerto a la cooperativa, todos en el mismo mapa",
+    "items": [
+      {
+        "title": "Agricultores",
+        "body": "Que quieren ver pronto, y con su ubicación, dónde están los problemas y aplicar insumos solo donde hacen falta."
+      },
+      {
+        "title": "Cooperativas",
+        "body": "Que quieren seguir los huertos de sus socios desde un solo panel y tener una visión regional de riesgo y cosecha."
+      },
+      {
+        "title": "Asesores agrícolas",
+        "body": "Que quieren ver los huertos que siguen sin desplazarse y priorizar sus visitas."
+      }
+    ]
+  },
+  "origin": {
+    "kicker": "Nuestra historia",
+    "title": "Nacimos en el huerto y trabajamos para el huerto",
+    "body": "BahçeLab nació en el huerto de una familia productora de limones en Erdemli, Mersin (Turquía). Durante años vivimos de cerca cuánto dependen el riego, los tratamientos y la cosecha de estimaciones. Hoy aplicamos nuestra experiencia en software e IA para resolver estos problemas.",
+    "stats": [
+      {
+        "value": "48 %",
+        "label": "Cuota de Mersin en la producción de limón de Turquía (TEPGE, 2025)"
+      },
+      {
+        "value": "847",
+        "label": "Árboles en nuestro primer huerto piloto"
+      },
+      {
+        "value": "1 árbol",
+        "label": "La unidad más pequeña de nuestro análisis"
+      }
+    ]
+  },
+  "demo": {
+    "kicker": "Programa piloto",
+    "title": "Cartografiemos su huerto juntos",
+    "subtitle": "Complete el formulario para unirse al programa piloto o ver la plataforma y nos pondremos en contacto con usted.",
+    "fields": {
+      "name": "Nombre y apellidos",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "role": "Usted es…",
+      "roles": {
+        "farmer": "Agricultor",
+        "coop": "Cooperativa",
+        "advisor": "Asesor agrícola",
+        "other": "Otro"
+      },
+      "region": "Región",
+      "area": "Superficie del huerto (decáreas)",
+      "message": "Mensaje (opcional)",
+      "consent": "Acepto que mis datos personales se traten para responder a mi solicitud, conforme al aviso de privacidad.",
+      "consentLink": "Leer el aviso de privacidad"
+    },
+    "submit": "Solicitar demo",
+    "sending": "Enviando…",
+    "success": "¡Gracias! Hemos recibido su solicitud y le responderemos pronto.",
+    "error": "Se ha producido un error. Inténtelo de nuevo o escriba a {email}.",
+    "required": "Complete los campos obligatorios."
+  },
+  "footer": {
+    "tagline": "Gestión de huertos de cítricos con inteligencia artificial.",
+    "location": "Erdemli, Mersin, Turquía",
+    "privacy": "Aviso de privacidad",
+    "rights": "Todos los derechos reservados."
+  },
+  "kvkk": {
+    "title": "Aviso de privacidad",
+    "intro": "Este aviso se refiere a los datos personales que comparte a través del formulario de solicitud de demo de bahcelabs.com.",
+    "items": [
+      "Datos tratados: nombre y apellidos, teléfono, correo electrónico, región, superficie del huerto y su mensaje.",
+      "Finalidad: responder a su solicitud de demo o de programa piloto y ponernos en contacto con usted.",
+      "Base jurídica: su consentimiento explícito y la necesidad de atender su solicitud.",
+      "Conservación: como máximo 2 años tras cerrar su solicitud; después se eliminan.",
+      "Sus derechos: puede ejercer sus derechos conforme a la Ley turca n.º 6698 (KVKK) escribiendo a {email}."
+    ],
+    "back": "Volver al inicio"
+  },
+  "canvas": {
+    "block": "B",
+    "moisture": "Humedad",
+    "tons": "t",
+    "aria": "Animación de un huerto de cítricos visto desde arriba con capas de detección de árboles, salud, cosecha y riego",
+    "legend": {
+      "trees": "Árbol detectado",
+      "healthy": "Sano",
+      "stress": "Amarilleamiento",
+      "dry": "Decaimiento",
+      "wet": "Humedad adecuada",
+      "low": "Humedad baja",
+      "yield": "Previsión de cosecha por bloque",
+      "blocks": "Límite de bloque"
+    }
+  },
+  "journey": {
+    "detected": "árboles detectados",
+    "cards": {
+      "twin": {
+        "title": "Árbol B3-S2-A05",
+        "rows": [
+          [
+            "Bloque / Fila",
+            "B3 / 2"
+          ],
+          [
+            "Especie",
+            "Limonero"
+          ],
+          [
+            "Edad",
+            "15"
+          ],
+          [
+            "Último tratamiento",
+            "hace 12 días"
+          ],
+          [
+            "Último riego",
+            "hace 2 días"
+          ]
+        ]
+      },
+      "detect": {
+        "title": "Árbol detectado",
+        "rows": [
+          [
+            "Diámetro de copa",
+            "4,8 m"
+          ],
+          [
+            "Altura",
+            "3,6 m"
+          ],
+          [
+            "Volumen de copa",
+            "31 m³"
+          ],
+          [
+            "Confianza",
+            "97 %"
+          ]
+        ]
+      },
+      "health": {
+        "title": "Amarilleo detectado",
+        "rows": [
+          [
+            "Copa afectada",
+            "38 %"
+          ],
+          [
+            "NDVI",
+            "0,41 (media del bloque 0,72)"
+          ],
+          [
+            "Detectado",
+            "hace 6 días"
+          ],
+          [
+            "Acción",
+            "Revisar en campo"
+          ]
+        ]
+      },
+      "yield": {
+        "title": "Estimación de cosecha",
+        "rows": [
+          [
+            "Número de frutos",
+            "~520"
+          ],
+          [
+            "Rendimiento estimado",
+            "~110 kg"
+          ],
+          [
+            "Total bloque B3",
+            "18,4 t"
+          ]
+        ]
+      }
+    }
+  }
+}
