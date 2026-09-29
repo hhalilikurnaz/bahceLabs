@@ -1,0 +1,836 @@
+/* Kaydırmalı hero — bahceLabs Journey stilleri (yalnızca .bahce-journey altında) */
+.bahce-journey {
+  --night: #0e1a12;
+  --night-2: #13241a;
+  --ink: #13241a;
+  --ink-2: #3d4d43;
+  --cream: #f5f2e9;
+  --line-dark: rgba(243, 241, 231, 0.14);
+  --lemon: #f2c94c;
+  --lemon-2: #ffe28a;
+  --leaf: #2f6b3f;
+  --text-dark: #f3f1e7;
+  --muted-dark: rgba(243, 241, 231, 0.68);
+  --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --header-h: 64px;
+  font-family: var(--font);
+}
+
+.bahce-journey h1,
+.bahce-journey h2 {
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-family: var(--display);
+  font-weight: 500;
+}
+
+.bahce-journey p {
+  margin: 0;
+}
+
+.bahce-journey .container {
+  width: min(1280px, 100% - 40px);
+  margin-inline: auto;
+}
+
+.bahce-journey .eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--leaf);
+  margin-bottom: 14px;
+}
+
+.bahce-journey .lead {
+  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+  color: var(--muted-dark);
+  max-width: 58ch;
+}
+
+.bahce-journey .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font: 700 0.95rem/1 var(--font);
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.bahce-journey .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Açık cam — Kayıtlar çok yakında */
+.bahce-journey .btn-primary {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fffef9;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.bahce-journey .btn-primary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Koyu cam — Misyonumuz */
+.bahce-journey .btn-ghost {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-dark);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(6, 20, 13, 0.42) 48%,
+    rgba(4, 14, 10, 0.52) 100%
+  );
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.bahce-journey .btn-ghost:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(6, 20, 13, 0.48) 48%,
+    rgba(4, 14, 10, 0.58) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.bahce-journey .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.bahce-journey .hero-line {
+  grid-area: 1 / 1;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: rgba(14, 26, 18, 0.78);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line-dark);
+  font-family: var(--display);
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  text-align: center;
+  will-change: opacity, transform;
+}
+
+.bahce-journey .hero-line-num {
+  font: 700 0.75rem/1 var(--font);
+  color: var(--lemon);
+  letter-spacing: 0.1em;
+}
+
+.bahce-journey .scroll-hint {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+}
+
+.bahce-journey .scroll-hint i {
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(var(--lemon), transparent);
+  animation: bahce-journey-hint 1.8s ease-in-out infinite;
+}
+
+@keyframes bahce-journey-hint {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  51% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+.bahce-journey .stage-legend {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(14, 26, 18, 0.85);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.78rem;
+  max-width: calc(100% - 28px);
+}
+
+.bahce-journey .stage-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bahce-journey .sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bahce-journey .sw-fill {
+  background: var(--c);
+}
+
+.bahce-journey .sw-ring {
+  border: 2px solid var(--c);
+}
+
+.bahce-journey .sw-box {
+  border-radius: 2px;
+  border: 2px solid var(--c);
+}
+
+.bahce-journey .sw-dash {
+  border-radius: 2px;
+  border: 2px dashed var(--c);
+}
+
+.bahce-journey .copilot {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: min(330px, calc(100% - 28px));
+  display: grid;
+  gap: 8px;
+  animation: bahce-journey-rise 0.5s ease both;
+}
+
+.bahce-journey .copilot p {
+  padding: 11px 14px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.bahce-journey .copilot-q {
+  justify-self: end;
+  background: var(--text-dark);
+  color: var(--night);
+  border-bottom-right-radius: 4px;
+}
+
+.bahce-journey .copilot-a {
+  background: rgba(14, 26, 18, 0.92);
+  border: 1px solid rgba(242, 201, 76, 0.45);
+  border-bottom-left-radius: 4px;
+  animation: bahce-journey-rise 0.5s 0.5s ease both;
+}
+
+@keyframes bahce-journey-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bahce-journey.journey {
+  position: relative;
+  background: var(--night);
+  color: var(--text-dark);
+}
+
+.bahce-journey .j-anchor {
+  position: absolute;
+  left: 0;
+  height: 1px;
+  width: 1px;
+  pointer-events: none;
+}
+
+.bahce-journey .journey-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* Animasyon bittiğinde sahne sabit kalır; misyon bölümü üstüne kayar (eski hero davranışı) */
+.bahce-journey .journey-sticky--pinned {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  pointer-events: none;
+}
+
+.bahce-journey .journey-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #6b4a2c;
+}
+
+.bahce-journey .j-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  --scan: 0;
+  --rings: 0;
+  --ids: 0;
+  --health: 0;
+  --yield: 0;
+  --water: 0;
+  --grade: 0;
+  --k: 1;
+}
+
+.bahce-journey .j-world img,
+.bahce-journey .j-grade,
+.bahce-journey .j-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bahce-journey .j-grade {
+  background: rgba(6, 22, 14, 0.5);
+  mix-blend-mode: multiply;
+  opacity: var(--grade);
+  clip-path: inset(0 0 calc(max(0, 1 - var(--scan)) * 100%) 0);
+}
+
+.bahce-journey .j-svg {
+  overflow: visible;
+}
+
+.bahce-journey .j-svg path,
+.bahce-journey .j-svg line,
+.bahce-journey .j-svg circle {
+  vector-effect: non-scaling-stroke;
+}
+
+.bahce-journey .j-fixed {
+  transform: translate(var(--x), var(--y)) scale(calc(1 / var(--k)));
+}
+
+.bahce-journey .j-rings path {
+  fill: none;
+  stroke: var(--lemon);
+  stroke-width: 2;
+  opacity: calc(clamp(0, (var(--scan) - var(--ty)) * 30, 1) * var(--rings));
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+}
+
+.bahce-journey .j-ids {
+  opacity: var(--ids);
+}
+
+.bahce-journey .j-ids text {
+  font: 700 11px/1 var(--font);
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(8, 16, 10, 0.85);
+  stroke-width: 3px;
+  letter-spacing: 0.04em;
+}
+
+.bahce-journey .j-health {
+  opacity: var(--health);
+}
+
+.bahce-journey .j-h {
+  fill: currentColor;
+  fill-opacity: 0.28;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.bahce-journey .j-h-watch,
+.bahce-journey .j-h-bad {
+  fill-opacity: 0.42;
+  animation: bahce-journey-pulse 1.8s ease-in-out infinite;
+}
+
+.bahce-journey .j-h-bad {
+  stroke-width: 3.5;
+}
+
+@keyframes bahce-journey-pulse {
+  50% {
+    fill-opacity: 0.15;
+  }
+}
+
+.bahce-journey .j-yield {
+  opacity: var(--yield);
+}
+
+.bahce-journey .j-yield rect {
+  fill: rgba(14, 26, 18, 0.82);
+  stroke: rgba(242, 201, 76, 0.6);
+  stroke-width: 1;
+}
+
+.bahce-journey .j-yield rect.is-focus {
+  fill: var(--lemon);
+}
+
+.bahce-journey .j-yield rect.is-focus + text {
+  fill: var(--night);
+}
+
+.bahce-journey .j-yield text {
+  font: 800 11px/1 var(--font);
+  fill: var(--lemon-2);
+}
+
+.bahce-journey .j-water {
+  opacity: var(--water);
+}
+
+.bahce-journey .j-drip {
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-dasharray: 10 8;
+  animation: bahce-journey-flow 1.2s linear infinite;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+@keyframes bahce-journey-flow {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.bahce-journey .j-pill {
+  fill: rgba(14, 26, 18, 0.88);
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.bahce-journey .j-pill-text {
+  font: 700 11px/1 var(--font);
+  fill: #fff;
+}
+
+.bahce-journey .j-focus path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.bahce-journey .j-focus-halo {
+  fill: none;
+  stroke: var(--lemon);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bahce-journey-spin 14s linear infinite;
+}
+
+@keyframes bahce-journey-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bahce-journey .j-video {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 70%;
+  will-change: transform, opacity;
+}
+
+.bahce-journey .j-frames,
+.bahce-journey .j-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bahce-journey .j-frames {
+  z-index: 3;
+}
+
+.bahce-journey .j-poster {
+  z-index: 2;
+  transition: opacity 0.35s ease;
+}
+
+.bahce-journey .j-poster--done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bahce-journey .j-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  opacity: 0;
+  background: var(--lemon);
+  box-shadow:
+    0 0 18px 4px rgba(242, 201, 76, 0.55),
+    0 0 60px 12px rgba(242, 201, 76, 0.18);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.bahce-journey .j-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  background:
+    linear-gradient(90deg, rgba(8, 16, 10, 0.88) 0%, rgba(8, 16, 10, 0.55) 32%, rgba(8, 16, 10, 0) 58%),
+    linear-gradient(to top, rgba(8, 16, 10, 0.55), transparent 30%);
+}
+
+.bahce-journey .j-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 250px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(14, 26, 18, 0.9);
+  border: 1px solid rgba(242, 201, 76, 0.4);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  font-size: 0.84rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.bahce-journey .j-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.bahce-journey .j-card-title i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.bahce-journey .j-card dl {
+  margin: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.bahce-journey .j-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line-dark);
+  padding-top: 5px;
+}
+
+.bahce-journey .j-card dt {
+  color: var(--muted-dark);
+}
+
+.bahce-journey .j-card dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.bahce-journey .j-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  --chip: 0;
+}
+
+.bahce-journey .j-ui a,
+.bahce-journey .j-ui button {
+  pointer-events: auto;
+}
+
+.bahce-journey .j-chip {
+  position: absolute;
+  top: calc(var(--header-h) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(14, 26, 18, 0.85);
+  border: 1px solid rgba(242, 201, 76, 0.45);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: var(--chip);
+}
+
+.bahce-journey .j-chip span {
+  color: var(--lemon);
+  font-variant-numeric: tabular-nums;
+}
+
+.bahce-journey .j-intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  padding-top: var(--header-h);
+  padding-right: clamp(1.25rem, 4vw, 2.5rem);
+  padding-left: clamp(1.5rem, 6vw, 5.5rem);
+  will-change: opacity, transform;
+}
+
+@media (min-width: 1024px) {
+  .bahce-journey .j-intro {
+    padding-left: clamp(2.75rem, 9vw, 7rem);
+    max-width: min(1280px, 100% - 40px);
+    margin-inline: auto;
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}
+
+.bahce-journey .j-intro .eyebrow {
+  color: var(--lemon);
+}
+
+.bahce-journey .j-intro h1 {
+  font-size: clamp(2rem, 5.5vw, 4.25rem);
+  max-width: 22ch;
+  line-height: 1.08;
+  margin-bottom: 22px;
+  text-wrap: balance;
+}
+
+.bahce-journey .j-lines {
+  position: absolute;
+  left: 50%;
+  bottom: 12vh;
+  transform: translateX(-50%);
+  width: min(720px, 100% - 40px);
+  display: grid;
+}
+
+.bahce-journey .j-steps {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-items: center;
+  padding-top: var(--header-h);
+}
+
+.bahce-journey .j-step {
+  grid-area: 1 / 1;
+  max-width: 440px;
+  display: grid;
+  gap: 14px;
+  will-change: opacity, transform;
+}
+
+.bahce-journey .j-step-tag {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+}
+
+.bahce-journey .j-step-tag span {
+  color: var(--lemon);
+  margin-right: 6px;
+}
+
+.bahce-journey .j-step h2 {
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  line-height: 1.12;
+  margin: 0;
+}
+
+.bahce-journey .j-step p:last-child {
+  margin: 0;
+  color: var(--muted-dark);
+}
+
+.bahce-journey .j-copilot {
+  top: calc(var(--header-h) + 20px);
+  right: 24px;
+  width: min(360px, calc(100% - 32px));
+}
+
+.bahce-journey .j-foot {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.bahce-journey .j-legend {
+  position: static;
+}
+
+.bahce-journey .j-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted-dark);
+}
+
+@media (max-width: 767px) {
+  .bahce-journey .j-shade {
+    background: linear-gradient(
+      to top,
+      rgba(8, 16, 10, 0.95) 0%,
+      rgba(8, 16, 10, 0.75) 34%,
+      rgba(8, 16, 10, 0) 58%
+    );
+  }
+
+  .bahce-journey .j-intro {
+    justify-content: flex-end;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 90px;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .bahce-journey .j-intro .lead {
+    margin-inline: auto;
+  }
+
+  .bahce-journey .j-intro .actions {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .bahce-journey .j-steps {
+    align-items: end;
+    padding-bottom: 28px;
+  }
+
+  .bahce-journey .j-step {
+    gap: 8px;
+  }
+
+  .bahce-journey .j-step h2 {
+    font-size: 1.6rem;
+  }
+
+  .bahce-journey .j-step p:last-child {
+    font-size: 0.92rem;
+  }
+
+  .bahce-journey .j-card {
+    width: 230px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  .bahce-journey .j-card dl div:nth-child(n + 3) {
+    display: none;
+  }
+
+  .bahce-journey .journey-stage {
+    background: var(--night);
+  }
+
+  .bahce-journey .j-foot {
+    top: calc(var(--header-h) + 10px);
+    bottom: auto;
+    left: 12px;
+    right: auto;
+    justify-items: start;
+  }
+
+  .bahce-journey .j-note {
+    display: none;
+  }
+
+  .bahce-journey .j-chip {
+    top: calc(var(--header-h) + 60px);
+  }
+
+  .bahce-journey .j-ui .j-copilot {
+    top: calc(var(--header-h) + 64px);
+    right: 16px;
+    bottom: auto;
+  }
+
+  .bahce-journey .j-lines {
+    bottom: 18vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bahce-journey .j-drip,
+  .bahce-journey .j-focus-halo,
+  .bahce-journey .scroll-hint i,
+  .bahce-journey .j-h-watch,
+  .bahce-journey .j-h-bad {
+    animation: none;
+  }
+}

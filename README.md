@@ -33,7 +33,7 @@ cp bahcelab-frontend/.env.example bahcelab-frontend/.env
 npm run dev               # http://localhost:5173/ (landing; port doluysa 5174, …)
 ```
 
-**Sayfalar:** `/` tanıtım, `/blog`, `/login`, `/register`, `/planning` (giriş gerekli). Detay: [docs/frontend/marketing-and-auth.md](docs/frontend/marketing-and-auth.md).
+**Sayfalar:** `/` tanıtım (kaydırmalı Journey hero), `/blog`, `/login`, `/register`, `/planning` (giriş gerekli). Detay: [docs/frontend/marketing-and-auth.md](docs/frontend/marketing-and-auth.md).
 
 Canlıya yakın test / demo için production build kullan (`dist/` servis edilir; `src/`, `node_modules/` DevTools'ta görünmez):
 

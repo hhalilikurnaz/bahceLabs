@@ -89,7 +89,7 @@ export function PlanningNavbar({
       {/* Üst satır: başlık + bahçe meta */}
       <div className="flex items-center justify-between gap-4 px-5 py-2.5">
         <div className="flex min-w-0 items-center gap-4">
-          <Link to="/" className="inline-flex shrink-0 no-underline" aria-label="BahçeLab ana sayfa">
+          <Link to="/planning" className="inline-flex shrink-0 no-underline" aria-label="Planlama merkezi">
             <BahcelabBrandLogo tone="light" height={30} />
           </Link>
           <div className="min-w-0 border-l border-planning-border pl-4">

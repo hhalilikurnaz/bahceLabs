@@ -47,12 +47,12 @@ export function LoginPage() {
       subtitle="Hesabınızla planlama ve simülasyon alanına geçin."
       footer={
         <>
-          Hesabınız yok mu?{' '}
+          Kayıtlar çok yakında.{' '}
           <Link
             to="/register"
             className="font-semibold text-[#0c2418] no-underline underline-offset-2 hover:underline"
           >
-            Kayıt olun
+            Detaylar
           </Link>
         </>
       }
@@ -61,7 +61,7 @@ export function LoginPage() {
         {error && (
           <p
             role="alert"
-            className="rounded-xl border border-red-500/25 bg-red-500/8 px-3.5 py-2.5 text-[13px] text-red-900"
+            className="rounded-lg border border-red-500/25 bg-red-500/8 px-3.5 py-2.5 text-[13px] text-red-900"
           >
             {error}
           </p>

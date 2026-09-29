@@ -27,6 +27,8 @@ interface DiagonalStripSectionProps {
   glyph?: { icon: LucideIcon; label: string }
   children: ReactNode
   className?: string
+  /** false: position:sticky çocuklar için (blog yan sütun) */
+  clipOverflow?: boolean
 }
 
 export function DiagonalStripSection({
@@ -37,11 +39,12 @@ export function DiagonalStripSection({
   glyph,
   children,
   className = '',
+  clipOverflow = true,
 }: DiagonalStripSectionProps) {
   return (
     <section
       id={id}
-      className={`relative overflow-hidden ${toneClasses[tone]} ${topEdgeClass[topEdge]} ${overlap && topEdge !== 'flat' ? 'marketing-strip-overlap' : ''} ${className}`}
+      className={`relative ${clipOverflow ? 'overflow-hidden' : 'overflow-visible'} ${toneClasses[tone]} ${topEdgeClass[topEdge]} ${overlap && topEdge !== 'flat' ? 'marketing-strip-overlap' : ''} ${className}`}
     >
       {glyph && (
         <StripNarrowGlyph

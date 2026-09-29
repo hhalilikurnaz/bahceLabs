@@ -24,15 +24,15 @@ export function PlanningEntryShell({
     <div className="relative flex h-dvh flex-col overflow-hidden bg-planning-bg">
       <header className="relative z-20 shrink-0 border-b border-planning-border bg-planning-panel backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3.5 px-6 py-4 sm:px-10">
-          <Link to="/" className="inline-flex shrink-0 items-center no-underline">
+          <Link to="/planning" className="inline-flex shrink-0 items-center no-underline">
             <BahcelabBrandLogo tone="light" height={34} />
           </Link>
           <div className="flex items-center gap-3 text-[12px]">
             {user && (
               <span className="hidden text-planning-text-muted sm:inline">{user.name}</span>
             )}
-            <Link to="/" className="text-planning-text-muted no-underline hover:text-planning-text">
-              Ana sayfa
+            <Link to="/planning" className="text-planning-text-muted no-underline hover:text-planning-text">
+              Planlama
             </Link>
             <button
               type="button"
