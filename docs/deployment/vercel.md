@@ -73,6 +73,17 @@ Tipik kayıtlar (panelde yazanlar esas alınır):
 
 ---
 
+## Google Search Console
+
+1. [Search Console](https://search.google.com/search-console) → özellik: `bahcelabs.com`
+2. Doğrulama: **TXT** kaydı → Vercel **Domains → DNS** ( `google-site-verification=...` )
+3. **Site haritaları** → `https://bahcelabs.com/sitemap.xml` gönder
+4. **URL denetimi** → ana sayfa ve önemli blog yazıları için dizine eklenmesini iste
+
+Build sırasında `scripts/generate-seo-files.mjs` üretir: `public/robots.txt`, `public/sitemap.xml` (ana sayfa, `/blog`, tüm blog slug’ları). Canlıda kontrol: `https://bahcelabs.com/robots.txt`
+
+---
+
 ## 3. Sonraki deploy’lar
 
 `main` (veya bağladığınız branch)’e her push → Vercel otomatik yeniden build eder.

@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/generate-seo-files.mjs && tsc -b && vite build",
+    "seo": "node scripts/generate-seo-files.mjs",
     "test": "vitest run",
     "lint": "oxlint",
     "preview": "vite preview"
