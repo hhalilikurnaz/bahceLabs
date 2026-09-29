@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { BarChart3, Brain, Cpu, Leaf, LineChart, Sprout, Target } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import {
   DiagonalStripSection,
   StripTextContent,
@@ -8,6 +7,7 @@ import {
 } from '../components/DiagonalStripSection'
 import { JourneyHero } from '../journey/JourneyHero'
 import { MarketingFooter } from '../components/MarketingFooter'
+import { MarketingFutureStepsSection } from '../components/MarketingFutureStepsSection'
 import { MissionOutcomeCards } from '../components/MissionOutcomeCards'
 import { MarketingNavbar } from '../components/MarketingNavbar'
 import { Reveal } from '../components/Reveal'
@@ -156,32 +156,7 @@ export function LandingPage() {
           </StripTextContent>
         </DiagonalStripSection>
 
-        <DiagonalStripSection tone="cream" topEdge="slant-down">
-          <Reveal>
-            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#0c2418] sm:text-3xl">
-              Gelecek adımlar
-            </h2>
-            <p className="mt-4 max-w-3xl text-[15px] leading-[1.75] text-[#4b554c] sm:text-base">
-              Platformumuz hazır olduğunda planlama ve gözlem deneyimini bu kanaldan duyuracağız. O
-              zamana kadar blogumuzda <Emphasis>sürdürülebilir üretim</Emphasis>, veri okuryazarlığı
-              ve sektörel gelişmeler üzerine paylaşımlar yapacağız.
-            </p>
-            <p className="mt-4 max-w-3xl text-[14px] leading-relaxed text-[#5c665d]">
-              Erken erişim ve kayıt süreci kısa süre içinde açılacaktır.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <span className="inline-flex items-center rounded-lg border border-[#2d6b45]/30 bg-[#0c2418] px-4 py-3 text-[13px] font-medium text-[#f3efe4]">
-                Kayıtlar çok yakında
-              </span>
-              <Link
-                to="/blog"
-                className="inline-flex items-center rounded-lg border border-[#0c2418]/15 bg-transparent px-4 py-3 text-[13px] font-medium text-[#0c2418] no-underline transition-colors hover:bg-[#0c2418]/5"
-              >
-                Bloga git
-              </Link>
-            </div>
-          </Reveal>
-        </DiagonalStripSection>
+        <MarketingFutureStepsSection />
 
         <MarketingFooter />
       </main>

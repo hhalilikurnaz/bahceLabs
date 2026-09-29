@@ -263,7 +263,7 @@ export function JourneyHero() {
       ref={sectionRef}
       className="bahce-journey journey"
       id="top"
-      aria-label={hero.title}
+      aria-label={`${hero.titleLine1} ${hero.titleLine2}`}
       style={{ height: `${(TOTAL_LEN + OVERLAY_SCROLL_VH) * 100}vh` }}
     >
       <div className="journey-sticky" ref={stickyRef}>
@@ -417,7 +417,11 @@ export function JourneyHero() {
 
           <div className="j-intro container" ref={introRef}>
             <p className="eyebrow">{hero.eyebrow}</p>
-            <h1>{hero.title}</h1>
+            <h1>
+              {hero.titleLine1}
+              <br />
+              {hero.titleLine2}
+            </h1>
             <p className="lead">{hero.subtitle}</p>
             <div className="actions">
               <Link className="btn btn-primary" to="/register">

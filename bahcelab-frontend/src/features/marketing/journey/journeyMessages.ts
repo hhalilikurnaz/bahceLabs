@@ -11,7 +11,8 @@ export type JourneyCard = { title: string; rows: [string, string][] }
 export const journeyMessages = {
   hero: {
     eyebrow: 'Narenciye bahçeleri için yapay zekâ',
-    title: 'Üretim verimini yükseltmek, bitkiyi anlamaktan geçer.',
+    titleLine1: 'Üretim verimini yükseltmek,',
+    titleLine2: 'bitkiyi anlamaktan geçer.',
     subtitle:
       'BahçeLab, drone ve uydu görüntülerini yapay zekâyla işler; her ağacın sağlığını, rekoltesini ve su ihtiyacını tek bir haritada gösterir.',
     cta: 'Kayıt ol',

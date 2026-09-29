@@ -71,7 +71,8 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 ### Bilinen sınırlamalar ⬜
 
 - [ ] Backend kullanıcı auth (JWT/session) — kayıt verisi yalnızca `localStorage`
-- [ ] Blog CMS entegrasyonu
+- [x] Blog — repo içi markdown (`src/content/blog/`, 6 yazı)
+- [ ] Blog CMS / admin paneli (isteğe bağlı, ileride)
 - [ ] Landing’den planlama CTA (ürün hazır olunca)
 
 ---

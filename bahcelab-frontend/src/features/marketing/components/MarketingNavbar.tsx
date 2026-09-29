@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '@/features/auth/AuthContext'
 import { BahcelabBrandLogo } from './BahcelabBrandLogo'
 
 interface MarketingNavbarProps {
@@ -8,7 +9,9 @@ interface MarketingNavbarProps {
 }
 
 export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps) {
+  const { isAuthenticated } = useAuth()
   const [scrolled, setScrolled] = useState(false)
+  const logoTo = isAuthenticated ? '/planning' : '/'
 
   useEffect(() => {
     if (variant !== 'over-hero') return
@@ -33,7 +36,7 @@ export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps)
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
-        <Link to="/" className="inline-flex shrink-0 items-center no-underline">
+        <Link to={logoTo} className="inline-flex shrink-0 items-center no-underline">
           <BahcelabBrandLogo tone="light" />
         </Link>
 

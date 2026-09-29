@@ -602,8 +602,23 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
   padding-top: var(--header-h);
+  padding-right: clamp(1.25rem, 4vw, 2.5rem);
+  padding-left: clamp(1.5rem, 6vw, 5.5rem);
   will-change: opacity, transform;
+}
+
+@media (min-width: 1024px) {
+  .bahce-journey .j-intro {
+    padding-left: clamp(2.75rem, 9vw, 7rem);
+    max-width: min(1280px, 100% - 40px);
+    margin-inline: auto;
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
 }
 
 .bahce-journey .j-intro .eyebrow {
@@ -612,9 +627,10 @@
 
 .bahce-journey .j-intro h1 {
   font-size: clamp(2rem, 5.5vw, 4.25rem);
-  max-width: 18ch;
-  line-height: 1.06;
+  max-width: 22ch;
+  line-height: 1.08;
   margin-bottom: 22px;
+  text-wrap: balance;
 }
 
 .bahce-journey .j-lines {
@@ -704,7 +720,22 @@
 
   .bahce-journey .j-intro {
     justify-content: flex-end;
+    align-items: center;
+    text-align: center;
     padding-bottom: 90px;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .bahce-journey .j-intro .lead {
+    margin-inline: auto;
+  }
+
+  .bahce-journey .j-intro .actions {
+    justify-content: center;
+    width: 100%;
   }
 
   .bahce-journey .j-steps {

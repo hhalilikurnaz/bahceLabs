@@ -7,7 +7,8 @@ Phase 1 B planlama modülüne ek olarak, kamuya açık tanıtım sitesi ve planl
 | Path | Sayfa | Auth |
 |------|--------|------|
 | `/` | `LandingPage` | Hayır |
-| `/blog` | `BlogPage` (CMS öncesi placeholder) | Hayır |
+| `/blog` | `BlogPage` — yazı listesi | Hayır |
+| `/blog/:slug` | `BlogPostPage` — markdown yazı | Hayır |
 | `/login` | `LoginPage` | Hayır |
 | `/register` | `RegisterPage` | Hayır |
 | `/planning` | `PlanningListPage` | **Evet** (`ProtectedRoute`) |
