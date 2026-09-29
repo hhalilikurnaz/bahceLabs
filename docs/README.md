@@ -17,6 +17,7 @@ Bu klasör, **Planning & Simulation** modülünün tek kaynak dokümantasyonudur
 | [frontend/design-tokens.md](./frontend/design-tokens.md) | Tasarım token'ları |
 | [frontend/component-map.md](./frontend/component-map.md) | Component hiyerarşisi |
 | [frontend/marketing-and-auth.md](./frontend/marketing-and-auth.md) | Kurumsal site, giriş/kayıt, routing |
+| [deployment/vercel.md](./deployment/vercel.md) | Vercel deploy ve bahcelabs.com DNS |
 | [api/planning-api-contract.md](./api/planning-api-contract.md) | Backend API contract |
 | [backend/plan.md](./backend/plan.md) | **Backend implementasyon planı** |
 | [development/conventions.md](./development/conventions.md) | Kodlama kuralları |
