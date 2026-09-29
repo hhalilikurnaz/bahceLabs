@@ -37,6 +37,25 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 
 ---
 
+## 2026-09-29 — Landing Journey hero (bahceLabs)
+
+### Yapılanlar ✅
+
+- [x] **Kaydırmalı hero** — bahceLabs `Journey` portu (`features/marketing/journey/`); drone kare dizisi + kuşbakışı bahçe hikâyesi
+- [x] **Medya** — `public/media/hero-frames/`, `public/media/orchard/` (~17 MB)
+- [x] **Navbar / şeritler** — yalnızca hero değişti; `MarketingNavbar`, `DiagonalStripSection`, footer aynı
+- [x] **Misyon bindirmesi** — animasyon sonunda sabit sahne + `main -mt-[100dvh]` ile misyon hero üzerine kayar
+- [x] **Metin** — hero başlığı eski slogan; CTA `/register` ve `#misyon`
+- [x] **Idle önizleme** — scroll öncesi kısa drone döngüsü; öncelikli kare yükleme ve tempo ayarı (`FrameSequence`)
+- [x] Dokümantasyon: [frontend/marketing-and-auth.md](./frontend/marketing-and-auth.md) (Journey bölümü)
+
+### Notlar
+
+- Referans klonu geliştirme için `.reference-bahceLabs/` (`.gitignore`’da); üretimde kullanılmaz.
+- `HeroScrollCue` landing’den kaldırıldı; dosya repoda duruyor.
+
+---
+
 ## 2026-09-28 — Kurumsal site + auth + marka
 
 ### Yapılanlar ✅
