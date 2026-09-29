@@ -69,26 +69,49 @@
   transform: translateY(-1px);
 }
 
+/* Açık cam — Kayıtlar çok yakında */
 .bahce-journey .btn-primary {
-  border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
   color: #fffef9;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 8px 28px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .bahce-journey .btn-primary:hover {
-  background: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
+/* Koyu cam — Misyonumuz */
 .bahce-journey .btn-ghost {
-  border-color: var(--line-dark);
+  border-color: rgba(255, 255, 255, 0.2);
   color: var(--text-dark);
-  background: rgba(14, 26, 18, 0.35);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(6, 20, 13, 0.42) 48%,
+    rgba(4, 14, 10, 0.52) 100%
+  );
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.bahce-journey .btn-ghost:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(6, 20, 13, 0.48) 48%,
+    rgba(4, 14, 10, 0.58) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.26);
 }
 
 .bahce-journey .actions {

@@ -10,7 +10,7 @@ export type JourneyCard = { title: string; rows: [string, string][] }
 
 export const journeyMessages = {
   hero: {
-    eyebrow: 'Narenciye bahçeleri için yapay zekâ',
+    eyebrow: 'Narenciye bahçeleri için akıllı tarım sistemleri',
     titleLine1: 'Üretim verimini yükseltmek,',
     titleLine2: 'bitkiyi anlamaktan geçer.',
     subtitle:
