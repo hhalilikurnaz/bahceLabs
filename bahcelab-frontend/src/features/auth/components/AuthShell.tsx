@@ -15,7 +15,7 @@ type AuthVariant = 'login' | 'register'
 
 const cardEyebrow: Record<AuthVariant, string> = {
   login: 'BahçeLab · Giriş',
-  register: 'BahçeLab · Kayıt',
+  register: 'BahçeLab · Erken erişim',
 }
 
 const panelCopy: Record<
@@ -33,13 +33,13 @@ const panelCopy: Record<
     ],
   },
   register: {
-    eyebrow: 'BahçeLab hesabı',
-    headline: 'Üretim planınızı bir araya getirin',
-    lead: 'Kayıt olduktan sonra planlama modülüne geçebilir; verim odaklı araçları keşfedebilirsiniz.',
+    eyebrow: 'Erken erişim',
+    headline: 'Kayıt süreci hazırlanıyor',
+    lead: 'Planlama ve gözlem deneyimi açıldığında bu kanaldan duyuracağız. Blogda sürdürülebilir üretim ve veri okuryazarlığı üzerine yazılar yayınlıyoruz.',
     bullets: [
-      'Dakikalar içinde hesap oluşturun',
-      'Ekip içi planlama için hazır çalışma alanı',
-      'Sürdürülebilir üretim perspektifi',
+      'Yeni kayıt şimdilik kapalı',
+      'Mevcut hesaplarla giriş yapılabilir',
+      'Duyuru için blogu takip edebilirsiniz',
     ],
   },
 }

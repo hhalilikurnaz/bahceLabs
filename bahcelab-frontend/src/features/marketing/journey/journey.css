@@ -70,12 +70,18 @@
 }
 
 .bahce-journey .btn-primary {
-  background: var(--lemon);
-  color: #14200f;
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.17);
+  color: #fffef9;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 8px 28px rgba(0, 0, 0, 0.22);
 }
 
 .bahce-journey .btn-primary:hover {
-  background: var(--lemon-2);
+  background: rgba(255, 255, 255, 0.26);
 }
 
 .bahce-journey .btn-ghost {

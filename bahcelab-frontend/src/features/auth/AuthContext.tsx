@@ -13,6 +13,7 @@ import {
   saveSession,
   saveUsers,
 } from './authStorage'
+import { REGISTRATION_ENABLED } from './authConfig'
 import type { AuthSession, AuthUser, StoredUser } from './types'
 
 interface RegisterInput {
@@ -66,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async ({ name, email, password }: RegisterInput) => {
+    if (!REGISTRATION_ENABLED) {
+      throw new Error('Kayıtlar şimdilik kapalı. Erken erişim duyurulduğunda bu sayfadan kayıt açılacaktır.')
+    }
+
     const trimmedName = name.trim()
     const normalized = normalizeEmail(email)
 

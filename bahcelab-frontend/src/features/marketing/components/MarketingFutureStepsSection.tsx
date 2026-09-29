@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { DiagonalStripSection } from './DiagonalStripSection'
 import { Reveal } from './Reveal'
+import { registrationsSoonOnLightClass } from './registrationsSoonStyles'
 
 function Emphasis({ children }: { children: ReactNode }) {
   return <strong className="font-semibold text-[#0c2418]">{children}</strong>
@@ -38,9 +39,7 @@ export function MarketingFutureStepsSection({
           Erken erişim ve kayıt süreci kısa süre içinde açılacaktır.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <span className="inline-flex items-center rounded-lg border border-[#2d6b45]/30 bg-[#0c2418] px-4 py-3 text-[13px] font-medium text-[#f3efe4]">
-            Kayıtlar çok yakında
-          </span>
+          <span className={registrationsSoonOnLightClass}>Kayıtlar çok yakında</span>
           <Link
             to={secondaryCta.to}
             className="inline-flex items-center rounded-lg border border-[#0c2418]/15 bg-transparent px-4 py-3 text-[13px] font-medium text-[#0c2418] no-underline transition-colors hover:bg-[#0c2418]/5"

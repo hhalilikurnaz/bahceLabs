@@ -15,7 +15,7 @@ export const journeyMessages = {
     titleLine2: 'bitkiyi anlamaktan geçer.',
     subtitle:
       'BahçeLab, drone ve uydu görüntülerini yapay zekâyla işler; her ağacın sağlığını, rekoltesini ve su ihtiyacını tek bir haritada gösterir.',
-    cta: 'Kayıt ol',
+    cta: 'Kayıtlar çok yakında',
     secondary: 'Misyonumuz',
     scroll: 'Kaydırın',
     transition: [

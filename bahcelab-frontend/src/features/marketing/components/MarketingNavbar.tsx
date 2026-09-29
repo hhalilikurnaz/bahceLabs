@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { BahcelabBrandLogo } from './BahcelabBrandLogo'
+import { registrationsSoonOnDarkClass } from './registrationsSoonStyles'
 
 interface MarketingNavbarProps {
   /** Hero üzerinde şeffaf; kaydırınca opak şerit */
@@ -50,17 +51,14 @@ export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps)
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/login"
-            className="rounded-lg border border-white/20 px-3 py-2 text-[12px] font-medium text-[#f3efe4] no-underline transition-colors hover:bg-white/10 sm:px-3.5"
-          >
-            Giriş yap
+          <Link to="/register" className={`${registrationsSoonOnDarkClass} no-underline`}>
+            Kayıtlar çok yakında
           </Link>
           <Link
-            to="/register"
-            className="rounded-lg bg-[#f3efe4] px-3 py-2 text-[12px] font-semibold text-[#06140d] no-underline transition-opacity hover:opacity-90 sm:px-3.5"
+            to="/login"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#f3efe4] px-3.5 text-[12px] font-semibold text-[#06140d] no-underline transition-opacity hover:opacity-90 sm:px-4"
           >
-            Kayıt ol
+            Giriş yap
           </Link>
         </div>
       </div>
