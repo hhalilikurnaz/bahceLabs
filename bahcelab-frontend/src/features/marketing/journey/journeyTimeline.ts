@@ -78,19 +78,19 @@ export type Stop = {
 
 // Giriş bölümü süreleri (ekran)
 export const INTRO = {
-  video: 2.4, // drone videosu kaydırmayla oynar
-  dive: 0.9, // videodan kuşbakışı fotoğrafa geçiş
-  scan: 1.1, // tarama çizgisi: ağaçlar tespit edilir
+  video: 1.7, // drone videosu kaydırmayla oynar
+  dive: 0.75, // videodan kuşbakışı fotoğrafa geçiş
+  scan: 1.0, // tarama çizgisi: ağaçlar tespit edilir
 };
 
 export const STOPS: Stop[] = [
   { key: "map", len: 1.0, cam: overview(1), layers: L({ rings: 1, ids: 1, grade: 0.8 }) },
-  { key: "twin", len: 1.4, cam: at(FOCUS_TREES.healthy, 1.9), layers: L({ rings: 1, ids: 1, grade: 0.3 }), focus: FOCUS_TREES.healthy, step: 0 },
-  { key: "detect", len: 1.4, cam: at(FOCUS_TREES.large, 1.8), layers: L({ rings: 1, grade: 0.2 }), focus: FOCUS_TREES.large, step: 1 },
-  { key: "health", len: 1.4, cam: at(FOCUS_TREES.yellow, 2.0), layers: L({ health: 1, grade: 0.15 }), focus: FOCUS_TREES.yellow, step: 2 },
-  { key: "yield", len: 1.4, cam: at(FOCUS_TREES.fruit, 1.9), layers: L({ yield: 1, grade: 0.15 }), focus: FOCUS_TREES.fruit, step: 3 },
-  { key: "water", len: 1.4, cam: overview(1.15, 0.62), layers: L({ water: 1, grade: 0.3 }), step: 4 },
-  { key: "copilot", len: 1.6, cam: overview(1.15, 0.62), layers: L({ health: 1, water: 0.5, grade: 0.3 }), focus: FOCUS_TREES.yellow, step: 5 },
+  { key: "twin", len: 1.05, cam: at(FOCUS_TREES.healthy, 1.9), layers: L({ rings: 1, ids: 1, grade: 0.3 }), focus: FOCUS_TREES.healthy, step: 0 },
+  { key: "detect", len: 1.05, cam: at(FOCUS_TREES.large, 1.8), layers: L({ rings: 1, grade: 0.2 }), focus: FOCUS_TREES.large, step: 1 },
+  { key: "health", len: 1.05, cam: at(FOCUS_TREES.yellow, 2.0), layers: L({ health: 1, grade: 0.15 }), focus: FOCUS_TREES.yellow, step: 2 },
+  { key: "yield", len: 1.05, cam: at(FOCUS_TREES.fruit, 1.9), layers: L({ yield: 1, grade: 0.15 }), focus: FOCUS_TREES.fruit, step: 3 },
+  { key: "water", len: 1.05, cam: overview(1.15, 0.62), layers: L({ water: 1, grade: 0.3 }), step: 4 },
+  { key: "copilot", len: 1.2, cam: overview(1.15, 0.62), layers: L({ health: 1, water: 0.5, grade: 0.3 }), focus: FOCUS_TREES.yellow, step: 5 },
 ];
 
 const MOVE = 0.4; // her durağın ilk %40'i kamera hareketi, kalanı bekleme
