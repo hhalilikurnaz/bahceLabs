@@ -296,6 +296,265 @@
   overflow: hidden;
 }
 
+/* —— Kısa üst hero (tek ekran) —— */
+.bahce-journey.journey-hero-short {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  background: var(--night);
+  overflow: hidden;
+}
+
+.bahce-journey .journey-hero-short-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.bahce-journey .journey-hero-short-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.bahce-journey .journey-hero-short-ui a,
+.bahce-journey .journey-hero-short-ui button {
+  pointer-events: auto;
+}
+
+.bahce-journey .journey-hero-short-hint {
+  opacity: 1;
+}
+
+/* —— Krem şerit içi ürün turu kutusu —— */
+.bahce-journey.journey-cream-scroll {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.bahce-journey .journey-cream-pin {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 0.25rem;
+}
+
+.bahce-journey .journey-cream-intro {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.bahce-journey .journey-cream-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2f6b3f;
+}
+
+.bahce-journey .journey-cream-lead {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #5c665d;
+}
+
+.bahce-journey .journey-cream-frame {
+  border-radius: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(12, 36, 24, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+    0 28px 72px rgba(12, 36, 24, 0.14),
+    0 8px 24px rgba(12, 36, 24, 0.08);
+  background: #06140d;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bahce-journey .journey-cream-frame--active,
+.bahce-journey .journey-cream-frame:focus-visible {
+  border-color: rgba(47, 107, 63, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+    0 0 0 3px rgba(47, 107, 63, 0.2),
+    0 28px 72px rgba(12, 36, 24, 0.16),
+    0 8px 24px rgba(12, 36, 24, 0.1);
+}
+
+.bahce-journey .journey-cream-sticky {
+  position: relative;
+  top: auto;
+  height: min(78vh, 820px);
+  overflow: hidden;
+}
+
+.bahce-journey .journey-cream-sticky .journey-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.bahce-journey .journey-cream-frame .j-chip {
+  top: 10px;
+  left: 12px;
+}
+
+.bahce-journey .journey-cream-frame .j-copilot {
+  top: 10px;
+  right: 12px;
+}
+
+.bahce-journey .journey-cream-frame .j-foot {
+  right: 12px;
+  bottom: 12px;
+}
+
+.bahce-journey .journey-cream-frame .j-steps {
+  padding-top: 0;
+}
+
+/* Kutu içi: ana sayfa krem rengi devralınmasın; metinler koyu sahne üstünde açık */
+.bahce-journey .journey-cream-frame {
+  color: var(--text-dark);
+}
+
+.bahce-journey .journey-cream-frame .j-shade {
+  background:
+    linear-gradient(90deg, rgba(8, 16, 10, 0.65) 0%, rgba(8, 16, 10, 0.35) 34%, rgba(8, 16, 10, 0) 56%),
+    linear-gradient(to top, rgba(8, 16, 10, 0.5), transparent 32%);
+}
+
+.bahce-journey .journey-cream-frame .j-step h2 {
+  color: #fffef9;
+}
+
+.bahce-journey .journey-cream-frame .j-step-tag {
+  color: rgba(243, 241, 231, 0.78);
+}
+
+.bahce-journey .journey-cream-frame .j-step p:last-child {
+  color: rgba(243, 241, 231, 0.92);
+}
+
+.bahce-journey .journey-cream-frame .j-note,
+.bahce-journey .journey-cream-frame .j-legend,
+.bahce-journey .journey-cream-frame .scroll-hint {
+  color: rgba(243, 241, 231, 0.82);
+}
+
+.bahce-journey .journey-cream-frame .j-chip {
+  color: var(--text-dark);
+}
+
+.bahce-journey .journey-cream-frame .hero-line {
+  color: var(--text-dark);
+}
+
+.bahce-journey .journey-cream-frame--ended .journey-stage {
+  filter: blur(10px) brightness(0.55) saturate(0.85);
+  transition: filter 0.5s ease;
+}
+
+.bahce-journey .journey-tour-end-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: rgba(6, 14, 10, 0.42);
+  animation: bahce-journey-replay-scrim 0.5s ease both;
+}
+
+@keyframes bahce-journey-replay-scrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.bahce-journey .journey-cream-frame--ended .j-ui .j-chip,
+.bahce-journey .journey-cream-frame--ended .j-ui .j-lines,
+.bahce-journey .journey-cream-frame--ended .j-ui .j-steps,
+.bahce-journey .journey-cream-frame--ended .j-ui .j-foot,
+.bahce-journey .journey-cream-frame--ended .j-ui .j-copilot,
+.bahce-journey .journey-cream-frame--ended .j-ui .j-card,
+.bahce-journey .journey-cream-frame--ended .j-ui .scroll-hint {
+  opacity: 0 !important;
+  visibility: hidden;
+  transition: opacity 0.35s ease;
+}
+
+.bahce-journey .journey-tour-replay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  animation: bahce-journey-rise 0.45s 0.08s ease both;
+  filter: none;
+}
+
+.bahce-journey .journey-tour-replay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 2px solid rgba(242, 201, 76, 0.9);
+  background: rgba(8, 18, 12, 0.96);
+  color: #fffef9;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 4px rgba(6, 14, 10, 0.35),
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bahce-journey .journey-tour-replay-btn:hover {
+  transform: scale(1.06);
+  background: rgba(12, 28, 18, 0.98);
+  border-color: var(--lemon-2);
+  box-shadow:
+    0 0 0 4px rgba(242, 201, 76, 0.15),
+    0 20px 48px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.bahce-journey .journey-tour-replay-btn:focus-visible {
+  outline: 2px solid #fffef9;
+  outline-offset: 4px;
+}
+
+.bahce-journey .journey-tour-replay-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.bahce-journey .journey-tour-replay-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fffef9;
+  text-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.75),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
 /* Animasyon bittiğinde sahne sabit kalır; misyon bölümü üstüne kayar (eski hero davranışı) */
 .bahce-journey .journey-sticky--pinned {
   position: fixed;
@@ -746,6 +1005,25 @@
 }
 
 @media (max-width: 767px) {
+  .bahce-journey .journey-cream-sticky {
+    height: min(64vh, 580px);
+  }
+
+  .bahce-journey .journey-cream-frame {
+    border-radius: 1rem;
+  }
+
+  .bahce-journey .journey-cream-frame .j-shade {
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(6, 14, 10, 0.55) 0%,
+        rgba(6, 14, 10, 0.28) 36%,
+        rgba(6, 14, 10, 0) 52%
+      ),
+      linear-gradient(to top, rgba(8, 16, 10, 0.72) 0%, rgba(8, 16, 10, 0.45) 30%, rgba(8, 16, 10, 0) 52%);
+  }
+
   .bahce-journey .j-shade {
     background:
       linear-gradient(
@@ -885,6 +1163,23 @@
 
   .bahce-journey .j-chip {
     top: calc(var(--header-h) + 60px);
+  }
+
+  .bahce-journey .journey-cream-frame .j-chip {
+    top: 10px;
+  }
+
+  .bahce-journey .journey-cream-frame .j-foot {
+    top: auto;
+    bottom: 12px;
+    left: auto;
+    right: 12px;
+    justify-items: end;
+  }
+
+  .bahce-journey .journey-cream-frame .j-ui .j-copilot {
+    top: 10px;
+    right: 12px;
   }
 
   .bahce-journey .j-ui .j-copilot {
