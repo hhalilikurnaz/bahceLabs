@@ -25,12 +25,8 @@ const panelCopy: Record<
   login: {
     eyebrow: 'Planlama alanı',
     headline: 'Bahçenizi tek ekranda planlayın',
-    lead: 'Dikimden bakıma, simülasyona — kararlarınızı veriye dayalı bir akışta toplayın.',
-    bullets: [
-      'Arazi ve bahçe kayıtlarınızı güvenle yönetin',
-      'Adım adım planlama ve senaryo simülasyonu',
-      'Saha gerçekliğine uygun, ölçülebilir özetler',
-    ],
+    lead: 'Doğru Veriyle, Doğru Üretime İlerleyin!',
+    bullets: [],
   },
   register: {
     eyebrow: 'Erken erişim',
@@ -89,18 +85,22 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
           <h2 className="mt-4 text-balance text-3xl font-semibold leading-tight tracking-[-0.03em] text-[#fffef9] xl:text-4xl">
             {copy.headline}
           </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-[#f3efe4]/82">{copy.lead}</p>
-          <ul className="mt-8 space-y-3 border-t border-white/10 pt-8 text-[14px] leading-relaxed text-[#f3efe4]/78">
-            {copy.bullets.map((item) => (
-              <li key={item} className="flex gap-3">
-                <span
-                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#a3e635]"
-                  aria-hidden
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          {copy.lead ? (
+            <p className="mt-4 text-[15px] leading-relaxed text-[#f3efe4]/82">{copy.lead}</p>
+          ) : null}
+          {copy.bullets.length > 0 ? (
+            <ul className="mt-8 space-y-3 border-t border-white/10 pt-8 text-[14px] leading-relaxed text-[#f3efe4]/78">
+              {copy.bullets.map((item) => (
+                <li key={item} className="flex gap-3">
+                  <span
+                    className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#a3e635]"
+                    aria-hidden
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <p className="relative z-10 text-[11px] text-[#f3efe4]/45">
