@@ -7,7 +7,6 @@ import {
 } from '../components/DiagonalStripSection'
 import { JourneyHero } from '../journey/JourneyHero'
 import { JourneyTourEmbed } from '../journey/JourneyTourEmbed'
-import { MarketingFooter } from '../components/MarketingFooter'
 import { MarketingFutureStepsSection } from '../components/MarketingFutureStepsSection'
 import { MissionOutcomeCards } from '../components/MissionOutcomeCards'
 import { MarketingNavbar } from '../components/MarketingNavbar'
@@ -163,8 +162,6 @@ export function LandingPage() {
         </DiagonalStripSection>
 
         <MarketingFutureStepsSection />
-
-        <MarketingFooter />
       </main>
     </div>
   )

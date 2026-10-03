@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { BahcelabBrandLogo } from './BahcelabBrandLogo'
+import { MarketingSocialLinks } from './MarketingSocialLinks'
 import { registrationsSoonOnDarkClass } from './registrationsSoonStyles'
 
 interface MarketingNavbarProps {
@@ -51,6 +52,7 @@ export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps)
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <MarketingSocialLinks variant="navbar" />
           <Link to="/register" className={`${registrationsSoonOnDarkClass} no-underline`}>
             Kayıtlar çok yakında
           </Link>

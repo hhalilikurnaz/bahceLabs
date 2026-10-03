@@ -27,6 +27,10 @@ interface DiagonalStripSectionProps {
   glyph?: { icon: LucideIcon; label: string }
   children: ReactNode
   className?: string
+  /** İçerik sarmalayıcısı (alt bölüm / footer için pb ayarı) */
+  contentClassName?: string
+  /** Bölüm arka planı içinde, içerik sarmalayıcısının altında (ör. footer) */
+  bottomSlot?: ReactNode
   /** false: position:sticky çocuklar için (blog yan sütun) */
   clipOverflow?: boolean
 }
@@ -39,8 +43,13 @@ export function DiagonalStripSection({
   glyph,
   children,
   className = '',
+  contentClassName = '',
+  bottomSlot,
   clipOverflow = true,
 }: DiagonalStripSectionProps) {
+  const contentPadding =
+    topEdge === 'flat' ? 'py-16 sm:py-20' : 'pt-[clamp(3.5rem,8vw,5.5rem)] pb-16 sm:pb-20'
+
   return (
     <section
       id={id}
@@ -54,12 +63,11 @@ export function DiagonalStripSection({
         />
       )}
       <div
-        className={`relative z-10 mx-auto max-w-6xl px-5 sm:px-8 ${
-          topEdge === 'flat' ? 'py-16 sm:py-20' : 'pt-[clamp(3.5rem,8vw,5.5rem)] pb-16 sm:pb-20'
-        }`}
+        className={`relative z-10 mx-auto max-w-6xl px-5 sm:px-8 ${contentPadding} ${contentClassName}`}
       >
         {children}
       </div>
+      {bottomSlot}
     </section>
   )
 }
