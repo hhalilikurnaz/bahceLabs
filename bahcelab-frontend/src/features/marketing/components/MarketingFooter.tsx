@@ -6,7 +6,7 @@ const MARK_W = 1024
 const MARK_H = 341
 /** Yatay marka logosunun tamamı görünsün (1024×341) */
 const MARK_VISIBLE_RATIO = 0.72
-const MARK_WIDTH = 'min(162vw, 92rem)'
+const MARK_WIDTH = 'min(100vw, 92rem)'
 
 function footerMarkMetrics() {
   const fullHeight = `calc(${MARK_WIDTH} * ${MARK_H} / ${MARK_W})`
@@ -14,16 +14,12 @@ function footerMarkMetrics() {
   return { visibleHeight }
 }
 
-function FooterWordmark({ attached }: { attached: boolean }) {
+function FooterWordmark() {
   const { visibleHeight } = footerMarkMetrics()
 
   return (
     <div
-      className={`pointer-events-none relative -mt-2 overflow-hidden sm:-mt-3 ${
-        attached
-          ? 'left-1/2 w-screen max-w-none -translate-x-1/2'
-          : 'w-full'
-      }`}
+      className="pointer-events-none relative -mt-2 w-full overflow-x-visible overflow-y-hidden sm:-mt-3"
       style={{ height: visibleHeight }}
       aria-hidden
     >
@@ -31,7 +27,7 @@ function FooterWordmark({ attached }: { attached: boolean }) {
         src={footerWordmark}
         alt=""
         draggable={false}
-        className="absolute left-1/2 top-0 w-[min(162vw,92rem)] max-w-none -translate-x-1/2 select-none opacity-[0.13] [filter:brightness(0)_saturate(100%)]"
+        className="absolute left-1/2 top-0 w-[min(100vw,92rem)] max-w-none -translate-x-1/2 select-none opacity-[0.13] [filter:brightness(0)_saturate(100%)]"
       />
     </div>
   )
@@ -49,14 +45,14 @@ export function MarketingFooter({ attached = false }: MarketingFooterProps) {
     <footer
       className={
         attached
-          ? 'relative overflow-hidden text-[#4b554c]'
-          : 'relative overflow-hidden bg-marketing-cream text-[#4b554c]'
+          ? 'relative overflow-x-clip overflow-y-visible text-[#4b554c]'
+          : 'relative overflow-x-clip overflow-y-visible bg-marketing-cream text-[#4b554c]'
       }
     >
       <div
         className={
           attached
-            ? 'relative z-10 pb-2 pt-10 sm:pb-3 sm:pt-12'
+            ? 'relative z-10 mx-auto max-w-6xl px-5 pb-2 pt-10 sm:px-8 sm:pb-3 sm:pt-12'
             : 'relative z-10 mx-auto max-w-6xl px-5 pb-2 pt-3.5 sm:px-8 sm:pb-3 sm:pt-4'
         }
       >
@@ -72,7 +68,7 @@ export function MarketingFooter({ attached = false }: MarketingFooterProps) {
         <MarketingSocialLinks variant="footer" />
       </div>
 
-      <FooterWordmark attached={attached} />
+      <FooterWordmark />
     </footer>
   )
 }

@@ -28,7 +28,13 @@ export function MarketingFutureStepsSection({
   secondaryCta = defaultSecondaryCta,
 }: MarketingFutureStepsSectionProps) {
   return (
-    <DiagonalStripSection tone="cream" topEdge="slant-down" contentClassName="!pb-0">
+    <DiagonalStripSection
+      tone="cream"
+      topEdge="slant-down"
+      contentClassName="!pb-0"
+      clipOverflow={false}
+      bottomSlot={<MarketingFooter attached />}
+    >
       <Reveal>
         <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#0c2418] sm:text-3xl">Gelecek adımlar</h2>
         <p className="mt-4 max-w-3xl text-[15px] leading-[1.75] text-[#4b554c] sm:text-base">
@@ -49,7 +55,6 @@ export function MarketingFutureStepsSection({
           </Link>
         </div>
       </Reveal>
-      <MarketingFooter attached />
     </DiagonalStripSection>
   )
 }
