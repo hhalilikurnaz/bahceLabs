@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import footerWordmark from '@/assets/marketing/bahcelab-logo.png'
+import { MarketingSocialLinks } from './MarketingSocialLinks'
 
 const MARK_W = 1024
 const MARK_H = 341
@@ -13,12 +14,16 @@ function footerMarkMetrics() {
   return { visibleHeight }
 }
 
-function FooterWordmark() {
+function FooterWordmark({ attached }: { attached: boolean }) {
   const { visibleHeight } = footerMarkMetrics()
 
   return (
     <div
-      className="pointer-events-none relative -mt-2 w-full overflow-hidden sm:-mt-3"
+      className={`pointer-events-none relative -mt-2 overflow-hidden sm:-mt-3 ${
+        attached
+          ? 'left-1/2 w-screen max-w-none -translate-x-1/2'
+          : 'w-full'
+      }`}
       style={{ height: visibleHeight }}
       aria-hidden
     >
@@ -32,12 +37,29 @@ function FooterWordmark() {
   )
 }
 
-export function MarketingFooter() {
+interface MarketingFooterProps {
+  /** Son şerit bölümünün içinde; üstteki ince ayırıcı çizgiyi önler */
+  attached?: boolean
+}
+
+export function MarketingFooter({ attached = false }: MarketingFooterProps) {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="relative overflow-hidden bg-marketing-cream text-[#4b554c]">
-      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-2 pt-3.5 sm:px-8 sm:pb-3 sm:pt-4">
+    <footer
+      className={
+        attached
+          ? 'relative overflow-hidden text-[#4b554c]'
+          : 'relative overflow-hidden bg-marketing-cream text-[#4b554c]'
+      }
+    >
+      <div
+        className={
+          attached
+            ? 'relative z-10 pb-2 pt-10 sm:pb-3 sm:pt-12'
+            : 'relative z-10 mx-auto max-w-6xl px-5 pb-2 pt-3.5 sm:px-8 sm:pb-3 sm:pt-4'
+        }
+      >
         <p className="text-[12px] leading-relaxed text-[#5c665d]">
           © {year} BahçeLab · Tüm hakları saklıdır.{' '}
           <Link
@@ -47,9 +69,10 @@ export function MarketingFooter() {
             Blog
           </Link>
         </p>
+        <MarketingSocialLinks variant="footer" />
       </div>
 
-      <FooterWordmark />
+      <FooterWordmark attached={attached} />
     </footer>
   )
 }

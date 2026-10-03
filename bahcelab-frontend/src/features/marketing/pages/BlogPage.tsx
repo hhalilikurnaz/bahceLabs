@@ -4,7 +4,6 @@ import type { BlogPost } from '../blog/loadPosts'
 import { getBlogListPosts } from '../blog/loadPosts'
 import { BlogSeo } from '../blog/BlogSeo'
 import { DiagonalStripSection } from '../components/DiagonalStripSection'
-import { MarketingFooter } from '../components/MarketingFooter'
 import { MarketingFutureStepsSection } from '../components/MarketingFutureStepsSection'
 import { MarketingNavbar } from '../components/MarketingNavbar'
 import { Reveal } from '../components/Reveal'
@@ -162,8 +161,6 @@ export function BlogPage() {
         </DiagonalStripSection>
 
         <MarketingFutureStepsSection secondaryCta={{ to: '/', label: 'Anasayfaya git' }} />
-
-        <MarketingFooter />
       </main>
     </div>
   )
