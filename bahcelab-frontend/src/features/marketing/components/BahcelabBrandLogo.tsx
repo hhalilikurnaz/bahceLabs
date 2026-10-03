@@ -9,7 +9,7 @@ interface BahcelabBrandLogoProps extends Omit<ComponentPropsWithoutRef<'img'>, '
 }
 
 export function BahcelabBrandLogo({
-  tone = 'light',
+  tone: _tone = 'light',
   height = 36,
   className = '',
   ...imgProps
@@ -19,7 +19,7 @@ export function BahcelabBrandLogo({
       src={logoMark}
       alt="BahçeLab"
       height={height}
-      className={`w-auto object-contain object-left ${tone === 'dark' ? 'brightness-0' : ''} ${className}`.trim()}
+      className={`w-auto object-contain object-left ${className}`.trim()}
       style={{ height }}
       {...imgProps}
     />

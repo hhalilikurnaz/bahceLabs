@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 
     if (!match) {
-      throw new Error('E-posta veya şifre hatalı.')
+      throw new Error('Girişler ve kayıtlar çok yakında sizlerle!')
     }
 
     const next = toSession({ id: match.id, name: match.name, email: match.email })
