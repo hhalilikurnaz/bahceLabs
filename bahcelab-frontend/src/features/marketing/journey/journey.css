@@ -316,8 +316,10 @@
   position: absolute;
   left: 0;
   top: 0;
+  opacity: 0;
+  visibility: hidden;
   transform-origin: 0 0;
-  will-change: transform;
+  will-change: transform, opacity;
   --scan: 0;
   --rings: 0;
   --ids: 0;
@@ -486,6 +488,12 @@
   inset: 0;
   transform-origin: 50% 70%;
   will-change: transform, opacity;
+}
+
+@media (max-width: 767px) {
+  .bahce-journey .j-video {
+    transform-origin: 50% 50%;
+  }
 }
 
 .bahce-journey .j-frames,
@@ -739,27 +747,66 @@
 
 @media (max-width: 767px) {
   .bahce-journey .j-shade {
-    background: linear-gradient(
-      to top,
-      rgba(8, 16, 10, 0.95) 0%,
-      rgba(8, 16, 10, 0.75) 34%,
-      rgba(8, 16, 10, 0) 58%
-    );
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(6, 14, 10, 0.82) 0%,
+        rgba(6, 14, 10, 0.45) 38%,
+        rgba(6, 14, 10, 0) 58%
+      ),
+      linear-gradient(
+        to top,
+        rgba(8, 16, 10, 0.95) 0%,
+        rgba(8, 16, 10, 0.75) 34%,
+        rgba(8, 16, 10, 0) 58%
+      );
+  }
+
+  .bahce-journey .j-intro.container {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    left: 0;
+    right: 0;
   }
 
   .bahce-journey .j-intro {
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-items: center;
     text-align: center;
-    padding-bottom: 90px;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-    max-width: none;
-    margin-inline: 0;
+    padding: calc(var(--header-h) + clamp(1.25rem, 7vh, 2.75rem)) 1.35rem 1.5rem;
+  }
+
+  .bahce-journey .j-intro .eyebrow,
+  .bahce-journey .j-intro h1,
+  .bahce-journey .j-intro .lead {
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .bahce-journey .j-intro .eyebrow {
+    font-size: 0.82rem;
+    margin-bottom: 12px;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
+  }
+
+  .bahce-journey .j-intro h1 {
+    max-width: 13ch;
+    font-size: clamp(2.35rem, 10vw, 3rem);
+    line-height: 1.06;
+    margin-bottom: 18px;
+    color: #fffef9;
+    text-shadow:
+      0 2px 28px rgba(0, 0, 0, 0.55),
+      0 1px 4px rgba(0, 0, 0, 0.45);
   }
 
   .bahce-journey .j-intro .lead {
-    margin-inline: auto;
+    max-width: 34ch;
+    font-size: clamp(1.08rem, 4.5vw, 1.2rem);
+    line-height: 1.45;
+    color: rgba(243, 241, 231, 0.94);
+    text-shadow: 0 1px 18px rgba(0, 0, 0, 0.55);
   }
 
   .bahce-journey .j-intro .actions {
@@ -767,13 +814,39 @@
     width: 100%;
   }
 
+  .bahce-journey .journey-stage::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    height: min(46vh, 360px);
+    pointer-events: none;
+    background: linear-gradient(to top, var(--night) 18%, transparent 100%);
+  }
+
   .bahce-journey .j-steps {
     align-items: end;
+    justify-items: center;
     padding-bottom: 28px;
+    padding-inline: 1.25rem;
+    box-sizing: border-box;
   }
 
   .bahce-journey .j-step {
     gap: 8px;
+    width: 100%;
+    max-width: 26rem;
+    margin-inline: auto;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .bahce-journey .j-step-tag,
+  .bahce-journey .j-step h2,
+  .bahce-journey .j-step p:last-child {
+    text-align: center;
   }
 
   .bahce-journey .j-step h2 {

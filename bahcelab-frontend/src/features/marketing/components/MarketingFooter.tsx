@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import footerWordmark from '@/assets/marketing/bahcelab-footer-wordmark.png'
+import footerWordmark from '@/assets/marketing/bahcelab-logo.png'
 
 const MARK_W = 1024
 const MARK_H = 341
-/** Üst ~%58 görünür; alttan biraz daha kırpılır */
-const MARK_VISIBLE_RATIO = 0.58
+/** Yatay marka logosunun tamamı görünsün (1024×341) */
+const MARK_VISIBLE_RATIO = 0.72
 const MARK_WIDTH = 'min(162vw, 92rem)'
 
 function footerMarkMetrics() {

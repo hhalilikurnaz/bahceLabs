@@ -112,7 +112,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
         <header className="relative px-5 py-5 sm:px-8 lg:px-12 lg:pt-10">
           <div className="mx-auto flex w-full max-w-[28rem] items-center justify-between gap-4 lg:max-w-[30rem]">
             <Link to="/" className="inline-flex no-underline lg:hidden">
-              <BahcelabBrandLogo tone="dark" height={30} className="brightness-0" />
+              <BahcelabBrandLogo height={30} />
             </Link>
             <Link
               to="/"

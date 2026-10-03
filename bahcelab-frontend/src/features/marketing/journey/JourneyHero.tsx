@@ -60,6 +60,12 @@ const pct = new Intl.NumberFormat('tr-TR', { style: 'percent' })
 const OVERLAY_SCROLL_VH = 1
 const PIN_AT = TOTAL_LEN - 0.06
 
+function heroPosterUrl(mobile: boolean) {
+  const seq = journeySite.heroSequence
+  const src = mobile ? seq.mobile : seq.desktop
+  return `${src.path}${'1'.padStart(seq.pad, '0')}.${src.ext}`
+}
+
 export function JourneyHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const stickyRef = useRef<HTMLDivElement>(null)
@@ -79,6 +85,9 @@ export function JourneyHero() {
 
   const [stop, setStop] = useState(-1)
   const [photoReady, setPhotoReady] = useState(false)
+  const [posterFrame, setPosterFrame] = useState(() => heroPosterUrl(false))
+  const posterFrameRef = useRef(posterFrame)
+  posterFrameRef.current = posterFrame
   const onFirstFrame = useCallback(() => setPhotoReady(true), [])
 
   const stopDef = stop >= 0 ? STOPS[stop] : null
@@ -90,19 +99,26 @@ export function JourneyHero() {
   const step = stopDef?.step !== undefined ? features.steps[stopDef.step] : null
   const legend = stopDef ? LEGENDS[stopDef.key] : null
 
-  const firstFrame = `${journeySite.heroSequence.desktop.path}${'1'.padStart(journeySite.heroSequence.pad, '0')}.${journeySite.heroSequence.desktop.ext}`
   const master = journeySite.orchardMaster
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const sync = () => setPosterFrame(heroPosterUrl(mq.matches))
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   useEffect(() => {
     const link = document.createElement('link')
     link.rel = 'preload'
     link.as = 'image'
-    link.href = firstFrame
+    link.href = posterFrame
     document.head.appendChild(link)
     return () => {
       document.head.removeChild(link)
     }
-  }, [firstFrame])
+  }, [posterFrame])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -142,13 +158,34 @@ export function JourneyHero() {
       const v = videoRef.current
       if (v) {
         v.style.opacity = String(1 - f.videoOut)
-        v.style.transform = `scale(${1 + f.videoOut * 0.6})`
-        v.style.filter = f.videoOut > 0.01 ? `blur(${f.videoOut * 10}px)` : ''
+        if (mobile) {
+          v.style.transform = 'none'
+          v.style.filter = ''
+        } else {
+          v.style.transform = `scale(${1 + f.videoOut * 0.6})`
+          v.style.filter = f.videoOut > 0.01 ? `blur(${f.videoOut * 10}px)` : ''
+        }
         v.style.visibility = f.videoOut >= 1 ? 'hidden' : 'visible'
       }
 
+      if (f.videoOut <= 0) {
+        world.style.opacity = '0'
+        world.style.visibility = 'hidden'
+      } else {
+        world.style.opacity = f.videoOut >= 1 ? '1' : String(f.videoOut)
+        world.style.visibility = 'visible'
+      }
+
+      if (f.videoOut >= 1) {
+        stage.style.backgroundImage = 'none'
+      } else {
+        stage.style.backgroundImage = `url(${posterFrameRef.current})`
+        stage.style.backgroundSize = 'cover'
+        stage.style.backgroundPosition = 'center'
+      }
+
       const cam = mobile ? mobileCam(f.cam) : f.cam
-      const { k, tx, ty } = camTransform(cam, W, H, mobile && f.stop >= 1)
+      const { k, tx, ty } = camTransform(cam, W, H, false)
       world.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${k})`
 
       const scanScreen = f.scan * H
@@ -270,7 +307,7 @@ export function JourneyHero() {
         <div
           className="journey-stage"
           ref={stageRef}
-          style={{ backgroundImage: `url(${firstFrame})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url(${posterFrame})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         >
           <div className="j-world" ref={worldRef} style={{ width: IMG_W, height: IMG_H }}>
             <picture>
@@ -369,7 +406,7 @@ export function JourneyHero() {
           <div className="j-video" ref={videoRef}>
             <img
               className={`j-poster${photoReady ? ' j-poster--done' : ''}`}
-              src={firstFrame}
+              src={posterFrame}
               alt=""
               fetchPriority="high"
               decoding="async"
