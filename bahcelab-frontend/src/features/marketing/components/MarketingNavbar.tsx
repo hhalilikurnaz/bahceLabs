@@ -33,7 +33,7 @@ export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps)
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
         isSolid
-          ? 'border-b border-white/10 bg-[#06140d]/88 backdrop-blur-md'
+          ? 'border-b border-white/10 bg-[#06140d]/95'
           : 'bg-gradient-to-b from-[#06140d]/70 to-transparent'
       }`}
     >

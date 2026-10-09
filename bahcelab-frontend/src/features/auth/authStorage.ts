@@ -25,8 +25,20 @@ export function clearSession(): void {
   localStorage.removeItem(SESSION_KEY)
 }
 
+/** Yalnızca geliştirme modunda: backend auth yokken giriş denemek için hazır hesap. */
+export const DEV_TEST_USER: StoredUser = {
+  id: 'dev-test-user',
+  name: 'Test Kullanıcı',
+  email: 'test@bahcelab.com',
+  password: 'test1234',
+}
+
 export function loadUsers(): StoredUser[] {
-  return readJson<StoredUser[]>(USERS_KEY, [])
+  const users = readJson<StoredUser[]>(USERS_KEY, [])
+  if (import.meta.env.DEV && !users.some((u) => u.email === DEV_TEST_USER.email)) {
+    return [...users, DEV_TEST_USER]
+  }
+  return users
 }
 
 export function saveUsers(users: StoredUser[]): void {

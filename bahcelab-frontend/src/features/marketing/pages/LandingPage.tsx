@@ -6,7 +6,6 @@ import {
   textSideForStripEdge,
 } from '../components/DiagonalStripSection'
 import { JourneyHero } from '../journey/JourneyHero'
-import { JourneyTourEmbed } from '../journey/JourneyTourEmbed'
 import { MarketingFutureStepsSection } from '../components/MarketingFutureStepsSection'
 import { MissionOutcomeCards } from '../components/MissionOutcomeCards'
 import { MarketingNavbar } from '../components/MarketingNavbar'
@@ -41,19 +40,15 @@ export function LandingPage() {
 
       <JourneyHero />
 
-      <main className="relative z-20 overflow-x-clip text-[#1a241c]">
+      <main className="relative z-20 -mt-[100dvh] overflow-x-clip text-[#1a241c]">
         <DiagonalStripSection
           id="misyon"
           tone="cream"
           topEdge="flat"
           overlap={false}
-          clipOverflow={false}
-          className="rounded-t-[2rem] border-t border-[#e8e4d9]/40 bg-[#f7f4ee] shadow-[0_-24px_80px_rgba(0,0,0,0.45)] sm:rounded-t-[2.75rem] !pt-10 sm:!pt-12"
+          className="rounded-t-[2rem] border-t border-[#e8e4d9]/40 bg-[#f7f4ee] shadow-[0_-32px_100px_rgba(0,0,0,0.55)] sm:rounded-t-[2.75rem]"
           glyph={{ icon: Target, label: 'Misyon' }}
         >
-          <JourneyTourEmbed />
-
-          <div className="mt-14 sm:mt-20">
           <StripTextContent
             eyebrow="Misyon"
             title="Sahada kararlar çoğu zaman geç ve dağınık kalıyor"
@@ -76,7 +71,6 @@ export function LandingPage() {
               paylaşmadan önce hangi problemi çözdüğümüzü açıkça söylemek istiyoruz.
             </p>
           </StripTextContent>
-          </div>
         </DiagonalStripSection>
 
         <DiagonalStripSection

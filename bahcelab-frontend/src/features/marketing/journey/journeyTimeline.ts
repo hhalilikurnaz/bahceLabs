@@ -78,8 +78,8 @@ export type Stop = {
 
 // Giriş bölümü süreleri (ekran)
 export const INTRO = {
-  video: 1.7, // drone videosu kaydırmayla oynar
-  dive: 0.75, // videodan kuşbakışı fotoğrafa geçiş
+  video: 0, // video yok: hero doğrudan bahçe fotoğrafıyla açılır
+  dive: 0.6, // fotoğrafta hafif uzaklaşma
   scan: 1.0, // tarama çizgisi: ağaçlar tespit edilir
 };
 
@@ -138,7 +138,7 @@ export function frameAt(s: number): Frame {
   ];
 
   const base = {
-    video: clamp01(s / V),
+    video: V > 0 ? clamp01(s / V) : 1,
     videoOut: smooth(clamp01((s - V) / D)),
     scan: clamp01((s - V - D) / (S * 0.8)),
     intro: 1 - clamp01(s / 0.5),
@@ -150,7 +150,7 @@ export function frameAt(s: number): Frame {
     const dive = base.videoOut;
     const cam = { ...first.cam, z: lerp(1.45, first.cam.z, dive), y: lerp(0.62, first.cam.y, dive) };
     const t = clamp01((s - V - D - S * 0.6) / (S * 0.4));
-    return { ...base, cam, layers: L({ rings: 1, ids: t, grade: base.scan * 0.8 }), stop: -1, focusIn: 0, stepIn: 0 };
+    return { ...base, cam, layers: L({ rings: 1, ids: t, grade: Math.max(0.7, base.scan * 0.8) }), stop: -1, focusIn: 0, stepIn: 0 };
   }
 
   let a = INTRO_LEN;

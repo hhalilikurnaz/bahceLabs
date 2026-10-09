@@ -34,6 +34,7 @@ export function FrameSequence({
     if (!canvas) return
     const g = canvas.getContext('2d', { alpha: false })
     if (!g) return
+    g.imageSmoothingQuality = 'high'
 
     const small = window.matchMedia('(max-width: 767px)').matches
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
@@ -48,6 +49,7 @@ export function FrameSequence({
     let visible = true
     let raf = 0
     let lastDrawn = -1
+    let lastMix = -1
     let W = 0
     let H = 0
 
@@ -66,7 +68,7 @@ export function FrameSequence({
 
     let cursor = 0
     let inflight = 0
-    const MAX = 6
+    const MAX = 12
     const pump = () => {
       while (!cancelled && inflight < MAX && cursor < order.length) {
         const i = order[cursor++]
@@ -81,6 +83,7 @@ export function FrameSequence({
             frames[i] = img
             if (i === 0) onFirstFrame?.()
             lastDrawn = -1
+            lastMix = -1
             schedule()
           })
           .catch(() => {})
@@ -100,15 +103,29 @@ export function FrameSequence({
       return -1
     }
 
-    const drawFrame = (idx: number) => {
-      const img = frames[idx]
-      if (!img) return
+    const paint = (img: HTMLImageElement, alpha: number) => {
       const iw = img.naturalWidth
       const ih = img.naturalHeight
       const s = Math.max(W / iw, H / ih)
       const dw = iw * s
       const dh = ih * s
+      g.globalAlpha = alpha
       g.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
+      g.globalAlpha = 1
+    }
+
+    /** Ondalıklı kare konumu: iki komşu kareyi karıştırarak ara kare üretir (kare kare takılmayı önler) */
+    const drawAt = (pos: number) => {
+      const a = nearest(Math.floor(pos))
+      if (a < 0) return
+      const bIdx = nearest(Math.min(n - 1, Math.floor(pos) + 1))
+      const frac = bIdx > a ? Math.min(1, Math.max(0, (pos - a) / (bIdx - a))) : 0
+      const mix = Math.round(frac * 16)
+      if (a === lastDrawn && mix === lastMix) return
+      lastDrawn = a
+      lastMix = mix
+      paint(frames[a]!, 1)
+      if (mix > 0 && bIdx > a) paint(frames[bIdx]!, mix / 16)
     }
 
     let shown = 0
@@ -132,23 +149,14 @@ export function FrameSequence({
         const u = phase <= 1 ? phase : 2 - phase
         shown = u * idleSpan
         base = shown
-        const idx = Math.round(shown)
-        const drawIdx = frames[idx] ? idx : nearest(idx)
-        if (drawIdx >= 0 && drawIdx !== lastDrawn) {
-          drawFrame(drawIdx)
-          lastDrawn = drawIdx
-        }
+        drawAt(shown)
       } else {
         target = base + p * (n - 1 - base)
-        shown += (target - shown) * Math.min(1, dt * 12)
+        shown += (target - shown) * Math.min(1, dt * 9)
         if (Math.abs(target - shown) < 0.02) shown = target
         if (idleSpan > 0)
           phase = Math.acos(Math.max(-1, Math.min(1, 1 - (2 * Math.min(base, idleSpan)) / idleSpan)))
-        const idx = nearest(Math.round(shown))
-        if (idx >= 0 && idx !== lastDrawn) {
-          drawFrame(idx)
-          lastDrawn = idx
-        }
+        drawAt(shown)
       }
       if (visible) raf = requestAnimationFrame(tick)
     }
@@ -158,12 +166,14 @@ export function FrameSequence({
 
     const resize = () => {
       const r = canvas.getBoundingClientRect()
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // 1x tuval tarayıcıda ikinci kez büyütülüp bulanıklaşır, 2x ise gereksiz ağır: 1.5x orta yol
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
       W = Math.max(1, Math.round(r.width * dpr))
       H = Math.max(1, Math.round(r.height * dpr))
       canvas.width = W
       canvas.height = H
       lastDrawn = -1
+      lastMix = -1
       schedule()
     }
 
