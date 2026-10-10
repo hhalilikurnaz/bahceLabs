@@ -18,6 +18,20 @@
   --color-planning-warning: #fbbf24;
   --color-planning-error: #f87171;
   --color-marketing-cream: #f7f4ee;
+
+  /* Uygulama ekranları (/bahcem ve sonrası): koyu gri arayüz */
+  --color-app-bg: #131517;
+  --color-app-panel: #1c1e21;
+  --color-app-card: #2a2d31;
+  --color-app-card-hover: #32363b;
+  --color-app-border: #383c42;
+  --color-app-text: #f3f4f5;
+  --color-app-text-muted: #a7acb3;
+  --color-app-text-dim: #787e86;
+  --color-app-accent: #7cc65a;
+  --color-app-accent-strong: #5fae3d;
+  --color-app-accent-soft: rgb(124 198 90 / 0.16);
+  --color-app-danger: #f87171;
 }
 
 * {
