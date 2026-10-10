@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -56,9 +56,7 @@ export function BahcemLayout() {
   // Çizim aracı ilk kez gerektiğinde yüklenir ve sonra açık kalır
   const flowActive = useBahcemStore((s) => s.mode !== 'idle')
   const [drawNeeded, setDrawNeeded] = useState(false)
-  useEffect(() => {
-    if (flowActive) setDrawNeeded(true)
-  }, [flowActive])
+  if (flowActive && !drawNeeded) setDrawNeeded(true) // render sırasında türetilmiş durum (React önerisi)
   if (!user) return null
 
   return (
