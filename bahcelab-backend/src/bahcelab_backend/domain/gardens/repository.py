@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bahcelab_backend.domain.gardens.models import AREA_SRID, GardenModel
+from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.planning.models import SimulationPlanModel
 
 
@@ -23,11 +23,12 @@ class GardenRow:
     geojson: dict[str, Any]
 
 
+# Alan elipsoit üzerinde (geography) hesaplanır: Türkiye'nin her yerinde UTM bölgesinden bağımsız doğrudur
 _MEASURE_SQL = text(
-    f"""
+    """
     SELECT ST_IsValid(g) AS is_valid,
            ST_IsValidReason(g) AS reason,
-           ST_Area(ST_Transform(g, {AREA_SRID})) / 1000.0 AS area_dekar
+           ST_Area(g::geography) / 1000.0 AS area_dekar
     FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326) AS g) AS t
     """
 )

@@ -11,10 +11,6 @@ from bahcelab_backend.database import Base
 
 PRODUCTS = ("limon", "portakal", "mandalina", "greyfurt", "diger")
 
-# Alan hesabı için UTM 36N (Mersin/Akdeniz bölgesi); ST_Area(ST_Transform(geom, 32636)) / 1000
-AREA_SRID = 32636
-
-
 class GardenModel(Base):
     __tablename__ = "gardens"
 

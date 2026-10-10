@@ -2,13 +2,11 @@ import math
 
 import pytest
 from httpx import AsyncClient
-from pyproj import Geod, Transformer
+from pyproj import Geod
 from shapely.geometry import Polygon
 
 from .conftest import make_client, register
 
-_TO_UTM = Transformer.from_crs(4326, 32636, always_xy=True)
-_TO_LL = Transformer.from_crs(32636, 4326, always_xy=True)
 _GEOD = Geod(ellps="WGS84")
 
 # Erdemli / Tömük civarı
@@ -16,11 +14,12 @@ LNG, LAT = 34.38, 36.66
 
 
 def square(side_m: float, lng: float = LNG, lat: float = LAT) -> dict:
-    """Merkezi verilen, kenarı side_m metre olan kare (UTM'de kare, EPSG:4326'ya çevrilmiş)."""
-    cx, cy = _TO_UTM.transform(lng, lat)
-    h = side_m / 2
-    corners = [(cx - h, cy - h), (cx + h, cy - h), (cx + h, cy + h), (cx - h, cy + h)]
-    ring = [list(_TO_LL.transform(x, y)) for x, y in corners]
+    """Merkezi verilen, kenarı ≈ side_m metre olan kare; köşeler elipsoid üzerinde bulunur."""
+    half_diagonal = side_m * math.sqrt(2) / 2
+    ring = []
+    for azimuth in (225, 315, 45, 135):  # GB, GD, KD, KB
+        x, y, _ = _GEOD.fwd(lng, lat, azimuth, half_diagonal)
+        ring.append([x, y])
     ring.append(ring[0])
     return {"type": "Polygon", "coordinates": [ring]}
 
@@ -37,9 +36,9 @@ def garden_body(**overrides) -> dict:
     return body
 
 
-def reference_dekar(geometry: dict) -> float:
-    ring = geometry["coordinates"][0]
-    return Polygon([_TO_UTM.transform(x, y) for x, y in ring]).area / 1000
+def geodesic_dekar(geometry: dict) -> float:
+    """Bağımsız referans: WGS84 elipsoidi üzerinde jeodezik alan (pyproj), dekar."""
+    return abs(_GEOD.geometry_area_perimeter(Polygon(geometry["coordinates"][0]))[0]) / 1000
 
 
 @pytest.fixture
@@ -50,7 +49,7 @@ async def user_client(client: AsyncClient, cleanup_users):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_create_garden_computes_area_on_server_in_utm(user_client: AsyncClient):
+async def test_create_garden_computes_geodesic_area_on_server(user_client: AsyncClient):
     geometry = square(161)
     response = await user_client.post(
         "/gardens",
@@ -60,11 +59,9 @@ async def test_create_garden_computes_area_on_server_in_utm(user_client: AsyncCl
     assert response.status_code == 201
     garden = response.json()
 
-    expected = reference_dekar(geometry)  # UTM 36N, ST_Transform(..., 32636) ile aynı yöntem
-    assert garden["alan_dekar"] == pytest.approx(expected, rel=1e-4)
+    # PostGIS ST_Area(geom::geography) ile pyproj jeodezik alanı birebir örtüşmeli
+    assert garden["alan_dekar"] == pytest.approx(geodesic_dekar(geometry), rel=1e-5)
     assert garden["alan_dekar"] == pytest.approx(25.9, abs=0.3)
-    geodesic = abs(_GEOD.geometry_area_perimeter(Polygon(geometry["coordinates"][0]))[0]) / 1000
-    assert garden["alan_dekar"] == pytest.approx(geodesic, rel=0.005)
 
     # Planlama ekranının beklediği alanlar
     assert garden["name"] == "Deneme Bahçesi"
@@ -72,6 +69,21 @@ async def test_create_garden_computes_area_on_server_in_utm(user_client: AsyncCl
     assert garden["area_m2"] == pytest.approx(garden["alan_dekar"] * 1000, abs=0.1)
     assert garden["geometry"]["type"] == "Polygon"
     assert garden["urun"] == "limon"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("lng", "lat"),
+    [(26.5, 40.2), (30.7, 36.9), (34.38, 36.66), (38.9, 38.4), (43.1, 38.5)],  # Çanakkale…Van
+)
+async def test_area_is_accurate_across_turkey(user_client: AsyncClient, lng: float, lat: float):
+    """Alan, UTM bölgesinden bağımsız olarak Türkiye'nin her yerinde jeodezik alanla örtüşür."""
+    ring = square(100, lng, lat)  # 100 m × 100 m (yerel UTM'de kare)
+    response = await user_client.post("/gardens/measure", json={"geometry": ring})
+    assert response.status_code == 200
+    assert response.json()["alan_dekar"] == pytest.approx(geodesic_dekar(ring), rel=1e-5)
+    assert response.json()["alan_dekar"] == pytest.approx(10.0, rel=0.01)
 
 
 @pytest.mark.asyncio

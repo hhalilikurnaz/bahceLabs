@@ -76,7 +76,7 @@ curl -b jar.txt http://localhost:8001/planning/plans
 ## Bahçeler (`/gardens`)
 
 Girişli kullanıcının kendi workspace'indeki bahçeler. Sınır GeoJSON `Polygon`/`MultiPolygon` (EPSG:4326,
-`[boylam, enlem]`). **Alan istemciden alınmaz**: sunucu `ST_Area(ST_Transform(geom, 32636)) / 1000` ile dekar olarak hesaplar.
+`[boylam, enlem]`). **Alan istemciden alınmaz**: sunucu `ST_Area(geom::geography) / 1000` ile (elipsoid üzerinde, her UTM bölgesinde doğru) dekar olarak hesaplar.
 
 | Uç nokta | Açıklama |
 |----------|----------|

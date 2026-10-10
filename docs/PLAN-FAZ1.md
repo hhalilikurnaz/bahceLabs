@@ -122,7 +122,7 @@ Bu belgenin 0. bölümü.
 
 **Backend** (`domain/gardens/`, `api/gardens/`, migration `004_gardens`)
 - `gardens` tablosu: `id`, `workspace_id` (FK, cascade), `ad`, `urun` (limon | portakal | mandalina | greyfurt | diger), `cesit`, `dikim_yili`, `geom geometry(Geometry,4326)` (yalnızca POLYGON/MULTIPOLYGON, CHECK), `alan_dekar`, `il`, `ilce`, `created_at`, `updated_at`; GiST indeksi `ix_gardens_geom`. `geoalchemy2` eklendi.
-- **Alan sunucuda:** `ST_Area(ST_Transform(geom, 32636)) / 1000`; istemcinin gönderdiği alan yok sayılır. Not: 32636 (UTM 36N, orta meridyen 33°D) Mersin için uygundur; 36°D'nin çok doğusunda (ör. Hatay) hata artar, o bölgeler için ileride bölge seçimi gerekebilir.
+- **Alan sunucuda:** `ST_Area(geom::geography) / 1000` (WGS84 elipsoidi üzerinde, UTM bölgesinden bağımsız; Türkiye'nin her yerinde doğru). İstemcinin gönderdiği alan yok sayılır. (İlk sürüm sabit UTM 36N kullanıyordu; migration `005_area_geography` mevcut kayıtları yeniden hesaplar.)
 - **Doğrulama (422, Türkçe):** `ST_IsValid` (kendini kesen sınır), alan < 0,5 veya > 5.000 dekar, kapalı olmayan halka, koordinat aralığı, ad/ürün/dikim yılı. Yükseklik (z) değerleri atılır.
 - **API** (giriş gerekli, yalnızca kendi workspace'i; başkasının bahçesi 404): `GET/POST /gardens`, `GET/PATCH/DELETE /gardens/{id}`, `POST /gardens/measure` (kaydetmeden doğrulama + alan). Cevapta Türkçe alanlara ek olarak planlamanın beklediği `name`, `location_label`, `area_m2` vardır.
 - **Planlama entegrasyonu:** `POST /planning/plans` `garden_id` ile çağrılınca bahçenin sınırı `draft_land`'a aktarılır ("Kayıtlı bahçe ile devam"); başka kullanıcının bahçesi 404, çok parçalı bahçe 422. Bahçe silinince planlardaki `garden_id` temizlenir.
@@ -136,7 +136,7 @@ Bu belgenin 0. bölümü.
 - Kayıtlı bahçe yeşil kenarlı yarı saydam poligon; listeden/haritadan seçim, `fitBounds`; açılışta tüm bahçelere odaklanma; ad ile arama.
 - Liste öğesi "…" menüsü: Adını düzenle, Sınırı düzenle (terra-draw; çok parçalı/delikli bahçeler şimdilik düzenlenemez), Sil (onay penceresi).
 
-**Çıkış kriteri karşılandı:** çizilen/yüklenen bahçe kaydedilir, yenilemede yerinde durur, alan PostGIS UTM hesabıyla eşleşir (`tests/test_gardens_api.py`), geçersiz sınır ve alan sınırları Türkçe mesajla reddedilir.
+**Çıkış kriteri karşılandı:** çizilen/yüklenen bahçe kaydedilir, yenilemede yerinde durur, alan PostGIS jeodezik hesabıyla eşleşir (`tests/test_gardens_api.py`), geçersiz sınır ve alan sınırları Türkçe mesajla reddedilir.
 
 ### Adım 5 — Bahçe sayfası: Sentinel-2 NDVI (Planetary Computer), tarih şeridi, grafik, uyarılar
 
