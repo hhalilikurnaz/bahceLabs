@@ -81,12 +81,6 @@ export function StatusCard({ data, refreshing, onRefresh, refreshError }: Status
         </button>
       </div>
 
-      {data.ornekVeri && (
-        <p className="text-[11px] leading-snug text-app-text-dim">
-          Bu bahçede <strong className="font-medium text-app-text-muted">örnek veri</strong> gösteriliyor
-          (geliştirme tohumu). «Şimdi güncelle» örnek kayıtları gerçek Sentinel-2 görüntüleriyle değiştirir.
-        </p>
-      )}
     </section>
   )
 }

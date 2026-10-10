@@ -91,7 +91,6 @@ export function WeatherOverviewPanel() {
                       <p className="mt-2 text-[11px] text-app-text-dim">
                         Bugün yağış {formatMm(item.bugunYagisMm)} ({formatPercent(item.bugunYagisOlasiligi)})
                         {item.onbellekten && item.guncelleme ? ` · önbellek ${formatClockIstanbul(item.guncelleme)}` : ''}
-                        {item.ornekVeri ? ' · örnek veri' : ''}
                       </p>
                     )}
 

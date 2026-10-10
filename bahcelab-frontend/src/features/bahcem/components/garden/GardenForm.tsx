@@ -133,7 +133,7 @@ export function GardenForm() {
             maxLength={120}
             value={ad}
             onChange={(e) => setAd(e.target.value)}
-            placeholder="Örn. Tömük limon bahçesi"
+            placeholder="Örn. Yeni parsel limonları"
             className={field}
           />
         </div>

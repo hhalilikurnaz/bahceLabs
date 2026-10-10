@@ -21,12 +21,12 @@ from bahcelab_backend.domain.ndvi.models import (
 from bahcelab_backend.domain.ndvi.persist import missing_outputs
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import build_alerts
-from bahcelab_backend.domain.ndvi.sample import build_sample_series, grid_for, make_scene
 from bahcelab_backend.domain.ndvi.stac import NdviSourceError, Scene
 from bahcelab_backend.domain.ndvi.zones import GridObservation, compute_yield_zones, kmeans_1d
 from bahcelab_backend.shared.storage import LocalStorage, get_storage
 
 from .conftest import make_client, register
+from .support.ndvi_sample import build_sample_series, grid_for, make_scene
 from .test_gardens_api import LAT, LNG, garden_body, square
 
 TODAY = date(2026, 10, 10)
@@ -209,7 +209,7 @@ async def test_overview_and_downloads(user_client: AsyncClient, factory):
     ndvi = first["indeksler"]["ndvi"]
     assert ndvi["ortalama"] == pytest.approx(0.70) and ndvi["png_var"] and ndvi["veri_var"]
     assert (first["satir"], first["sutun"], len(first["koordinatlar"])) == (4, 5, 4)
-    assert body["ornek_veri"] is False and body["eksik_cikti"] is False
+    assert body["eksik_cikti"] is False
     assert [u["indeks"] for u in body["uyarilar"]] == ["ndvi"]  # 0,70 → 0,60 (17 gün)
 
     png = await user_client.get(f"/gardens/{gid}/indeks/ndre/2026-09-10.png")
@@ -373,32 +373,6 @@ async def test_new_garden_queues_initial_job_and_refresh_reuses_active_job(
         and first.json()["id"] == second.json()["id"]
         and len(jobs_started) == 1
     )
-
-
-@pytest.mark.asyncio
-@pytest.mark.integration
-async def test_refresh_replaces_sample_data(user_client, jobs_started, factory):
-    from bahcelab_backend.config import get_settings
-
-    get_settings().ndvi_enabled = False
-    garden = await new_garden(user_client)
-    get_settings().ndvi_enabled = True
-    gid = garden["id"]
-    await add_scene(factory, gid, date(2026, 10, 1), ALL_MEANS, kaynak="ornek")
-    keys = [f"indeks/{gid}/2026-10-01/{n}.bin" for n in INDEX_IDS] + [
-        f"indeks/{gid}/2026-10-01/gercek-renk.png"
-    ]
-    assert all(get_storage().exists(k) for k in keys)
-
-    overview = (await user_client.get(f"/gardens/{gid}/indeks")).json()
-    assert (
-        overview["ornek_veri"] is True and jobs_started == []
-    )  # örnek veri kendiliğinden gerçek veriyle karışmaz
-
-    job = (await user_client.post(f"/gardens/{gid}/indeks/refresh")).json()
-    assert job["tur"] == "ilk" and len(jobs_started) == 1
-    assert not any(get_storage().exists(k) for k in keys)
-    assert (await user_client.get(f"/gardens/{gid}/indeks")).json()["gozlemler"] == []
 
 
 @pytest.mark.asyncio

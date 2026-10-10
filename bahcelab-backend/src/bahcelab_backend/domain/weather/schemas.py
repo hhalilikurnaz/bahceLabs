@@ -93,7 +93,6 @@ class HavaYanit(BaseModel):
     guncelleme: datetime
     # True: sağlayıcıya ulaşılamadı, son önbellek gösteriliyor
     onbellekten: bool
-    ornek_veri: bool
     kaynak: str
     atif: str
     simdi: Simdi
@@ -135,7 +134,6 @@ class HavaOzeti(BaseModel):
     hata: str | None = None
     guncelleme: datetime | None = None
     onbellekten: bool = False
-    ornek_veri: bool = False
     simdi: Simdi | None = None
     bugun_min: float | None = None
     bugun_max: float | None = None

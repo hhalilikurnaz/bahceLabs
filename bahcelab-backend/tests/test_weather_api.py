@@ -9,9 +9,9 @@ from sqlalchemy import text
 from bahcelab_backend.api.deps import get_weather_provider
 from bahcelab_backend.domain.weather.open_meteo import OpenMeteoProvider
 from bahcelab_backend.domain.weather.provider import DailyPoint, Forecast, WeatherSourceError
-from bahcelab_backend.domain.weather.sample import build_sample_forecast, build_sample_history
 
 from .conftest import make_client, register
+from .support.weather_sample import build_sample_forecast, build_sample_history
 from .test_gardens_api import garden_body, square
 
 # Diğer testlerin (ve geliştirme verisinin) hücrelerinden ayrı bir konum
@@ -92,7 +92,7 @@ async def test_weather_response_shape(user_client: AsyncClient, provider):
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["kaynak"] == "test-saglayici" and "CC BY 4.0" in data["atif"]
-    assert data["onbellekten"] is False and data["ornek_veri"] is False
+    assert data["onbellekten"] is False
     assert len(data["gunler"]) == 7 and len(data["saatlik"]) == 168
     assert data["simdi"]["aciklama"] and data["simdi"]["ikon"]
     day = data["gunler"][0]

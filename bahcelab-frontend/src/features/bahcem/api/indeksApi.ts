@@ -32,7 +32,7 @@ export interface Scene {
   koordinatlar: [number, number][] | null
   gercekRenkVar: boolean
   indeksler: Partial<Record<IndexId, IndexSummary>>
-  kaynak: 'sentinel-2' | 'ornek'
+  kaynak: string
   surum: number
 }
 
@@ -62,7 +62,6 @@ export interface IndexData {
   isleme: Job | null
   sonKontrol: string | null
   uyarilar: Alert[]
-  ornekVeri: boolean
   eksikCikti: boolean
 }
 
@@ -149,7 +148,6 @@ function fromApi(data: any): IndexData {
         degisimYuzde: u.degisim_yuzde,
       }),
     ),
-    ornekVeri: data.ornek_veri,
     eksikCikti: data.eksik_cikti,
   }
 }

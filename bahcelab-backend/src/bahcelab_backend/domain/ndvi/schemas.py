@@ -31,7 +31,7 @@ class SahneGozlemi(BaseModel):
     koordinatlar: list[list[float]] | None
     gercek_renk_var: bool
     indeksler: dict[str, IndeksOzeti]
-    kaynak: Literal["sentinel-2", "ornek"]
+    kaynak: str
     # Görüntü yeniden üretilince değişir; istemci önbelleğini geçersiz kılmak için URL'e eklenir
     surum: int
 
@@ -66,7 +66,6 @@ class IndeksYanit(BaseModel):
     isleme: NdviIs | None
     son_kontrol: datetime | None
     uyarilar: list[Uyari]
-    ornek_veri: bool
     eksik_cikti: bool  # bazı sahnelerde yeni indeksler henüz tamamlanmadı
 
 

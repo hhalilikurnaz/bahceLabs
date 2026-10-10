@@ -117,21 +117,14 @@ class NdviCoordinator:
         self.storage.delete_prefix(f"ndvi/{garden_id}")  # eski (NDVI-only) düzen
 
     async def refresh(self, garden_id: uuid.UUID) -> NdviJobModel:
-        """«Şimdi güncelle»: örnek veri varsa gerçek veriyle değiştirir; yoksa yeni/eksik sahneleri işler."""
+        """«Şimdi güncelle»: yeni ve eksik sahneleri işler."""
         active = await self.repo.active_job(garden_id)
         if active is not None:
             return active
         if not get_settings().ndvi_enabled:
             raise AppError(503, AppErrorCode.INTERNAL_ERROR, "Uydu görüntüsü işleme şu an kapalı.")
 
-        tur = "guncelleme"
-        if await self.repo.has_sample_data(garden_id):
-            for key in await self.repo.storage_keys(garden_id, only_sample=True):
-                self.storage.delete(key)
-            await self.repo.delete_observations(garden_id, only_sample=True)
-            tur = "ilk"
-        elif not await self.repo.scene_map(garden_id):
-            tur = "ilk"
+        tur = "guncelleme" if await self.repo.scene_map(garden_id) else "ilk"
 
         job = await self.enqueue(garden_id, tur)
         if job is None:  # yarışta başka istek iş açtı
@@ -164,8 +157,7 @@ class NdviService:
     async def overview(self, garden_id: uuid.UUID) -> IndeksYanit:
         await self._garden(garden_id)
         scenes = await self.repo.list_scenes(garden_id)
-        sample = any(s.scene.kaynak == "ornek" for s in scenes)
-        incomplete = any(missing_outputs(s) for s in scenes if s.scene.kaynak != "ornek")
+        incomplete = any(missing_outputs(s) for s in scenes)
 
         job = await self.repo.active_job(garden_id)
         last_attempt = await self.repo.last_attempt_at(garden_id)
@@ -180,8 +172,7 @@ class NdviService:
             or (last_attempt is not None and now - last_attempt > timedelta(hours=1))
         )
         # Bahçe açıldığında son kontrolden 12 saat geçtiyse yeni sahne var mı diye bakılır.
-        # Örnek veri bilerek gerçek veriyle karışmaz: yalnızca «Şimdi güncelle» ile değişir.
-        if job is None and not sample and (stale or (incomplete and retry_ok)):
+        if job is None and (stale or (incomplete and retry_ok)):
             job = await self.coordinator.enqueue(garden_id, "guncelleme" if scenes else "ilk")
 
         latest = job or latest_job
@@ -190,7 +181,6 @@ class NdviService:
             isleme=to_is(latest) if latest else None,
             son_kontrol=last_attempt,
             uyarilar=build_alerts(scenes),
-            ornek_veri=sample,
             eksik_cikti=incomplete,
         )
 

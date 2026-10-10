@@ -21,7 +21,7 @@ cp bahcelab-backend/.env.example bahcelab-backend/.env
 # 4. Tablolar (Alembic)
 make db-migrate
 
-# 5. Geliştirme verisi: test@bahcelab.com / test1234 kullanıcısı + Erdemli/Tömük'te örnek limon bahçesi (~26 dekar)
+# 5. Geliştirme kullanıcısı: test@bahcelab.com / test1234 (bahçe veya örnek veri OLUŞTURMAZ)
 make db-seed
 ```
 
@@ -112,7 +112,6 @@ ve tüm indeksler aynı okumadan hesaplanır: NDVI, MSAVI2, NDRE, NDMI, CIgreen 
 - Ayarlar: `NDVI_ENABLED`, `NDVI_MONTHS` (13), `NDVI_MAX_PARALLEL_SCENES` (2), `NDVI_REFRESH_HOURS` (12).
 - Ağ yoksa/Planetary Computer hata verirse iş "hata" olur ve anlaşılır mesaj döner; uygulama etkilenmez.
 - Eski (yalnız NDVI) kayıtlar migration `007` ile yeni tabloya taşınır; eksik indeksler yeniden indirmeden değil, yalnızca gereken bantlar okunarak tamamlanır.
-- `make db-seed` ağsız demo için tüm indekslerle örnek seri ekler (`kaynak = ornek`).
 
 ## Hava durumu (`/gardens/{id}/weather`)
 
@@ -130,7 +129,6 @@ ticari kullanımda `OPEN_METEO_API_KEY` ayarlanır ya da başka bir sağlayıcı
 - Ağ yoksa son önbellek `onbellekten: true` ve `guncelleme` ile döner; hiç önbellek yoksa 503.
 - Eşikler: ilaçlama rüzgâr < 15 km/s, hamle < 25 km/s, yağış yok, sonraki 6 saatte olasılık < %30, 10–28 °C; don ≤ 2 °C (sarı) / ≤ 0 °C (kırmızı); sıcak ≥ 38 °C. Kurallar `domain/weather/rules.py`'dedir.
 - Ayarlar: `OPEN_METEO_API_KEY`, `WEATHER_TIMEOUT_SECONDS`, `WEATHER_CACHE_MINUTES`, `WEATHER_CELL_DEGREES`, `WEATHER_HISTORY_DAYS`.
-- `make db-seed` Tömük için ağsız örnek hava verisi yazar (`kaynak = ornek`).
 
 ## Test
 

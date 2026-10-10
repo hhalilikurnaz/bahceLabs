@@ -1,5 +1,4 @@
-"""Sahne analizini depolamaya (PNG, ham ızgara) ve veritabanı kayıtlarına çevirir. Gerçek işleyici ve
-örnek veri üreticisi aynı yolu kullanır."""
+"""Sahne analizini depolamaya (PNG, ham ızgara) ve veritabanı kayıtlarına çevirir."""
 
 from __future__ import annotations
 

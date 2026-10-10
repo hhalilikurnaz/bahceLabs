@@ -121,45 +121,31 @@ class NdviRepository:
                 setattr(existing, column, getattr(row, column))
         await self.session.flush()
 
-    async def storage_keys(self, garden_id: uuid.UUID, *, only_sample: bool = False) -> list[str]:
-        """Bahçenin (isteğe bağlı: yalnızca örnek verinin) tüm depolama anahtarları."""
-        sample = " AND s.kaynak = 'ornek'" if only_sample else ""
+    async def storage_keys(self, garden_id: uuid.UUID) -> list[str]:
+        """Bahçenin tüm depolama anahtarları."""
         result = await self.session.execute(
             text(
-                f"""
+                """
                 SELECT s.gercek_renk_png_yolu FROM scene_observations s
-                 WHERE s.garden_id = :g AND s.gercek_renk_png_yolu IS NOT NULL{sample}
+                 WHERE s.garden_id = :g AND s.gercek_renk_png_yolu IS NOT NULL
                 UNION ALL
                 SELECT i.png_yolu FROM index_observations i
                   JOIN scene_observations s ON s.garden_id = i.garden_id AND s.tarih = i.tarih
-                 WHERE i.garden_id = :g AND i.png_yolu IS NOT NULL{sample}
+                 WHERE i.garden_id = :g AND i.png_yolu IS NOT NULL
                 UNION ALL
                 SELECT i.veri_yolu FROM index_observations i
                   JOIN scene_observations s ON s.garden_id = i.garden_id AND s.tarih = i.tarih
-                 WHERE i.garden_id = :g AND i.veri_yolu IS NOT NULL{sample}
+                 WHERE i.garden_id = :g AND i.veri_yolu IS NOT NULL
                 """
             ),
             {"g": garden_id},
         )
         return [key for (key,) in result.all()]
 
-    async def delete_observations(self, garden_id: uuid.UUID, *, only_sample: bool = False) -> None:
+    async def delete_observations(self, garden_id: uuid.UUID) -> None:
         # index_observations, scene_observations silinince zincirleme (ON DELETE CASCADE) silinir
         query = delete(SceneObservationModel).where(SceneObservationModel.garden_id == garden_id)
-        if only_sample:
-            query = query.where(SceneObservationModel.kaynak == "ornek")
         await self.session.execute(query)
-
-    async def has_sample_data(self, garden_id: uuid.UUID) -> bool:
-        result = await self.session.execute(
-            select(func.count())
-            .select_from(SceneObservationModel)
-            .where(
-                SceneObservationModel.garden_id == garden_id,
-                SceneObservationModel.kaynak == "ornek",
-            )
-        )
-        return result.scalar_one() > 0
 
     # --- işler
     async def active_job(self, garden_id: uuid.UUID) -> NdviJobModel | None:

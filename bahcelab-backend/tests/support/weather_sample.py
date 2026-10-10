@@ -1,4 +1,4 @@
-"""Ağsız demo için deterministik örnek hava verisi (Akdeniz kıyısı iklimine yakın, `kaynak = ornek`)."""
+"""TEST FIXTURE: deterministik sentetik hava verisi. Ürün kodunda kullanılmaz."""
 
 from __future__ import annotations
 

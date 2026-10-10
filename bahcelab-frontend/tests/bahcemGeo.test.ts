@@ -58,7 +58,7 @@ describe('viewStorage', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('kayıt yoksa Mersin varsayılanı', () => {
+  it('kayıt yoksa Türkiye geneli varsayılanı', () => {
     expect(loadView('u1')).toEqual(DEFAULT_VIEW)
   })
 

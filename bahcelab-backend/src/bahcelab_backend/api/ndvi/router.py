@@ -47,7 +47,7 @@ async def get_indices(garden_id: UUID, service: Service) -> IndeksYanit:
 
 @router.post("/indeks/refresh", response_model=NdviIs, status_code=status.HTTP_202_ACCEPTED)
 async def refresh_indices(garden_id: UUID, service: Service) -> NdviIs:
-    """«Şimdi güncelle»: yeni ve eksik sahneleri arka planda işler (örnek veri varsa gerçek veriyle değiştirir)."""
+    """«Şimdi güncelle»: yeni ve eksik sahneleri arka planda işler."""
     return await service.refresh(garden_id)
 
 

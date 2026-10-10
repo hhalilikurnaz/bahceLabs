@@ -82,7 +82,6 @@ export interface RainTotal {
 export interface Weather {
   guncelleme: string
   onbellekten: boolean
-  ornekVeri: boolean
   atif: string
   simdi: WeatherNow
   gunler: WeatherDay[]
@@ -106,7 +105,6 @@ export interface WeatherSummary {
   hata: string | null
   guncelleme: string | null
   onbellekten: boolean
-  ornekVeri: boolean
   simdi: WeatherNow | null
   bugunMin: number | null
   bugunMax: number | null
@@ -146,7 +144,6 @@ function mapWeather(d: any): Weather {
   return {
     guncelleme: d.guncelleme,
     onbellekten: d.onbellekten,
-    ornekVeri: d.ornek_veri,
     atif: d.atif,
     simdi: mapNow(d.simdi),
     gunler: d.gunler.map(
@@ -207,7 +204,6 @@ function mapSummary(s: any): WeatherSummary {
     hata: s.hata,
     guncelleme: s.guncelleme,
     onbellekten: s.onbellekten,
-    ornekVeri: s.ornek_veri,
     simdi: s.simdi ? mapNow(s.simdi) : null,
     bugunMin: s.bugun_min,
     bugunMax: s.bugun_max,

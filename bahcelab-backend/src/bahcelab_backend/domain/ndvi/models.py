@@ -47,7 +47,7 @@ class SceneObservationModel(Base):
     sutun: Mapped[int | None] = mapped_column(Integer, nullable=True)
     goruntu_koordinatlari: Mapped[list[list[float]] | None] = mapped_column(JSONB, nullable=True)
     gercek_renk_png_yolu: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # sentinel-2: gerçek uydu verisi · ornek: geliştirme tohum verisi (arayüzde etiketlenir)
+    # kaynak uydu: sentinel-2
     kaynak: Mapped[str] = mapped_column(String(20), nullable=False, default="sentinel-2")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

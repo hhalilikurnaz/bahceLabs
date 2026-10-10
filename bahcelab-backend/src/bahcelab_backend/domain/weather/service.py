@@ -50,7 +50,6 @@ def snap(value: float, step: float) -> float:
 class CellForecast:
     forecast: Forecast
     fetched_at: datetime
-    sample: bool
     stale: bool  # sağlayıcıya ulaşılamadı, son önbellek gösteriliyor
 
 
@@ -121,14 +120,12 @@ class WeatherService:
             return CellForecast(
                 Forecast.model_validate(cell.tahmin),
                 cell.tahmin_zamani,
-                cell.tahmin_kaynak == "ornek",
                 stale,
             )
 
         def fresh() -> CellForecast | None:
             if (
                 cell.tahmin is not None
-                and cell.tahmin_kaynak != "ornek"
                 and cell.tahmin_zamani is not None
                 and self._now_utc() - cell.tahmin_zamani < ttl
             ):
@@ -160,7 +157,7 @@ class WeatherService:
             await self.repo.upsert_daily(
                 cell.id, [d for d in forecast.daily if d.tarih < today], "tahmin"
             )
-            return CellForecast(forecast, now, False, False)
+            return CellForecast(forecast, now, False)
 
     # ------------------------------------------------------------------ geçmiş (günde bir tamamlanır)
     async def _sync_history(self, cell, today: date) -> None:
@@ -289,7 +286,6 @@ class WeatherService:
             konum=Konum(enlem=lat, boylam=lng),
             guncelleme=data.fetched_at,
             onbellekten=data.stale,
-            ornek_veri=data.sample,
             kaynak=self.provider.name,
             atif=self.provider.attribution,
             simdi=_simdi(forecast),
@@ -359,7 +355,6 @@ class WeatherService:
                     ad=name,
                     guncelleme=outcome.fetched_at,
                     onbellekten=outcome.stale,
-                    ornek_veri=outcome.sample,
                     simdi=_simdi(forecast),
                     bugun_min=row.min if row else None,
                     bugun_max=row.max if row else None,

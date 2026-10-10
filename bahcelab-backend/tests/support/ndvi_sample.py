@@ -1,4 +1,4 @@
-"""Geliştirme için örnek NDVI serisi (ağ olmadan demo). Gerçek veri değildir: kaynak = "ornek".
+"""TEST FIXTURE: sentetik indeks serisi. Ürün kodunda kullanılmaz; sahte veri yalnızca testlerde bulunur.
 
 Aynı işleme hattı (`analyze_scene`) kullanılır; yalnızca bantlar yapay üretilir. Arayüz bu
 kayıtları «Örnek veri» olarak etiketler ve «Şimdi güncelle» gerçek veriyle değiştirir.

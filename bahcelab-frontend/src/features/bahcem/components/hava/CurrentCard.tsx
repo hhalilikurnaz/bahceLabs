@@ -6,7 +6,7 @@ import { WeatherIcon } from './WeatherIcon'
 
 /** Şu anki hava durumu + veri tazeliği (internet yoksa son önbellek uyarısı). */
 export function CurrentCard({ weather }: { weather: Weather }) {
-  const { simdi, onbellekten, ornekVeri, guncelleme } = weather
+  const { simdi, onbellekten, guncelleme } = weather
   const direction = windDirection(simdi.yon)
 
   return (
@@ -48,9 +48,7 @@ export function CurrentCard({ weather }: { weather: Weather }) {
       </dl>
 
       <p className="mt-3 text-[11px] text-app-text-dim" data-testid="weather-updated">
-        {ornekVeri
-          ? 'Örnek veri (ağsız demo) — internet olduğunda gerçek veriyle değişir.'
-          : `Son güncelleme ${formatClockIstanbul(guncelleme)} · ${timeAgo(guncelleme) ?? ''}`}
+        {`Son güncelleme ${formatClockIstanbul(guncelleme)} · ${timeAgo(guncelleme) ?? ''}`}
       </p>
       {onbellekten && (
         <p
