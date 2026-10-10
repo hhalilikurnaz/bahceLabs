@@ -1,8 +1,22 @@
-import { describe, expect, it } from 'vitest'
-import { REGISTRATION_ENABLED } from '@/features/auth/authConfig'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+async function loadFlag() {
+  vi.resetModules()
+  return (await import('@/features/auth/authConfig')).REGISTRATION_ENABLED
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 describe('authConfig', () => {
-  it('yeni kayıt kapalı (erken erişim)', () => {
-    expect(REGISTRATION_ENABLED).toBe(false)
+  it('bayrak tanımsızsa kayıt formu kapalı (erken erişim)', async () => {
+    vi.stubEnv('VITE_REGISTRATION_ENABLED', '')
+    expect(await loadFlag()).toBe(false)
+  })
+
+  it("VITE_REGISTRATION_ENABLED='true' ise kayıt formu açılır", async () => {
+    vi.stubEnv('VITE_REGISTRATION_ENABLED', 'true')
+    expect(await loadFlag()).toBe(true)
   })
 })

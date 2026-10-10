@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
+import { BahcemPage } from '@/features/bahcem/pages/BahcemPage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { BlogPage } from '@/features/marketing/pages/BlogPage'
@@ -16,6 +17,14 @@ export default function App() {
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/bahcem"
+        element={
+          <ProtectedRoute>
+            <BahcemPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/planning"
         element={

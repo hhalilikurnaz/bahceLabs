@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_PLANNING_API_MODE: 'mock' | 'real'
   readonly VITE_PLANNING_API_BASE_URL?: string
-  readonly VITE_WORKSPACE_ID?: string
+  readonly VITE_REGISTRATION_ENABLED?: string
 }
 
 interface ImportMeta {

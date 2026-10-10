@@ -1,5 +1,5 @@
 import type { Garden } from '../types'
-import { apiRequest } from './apiClient'
+import { apiRequest } from '@/lib/apiClient'
 import type { GardenApi } from './gardenApi.types'
 
 type ApiGarden = {

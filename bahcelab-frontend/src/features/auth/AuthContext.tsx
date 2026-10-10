@@ -2,19 +2,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import {
-  clearSession,
-  loadSession,
-  loadUsers,
-  saveSession,
-  saveUsers,
-} from './authStorage'
-import { REGISTRATION_ENABLED } from './authConfig'
-import type { AuthSession, AuthUser, StoredUser } from './types'
+import { ApiError, apiRequest, setUnauthorizedHandler } from '@/lib/apiClient'
+import type { AuthUser } from './types'
 
 interface RegisterInput {
   name: string
@@ -30,86 +24,98 @@ interface LoginInput {
 interface AuthContextValue {
   user: AuthUser | null
   isAuthenticated: boolean
+  /** İlk oturum kontrolü (GET /auth/me) bitene kadar true */
+  isLoading: boolean
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+}
+
+interface ApiAuthUser {
+  id: string
+  name: string
+  email: string
+  workspace_id: string
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
+function mapUser(user: ApiAuthUser): AuthUser {
+  return { id: user.id, name: user.name, email: user.email, workspaceId: user.workspace_id }
 }
 
-function toSession(user: AuthUser): AuthSession {
-  return {
-    user,
-    token: `local-${user.id}`,
+/** Sunucunun 422 doğrulama mesajını okunur Türkçe metne çevirir. */
+function toFriendlyError(err: unknown, fallback: string): Error {
+  if (err instanceof ApiError) {
+    const errors = err.details.errors as { msg?: string }[] | undefined
+    const first = errors?.[0]?.msg
+    if (err.status === 422 && first) return new Error(first.replace(/^Value error, /, ''))
+    return new Error(err.message)
   }
+  return new Error(fallback)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession | null>(() => loadSession())
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setUnauthorizedHandler(() => setUser(null))
+
+    apiRequest<ApiAuthUser>('/auth/me')
+      .then((me) => {
+        if (!cancelled) setUser(mapUser(me))
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+      setUnauthorizedHandler(null)
+    }
+  }, [])
 
   const login = useCallback(async ({ email, password }: LoginInput) => {
-    const normalized = normalizeEmail(email)
-    const match = loadUsers().find(
-      (u) => normalizeEmail(u.email) === normalized && u.password === password,
-    )
-
-    if (!match) {
-      throw new Error('Girişler ve kayıtlar çok yakında sizlerle!')
+    try {
+      const me = await apiRequest<ApiAuthUser>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      })
+      setUser(mapUser(me))
+    } catch (err) {
+      throw toFriendlyError(err, 'Giriş yapılamadı. Bağlantınızı kontrol edin.')
     }
-
-    const next = toSession({ id: match.id, name: match.name, email: match.email })
-    saveSession(next)
-    setSession(next)
   }, [])
 
   const register = useCallback(async ({ name, email, password }: RegisterInput) => {
-    if (!REGISTRATION_ENABLED) {
-      throw new Error('Kayıtlar şimdilik kapalı. Erken erişim duyurulduğunda bu sayfadan kayıt açılacaktır.')
+    try {
+      const me = await apiRequest<ApiAuthUser>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+      })
+      setUser(mapUser(me))
+    } catch (err) {
+      throw toFriendlyError(err, 'Kayıt olunamadı. Bağlantınızı kontrol edin.')
     }
-
-    const trimmedName = name.trim()
-    const normalized = normalizeEmail(email)
-
-    if (!trimmedName || !normalized || password.length < 6) {
-      throw new Error('Lütfen tüm alanları doldurun. Şifre en az 6 karakter olmalı.')
-    }
-
-    const users = loadUsers()
-    if (users.some((u) => normalizeEmail(u.email) === normalized)) {
-      throw new Error('Bu e-posta ile zaten kayıt var.')
-    }
-
-    const user: StoredUser = {
-      id: crypto.randomUUID(),
-      name: trimmedName,
-      email: normalized,
-      password,
-    }
-
-    saveUsers([...users, user])
-    const next = toSession({ id: user.id, name: user.name, email: user.email })
-    saveSession(next)
-    setSession(next)
   }, [])
 
-  const logout = useCallback(() => {
-    clearSession()
-    setSession(null)
+  const logout = useCallback(async () => {
+    try {
+      await apiRequest<void>('/auth/logout', { method: 'POST' })
+    } finally {
+      // Sunucuya ulaşılamasa bile yerel oturum kapatılır
+      setUser(null)
+    }
   }, [])
 
   const value = useMemo(
-    () => ({
-      user: session?.user ?? null,
-      isAuthenticated: Boolean(session?.user),
-      login,
-      register,
-      logout,
-    }),
-    [session, login, register, logout],
+    () => ({ user, isAuthenticated: user !== null, isLoading, login, register, logout }),
+    [user, isLoading, login, register, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
+import { REGISTRATION_ENABLED } from '../authConfig'
 import {
   AuthShell,
   authFieldClass,
@@ -12,7 +13,7 @@ export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/planning'
+  const from = (location.state as { from?: string } | null)?.from ?? '/bahcem'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,15 +45,15 @@ export function LoginPage() {
     <AuthShell
       variant="login"
       title="Giriş yap"
-      subtitle="Hesabınızla planlama ve simülasyon alanına geçin."
+      subtitle="Hesabınızla bahçelerinize ve planlarınıza ulaşın."
       footer={
         <>
-          Kayıtlar çok yakında.{' '}
+          {REGISTRATION_ENABLED ? 'Hesabınız yok mu?' : 'Kayıtlar çok yakında.'}{' '}
           <Link
             to="/register"
             className="font-semibold text-[#0c2418] no-underline underline-offset-2 hover:underline"
           >
-            Detaylar
+            {REGISTRATION_ENABLED ? 'Kayıt olun' : 'Detaylar'}
           </Link>
         </>
       }

@@ -1,5 +1,5 @@
 import type { SimulationPlan } from '../types'
-import { apiRequest } from './apiClient'
+import { apiRequest } from '@/lib/apiClient'
 import {
   mapPlanUpdateToApi,
   mapSimulationPlanFromApi,

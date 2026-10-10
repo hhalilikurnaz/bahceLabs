@@ -1,2 +1,2 @@
-/** Yeni kayıt kapalı; mevcut localStorage hesapları giriş yapabilir. */
-export const REGISTRATION_ENABLED = false
+/** Kayıt formu bayrağı. Asıl kontrol sunucudadır (REGISTRATION_ENABLED); bu yalnızca arayüzü belirler. */
+export const REGISTRATION_ENABLED = import.meta.env.VITE_REGISTRATION_ENABLED === 'true'
