@@ -14,6 +14,7 @@ from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
+from bahcelab_backend.domain.overview.service import GardenOverviewService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
 from bahcelab_backend.domain.weather.provider import WeatherProvider, get_provider
@@ -100,3 +101,12 @@ async def get_weather_service(
     provider: Annotated[WeatherProvider, Depends(get_weather_provider)],
 ) -> WeatherService:
     return WeatherService(WeatherRepository(session, workspace_id), provider)
+
+
+async def get_overview_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+) -> GardenOverviewService:
+    return GardenOverviewService(
+        GardenRepository(session, workspace_id), NdviRepository(session), WeatherRepository(session, workspace_id)
+    )

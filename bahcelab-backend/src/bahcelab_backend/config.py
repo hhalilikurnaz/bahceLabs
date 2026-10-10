@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     weather_cell_degrees: float = 0.05
     weather_history_days: int = 425  # 13 ay + sezon karşılaştırması için pay
 
+    # Bahçe listesi özeti (GET /gardens/overview)
+    overview_sparkline_days: int = 30
+    overview_weather_max_age_hours: int = 6  # önbellekteki tahmin bundan eskiyse "bayat" işaretlenir
+    thumbnail_max_px: int = 160
+
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
     access_token_minutes: int = 15

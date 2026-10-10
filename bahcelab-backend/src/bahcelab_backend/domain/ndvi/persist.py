@@ -20,6 +20,10 @@ def png_key(garden_id: uuid.UUID, tarih: date, indeks: str) -> str:
     return f"{storage_prefix(garden_id)}/{tarih.isoformat()}/{indeks}.png"
 
 
+def thumb_key(garden_id: uuid.UUID, tarih: date, indeks: str) -> str:
+    return f"{storage_prefix(garden_id)}/{tarih.isoformat()}/{indeks}-kucuk.png"
+
+
 def grid_key(garden_id: uuid.UUID, tarih: date, indeks: str) -> str:
     return f"{storage_prefix(garden_id)}/{tarih.isoformat()}/{indeks}.bin"
 

@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.weather import rules
 from bahcelab_backend.domain.weather.codes import describe
+from bahcelab_backend.domain.weather.models import WeatherCellModel
 from bahcelab_backend.domain.weather.provider import (
     TIMEZONE,
     DailyPoint,
@@ -53,7 +54,7 @@ class CellForecast:
     stale: bool  # sağlayıcıya ulaşılamadı, son önbellek gösteriliyor
 
 
-def _simdi(forecast: Forecast) -> Simdi:
+def current_summary(forecast: Forecast) -> Simdi:
     c = forecast.current
     label, icon = describe(c.kod, c.gunduz)
     return Simdi(
@@ -75,7 +76,7 @@ def _alert(a: rules.WeatherAlert) -> HavaUyarisi:
     return HavaUyarisi(**a.__dict__)
 
 
-def _alerts(forecast: Forecast, today: date, now: str) -> list[HavaUyarisi]:
+def weather_alerts(forecast: Forecast, today: date, now: str) -> list[HavaUyarisi]:
     found = [*rules.frost_alerts(forecast.hourly, now), *rules.heat_alerts(forecast.daily, today)]
     return [_alert(a) for a in rules.sort_alerts(found)]
 
@@ -111,7 +112,7 @@ class WeatherService:
         return snap(float(point["enlem"]), step), snap(float(point["boylam"]), step)
 
     # ------------------------------------------------------------------ tahmin (1 saat önbellek)
-    async def _forecast(self, cell) -> CellForecast:
+    async def _forecast(self, cell: WeatherCellModel) -> CellForecast:
         ttl = timedelta(minutes=self.settings.weather_cache_minutes)
 
         def cached(stale: bool) -> CellForecast | None:
@@ -160,7 +161,7 @@ class WeatherService:
             return CellForecast(forecast, now, False)
 
     # ------------------------------------------------------------------ geçmiş (günde bir tamamlanır)
-    async def _sync_history(self, cell, today: date) -> None:
+    async def _sync_history(self, cell: WeatherCellModel, today: date) -> None:
         if cell.gecmis_senkron == today:
             return
         days = self.settings.weather_history_days
@@ -179,7 +180,7 @@ class WeatherService:
         cell.gecmis_senkron = today
         await self.repo.session.flush()
 
-    async def _daily_rows(self, cell, start: date, end: date) -> dict[date, DailyPoint]:
+    async def _daily_rows(self, cell: WeatherCellModel, start: date, end: date) -> dict[date, DailyPoint]:
         rows = await self.repo.daily(cell.id, start, end)
         return {
             d: DailyPoint(
@@ -288,10 +289,10 @@ class WeatherService:
             onbellekten=data.stale,
             kaynak=self.provider.name,
             atif=self.provider.attribution,
-            simdi=_simdi(forecast),
+            simdi=current_summary(forecast),
             gunler=days,
             saatlik=hours,
-            uyarilar=_alerts(forecast, today, now),
+            uyarilar=weather_alerts(forecast, today, now),
             su_dengesi=balances,
             yagis_toplamlari=totals,
             sezon_baslangici=season,
@@ -336,7 +337,7 @@ class WeatherService:
             try:
                 results[key] = await self._forecast(cell)
             except AppError as exc:
-                results[key] = exc.detail["message"]
+                results[key] = str(exc.detail["message"]) if isinstance(exc.detail, dict) else str(exc.detail)
 
         local = self._local_now()
         today, now = local.date(), local.strftime("%Y-%m-%dT%H:%M")
@@ -355,12 +356,12 @@ class WeatherService:
                     ad=name,
                     guncelleme=outcome.fetched_at,
                     onbellekten=outcome.stale,
-                    simdi=_simdi(forecast),
+                    simdi=current_summary(forecast),
                     bugun_min=row.min if row else None,
                     bugun_max=row.max if row else None,
                     bugun_yagis_mm=row.yagis if row else None,
                     bugun_yagis_olasiligi=row.yagis_olasiligi if row else None,
-                    uyarilar=_alerts(forecast, today, now),
+                    uyarilar=weather_alerts(forecast, today, now),
                     sonraki_ilaclama=_next_spray(forecast, now),
                 )
             )

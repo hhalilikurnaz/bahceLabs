@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,17 @@ class WeatherRepository:
             )
         )
         return result.scalar_one()
+
+    async def cached_cells(
+        self, keys: set[tuple[float, float]]
+    ) -> dict[tuple[float, float], WeatherCellModel]:
+        """Var olan hücreler (tek sorgu); ağa çıkılmaz, hücre oluşturulmaz."""
+        if not keys:
+            return {}
+        result = await self.session.execute(
+            select(WeatherCellModel).where(tuple_(WeatherCellModel.enlem, WeatherCellModel.boylam).in_(keys))
+        )
+        return {(cell.enlem, cell.boylam): cell for cell in result.scalars()}
 
     async def refresh_cell(self, cell: WeatherCellModel) -> None:
         await self.session.refresh(cell)

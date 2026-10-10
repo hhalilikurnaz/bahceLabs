@@ -1,5 +1,7 @@
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any, cast
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -9,6 +11,7 @@ from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
+from bahcelab_backend.api.overview.router import router as overview_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.api.weather.router import router as weather_router
 from bahcelab_backend.config import get_settings
@@ -22,7 +25,7 @@ from bahcelab_backend.shared.exception_handlers import (
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     if get_settings().ndvi_enabled:
         try:
             # Önceki süreçte yarıda kalan NDVI işleri hata olarak işaretlenir (yeniden başlatılabilir)
@@ -54,11 +57,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.add_exception_handler(AppError, app_error_handler)
-    app.add_exception_handler(RequestValidationError, validation_error_handler)
+    # Starlette işleyici imzası `Exception` bekler; kayıt türü işleyicinin kendi istisnasına göre daraltılmıştır
+    app.add_exception_handler(AppError, cast(Any, app_error_handler))
+    app.add_exception_handler(RequestValidationError, cast(Any, validation_error_handler))
     app.add_exception_handler(Exception, generic_error_handler)
 
     app.include_router(auth_router)
+    app.include_router(overview_router)  # /gardens/overview, /gardens/{id} yolundan ÖNCE kayıtlı olmalı
     app.include_router(gardens_router)
     app.include_router(ndvi_router)
     app.include_router(definitions_router)

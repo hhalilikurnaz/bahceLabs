@@ -1,6 +1,6 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any
+from typing import Any, Literal, cast
 
 import numpy as np
 
@@ -8,7 +8,7 @@ from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.indices import INDEX_IDS, INDICES, TRUE_COLOR
 from bahcelab_backend.domain.ndvi.models import NdviJobModel
-from bahcelab_backend.domain.ndvi.persist import missing_outputs, storage_prefix
+from bahcelab_backend.domain.ndvi.persist import missing_outputs, storage_prefix, thumb_key
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.ndvi.runner import start_job
@@ -20,6 +20,7 @@ from bahcelab_backend.domain.ndvi.schemas import (
     SahneGozlemi,
     VerimlilikYanit,
 )
+from bahcelab_backend.domain.ndvi.thumbnail import make_thumbnail
 from bahcelab_backend.domain.ndvi.zones import (
     MIN_OBSERVATIONS,
     GridObservation,
@@ -52,7 +53,7 @@ def to_gozlem(item: SceneWithIndices) -> SahneGozlemi:
         )
     return SahneGozlemi(
         tarih=scene.tarih,
-        durum=scene.durum,
+        durum=cast(Literal["tamam", "bulutlu"], scene.durum),
         scene_id=scene.scene_id,
         bulut_orani=scene.bulut_orani,
         gecerli_piksel_orani=scene.gecerli_piksel_orani,
@@ -69,8 +70,8 @@ def to_gozlem(item: SceneWithIndices) -> SahneGozlemi:
 def to_is(job: NdviJobModel) -> NdviIs:
     return NdviIs(
         id=job.id,
-        tur=job.tur,
-        durum=job.durum,
+        tur=cast(Literal["ilk", "guncelleme", "yeniden"], job.tur),
+        durum=cast(Literal["bekliyor", "isleniyor", "tamam", "hata"], job.durum),
         toplam=job.toplam,
         islenen=job.islenen,
         hata_mesaji=job.hata_mesaji,
@@ -200,7 +201,7 @@ class NdviService:
         if indeks not in VALID_OUTPUTS:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bilinmeyen indeks.")
 
-    async def _row(self, garden_id: uuid.UUID, indeks: str, tarih: date):
+    async def _row(self, garden_id: uuid.UUID, indeks: str, tarih: date) -> SceneWithIndices:
         await self._garden(garden_id)
         self._check_output(indeks)
         item = await self.repo.get_scene(garden_id, tarih)
@@ -218,6 +219,16 @@ class NdviService:
         if not key or not self.storage.exists(key):
             raise AppError(404, AppErrorCode.NOT_FOUND, "Görüntü bulunamadı.")
         return self.storage.read(key)
+
+    async def thumbnail(self, garden_id: uuid.UUID, indeks: str, tarih: date) -> bytes:
+        """Küçük resim: ilk istekte tam görüntüden üretilip depolanır, sonra doğrudan okunur."""
+        full = await self.png(garden_id, indeks, tarih)  # yetki + varlık denetimi
+        key = thumb_key(garden_id, tarih, indeks)
+        if self.storage.exists(key):
+            return self.storage.read(key)
+        data = make_thumbnail(full, get_settings().thumbnail_max_px)
+        self.storage.save(key, data)
+        return data
 
     async def grid(self, garden_id: uuid.UUID, indeks: str, tarih: date) -> bytes:
         """Ham indeks değerleri (float32 LE, satır sırası, geçersiz = NaN): kontrastlı mod, fark, karşılaştırma."""
@@ -263,7 +274,12 @@ class NdviService:
             )
             observations.append(
                 GridObservation(
-                    scene.tarih, values, tuple(tuple(c) for c in scene.goruntu_koordinatlari)
+                    scene.tarih,
+                    values,
+                    cast(
+                        tuple[tuple[float, float], ...],
+                        tuple((float(c[0]), float(c[1])) for c in scene.goruntu_koordinatlari),
+                    ),
                 )
             )
 

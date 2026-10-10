@@ -65,6 +65,19 @@ async def get_index_png(garden_id: UUID, indeks: str, tarih: date, service: Serv
 
 
 @router.get(
+    "/indeks/{indeks}/{tarih}/thumb.png",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}}},
+)
+async def get_index_thumbnail(garden_id: UUID, indeks: str, tarih: date, service: Service) -> Response:
+    """Küçük resim (liste ve arşiv ızgarası için, kırpılmış ve küçültülmüş)."""
+    data = await service.thumbnail(garden_id, indeks, tarih)
+    return Response(
+        content=data, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"}
+    )
+
+
+@router.get(
     "/indeks/{indeks}/{tarih}.bin",
     response_class=Response,
     responses={200: {"content": {"application/octet-stream": {}}}},

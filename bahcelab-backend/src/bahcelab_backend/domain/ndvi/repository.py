@@ -1,10 +1,12 @@
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import delete, func, select, text, tuple_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer, undefer
 
 from bahcelab_backend.domain.ndvi.models import (
     JOB_ACTIVE,
@@ -54,6 +56,71 @@ class NdviRepository:
         for row in rows:
             by_date.setdefault(row.tarih, {})[row.indeks] = row
         return [SceneWithIndices(s, by_date.get(s.tarih, {})) for s in scenes]
+
+    async def list_scenes_bulk(
+        self, garden_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, list[SceneWithIndices]]:
+        """Birden çok bahçenin sahneleri: 3 sorgu (bahçe sayısından bağımsız, N+1 yok).
+
+        Sorunlu bölge GeoJSON'ı ağırdır; yalnızca her (bahçe, indeks) için en son geçerli tarihte yüklenir
+        (uyarı kuralları çok-indeks örtüşmesini yalnızca son görüntüde hesaplar).
+        """
+        result: dict[uuid.UUID, list[SceneWithIndices]] = {gid: [] for gid in garden_ids}
+        if not garden_ids:
+            return result
+        scenes = (
+            (
+                await self.session.execute(
+                    select(SceneObservationModel)
+                    .where(SceneObservationModel.garden_id.in_(garden_ids))
+                    .order_by(SceneObservationModel.garden_id, SceneObservationModel.tarih)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        rows = (
+            (
+                await self.session.execute(
+                    select(IndexObservationModel)
+                    .options(defer(IndexObservationModel.sorunlu_bolge_geojson))
+                    .where(IndexObservationModel.garden_id.in_(garden_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        latest = (
+            select(
+                IndexObservationModel.garden_id,
+                IndexObservationModel.indeks,
+                func.max(IndexObservationModel.tarih),
+            )
+            .where(IndexObservationModel.garden_id.in_(garden_ids))
+            .group_by(IndexObservationModel.garden_id, IndexObservationModel.indeks)
+        )
+        # Aynı satır nesneleri üzerinde ertelenmiş sütunu doldurur (kimlik haritası)
+        (
+            await self.session.execute(
+                select(IndexObservationModel)
+                .options(undefer(IndexObservationModel.sorunlu_bolge_geojson))
+                .where(
+                    tuple_(
+                        IndexObservationModel.garden_id,
+                        IndexObservationModel.indeks,
+                        IndexObservationModel.tarih,
+                    ).in_(latest)
+                )
+            )
+        ).scalars().all()
+        by_key: dict[tuple[uuid.UUID, date], dict[str, IndexObservationModel]] = {}
+        for row in rows:
+            by_key.setdefault((row.garden_id, row.tarih), {})[row.indeks] = row
+        for scene in scenes:
+            result[scene.garden_id].append(
+                SceneWithIndices(scene, by_key.get((scene.garden_id, scene.tarih), {}))
+            )
+        return result
 
     async def get_scene(self, garden_id: uuid.UUID, tarih: date) -> SceneWithIndices | None:
         scene = (
@@ -194,7 +261,7 @@ class NdviRepository:
             .where(NdviJobModel.durum.in_(JOB_ACTIVE))
             .values(durum="hata", hata_mesaji=message, bitis=datetime.now(UTC))
         )
-        return result.rowcount or 0
+        return int(getattr(result, "rowcount", 0) or 0)
 
     async def lock_geometry_hash(self, garden_id: uuid.UUID) -> str | None:
         """Bahçe satırını paylaşımlı kilitleyip sınırın özetini verir. Sınır güncellemesi (UPDATE) bu
