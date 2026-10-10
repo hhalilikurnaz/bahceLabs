@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import Base
 from bahcelab_backend.domain.auth import models as auth_models  # noqa: F401
+from bahcelab_backend.domain.gardens import models as garden_models  # noqa: F401
 from bahcelab_backend.domain.planning import models  # noqa: F401
 
 config = context.config

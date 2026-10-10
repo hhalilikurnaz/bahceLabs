@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from bahcelab_backend.api.auth.router import router as auth_router
+from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.shared.errors import AppError
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, generic_error_handler)
 
     app.include_router(auth_router)
+    app.include_router(gardens_router)
     app.include_router(planning_router)
 
     @app.get("/health", tags=["system"])

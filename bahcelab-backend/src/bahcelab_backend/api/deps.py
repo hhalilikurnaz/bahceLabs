@@ -10,6 +10,8 @@ from bahcelab_backend.domain.auth.repository import AuthRepository
 from bahcelab_backend.domain.auth.schemas import AuthUser
 from bahcelab_backend.domain.auth.security import decode_access_token
 from bahcelab_backend.domain.auth.service import AuthService
+from bahcelab_backend.domain.gardens.repository import GardenRepository
+from bahcelab_backend.domain.gardens.service import GardenService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
@@ -36,6 +38,13 @@ async def get_workspace_id(
 ) -> uuid.UUID:
     """Çalışma alanı istemciden değil, giriş yapmış kullanıcıdan gelir."""
     return user.workspace_id
+
+
+async def get_garden_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+) -> GardenService:
+    return GardenService(GardenRepository(session, workspace_id))
 
 
 async def get_plan_repository(
