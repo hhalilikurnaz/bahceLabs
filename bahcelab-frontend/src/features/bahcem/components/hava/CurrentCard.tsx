@@ -32,10 +32,8 @@ export function CurrentCard({ weather }: { weather: Weather }) {
             <Wind className="h-3.5 w-3.5" aria-hidden /> Rüzgâr
           </dt>
           <dd className="mt-0.5 font-medium text-app-text">{formatWind(simdi.ruzgar)}</dd>
-          <dd className="text-[11px] text-app-text-dim">
-            {simdi.hamle != null ? `hamle ${formatWind(simdi.hamle)}` : ''}
-            {direction ? ` · ${direction}` : ''}
-          </dd>
+          {simdi.hamle != null && <dd className="text-[11px] text-app-text-dim">hamle {formatWind(simdi.hamle)}</dd>}
+          {direction && <dd className="text-[11px] text-app-text-dim">{direction} yönünden</dd>}
         </div>
         <div className="rounded-xl bg-app-bg/50 px-2.5 py-2">
           <dt className="flex items-center gap-1 text-app-text-dim">

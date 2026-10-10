@@ -21,7 +21,7 @@ export function DailyForecast({ days }: { days: WeatherDay[] }) {
           const window = day.ilaclama.enIyiAralik
           return (
             <li key={day.tarih} className="py-2" data-testid="forecast-day">
-              <div className="grid grid-cols-[3.25rem_1.5rem_3.75rem_1fr_auto] items-center gap-x-2 text-[12px]">
+              <div className="grid grid-cols-[2.75rem_1.25rem_3.25rem_1fr_auto] items-center gap-x-1.5 text-[12px]">
                 <div>
                   <p className="font-medium text-app-text">{dayLabel(day.tarih, today)}</p>
                   <p className="text-[10px] text-app-text-dim">{formatDayMonth(day.tarih)}</p>
@@ -34,18 +34,18 @@ export function DailyForecast({ days }: { days: WeatherDay[] }) {
                 <p className="flex items-center gap-1 whitespace-nowrap text-app-text-muted">
                   <Droplets className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {formatMm(day.yagisMm)}
-                  <span className="text-app-text-dim">{formatPercent(day.yagisOlasiligi)}</span>
+                  <span className="text-[10px] text-app-text-dim">{formatPercent(day.yagisOlasiligi)}</span>
                 </p>
-                <p className="flex items-center gap-1 whitespace-nowrap text-app-text-muted">
+                <p className="flex items-center gap-1 whitespace-nowrap text-[11px] text-app-text-muted">
                   <Wind className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {formatWind(day.ruzgarMax)}
                 </p>
               </div>
-              <p className="mt-1 flex items-center gap-1.5 pl-[3.25rem] text-[11px] text-app-text-dim">
+              <p className="mt-1 flex items-center gap-1.5 pl-[2.75rem] text-[11px] text-app-text-dim">
                 <SprayCan className="h-3 w-3" aria-hidden />
                 {window ? (
                   <span>
-                    İlaçlama için en iyi aralık{' '}
+                    En iyi gündüz aralığı{' '}
                     <span className="font-medium text-emerald-300">
                       {window[0]}–{window[1]}
                     </span>

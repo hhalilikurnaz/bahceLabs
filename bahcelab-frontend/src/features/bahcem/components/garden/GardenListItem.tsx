@@ -146,10 +146,8 @@ export function GardenListItem({
             aria-current={selected}
             className="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-app-accent"
           >
-            <span className="block truncate text-[14px] font-medium text-app-text">{garden.ad}</span>
-            <span className="mt-1 flex items-center gap-2">
-              <span className="text-[12px] text-app-text-muted">{formatDecare(garden.alanDekar)}</span>
-              <NdviBadge value={ndvi} />
+            <span className="flex items-center gap-2">
+              <span className="min-w-0 truncate text-[14px] font-medium text-app-text">{garden.ad}</span>
               {alerts.length > 0 && (
                 <span className="flex items-center gap-1" data-testid="garden-alerts">
                   {alerts.slice(0, 3).map((alert, i) => (
@@ -168,6 +166,10 @@ export function GardenListItem({
                   ))}
                 </span>
               )}
+            </span>
+            <span className="mt-1 flex items-center gap-2">
+              <span className="whitespace-nowrap text-[12px] text-app-text-muted">{formatDecare(garden.alanDekar)}</span>
+              <NdviBadge value={ndvi} />
             </span>
           </button>
         )}

@@ -183,9 +183,9 @@ export function IndexChart({
         </button>
       </div>
 
-      <div className="mb-1 flex min-h-5 items-center justify-between gap-2 text-[11px]">
+      <div className="mb-1 flex min-h-5 items-start justify-between gap-2 text-[11px]">
         <span className="shrink-0 font-medium text-app-text">Zaman grafiği</span>
-        <span className="truncate text-right text-app-text-muted" aria-live="polite" data-testid="chart-tooltip">
+        <span className="min-w-0 text-right leading-snug text-app-text-muted" aria-live="polite" data-testid="chart-tooltip">
           {shown
             ? `${INDEX_DEFS[shown.indeks].ad} · ${formatDate(shown.tarih)} · ${formatIndexValue(shown.indeks, shown.value)}${shown.bulut !== null ? ` · bulut %${Math.round(shown.bulut)}` : ''}${shown.year !== season ? ' · geçen sezon' : ''}${weatherNote(wx.byDate.get(shown.tarih))}`
             : ''}

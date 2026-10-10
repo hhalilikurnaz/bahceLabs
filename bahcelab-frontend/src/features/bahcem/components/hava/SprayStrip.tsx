@@ -60,11 +60,9 @@ export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal
             </div>
           </div>
         ))}
-        <div className="flex gap-2 pl-10 text-[9px] text-app-text-dim" aria-hidden>
+        <div className="grid grid-cols-4 pl-10 text-[9px] text-app-text-dim" aria-hidden>
           {['00', '06', '12', '18'].map((h) => (
-            <span key={h} className="flex-1 first:flex-none" style={{ flexBasis: '25%' }}>
-              {h}:00
-            </span>
+            <span key={h}>{h}:00</span>
           ))}
         </div>
       </div>
