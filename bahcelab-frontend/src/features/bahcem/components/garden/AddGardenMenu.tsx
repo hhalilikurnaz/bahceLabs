@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileUp, PencilRuler, Plus } from 'lucide-react'
-import { geometryBounds } from '../../lib/geo'
+import { geometryBounds, unionBounds } from '../../lib/geo'
 import { ImportError, parseGardenFile } from '../../lib/importFile'
 import { useFocusPadding } from '../../map/useFocusGarden'
 import { useMap } from '../../map/useMap'
@@ -49,6 +49,8 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
         map?.fitBounds(geometryBounds(only.geometry), { padding: padding(), maxZoom: 18, duration: 1000 })
         openForm({ geometry: only.geometry, source: 'file', suggestedName: only.name })
       } else {
+        const all = unionBounds(polygons.map((p) => geometryBounds(p.geometry)))
+        if (all) map?.fitBounds(all, { padding: padding(), maxZoom: 17, duration: 1000 })
         startImportPick(polygons)
       }
     } catch (err) {

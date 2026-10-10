@@ -190,7 +190,12 @@ function DrawSession() {
       draw.setMode(SELECT_MODE)
       draw.selectFeature(feature.id)
     }
-    map.fitBounds(geometryBounds(garden.geometry), { padding: padding(), maxZoom: 19, duration: 800 })
+    // Üstteki araç çubuğunun altında kalmasın diye üst boşluk büyütülür
+    map.fitBounds(geometryBounds(garden.geometry), {
+      padding: { ...padding(), top: 230 },
+      maxZoom: 19,
+      duration: 800,
+    })
   }, [map, mode, editingId, gardens, styleVersion, padding, resetFlow, toast])
 
   // Klavye: Esc iptal. Geri alma (Ctrl/Cmd+Z) terra-draw'ın kendi kısayoludur.

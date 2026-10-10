@@ -1,18 +1,12 @@
 import { ArrowLeft } from 'lucide-react'
 import { formatDecare } from '../../lib/geo'
 import { useBahcemStore } from '../../stores/bahcemStore'
-import { useMap } from '../../map/useMap'
-import { geometryBounds } from '../../lib/geo'
-import { useFocusPadding } from '../../map/useFocusGarden'
 
 /** Dosyada birden fazla poligon varsa hangisinin bahçe olacağını seçtirir. */
 export function ImportPicker() {
-  const { map } = useMap()
-  const padding = useFocusPadding()
   const imported = useBahcemStore((s) => s.imported)
   const resetFlow = useBahcemStore((s) => s.resetFlow)
   const openForm = useBahcemStore((s) => s.openForm)
-  const previewDraft = useBahcemStore((s) => s.previewDraft)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -29,8 +23,8 @@ export function ImportPicker() {
       </div>
 
       <p className="px-4 pt-3 text-[13px] leading-relaxed text-app-text-muted">
-        Dosyada {imported.length} poligon bulundu. Bahçe olarak eklemek istediğinizi seçin; üzerine gelince
-        haritada görürsünüz. Alanlar yaklaşıktır, kayıtta sunucu yeniden hesaplar.
+        Dosyada {imported.length} poligon bulundu. Bahçe olarak eklemek istediğinizi seçin; poligonlar
+        haritada kesikli çizgiyle görünür. Alanlar yaklaşıktır, kayıtta sunucu yeniden hesaplar.
       </p>
 
       <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
@@ -38,11 +32,6 @@ export function ImportPicker() {
           <li key={polygon.id}>
             <button
               type="button"
-              onMouseEnter={() => {
-                previewDraft({ geometry: polygon.geometry, source: 'file' })
-                map?.fitBounds(geometryBounds(polygon.geometry), { padding: padding(), maxZoom: 18, duration: 600 })
-              }}
-              onFocus={() => previewDraft({ geometry: polygon.geometry, source: 'file' })}
               onClick={() =>
                 openForm({ geometry: polygon.geometry, source: 'file', suggestedName: polygon.name })
               }

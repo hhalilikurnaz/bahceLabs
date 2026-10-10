@@ -25,6 +25,7 @@ export function GardenLayers() {
   const selectedId = useBahcemStore((s) => s.selectedGardenId)
   const editingId = useBahcemStore((s) => s.editingGardenId)
   const draft = useBahcemStore((s) => s.draft)
+  const imported = useBahcemStore((s) => s.imported)
   const selectGarden = useBahcemStore((s) => s.selectGarden)
 
   // Kaynak ve katmanlar
@@ -88,18 +89,16 @@ export function GardenLayers() {
     })
   }, [map, styleVersion, gardens, selectedId, editingId])
 
+  // Taslak: form açıkken tek sınır; dosyadan çok poligon geldiğinde seçim bitene kadar hepsi
   useEffect(() => {
     if (!map || styleVersion === 0) return
     const source = map.getSource(DRAFT_SOURCE) as GeoJSONSource | undefined
-    source?.setData(
-      draft
-        ? {
-            type: 'FeatureCollection',
-            features: [{ type: 'Feature', properties: {}, geometry: draft.geometry as GardenGeometry }],
-          }
-        : empty,
-    )
-  }, [map, styleVersion, draft])
+    const geometries: GardenGeometry[] = draft ? [draft.geometry] : imported.map((p) => p.geometry)
+    source?.setData({
+      type: 'FeatureCollection',
+      features: geometries.map((geometry) => ({ type: 'Feature' as const, properties: {}, geometry })),
+    })
+  }, [map, styleVersion, draft, imported])
 
   // Tıklayınca seçim ve imleç
   useEffect(() => {

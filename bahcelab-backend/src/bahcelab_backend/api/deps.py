@@ -56,8 +56,10 @@ async def get_plan_repository(
 
 async def get_planning_service(
     repo: Annotated[PlanRepository, Depends(get_plan_repository)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
 ) -> PlanningService:
-    return PlanningService(repo)
+    return PlanningService(repo, GardenRepository(session, workspace_id))
 
 
 async def get_product_repository(

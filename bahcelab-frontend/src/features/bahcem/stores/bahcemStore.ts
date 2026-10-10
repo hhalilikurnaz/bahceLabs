@@ -47,8 +47,6 @@ interface BahcemState {
   startDrawing: () => void
   startImportPick: (polygons: ImportedPolygon[]) => void
   openForm: (draft: Draft) => void
-  /** Dosyadan çıkan poligonu seçmeden önce haritada önizler */
-  previewDraft: (draft: Draft | null) => void
   startEditingBoundary: (gardenId: string) => void
   /** Akışı bitirir ve taslağı temizler */
   resetFlow: () => void
@@ -86,7 +84,6 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   startImportPick: (imported) =>
     set({ ...flowReset, mode: 'import-pick', imported, leftPanelOpen: true, selectedGardenId: null }),
   openForm: (draft) => set({ mode: 'form', draft, imported: [], liveAreaDekar: null, leftPanelOpen: true }),
-  previewDraft: (draft) => set({ draft }),
   startEditingBoundary: (gardenId) =>
     set({ ...flowReset, mode: 'editing-boundary', editingGardenId: gardenId, selectedGardenId: gardenId }),
   resetFlow: () => set({ ...flowReset }),

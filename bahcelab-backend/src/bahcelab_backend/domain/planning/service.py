@@ -2,10 +2,12 @@ from bahcelab_backend.domain.planning.geometry_service import (
     GeometryValidationError,
     validate_and_measure_land,
 )
+from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.planning.models import SimulationPlanModel
 from bahcelab_backend.domain.planning.repository import PlanRepository
 from bahcelab_backend.domain.planning.schemas import (
     CreatePlanRequest,
+    GeoJsonPolygon,
     PlanningLand,
     ProductSelection,
     SaveLandRequest,
@@ -38,8 +40,29 @@ def _model_to_schema(plan: SimulationPlanModel, is_dirty: bool = False) -> Simul
 
 
 class PlanningService:
-    def __init__(self, repo: PlanRepository) -> None:
+    def __init__(self, repo: PlanRepository, garden_repo: GardenRepository | None = None) -> None:
         self.repo = repo
+        self.garden_repo = garden_repo
+
+    async def _land_from_garden(self, garden_id) -> PlanningLand:
+        """Kayıtlı bahçenin sınırını plan taslağına aktarır (yalnızca kullanıcının kendi bahçesi)."""
+        row = await self.garden_repo.get(garden_id) if self.garden_repo else None
+        if row is None:
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Bahçe bulunamadı.")
+        if row.geojson["type"] != "Polygon":
+            raise AppError(
+                422,
+                AppErrorCode.INVALID_GEOMETRY,
+                "Çok parçalı bahçeler planlamada henüz desteklenmiyor.",
+            )
+
+        geometry = GeoJsonPolygon(coordinates=row.geojson["coordinates"])
+        land = validate_and_measure_land(geometry)  # çevre ve geçerlilik
+        garden = row.garden
+        land.area_m2 = round(float(garden.alan_dekar) * 1000, 1)  # bahçe listesiyle aynı değer
+        parts = [p for p in (garden.ilce, garden.il) if p]
+        land.location_label = ", ".join(parts) if parts else None
+        return land
 
     async def list_plans(self) -> list[SimulationPlan]:
         plans = await self.repo.list_plans()
@@ -50,7 +73,12 @@ class PlanningService:
         return _model_to_schema(plan)
 
     async def create_plan(self, request: CreatePlanRequest) -> SimulationPlan:
+        land = await self._land_from_garden(request.garden_id) if request.garden_id else None
         plan = await self.repo.create_plan(request)
+        if land is not None:
+            plan.draft_land = land.model_dump()
+            await self.repo.session.flush()
+            await self.repo.session.refresh(plan)
         return _model_to_schema(plan, is_dirty=True)
 
     async def update_plan(self, plan_id, request: UpdatePlanRequest) -> SimulationPlan:

@@ -55,10 +55,9 @@ export function GardenListPanel({
         </p>
       </section>
 
-      {!useMock && (
+      {useMock && (
         <p className="rounded-lg border border-planning-border bg-planning-surface/40 px-4 py-3 text-[13px] leading-relaxed text-planning-text-muted">
-          Bahçe listesi henüz canlı sisteme bağlı değil. Test ortamında örnek
-          bahçeler gösterilir.
+          Test modu: gerçek bahçeleriniz yerine örnek bahçeler gösterilir.
         </p>
       )}
 
@@ -80,7 +79,7 @@ export function GardenListPanel({
           <div className="p-5">
             <EmptyState
               title="Kayıtlı bahçe bulunamadı"
-              description="Yeni arazi tanımı ile plan oluşturabilirsiniz."
+              description="Bahçelerim sayfasından bahçe ekleyebilir veya yeni arazi tanımı ile plan oluşturabilirsiniz."
             />
           </div>
         )}

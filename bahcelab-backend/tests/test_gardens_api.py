@@ -250,3 +250,48 @@ async def test_deleting_garden_unlinks_planning_drafts(user_client: AsyncClient)
     still = await user_client.get(f"/planning/plans/{plan['id']}")
     assert still.status_code == 200
     assert still.json()["garden_id"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_plan_from_garden_copies_boundary_into_draft_land(user_client: AsyncClient):
+    garden = (await user_client.post("/gardens", json=garden_body())).json()
+    response = await user_client.post(
+        "/planning/plans", json={"name": "Bahçeden plan", "garden_id": garden["id"]}
+    )
+    assert response.status_code == 201
+    land = response.json()["draft_land"]
+    assert land["validation_status"] == "valid"
+    assert land["geometry"]["type"] == "Polygon"
+    assert land["area_m2"] == pytest.approx(garden["alan_dekar"] * 1000, abs=0.2)
+    assert land["perimeter_m"] == pytest.approx(4 * 161, rel=0.01)
+    assert land["location_label"] == "Erdemli, Mersin"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_plan_from_garden_rejects_foreign_and_multipart_gardens(
+    user_client: AsyncClient, app
+):
+    mine = (await user_client.post("/gardens", json=garden_body())).json()
+
+    async with make_client(app) as other:
+        await register(other)
+        foreign = await other.post(
+            "/planning/plans", json={"name": "x", "garden_id": mine["id"]}
+        )
+        assert foreign.status_code == 404
+
+    first = square(100, LNG, LAT)["coordinates"]
+    second = square(100, LNG + 0.01, LAT)["coordinates"]
+    multi = (
+        await user_client.post(
+            "/gardens",
+            json=garden_body(geometry={"type": "MultiPolygon", "coordinates": [first, second]}),
+        )
+    ).json()
+    response = await user_client.post(
+        "/planning/plans", json={"name": "x", "garden_id": multi["id"]}
+    )
+    assert response.status_code == 422
+    assert "Çok parçalı" in response.json()["error"]["message"]
