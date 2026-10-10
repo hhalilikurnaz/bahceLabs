@@ -10,6 +10,7 @@ from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.planning.router import router as planning_router
+from bahcelab_backend.api.weather.router import router as weather_router
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.ndvi.runner import fail_stale_jobs
 from bahcelab_backend.shared.errors import AppError
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(ndvi_router)
     app.include_router(definitions_router)
     app.include_router(planning_router)
+    app.include_router(weather_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

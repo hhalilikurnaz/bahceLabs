@@ -9,6 +9,7 @@ Kullanım (bahcelab-backend klasöründen):  make db-seed
 
 import asyncio
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
@@ -21,6 +22,9 @@ from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.ndvi.persist import missing_outputs
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.sample import build_sample_series
+from bahcelab_backend.domain.weather.repository import WeatherRepository
+from bahcelab_backend.domain.weather.sample import build_sample_forecast, build_sample_history
+from bahcelab_backend.domain.weather.service import snap
 from bahcelab_backend.shared.storage import get_storage
 
 EMAIL = "test@bahcelab.com"
@@ -111,6 +115,22 @@ async def main() -> None:
                 f"Oluşturuldu: örnek indeks serisi ({len(new_scenes)} tarih, "
                 f"{clear} geçerli, {len(new_scenes) - clear} bulutlu)"
             )
+
+        # Örnek hava verisi (ağsız demo): tahmin önbelleği ve günlük geçmiş `ornek` olarak yazılır;
+        # internet varsa ilk istekte gerçek veriyle değişir.
+        weather = WeatherRepository(session, workspace_id)
+        (point,) = await weather.garden_points(garden_id)
+        step = get_settings().weather_cell_degrees
+        cell = await weather.cell(snap(float(point["enlem"]), step), snap(float(point["boylam"]), step))
+        if cell.tahmin is None:
+            now = datetime.now(ZoneInfo("Europe/Istanbul"))
+            forecast = build_sample_forecast(now)
+            await weather.save_forecast(cell, forecast.model_dump(mode="json"), datetime.now(UTC), "ornek")
+            days = get_settings().weather_history_days
+            await weather.upsert_daily(cell.id, build_sample_history(now.date(), days), "ornek")
+            print("Oluşturuldu: örnek hava verisi")
+        else:
+            print("Zaten var: hava verisi")
         await session.commit()
     await engine.dispose()
 

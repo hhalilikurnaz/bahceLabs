@@ -16,6 +16,9 @@ from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
+from bahcelab_backend.domain.weather.provider import WeatherProvider, get_provider
+from bahcelab_backend.domain.weather.repository import WeatherRepository
+from bahcelab_backend.domain.weather.service import WeatherService
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import get_storage
 
@@ -85,3 +88,15 @@ async def get_product_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ProductRepository:
     return ProductRepository(session)
+
+
+def get_weather_provider() -> WeatherProvider:
+    return get_provider()
+
+
+async def get_weather_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    provider: Annotated[WeatherProvider, Depends(get_weather_provider)],
+) -> WeatherService:
+    return WeatherService(WeatherRepository(session, workspace_id), provider)

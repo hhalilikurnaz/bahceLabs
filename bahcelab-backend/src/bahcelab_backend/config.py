@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     ndvi_max_parallel_scenes: int = 2
     ndvi_refresh_hours: int = 12
 
+    # Hava durumu (Open-Meteo). Ticari kullanımda ücretli plan anahtarı buraya; sağlayıcı değişimi domain/weather/provider.py
+    weather_enabled: bool = True
+    open_meteo_api_key: str | None = None
+    weather_timeout_seconds: float = 8.0
+    weather_cache_minutes: int = 60
+    weather_cell_degrees: float = 0.05
+    weather_history_days: int = 425  # 13 ay + sezon karşılaştırması için pay
+
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
     access_token_minutes: int = 15

@@ -826,3 +826,15 @@ async def test_sample_series_covers_every_output_and_raises_a_multi_index_alert(
     assert alerts and alerts[0].tur == "coklu_indeks" and alerts[0].oncelik == "yuksek"
     assert {"ndvi", "ndre"} <= set(alerts[0].indeksler)
     assert not [a for a in alerts if a.degisim_yuzde and a.degisim_yuzde > 0]
+
+
+async def test_alert_overview_lists_every_garden_and_reads_only(user_client: AsyncClient, factory):
+    assert (await user_client.get("/indeks/uyari-ozeti")).json() == []
+    garden = await new_garden(user_client)
+    await add_scene(factory, garden["id"], TODAY - timedelta(days=18), {"ndvi": 0.7})
+    await add_scene(factory, garden["id"], TODAY - timedelta(days=2), {"ndvi": 0.5})
+    response = await user_client.get("/indeks/uyari-ozeti")
+    assert response.status_code == 200
+    (item,) = response.json()
+    assert item["garden_id"] == garden["id"]
+    assert [a["indeks"] for a in item["uyarilar"]] == ["ndvi"]

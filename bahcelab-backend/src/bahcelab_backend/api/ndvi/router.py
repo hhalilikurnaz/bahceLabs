@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, Query, Response, status
 
 from bahcelab_backend.api.deps import get_current_user, get_ndvi_service
 from bahcelab_backend.domain.ndvi.indices import sample_index_definitions
-from bahcelab_backend.domain.ndvi.schemas import IndeksYanit, NdviIs, VerimlilikYanit
+from bahcelab_backend.domain.ndvi.schemas import (
+    BahceUyariOzeti,
+    IndeksYanit,
+    NdviIs,
+    VerimlilikYanit,
+)
 from bahcelab_backend.domain.ndvi.service import NdviService
 
 definitions_router = APIRouter(
@@ -26,6 +31,12 @@ Service = Annotated[NdviService, Depends(get_ndvi_service)]
 async def index_definitions() -> list[dict[str, Any]]:
     """İndekslerin adı, açıklaması, değer aralığı ve renk durakları."""
     return sample_index_definitions()
+
+
+@definitions_router.get("/uyari-ozeti", response_model=list[BahceUyariOzeti])
+async def alert_overview(service: Annotated[NdviService, Depends(get_ndvi_service)]) -> list[BahceUyariOzeti]:
+    """Bahçe listesi simgeleri için tüm bahçelerin aktif uydu uyarıları."""
+    return await service.alert_overview()
 
 
 @router.get("/indeks", response_model=IndeksYanit)
