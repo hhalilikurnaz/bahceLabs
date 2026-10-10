@@ -89,6 +89,7 @@ function LayerSwitcher() {
 export function MapControls() {
   const { map } = useMap()
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
+  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
   const toast = useToast()
   const [locating, setLocating] = useState(false)
   const markerRef = useRef<Marker | null>(null)
@@ -126,9 +127,9 @@ export function MapControls() {
 
   return (
     <div
-      className={`absolute bottom-12 z-20 flex flex-col items-end gap-2 transition-[right] duration-300 ease-out ${
-        copilotOpen ? 'right-3 md:right-[calc(380px+0.75rem)]' : 'right-3'
-      }`}
+      className={`absolute bottom-12 z-20 flex-col items-end gap-2 transition-[right] duration-300 ease-out ${
+        panelOpen ? 'hidden md:flex' : 'flex'
+      } ${copilotOpen ? 'right-3 md:right-[calc(380px+0.75rem)]' : 'right-3'}`}
     >
       <LayerSwitcher />
 

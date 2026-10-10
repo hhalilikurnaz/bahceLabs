@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AttributionControl, Map as MapLibreMap } from 'maplibre-gl'
+import { AttributionControl, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl'
+// Worker dosyası paketlenirken otomatik bulunamaz; Vite'a varlık olarak yayımlatıp adresini veriyoruz
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapContext } from './MapContext'
 import { buildStyle, getMaptilerKey, type BasemapId } from './mapStyles'
 import { loadView, saveView } from './viewStorage'
+
+setWorkerUrl(workerUrl)
 
 interface MapProviderProps {
   /** Konum ve altlık seçimi kullanıcı bazında saklanır */
@@ -86,7 +90,10 @@ export function MapProvider({ userId, children }: MapProviderProps) {
 
   return (
     <MapContext.Provider value={value}>
-      <div ref={containerRef} className="absolute inset-0 bg-app-bg" />
+      {/* maplibre-gl.css kapsayıcıya position:relative verir; bu yüzden yerleşimi dış sarmalayıcı yapar */}
+      <div className="absolute inset-0 bg-app-bg">
+        <div ref={containerRef} className="h-full w-full" />
+      </div>
       {children}
     </MapContext.Provider>
   )

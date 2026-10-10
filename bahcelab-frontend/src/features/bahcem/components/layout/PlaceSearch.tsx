@@ -3,12 +3,16 @@ import { Crosshair, Loader2, MapPin, Search, X } from 'lucide-react'
 import { parseCoordinates, searchPlaces, type PlaceResult } from '../../map/geocoding'
 import { getMaptilerKey } from '../../map/mapStyles'
 import { useMap } from '../../map/useMap'
+import { useBahcemStore } from '../../stores/bahcemStore'
+import { topAreaClass } from './topArea'
 
 const DEBOUNCE_MS = 300
 
 export function PlaceSearch() {
   const { map } = useMap()
   const hasKey = Boolean(getMaptilerKey())
+  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
+  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceResult[]>([])
@@ -114,10 +118,8 @@ export function PlaceSearch() {
     : 'Koordinat ara (yer araması için MapTiler anahtarı gerekli)'
 
   return (
-    <div
-      ref={rootRef}
-      className="absolute left-[4.25rem] right-[8.75rem] top-3 z-20 md:left-1/2 md:right-auto md:w-[min(480px,calc(100vw-30rem))] md:-translate-x-1/2"
-    >
+    <div className={`${topAreaClass(panelOpen, copilotOpen)} top-3`}>
+      <div ref={rootRef} className="w-full max-w-[480px]">
       <div className="flex h-11 items-center gap-2 rounded-full border border-app-border bg-app-panel pl-4 pr-2 shadow-xl transition-colors focus-within:border-app-accent">
         {isLoading ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-app-text-muted" aria-hidden />
@@ -192,6 +194,7 @@ export function PlaceSearch() {
           )}
         </ul>
       )}
+      </div>
     </div>
   )
 }
