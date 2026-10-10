@@ -281,6 +281,10 @@ npm run dev               # http://localhost:5173/planning
 
 Tamamlandı: NDVI/MSAVI/NDRE/NDMI/CIgreen/gerçek renk, kontrastlı mod, değişim haritası, karşılaştırma, zaman atlaması, verimlilik bölgeleri. Ayrıntı: `docs/PLAN-FAZ1.md`.
 
+## Faz 1 — Adım 6 (hava durumu)
+
+Tamamlandı: Open-Meteo (sağlayıcı arayüzü), 1 saat önbellek, 13 aylık geçmiş, ilaçlama penceresi, don/sıcak uyarıları, su dengesi, grafikte hava katmanı, hava özeti paneli. Ayrıntı: `docs/PLAN-FAZ1.md`.
+
 ---
 
 ## Notlar

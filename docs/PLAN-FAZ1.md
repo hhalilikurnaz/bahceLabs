@@ -169,15 +169,26 @@ Bu belgenin 0. bölümü.
 - **Görselleştirme:** indeks seçici (panel + harita katmanı), Mutlak/Kontrastlı (p2–p98) ve Piksel/Yumuşak modları, değişim haritası (son 2 hafta, geçen yıl aynı dönem, özel tarih), kaydırmalı karşılaştırma (iki tarih veya iki indeks), zaman atlaması (oynat/duraklat, hız), çok indeksli grafik, verimlilik bölgeleri (düşük/orta/yüksek, alan ve pay).
 - **Ölçüm (Tömük, 26 dekar, gerçek Sentinel-2):** 13 aylık işleme ≈ 94 sn (113 sahne; yalnız NDVI iken ≈ 61 sn).
 
-### Adım 6 — Hava durumu (Open-Meteo): tahmin, ilaçlama penceresi, don uyarısı
+### Adım 6 — Hava durumu (Open-Meteo) ve tarımsal uyarılar ✅ (tamamlandı)
 
-- Anahtar gerekmez, bağımlılık eklenmez (`httpx`). Sorgu bahçenin `centroid`'i ile yapılır.
-- Backend: `domain/weather/{open_meteo_client,spray_window,frost_rules,schemas}.py`; `GET /gardens/{id}/weather` (saatlik 7 gün + günlük özet). Kısa süreli cache (ör. 30 dk, bellek içi) ve istek başına zaman aşımı.
-- İlaçlama penceresi kuralı (başlangıç değerleri belgelenir, kullanıcı ayarına açılır): rüzgâr ≤ 15 km/s, sonraki 6 saatte yağış yok, sıcaklık 10–30 °C, nem ≤ %85. Uygun saat aralıkları listelenir.
-- Don uyarısı: önümüzdeki 72 saatte tahmini minimum ≤ 2 °C ise "don riski", ≤ 0 °C ise "yüksek risk" (limon don hassasiyeti yüksektir). Uyarı `garden_alerts`'e `kind='frost'` olarak yazılır.
-- Frontend: `components/weather/{WeatherCard,HourlyStrip,SprayWindowBadge,FrostBanner}.tsx`, GardenPage'e eklenir.
+**Backend** (`domain/weather/`, `api/weather/`, migration `008_weather`)
+- **Sağlayıcı arayüzü:** `provider.py` (`WeatherProvider` protokolü ve sağlayıcıdan bağımsız `Forecast/DailyPoint` biçimleri); Open-Meteo uygulaması yalnızca `open_meteo.py`'dadır. Ticari kullanımda `OPEN_METEO_API_KEY` verilince ücretli (`customer-*`) uç noktalar kullanılır; başka sağlayıcıya geçiş = yeni sınıf + `get_provider()`.
+- **Konum ve hücre:** bahçe merkezi (`ST_Centroid`) 0,05° ızgaraya yuvarlanır (`weather_cells`); yakın bahçeler aynı hücreyi paylaşır, eşzamanlı istekler hücre başına kilitle tek sağlayıcı çağrısına iner.
+- **Tahmin:** şu an + 7 gün saatlik (sıcaklık, nem, yağış, yağış olasılığı, rüzgâr, hamle, ET₀) + günlük özet; hücrede 1 saat önbellek. Ağ yoksa son önbellek `onbellekten: true` ve `guncelleme` zamanıyla döner; hiç önbellek yoksa 503 ve anlaşılır mesaj.
+- **Geçmiş:** `weather_daily` (hücre, tarih, min/max, yağış, ET₀, kaynak = arsiv | tahmin | ornek); 425 gün (13 ay + geçen yıl karşılaştırması payı), günde bir tamamlanır (yalnızca eksik günler + son 10 gün ERA5 düzeltmesi için yeniden alınır). Arşivde henüz olmayan son günler tahmin API'sinin geçmiş günleriyle doldurulur.
+- **Kurallar** (`rules.py`, saf fonksiyonlar, Türkçe açıklamalı):
+  - İlaçlama (saatlik): uygun = rüzgâr < 15 ve hamle < 25 km/s, o saatte yağış yok, sonraki 6 saatte yağış olasılığı < %30, 10–28 °C. «Sınırda» ve «uygun değil» bantları (rüzgâr 15–20, hamle 25–32, olasılık %30–50, sıcaklık 8–10 / 28–30) ve nedenler. Günlük «en iyi aralık» yalnızca 05:00–21:00 gündüz saatlerinden seçilir.
+  - Don: ≤ 2 °C sarı «Don riski», ≤ 0 °C kırmızı «Don tehlikesi»; kaç saat sürdüğü ve ayrı geceler ayrı uyarı. Sıcak: günlük max ≥ 38 °C sarı, ≥ 42 °C kırmızı.
+  - Su dengesi: son 7 / 30 gün yağış − ET₀ (bilgi; reçete değil). Yağış toplamları: son 7, 30 gün ve sezon başından beri (1 Eylül); geçen yılın aynı dönemiyle (veri %90'dan eksikse gösterilmez).
+- **API (girişli, yalnızca kendi bahçesi, başkasınınki 404):** `GET /gardens/{id}/weather`, `GET /gardens/{id}/weather/history?from&to`, `GET /weather/ozet` (tüm bahçelerin özeti), `GET /indeks/uyari-ozeti` (bahçe listesi simgeleri için uydu uyarıları; iş başlatmaz).
+- **Örnek veri:** `make db-seed` Tömük için ağsız örnek tahmin ve geçmiş yazar (`kaynak = ornek`); internet varsa ilk istekte gerçek veriyle değişir.
 
-**Çıkış kriteri:** gerçek koordinat için tahmin gelir, kurallar birim testlidir (`tests/test_spray_window.py`, `tests/test_frost_rules.py`), servis erişilemezse sayfa hata vermeden "hava verisi alınamadı" gösterir.
+**Frontend** (`features/bahcem/components/hava/`)
+- Bahçe detayında **Uydu | Hava** sekmeleri. Hava sekmesi: don/sıcak uyarı kartları (uydu uyarılarıyla aynı tasarım, kırmızı önce), şu anki durum, 7 günlük tahmin, her gün için 24 saatlik ilaçlama şeridi (yeşil/sarı/kırmızı, üzerine gelince/dokununca/odaklanınca nedeni), su dengesi ve yağış toplamları, Open-Meteo atfı (CC BY 4.0, bağlantılı).
+- Uydu grafiğinde **Hava katmanı**: günlük yağış çubukları ve ortalama sıcaklık çizgisi aynı zaman ekseninde; ipucunda seçili günün yağış ve sıcaklığı.
+- Sol şeritteki «Hava durumu»: tüm bahçelerin özeti (şimdiki durum, en yakın don/sıcak uyarısı, ilk uygun ilaçlama aralığı); tıklayınca o bahçenin Hava sekmesi açılır.
+- Bahçe listesinde aktif uyarı simgeleri (don, sıcak, uydu düşüşü; kırmızı/sarı).
+- Birimler °C, mm, km/s; Türkçe gün adları; saat dilimi Europe/Istanbul.
 
 ### Adım 7 — Blok bölme, bahçe günlüğü, sahada gözlem
 
