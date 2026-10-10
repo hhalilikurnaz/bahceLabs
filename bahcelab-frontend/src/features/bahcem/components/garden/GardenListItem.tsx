@@ -19,17 +19,19 @@ export interface GardenListItemProps {
 function NdviBadge({ value }: { value: number | null }) {
   if (value == null) {
     return (
-      <span className="rounded-md bg-app-bg/60 px-2 py-0.5 text-[11px] font-medium text-app-text-dim">
+      <span className="rounded-md bg-app-bg/60 px-2 py-0.5 text-caption font-medium text-app-text-dim">
         NDVI —
       </span>
     )
   }
   const color = indexColor('ndvi', value)
+  // Açık zeminde parlak renk metin olarak okunmaz: metin koyu, renk yalnızca nokta ve zemin tonu
   return (
     <span
-      className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-      style={{ color, backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)` }}
+      className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-caption font-semibold text-app-text"
+      style={{ backgroundColor: `color-mix(in srgb, ${color} 22%, transparent)` }}
     >
+      <i className="h-2 w-2 rounded-full" style={{ background: color }} aria-hidden />
       NDVI {formatIndexValue('ndvi', value)}
     </span>
   )
@@ -97,7 +99,7 @@ export function GardenListItem({
   }
 
   const menuItem =
-    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] transition-colors hover:bg-app-card'
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-small transition-colors hover:bg-app-card'
 
   return (
     <li
@@ -137,7 +139,7 @@ export function GardenListItem({
                 setDraftName(garden.ad)
               }
             }}
-            className="h-9 min-w-0 flex-1 rounded-lg border border-app-accent bg-app-bg/70 px-2.5 text-[14px] text-app-text outline-none"
+            className="h-9 min-w-0 flex-1 rounded-lg border border-app-accent bg-app-bg/70 px-2.5 text-body text-app-text outline-none"
           />
         ) : (
           <button
@@ -147,7 +149,7 @@ export function GardenListItem({
             className="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-app-accent"
           >
             <span className="flex items-center gap-2">
-              <span className="min-w-0 truncate text-[14px] font-medium text-app-text">{garden.ad}</span>
+              <span className="min-w-0 truncate text-body font-medium text-app-text">{garden.ad}</span>
               {alerts.length > 0 && (
                 <span className="flex items-center gap-1" data-testid="garden-alerts">
                   {alerts.slice(0, 3).map((alert, i) => (
@@ -158,7 +160,7 @@ export function GardenListItem({
                       title={`${alert.baslik} (${alert.kaynak === 'hava' ? 'hava' : 'uydu'})`}
                       data-priority={alert.seviye}
                       className={`flex h-5 w-5 items-center justify-center rounded-full ${
-                        alert.seviye === 'kirmizi' ? 'bg-app-danger/20 text-red-300' : 'bg-amber-400/20 text-amber-300'
+                        alert.seviye === 'kirmizi' ? 'bg-app-danger/20 text-app-danger' : 'bg-app-warn/20 text-app-warn'
                       }`}
                     >
                       <alert.Icon className="h-3 w-3" aria-hidden />
@@ -168,7 +170,7 @@ export function GardenListItem({
               )}
             </span>
             <span className="mt-1 flex items-center gap-2">
-              <span className="whitespace-nowrap text-[12px] text-app-text-muted">{formatDecare(garden.alanDekar)}</span>
+              <span className="whitespace-nowrap text-caption text-app-text-muted">{formatDecare(garden.alanDekar)}</span>
               <NdviBadge value={ndvi} />
             </span>
           </button>

@@ -52,7 +52,7 @@ export function RegisterPage() {
             Zaten hesabınız var mı?{' '}
             <Link
               to="/login"
-              className="font-semibold text-[#0c2418] no-underline underline-offset-2 hover:underline"
+              className="font-semibold text-ink no-underline underline-offset-2 hover:underline"
             >
               Giriş yapın
             </Link>
@@ -63,7 +63,7 @@ export function RegisterPage() {
           {error && (
             <p
               role="alert"
-              className="rounded-lg border border-red-500/25 bg-red-500/8 px-3.5 py-2.5 text-[13px] text-red-900"
+              className="rounded-lg border border-app-danger/25 bg-app-danger/8 px-3.5 py-2.5 text-small text-app-danger"
             >
               {error}
             </p>
@@ -126,7 +126,7 @@ export function RegisterPage() {
           Zaten hesabınız var mı?{' '}
           <Link
             to="/login"
-            className="font-semibold text-[#0c2418] no-underline underline-offset-2 hover:underline"
+            className="font-semibold text-ink no-underline underline-offset-2 hover:underline"
           >
             Giriş yapın
           </Link>
@@ -141,13 +141,13 @@ export function RegisterPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             to="/blog"
-            className="inline-flex flex-1 items-center justify-center rounded-lg border border-[#0c2418]/15 bg-transparent px-4 py-3 text-[13px] font-medium text-[#0c2418] no-underline transition-colors hover:bg-[#0c2418]/5"
+            className="inline-flex flex-1 items-center justify-center rounded-lg border border-ink/15 bg-transparent px-4 py-3 text-small font-medium text-ink no-underline transition-colors hover:bg-ink/5"
           >
             Bloga git
           </Link>
           <Link
             to="/"
-            className="inline-flex flex-1 items-center justify-center rounded-lg border border-[#0c2418]/12 px-4 py-3 text-[13px] font-medium text-[#5c665d] no-underline transition-colors hover:bg-[#0c2418]/5 hover:text-[#0c2418]"
+            className="inline-flex flex-1 items-center justify-center rounded-lg border border-ink/12 px-4 py-3 text-small font-medium text-app-text-dim no-underline transition-colors hover:bg-ink/5 hover:text-ink"
           >
             Anasayfaya git
           </Link>
