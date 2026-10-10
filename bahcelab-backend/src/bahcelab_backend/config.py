@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
-    jwt_secret: str = "dev-insecure-secret-change-me"
+    jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
     access_token_minutes: int = 15
     refresh_token_days: int = 14
     registration_enabled: bool = False
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     @property
     def uses_default_jwt_secret(self) -> bool:
-        return self.jwt_secret == "dev-insecure-secret-change-me"
+        return self.jwt_secret == "dev-insecure-secret-change-me-0123456789"
 
     @property
     def cors_origin_list(self) -> list[str]:

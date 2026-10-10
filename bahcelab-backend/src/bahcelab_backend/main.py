@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.shared.errors import AppError
@@ -21,6 +22,8 @@ async def lifespan(_app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    if settings.uses_default_jwt_secret and not settings.api_debug:
+        raise RuntimeError("JWT_SECRET ayarlanmadan API_DEBUG=false ile başlatılamaz")
 
     app = FastAPI(
         title="BahçeLab Planning API",
@@ -41,6 +44,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(Exception, generic_error_handler)
 
+    app.include_router(auth_router)
     app.include_router(planning_router)
 
     @app.get("/health", tags=["system"])

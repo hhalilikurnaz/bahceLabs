@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 
 from bahcelab_backend.api.deps import (
+    get_current_user,
     get_planning_service,
     get_product_repository,
 )
@@ -18,7 +19,9 @@ from bahcelab_backend.domain.planning.schemas import (
 )
 from bahcelab_backend.domain.planning.service import PlanningService
 
-router = APIRouter(prefix="/planning", tags=["planning"])
+router = APIRouter(
+    prefix="/planning", tags=["planning"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("/plans", response_model=list[SimulationPlan])
