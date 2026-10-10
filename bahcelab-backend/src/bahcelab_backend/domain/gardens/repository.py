@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.gardens.models import GardenModel
-from bahcelab_backend.domain.ndvi.models import NdviObservationModel
+from bahcelab_backend.domain.ndvi.models import IndexObservationModel
 from bahcelab_backend.domain.planning.models import SimulationPlanModel
 
 
@@ -56,13 +56,13 @@ class GardenRepository:
         # Her bahçenin son geçerli NDVI gözlemi (liste rozeti ve silüet rengi için)
         latest = (
             select(
-                NdviObservationModel.garden_id.label("gid"),
-                NdviObservationModel.ortalama.label("son_ortalama"),
-                NdviObservationModel.tarih.label("son_tarih"),
+                IndexObservationModel.garden_id.label("gid"),
+                IndexObservationModel.ortalama.label("son_ortalama"),
+                IndexObservationModel.tarih.label("son_tarih"),
             )
-            .where(NdviObservationModel.durum == "tamam")
-            .distinct(NdviObservationModel.garden_id)
-            .order_by(NdviObservationModel.garden_id, NdviObservationModel.tarih.desc())
+            .where(IndexObservationModel.indeks == "ndvi")
+            .distinct(IndexObservationModel.garden_id)
+            .order_by(IndexObservationModel.garden_id, IndexObservationModel.tarih.desc())
             .subquery()
         )
         return (

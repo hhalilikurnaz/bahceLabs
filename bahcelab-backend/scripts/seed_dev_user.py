@@ -18,6 +18,7 @@ from bahcelab_backend.domain.auth.repository import AuthRepository
 from bahcelab_backend.domain.auth.security import hash_password
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
+from bahcelab_backend.domain.ndvi.persist import missing_outputs
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.sample import build_sample_series
 from bahcelab_backend.shared.storage import get_storage
@@ -83,20 +84,32 @@ async def main() -> None:
             )
             print(f"Oluşturuldu: {GARDEN_NAME} ({measurement.area_dekar:.1f} dekar)")
 
-        # Örnek NDVI serisi: gerçek işleme hattıyla üretilir, "Örnek veri" olarak etiketlenir.
+        # Örnek indeks serisi (NDVI, MSAVI, NDRE, NDMI, CIgreen, gerçek renk): gerçek işleme hattıyla
+        # üretilir ve "Örnek veri" olarak etiketlenir. Eski biçimde (yalnızca NDVI) kalmışsa yeniden üretilir.
         # Gerçek veriye geçmek için arayüzde «Şimdi güncelle» (örnek kayıtlar değiştirilir).
         ndvi = NdviRepository(session)
-        if await ndvi.existing_dates(garden_id):
-            print("Zaten var: NDVI kayıtları")
+        scenes = await ndvi.list_scenes(garden_id)
+        sample_ok = bool(scenes) and all(
+            s.scene.kaynak == "ornek" and not missing_outputs(s) for s in scenes
+        )
+        if scenes and not sample_ok and all(s.scene.kaynak == "ornek" for s in scenes):
+            for key in await ndvi.storage_keys(garden_id, only_sample=True):
+                get_storage().delete(key)
+            await ndvi.delete_observations(garden_id, only_sample=True)
+            scenes = []
+        if scenes:
+            print("Zaten var: indeks kayıtları")
         else:
             today = datetime.now(UTC).date()
-            observations = build_sample_series(garden_id, geojson, get_storage(), today)
-            for observation in observations:
-                await ndvi.add_observation(observation)
-            clear = sum(1 for o in observations if o.durum == "tamam")
+            new_scenes, new_rows = build_sample_series(garden_id, geojson, get_storage(), today)
+            for scene in new_scenes:
+                await ndvi.add_scene(scene)
+            for row in new_rows:
+                await ndvi.upsert_index(row)
+            clear = sum(1 for s in new_scenes if s.durum == "tamam")
             print(
-                f"Oluşturuldu: örnek NDVI serisi ({len(observations)} tarih, "
-                f"{clear} geçerli, {len(observations) - clear} bulutlu)"
+                f"Oluşturuldu: örnek indeks serisi ({len(new_scenes)} tarih, "
+                f"{clear} geçerli, {len(new_scenes) - clear} bulutlu)"
             )
         await session.commit()
     await engine.dispose()

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
+from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.config import get_settings
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(gardens_router)
     app.include_router(ndvi_router)
+    app.include_router(definitions_router)
     app.include_router(planning_router)
 
     @app.get("/health", tags=["system"])

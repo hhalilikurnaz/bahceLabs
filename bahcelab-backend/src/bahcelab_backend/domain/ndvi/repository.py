@@ -1,11 +1,23 @@
 import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bahcelab_backend.domain.ndvi.models import JOB_ACTIVE, NdviJobModel, NdviObservationModel
+from bahcelab_backend.domain.ndvi.models import (
+    JOB_ACTIVE,
+    IndexObservationModel,
+    NdviJobModel,
+    SceneObservationModel,
+)
+
+
+@dataclass
+class SceneWithIndices:
+    scene: SceneObservationModel
+    indices: dict[str, IndexObservationModel] = field(default_factory=dict)
 
 
 class NdviRepository:
@@ -14,61 +26,137 @@ class NdviRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    # --- gözlemler
-    async def list_observations(self, garden_id: uuid.UUID) -> list[NdviObservationModel]:
-        result = await self.session.execute(
-            select(NdviObservationModel)
-            .where(NdviObservationModel.garden_id == garden_id)
-            .order_by(NdviObservationModel.tarih)
-        )
-        return list(result.scalars().all())
-
-    async def get_observation(
-        self, garden_id: uuid.UUID, tarih: date
-    ) -> NdviObservationModel | None:
-        result = await self.session.execute(
-            select(NdviObservationModel).where(
-                NdviObservationModel.garden_id == garden_id, NdviObservationModel.tarih == tarih
+    # --- sahne ve indeks gözlemleri
+    async def list_scenes(self, garden_id: uuid.UUID) -> list[SceneWithIndices]:
+        scenes = (
+            (
+                await self.session.execute(
+                    select(SceneObservationModel)
+                    .where(SceneObservationModel.garden_id == garden_id)
+                    .order_by(SceneObservationModel.tarih)
+                )
             )
+            .scalars()
+            .all()
         )
-        return result.scalar_one_or_none()
-
-    async def existing_dates(self, garden_id: uuid.UUID) -> set[date]:
-        result = await self.session.execute(
-            select(NdviObservationModel.tarih).where(NdviObservationModel.garden_id == garden_id)
+        rows = (
+            (
+                await self.session.execute(
+                    select(IndexObservationModel).where(
+                        IndexObservationModel.garden_id == garden_id
+                    )
+                )
+            )
+            .scalars()
+            .all()
         )
-        return set(result.scalars().all())
+        by_date: dict[date, dict[str, IndexObservationModel]] = {}
+        for row in rows:
+            by_date.setdefault(row.tarih, {})[row.indeks] = row
+        return [SceneWithIndices(s, by_date.get(s.tarih, {})) for s in scenes]
 
-    async def add_observation(self, observation: NdviObservationModel) -> bool:
+    async def get_scene(self, garden_id: uuid.UUID, tarih: date) -> SceneWithIndices | None:
+        scene = (
+            await self.session.execute(
+                select(SceneObservationModel).where(
+                    SceneObservationModel.garden_id == garden_id,
+                    SceneObservationModel.tarih == tarih,
+                )
+            )
+        ).scalar_one_or_none()
+        if scene is None:
+            return None
+        rows = (
+            (
+                await self.session.execute(
+                    select(IndexObservationModel).where(
+                        IndexObservationModel.garden_id == garden_id,
+                        IndexObservationModel.tarih == tarih,
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return SceneWithIndices(scene, {r.indeks: r for r in rows})
+
+    async def scene_map(self, garden_id: uuid.UUID) -> dict[date, SceneWithIndices]:
+        return {item.scene.tarih: item for item in await self.list_scenes(garden_id)}
+
+    async def add_scene(self, scene: SceneObservationModel) -> bool:
         """(garden_id, tarih) zaten varsa eklemez; aynı tarih ikinci kez hesaplanmaz."""
         try:
             async with self.session.begin_nested():
-                self.session.add(observation)
+                self.session.add(scene)
                 await self.session.flush()
         except IntegrityError:
             return False
         return True
 
-    async def png_keys(self, garden_id: uuid.UUID, *, only_sample: bool = False) -> list[str]:
-        query = select(NdviObservationModel.png_yolu).where(
-            NdviObservationModel.garden_id == garden_id, NdviObservationModel.png_yolu.is_not(None)
+    async def upsert_index(self, row: IndexObservationModel) -> None:
+        """Aynı (bahçe, tarih, indeks) varsa (eski kayıt) üzerine yazar."""
+        existing = (
+            await self.session.execute(
+                select(IndexObservationModel).where(
+                    IndexObservationModel.garden_id == row.garden_id,
+                    IndexObservationModel.tarih == row.tarih,
+                    IndexObservationModel.indeks == row.indeks,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is None:
+            self.session.add(row)
+        else:
+            for column in (
+                "ortalama",
+                "medyan",
+                "p10",
+                "p90",
+                "minimum",
+                "maksimum",
+                "png_yolu",
+                "veri_yolu",
+                "sorunlu_bolge_geojson",
+            ):
+                setattr(existing, column, getattr(row, column))
+        await self.session.flush()
+
+    async def storage_keys(self, garden_id: uuid.UUID, *, only_sample: bool = False) -> list[str]:
+        """Bahçenin (isteğe bağlı: yalnızca örnek verinin) tüm depolama anahtarları."""
+        sample = " AND s.kaynak = 'ornek'" if only_sample else ""
+        result = await self.session.execute(
+            text(
+                f"""
+                SELECT s.gercek_renk_png_yolu FROM scene_observations s
+                 WHERE s.garden_id = :g AND s.gercek_renk_png_yolu IS NOT NULL{sample}
+                UNION ALL
+                SELECT i.png_yolu FROM index_observations i
+                  JOIN scene_observations s ON s.garden_id = i.garden_id AND s.tarih = i.tarih
+                 WHERE i.garden_id = :g AND i.png_yolu IS NOT NULL{sample}
+                UNION ALL
+                SELECT i.veri_yolu FROM index_observations i
+                  JOIN scene_observations s ON s.garden_id = i.garden_id AND s.tarih = i.tarih
+                 WHERE i.garden_id = :g AND i.veri_yolu IS NOT NULL{sample}
+                """
+            ),
+            {"g": garden_id},
         )
-        if only_sample:
-            query = query.where(NdviObservationModel.kaynak == "ornek")
-        return list((await self.session.execute(query)).scalars().all())
+        return [key for (key,) in result.all()]
 
     async def delete_observations(self, garden_id: uuid.UUID, *, only_sample: bool = False) -> None:
-        query = delete(NdviObservationModel).where(NdviObservationModel.garden_id == garden_id)
+        # index_observations, scene_observations silinince zincirleme (ON DELETE CASCADE) silinir
+        query = delete(SceneObservationModel).where(SceneObservationModel.garden_id == garden_id)
         if only_sample:
-            query = query.where(NdviObservationModel.kaynak == "ornek")
+            query = query.where(SceneObservationModel.kaynak == "ornek")
         await self.session.execute(query)
 
     async def has_sample_data(self, garden_id: uuid.UUID) -> bool:
         result = await self.session.execute(
             select(func.count())
-            .select_from(NdviObservationModel)
+            .select_from(SceneObservationModel)
             .where(
-                NdviObservationModel.garden_id == garden_id, NdviObservationModel.kaynak == "ornek"
+                SceneObservationModel.garden_id == garden_id,
+                SceneObservationModel.kaynak == "ornek",
             )
         )
         return result.scalar_one() > 0

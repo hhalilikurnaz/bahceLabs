@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -20,7 +21,8 @@ from rasterio.windows import Window, from_bounds
 from rasterio.windows import bounds as window_bounds
 from shapely.geometry import shape
 
-from bahcelab_backend.domain.ndvi.processing import SceneData, to_reflectance
+from bahcelab_backend.domain.ndvi.indices import ALL_BANDS, BAND_SCL, BANDS_10M
+from bahcelab_backend.domain.ndvi.processing import SceneBands, to_reflectance
 
 logger = logging.getLogger(__name__)
 
@@ -105,58 +107,82 @@ def _band_scale_offset(item: Item, asset_key: str) -> tuple[float, float]:
     return float(bands[0].get("scale", 0.0001)), float(bands[0].get("offset", 0.0))
 
 
-def _read_scene(scene: Scene, geometry: dict[str, Any]) -> SceneData:
-    item = scene.item
-    href = {key: planetary_computer.sign(item.assets[key].href) for key in ("B04", "B08", "SCL")}
+_GDAL_ENV = {
+    "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+    "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".tif,.tiff",
+    "GDAL_HTTP_MAX_RETRY": "3",
+    "GDAL_HTTP_RETRY_DELAY": "1",
+    "VSI_CACHE": "TRUE",
+}
+_READ_THREADS = 4
 
-    with rasterio.open(href["B04"]) as b04:
-        crs = b04.crs
-        bounds = shape(transform_geom("EPSG:4326", crs, geometry)).bounds
-        window = from_bounds(*bounds, transform=b04.transform)
+
+@dataclass(frozen=True)
+class _Window:
+    """Referans (B04, 10 m) penceresi: tüm bantlar aynı coğrafi alandan, aynı 10 m ızgarasına okunur."""
+
+    window: Window
+    transform: Any
+    shape: tuple[int, int]
+    bounds: tuple[float, float, float, float]  # referans bandın yerel koordinatlarında
+    crs: Any
+
+
+def _reference_window(href: str, geometry: dict[str, Any]) -> _Window:
+    with rasterio.open(href) as ref:
+        bounds = shape(transform_geom("EPSG:4326", ref.crs, geometry)).bounds
+        window = from_bounds(*bounds, transform=ref.transform)
         window = window.round_offsets(op="floor").round_lengths(op="ceil")
         window = Window(window.col_off - 1, window.row_off - 1, window.width + 2, window.height + 2)
-        window = window.intersection(Window(0, 0, b04.width, b04.height))
-        transform = b04.window_transform(window)
-        bounds_native = window_bounds(
-            window, b04.transform
-        )  # SCL penceresi aynı coğrafi alandan türetilir
-        red_dn = b04.read(1, window=window)
-
-    with rasterio.open(href["B08"]) as b08:
-        nir_dn = b08.read(1, window=window)
-
-    with rasterio.open(href["SCL"]) as scl_src:  # 20 m; 10 m ızgarasına nearest ile örneklenir
-        scl_window = from_bounds(*bounds_native, transform=scl_src.transform)
-        scl = scl_src.read(
-            1,
-            window=scl_window,
-            out_shape=red_dn.shape,
-            resampling=Resampling.nearest,
+        window = window.intersection(Window(0, 0, ref.width, ref.height))
+        return _Window(
+            window=window,
+            transform=ref.window_transform(window),
+            shape=(int(window.height), int(window.width)),
+            bounds=window_bounds(window, ref.transform),
+            crs=ref.crs,
         )
 
-    red_scale, red_offset = _band_scale_offset(item, "B04")
-    nir_scale, nir_offset = _band_scale_offset(item, "B08")
-    return SceneData(
-        red=to_reflectance(red_dn, red_scale, red_offset),
-        nir=to_reflectance(nir_dn, nir_scale, nir_offset),
-        scl=scl.astype(np.uint8),
-        transform=transform,
-        crs=crs,
+
+def _read_one(href: str, ref: _Window, band: str) -> np.ndarray:
+    """Tek bandı referans ızgarasına okur: 10 m doğrudan, 20 m bilinear, SCL nearest."""
+    with rasterio.Env(**_GDAL_ENV), rasterio.open(href) as src:
+        if band in BANDS_10M:
+            return src.read(1, window=ref.window)
+        window = from_bounds(*ref.bounds, transform=src.transform)
+        resampling = Resampling.nearest if band == BAND_SCL else Resampling.bilinear
+        return src.read(1, window=window, out_shape=ref.shape, resampling=resampling)
+
+
+def _read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str]) -> SceneBands:
+    item = scene.item
+    wanted = sorted(set(bands) | {"B04", "B08"})
+    hrefs = {key: planetary_computer.sign(item.assets[key].href) for key in [*wanted, BAND_SCL]}
+
+    with rasterio.Env(**_GDAL_ENV):
+        ref = _reference_window(hrefs["B04"], geometry)
+
+    # Tüm bantlar aynı anda okunur (ağ beklemesi baskın): sahne başına tek okuma turu
+    with ThreadPoolExecutor(max_workers=_READ_THREADS) as pool:
+        futures = {key: pool.submit(_read_one, hrefs[key], ref, key) for key in [*wanted, BAND_SCL]}
+        arrays = {key: future.result() for key, future in futures.items()}
+
+    reflectance: dict[str, np.ndarray] = {}
+    for key in wanted:
+        scale, offset = _band_scale_offset(item, key)
+        reflectance[key] = to_reflectance(arrays[key], scale, offset)
+    return SceneBands(
+        bands=reflectance,
+        scl=arrays[BAND_SCL].astype(np.uint8),
+        transform=ref.transform,
+        crs=ref.crs,
     )
 
 
-def read_scene(scene: Scene, geometry: dict[str, Any]) -> SceneData:
-    """COG'lardan yalnızca bahçe penceresini okur (rasterio windowed read); geçici hatalarda tekrar dener."""
-    env = {
-        "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
-        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".tif,.tiff",
-        "GDAL_HTTP_MAX_RETRY": "3",
-        "GDAL_HTTP_RETRY_DELAY": "1",
-        "VSI_CACHE": "TRUE",
-    }
+def read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str] | None = None) -> SceneBands:
+    """COG'lardan yalnızca bahçe penceresini okur (rasterio windowed read); geçici hatalarda tekrar dener.
 
-    def _read() -> SceneData:
-        with rasterio.Env(**env):
-            return _read_scene(scene, geometry)
-
-    return with_retry(_read)
+    `bands`: okunacak bantlar (varsayılan: tüm indeksler ve gerçek renk için gerekenler).
+    """
+    needed = set(bands) if bands is not None else set(ALL_BANDS)
+    return with_retry(lambda: _read_scene(scene, geometry, needed))

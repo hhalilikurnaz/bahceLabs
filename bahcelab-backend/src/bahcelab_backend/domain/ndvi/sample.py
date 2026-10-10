@@ -19,10 +19,10 @@ from rasterio.transform import Affine
 from rasterio.warp import transform_geom
 from shapely.geometry import shape
 
-from bahcelab_backend.domain.ndvi.models import NdviObservationModel
-from bahcelab_backend.domain.ndvi.processing import SceneData, analyze_scene
+from bahcelab_backend.domain.ndvi.models import IndexObservationModel, SceneObservationModel
+from bahcelab_backend.domain.ndvi.persist import persist_analysis
+from bahcelab_backend.domain.ndvi.processing import SceneBands, analyze_scene
 from bahcelab_backend.domain.ndvi.rules import months_back
-from bahcelab_backend.domain.ndvi.runner import observation_from_analysis, png_key
 from bahcelab_backend.shared.storage import StorageBackend
 
 PIXEL = 10.0
@@ -68,16 +68,53 @@ def grid_for(geometry: dict[str, Any]) -> Grid:
     return Grid(crs, Affine(PIXEL, 0, x0, 0, -PIXEL, y1), (height, width), geometry_utm)
 
 
-def make_scene(grid: Grid, ndvi: np.ndarray | float, cloud_fraction: float = 0.0) -> SceneData:
-    """Hedef NDVI'dan yapay B04/B08/SCL üretir; sol taraftan `cloud_fraction` oranında bulut (SCL 9)."""
+def make_scene(
+    grid: Grid,
+    ndvi: np.ndarray | float,
+    cloud_fraction: float = 0.0,
+    *,
+    ndre: np.ndarray | float | None = None,
+    ndmi: np.ndarray | float | None = None,
+    cigreen: np.ndarray | float | None = None,
+) -> SceneBands:
+    """Hedef indekslerden yapay B02–B11/SCL üretir; sol taraftan `cloud_fraction` oranında bulut (SCL 9).
+
+    Verilmeyen indeksler NDVI'dan makul oranlarla türetilir.
+    """
     height, width = grid.shape
-    field = np.full((height, width), ndvi, dtype=np.float32) if np.isscalar(ndvi) else ndvi
+
+    def field(value: np.ndarray | float) -> np.ndarray:
+        return (
+            np.full((height, width), value, dtype=np.float32)
+            if np.isscalar(value)
+            else np.asarray(value, dtype=np.float32)
+        )
+
+    n = field(ndvi)
+    r = field(ndre) if ndre is not None else 0.62 * n + 0.02
+    m = field(ndmi) if ndmi is not None else 0.20 + 0.25 * (n - 0.55)
+    c = field(cigreen) if cigreen is not None else np.clip(3.4 * n - 0.2, 0.05, 6.0)
+
+    nir = np.full_like(n, NIR)  # B08
+    b8a = np.full_like(n, NIR + 0.02)
+    bands = {
+        "B08": nir,
+        "B04": nir * (1 - n) / (1 + n),
+        "B8A": b8a,
+        "B05": b8a * (1 - r) / (1 + r),
+        "B11": b8a * (1 - m) / (1 + m),
+        "B03": nir / (1 + c),
+    }
+    bands["B02"] = bands["B03"] * 0.55
+
     scl = np.full((height, width), SCL_VEGETATION, dtype=np.uint8)
     if cloud_fraction > 0:
         scl[:, : int(round(cloud_fraction * width))] = SCL_CLOUD_HIGH
-    red = (NIR * (1 - field) / (1 + field)).astype(np.float32)
-    return SceneData(
-        red=red, nir=np.full_like(red, NIR), scl=scl, transform=grid.transform, crs=grid.crs
+    return SceneBands(
+        bands={k: v.astype(np.float32) for k, v in bands.items()},
+        scl=scl,
+        transform=grid.transform,
+        crs=grid.crs,
     )
 
 
@@ -88,7 +125,8 @@ def build_sample_series(
     today: date,
     months: int = 13,
     seed: int = 7,
-) -> list[NdviObservationModel]:
+) -> tuple[list[SceneObservationModel], list[IndexObservationModel]]:
+    """13 aylık örnek seri: gerçek işleme hattından (analyze_scene + persist_analysis) geçirilir."""
     rng = random.Random(seed)
     grid = grid_for(geometry)
     height, width = grid.shape
@@ -102,6 +140,8 @@ def build_sample_series(
             + ((cols - 0.22 * width) / (0.18 * width + 1)) ** 2
         )
     )
+    # Bahçenin sabit "verimlilik" deseni: doğuda güçlü, batıda zayıf (verimlilik bölgeleri için)
+    vigor = 0.07 * (cols / max(width - 1, 1) - 0.5)
 
     start = months_back(today, months)
     days: list[date] = []
@@ -111,7 +151,8 @@ def build_sample_series(
         day -= timedelta(days=5)  # Sentinel-2 yaklaşık 5 günde bir geçer
     days.reverse()
 
-    observations: list[NdviObservationModel] = []
+    scenes: list[SceneObservationModel] = []
+    indices: list[IndexObservationModel] = []
     for index, day in enumerate(days):
         from_end = len(days) - 1 - index
         mean = _seasonal_mean(day) + rng.uniform(-0.012, 0.012)
@@ -120,7 +161,10 @@ def build_sample_series(
         elif from_end == 1:
             mean *= 0.93
         deficit = 0.0 if from_end > 6 else 0.22 * (1 - from_end / 7)
-        ndvi = np.clip(mean + texture - deficit * patch, 0.05, 0.88).astype(np.float32)
+        ndvi = np.clip(mean + texture + vigor - deficit * patch, 0.05, 0.88).astype(np.float32)
+        # Aynı bölgede sararma (NDRE) ve su stresi (NDMI) da görünür: çoklu indeks uyarısı örneği
+        ndre = np.clip(0.62 * ndvi + 0.02 - 0.9 * deficit * patch * 0.55, 0.02, 0.58)
+        ndmi = np.clip(0.20 + 0.25 * (ndvi - 0.55) - 0.45 * deficit * patch * 0.5, -0.15, 0.55)
 
         cloudy = rng.random() < 0.22
         cloud_fraction = (
@@ -132,20 +176,20 @@ def build_sample_series(
             cloud_fraction = (
                 0.0  # son görüntüler ve karşılaştırma aralığı bulutsuz: uyarı örneği görünsün
             )
-        scene = make_scene(grid, ndvi, cloud_fraction)
-        analysis = analyze_scene(scene, geometry)
-        key = None if analysis.bulutlu else png_key(garden_id, day)
-        if key and analysis.png:
-            storage.save(key, analysis.png)
-        observations.append(
-            observation_from_analysis(
-                garden_id,
-                day,
-                f"ornek-{day:%Y%m%d}",
-                round(cloud_fraction * 100, 1),
-                analysis,
-                key=key,
-                source="ornek",
-            )
+        analysis = analyze_scene(
+            make_scene(grid, ndvi, cloud_fraction, ndre=ndre, ndmi=ndmi), geometry
         )
-    return observations
+        new_scene, _updated, rows_for_day = persist_analysis(
+            garden_id=garden_id,
+            tarih=day,
+            scene_id=f"ornek-{day:%Y%m%d}",
+            cloud_cover=round(cloud_fraction * 100, 1),
+            analysis=analysis,
+            storage=storage,
+            existing=None,
+            source="ornek",
+        )
+        assert new_scene is not None
+        scenes.append(new_scene)
+        indices.extend(rows_for_day)
+    return scenes, indices

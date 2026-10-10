@@ -1,7 +1,8 @@
-"""NDVI arka plan işleyicisi: son 13 ayın sahnelerini bahçe sınırı penceresiyle işler.
+"""NDVI/indeks arka plan işleyicisi: son 13 ayın sahnelerini bahçe sınırı penceresiyle işler.
 
 Basit, süreç içi bir iş kuyruğudur: iş durumu veritabanında tutulur, aynı anda en fazla
-`ndvi_max_parallel_scenes` sahne işlenir (tüm işler arasında ortak sınır).
+`ndvi_max_parallel_scenes` sahne işlenir (tüm işler arasında ortak sınır). Her sahne için gereken
+bantlar tek turda okunur ve tüm indeksler birlikte hesaplanır.
 """
 
 from __future__ import annotations
@@ -20,8 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory
 from bahcelab_backend.domain.ndvi import stac
-from bahcelab_backend.domain.ndvi.models import NdviJobModel, NdviObservationModel
-from bahcelab_backend.domain.ndvi.processing import Analysis, analyze_scene
+from bahcelab_backend.domain.ndvi.indices import bands_needed
+from bahcelab_backend.domain.ndvi.models import NdviJobModel
+from bahcelab_backend.domain.ndvi.persist import missing_outputs, persist_analysis
+from bahcelab_backend.domain.ndvi.processing import analyze_scene
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import months_back
 from bahcelab_backend.shared.storage import StorageBackend, get_storage
@@ -32,14 +35,12 @@ JOB_VISIBILITY_ATTEMPTS = 40
 JOB_VISIBILITY_DELAY = 0.25  # en fazla ~10 sn (commit'in görünmesi için güvenlik payı)
 
 _SLOTS: dict[int, asyncio.Semaphore] = {}
+_TASKS: set[asyncio.Task[None]] = set()
 
 
 def _slots(limit: int) -> asyncio.Semaphore:
     """Event loop başına tek semafor: tüm bahçelerin işleri aynı sınırı paylaşır."""
     return _SLOTS.setdefault(id(asyncio.get_running_loop()), asyncio.Semaphore(limit))
-
-
-_TASKS: set[asyncio.Task[None]] = set()
 
 
 def start_job(job_id: uuid.UUID) -> None:
@@ -52,40 +53,6 @@ def start_job(job_id: uuid.UUID) -> None:
     task = asyncio.get_running_loop().create_task(run_job(job_id))
     _TASKS.add(task)  # görev çöp toplayıcıya kaptırılmasın
     task.add_done_callback(_TASKS.discard)
-
-
-def png_key(garden_id: uuid.UUID, tarih: date) -> str:
-    return f"ndvi/{garden_id}/{tarih.isoformat()}.png"
-
-
-def observation_from_analysis(
-    garden_id: uuid.UUID,
-    tarih: date,
-    scene_id: str,
-    cloud_cover: float | None,
-    analysis: Analysis,
-    *,
-    key: str | None,
-    source: str = "sentinel-2",
-) -> NdviObservationModel:
-    return NdviObservationModel(
-        garden_id=garden_id,
-        tarih=tarih,
-        scene_id=scene_id,
-        durum="bulutlu" if analysis.bulutlu else "tamam",
-        bulut_orani=cloud_cover,
-        gecerli_piksel_orani=analysis.gecerli_piksel_orani,
-        ortalama=analysis.ortalama,
-        medyan=analysis.medyan,
-        p10=analysis.p10,
-        p90=analysis.p90,
-        minimum=analysis.minimum,
-        maksimum=analysis.maksimum,
-        png_yolu=key,
-        sorunlu_bolge_geojson=analysis.sorunlu_bolgeler,
-        goruntu_koordinatlari=analysis.koordinatlar,
-        kaynak=source,
-    )
 
 
 async def _set_job(
@@ -115,7 +82,7 @@ async def run_job(
     read: Callable[..., Any] | None = None,
     today: date | None = None,
 ) -> None:
-    """Bir NDVI işini baştan sona çalıştırır. Hiçbir koşulda istisna dışarı sızmaz (uygulama çökmesin)."""
+    """Bir işleme işini baştan sona çalıştırır. Hiçbir koşulda istisna dışarı sızmaz (uygulama çökmesin)."""
     try:
         await _run(
             job_id,
@@ -126,7 +93,7 @@ async def run_job(
             today or datetime.now(UTC).date(),
         )
     except Exception:  # noqa: BLE001
-        logger.exception("NDVI işi beklenmedik şekilde başarısız oldu: %s", job_id)
+        logger.exception("İşleme işi beklenmedik şekilde başarısız oldu: %s", job_id)
         try:
             await _set_job(
                 session_factory or async_session_factory,
@@ -149,8 +116,7 @@ async def _run(
 ) -> None:
     settings = get_settings()
 
-    # FastAPI arka plan görevini, isteği kapatan işlem (commit) tamamlanmadan başlatabilir:
-    # iş satırı görünene kadar kısa süre beklenir.
+    # FastAPI arka plan görevleri isteğin commit'inden önce başlayabilir: iş satırı görünene kadar bekle
     job: NdviJobModel | None = None
     for _ in range(JOB_VISIBILITY_ATTEMPTS):
         async with factory() as session:
@@ -166,7 +132,7 @@ async def _run(
         garden_id, tur = job.garden_id, job.tur
         geometry = await _geometry(session, garden_id)
         geometry_hash = await repo.geometry_hash(garden_id)
-        existing = await repo.existing_dates(garden_id)
+        existing = await repo.scene_map(garden_id)
         if geometry is None:  # bahçe arada silinmiş
             return
         await session.execute(
@@ -178,7 +144,10 @@ async def _run(
 
     start = months_back(today, settings.ndvi_months)
     if tur == "guncelleme" and existing:
-        start = max(start, max(existing) - timedelta(days=5))
+        # Yeni sahneler + eksik çıktısı olan eski sahneler (en eskisinden itibaren)
+        incomplete = [d for d, item in existing.items() if missing_outputs(item)]
+        newest = max(existing) - timedelta(days=5)
+        start = max(start, min([newest, *incomplete]))
 
     try:
         scenes = await asyncio.to_thread(search, geometry, start, today)
@@ -186,41 +155,49 @@ async def _run(
         await _set_job(factory, job_id, durum="hata", hata_mesaji=str(exc), bitis=datetime.now(UTC))
         return
 
-    pending = [scene for scene in scenes if scene.tarih not in existing]
-    await _set_job(factory, job_id, toplam=len(pending))
+    # Yeni tarihler için tüm çıktılar; mevcutlar için yalnızca eksikler (gereken bantlar okunur)
+    work = [(scene, missing_outputs(existing.get(scene.tarih))) for scene in scenes]
+    work = [(scene, wanted) for scene, wanted in work if wanted]
+    await _set_job(factory, job_id, toplam=len(work))
 
     slots = _slots(settings.ndvi_max_parallel_scenes)
     state = {"failed": 0, "aborted": False}
 
-    async def handle(scene: stac.Scene) -> None:
+    async def handle(scene: stac.Scene, wanted: set[str]) -> None:
         async with slots:
             if state["aborted"]:
                 return
             try:
-                data = await asyncio.to_thread(read, scene, geometry)
-                analysis = await asyncio.to_thread(analyze_scene, data, geometry)
+                data = await asyncio.to_thread(read, scene, geometry, bands_needed(wanted))
+                analysis = await asyncio.to_thread(analyze_scene, data, geometry, wanted)
             except Exception as exc:  # noqa: BLE001 - tek sahne hatası işi durdurmaz
                 state["failed"] += 1
                 logger.warning("Sahne işlenemedi %s: %s", scene.scene_id, exc)
                 return
 
-            key = None if analysis.bulutlu else png_key(garden_id, scene.tarih)
             async with factory() as session:
                 repo = NdviRepository(session)
                 # Kontrol ve yazma aynı işlemde: sınır değiştiyse (veya bahçe silindiyse) hiçbir şey yazılmaz
                 if await repo.lock_geometry_hash(garden_id) != geometry_hash:
                     state["aborted"] = True
                     return
-                if key and analysis.png:
-                    storage.save(key, analysis.png)
-                added = await repo.add_observation(
-                    observation_from_analysis(
-                        garden_id, scene.tarih, scene.scene_id, scene.bulut_orani, analysis, key=key
-                    )
+                current = await repo.get_scene(garden_id, scene.tarih)
+                if current is not None and analysis.bulutlu:
+                    return  # eski kayıt zaten tamam; tutarsız bulut kararıyla bozulmasın
+                new_scene, _updated, rows = persist_analysis(
+                    garden_id=garden_id,
+                    tarih=scene.tarih,
+                    scene_id=scene.scene_id,
+                    cloud_cover=scene.bulut_orani,
+                    analysis=analysis,
+                    storage=storage,
+                    existing=current,
                 )
+                if new_scene is not None and not await repo.add_scene(new_scene):
+                    return  # aynı tarih başka bir iş tarafından yazılmış
+                for row in rows:
+                    await repo.upsert_index(row)
                 await session.commit()
-            if not added and key:
-                storage.delete(key)  # aynı tarih başka bir iş tarafından yazılmış
             async with factory() as session:
                 await session.execute(
                     update(NdviJobModel)
@@ -229,31 +206,25 @@ async def _run(
                 )
                 await session.commit()
 
-    await asyncio.gather(*(handle(scene) for scene in pending))
+    await asyncio.gather(*(handle(scene, wanted) for scene, wanted in work))
 
     if state["aborted"]:
         # Sınır değişti veya bahçe silindi: sonuçlar atıldı. Sınır değişimi yeni işi zaten sıraya aldı.
-        async with factory() as session:
-            await session.execute(
-                update(NdviJobModel)
-                .where(NdviJobModel.id == job_id, NdviJobModel.durum == "isleniyor")
-                .values(
-                    durum="hata",
-                    hata_mesaji="Bahçe sınırı değiştiği için sonuçlar atıldı.",
-                    bitis=datetime.now(UTC),
-                )
-            )
-            await session.commit()
+        await _set_job_if_processing(
+            factory,
+            job_id,
+            durum="hata",
+            hata_mesaji="Bahçe sınırı değiştiği için sonuçlar atıldı.",
+            bitis=datetime.now(UTC),
+        )
         return
 
     failed = state["failed"]
-    if pending and failed == len(pending):
+    if work and failed == len(work):
         status, message = (
             "hata",
-            (
-                "Uydu görüntüleri okunamadı. Planetary Computer'a ulaşılamıyor olabilir; "
-                "biraz sonra «Şimdi güncelle» ile tekrar deneyin."
-            ),
+            "Uydu görüntüleri okunamadı. Planetary Computer'a ulaşılamıyor olabilir; "
+            "biraz sonra «Şimdi güncelle» ile tekrar deneyin.",
         )
     elif failed:
         status, message = (
@@ -262,11 +233,19 @@ async def _run(
         )
     else:
         status, message = "tamam", None
+    await _set_job_if_processing(
+        factory, job_id, durum=status, hata_mesaji=message, bitis=datetime.now(UTC)
+    )
+
+
+async def _set_job_if_processing(
+    factory: async_sessionmaker[AsyncSession], job_id: uuid.UUID, **values: Any
+) -> None:
     async with factory() as session:
         await session.execute(
             update(NdviJobModel)
             .where(NdviJobModel.id == job_id, NdviJobModel.durum == "isleniyor")
-            .values(durum=status, hata_mesaji=message, bitis=datetime.now(UTC))
+            .values(**values)
         )
         await session.commit()
 

@@ -1,46 +1,86 @@
 from datetime import date
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from bahcelab_backend.api.deps import get_current_user, get_ndvi_service
-from bahcelab_backend.domain.ndvi.schemas import NdviIs, NdviYanit
+from bahcelab_backend.domain.ndvi.indices import sample_index_definitions
+from bahcelab_backend.domain.ndvi.schemas import IndeksYanit, NdviIs, VerimlilikYanit
 from bahcelab_backend.domain.ndvi.service import NdviService
 
+definitions_router = APIRouter(
+    prefix="/indeks", tags=["indeks"], dependencies=[Depends(get_current_user)]
+)
+
 router = APIRouter(
-    prefix="/gardens/{garden_id}/ndvi",
-    tags=["ndvi"],
+    prefix="/gardens/{garden_id}",
+    tags=["indeks"],
     dependencies=[Depends(get_current_user)],
 )
 
 Service = Annotated[NdviService, Depends(get_ndvi_service)]
 
 
-@router.get("", response_model=NdviYanit)
-async def get_ndvi(garden_id: UUID, service: Service) -> NdviYanit:
-    """Zaman serisi, uyarılar ve işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar."""
+@definitions_router.get("/tanimlar")
+async def index_definitions() -> list[dict[str, Any]]:
+    """İndekslerin adı, açıklaması, değer aralığı ve renk durakları."""
+    return sample_index_definitions()
+
+
+@router.get("/indeks", response_model=IndeksYanit)
+async def get_indices(garden_id: UUID, service: Service) -> IndeksYanit:
+    """Sahne zaman serisi (tüm indeksler), uyarılar ve işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar."""
     return await service.overview(garden_id)
 
 
-@router.post("/refresh", response_model=NdviIs, status_code=status.HTTP_202_ACCEPTED)
-async def refresh_ndvi(garden_id: UUID, service: Service) -> NdviIs:
-    """«Şimdi güncelle»: yeni sahneleri arka planda işler (örnek veri varsa gerçek veriyle değiştirir)."""
+@router.post("/indeks/refresh", response_model=NdviIs, status_code=status.HTTP_202_ACCEPTED)
+async def refresh_indices(garden_id: UUID, service: Service) -> NdviIs:
+    """«Şimdi güncelle»: yeni ve eksik sahneleri arka planda işler (örnek veri varsa gerçek veriyle değiştirir)."""
     return await service.refresh(garden_id)
 
 
 @router.get(
-    "/{tarih}.png", response_class=Response, responses={200: {"content": {"image/png": {}}}}
+    "/indeks/{indeks}/{tarih}.png",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}}},
 )
-async def get_ndvi_png(garden_id: UUID, tarih: date, service: Service) -> Response:
-    data = await service.png(garden_id, tarih)
-    # Yetkili ve kullanıcıya özel; görüntü yeniden üretilince istemci ?v=surum ile yeniler
+async def get_index_png(garden_id: UUID, indeks: str, tarih: date, service: Service) -> Response:
+    """İndeks görüntüsü (mutlak skala, poligonla kırpılmış) veya `gercek-renk` görüntüsü."""
+    data = await service.png(garden_id, indeks, tarih)
     return Response(
         content=data, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"}
     )
 
 
-@router.get("/{tarih}/zones")
-async def get_ndvi_zones(garden_id: UUID, tarih: date, service: Service) -> dict[str, Any]:
+@router.get(
+    "/indeks/{indeks}/{tarih}.bin",
+    response_class=Response,
+    responses={200: {"content": {"application/octet-stream": {}}}},
+)
+async def get_index_grid(garden_id: UUID, indeks: str, tarih: date, service: Service) -> Response:
+    """Ham değerler: float32 little-endian, satır sırası (satır × sütun sahne gözleminde), geçersiz = NaN."""
+    data = await service.grid(garden_id, indeks, tarih)
+    return Response(
+        content=data,
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
+
+
+@router.get("/indeks/{indeks}/{tarih}/zones")
+async def get_index_zones(
+    garden_id: UUID, indeks: str, tarih: date, service: Service
+) -> dict[str, Any]:
     """Sorunlu bölgeler (GeoJSON FeatureCollection, EPSG:4326)."""
-    return await service.zones(garden_id, tarih)
+    return await service.zones(garden_id, indeks, tarih)
+
+
+@router.get("/verimlilik-bolgeleri", response_model=VerimlilikYanit)
+async def get_yield_zones(
+    garden_id: UUID,
+    service: Service,
+    indeks: Annotated[Literal["ndvi", "msavi"], Query()] = "ndvi",
+) -> VerimlilikYanit:
+    """Geçmiş görüntülerin ortalamasından 3 verimlilik bölgesi (düşük, orta, yüksek)."""
+    return await service.yield_zones(garden_id, indeks)

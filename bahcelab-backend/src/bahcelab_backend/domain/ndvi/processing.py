@@ -1,12 +1,12 @@
-"""Sentinel-2 NDVI işleme çekirdeği: maskeleme, NDVI, istatistik, PNG ve sorunlu bölgeler.
+"""Sentinel-2 çoklu indeks işleme çekirdeği: maskeleme, indeksler, istatistik, PNG, ızgara ve sorunlu bölgeler.
 
-Bu modül ağ kullanmaz; girdisi hazır dizilerdir (`SceneData`). Ağdan okuma `stac.py`'dadır.
+Bu modül ağ kullanmaz; girdisi hazır dizilerdir (`SceneBands`). Ağdan okuma `stac.py`'dadır.
 """
 
 from __future__ import annotations
 
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -18,68 +18,76 @@ from rasterio.transform import Affine, array_bounds
 from rasterio.warp import transform_geom
 from shapely.geometry import shape
 
+from bahcelab_backend.domain.ndvi.indices import (
+    COLORMAPS,
+    INDICES,
+    TRUE_COLOR,
+    IndexDef,
+    compute_index,
+)
+
 # SCL sınıfları: 3 bulut gölgesi, 8 orta olasılıklı bulut, 9 yüksek olasılıklı bulut, 10 ince bulut
 MASKED_SCL = (3, 8, 9, 10)
 MIN_VALID_RATIO = 0.70  # bahçe içindeki geçerli piksel oranı bunun altındaysa tarih "bulutlu"
-NDVI_SCALE_MIN = 0.0
-NDVI_SCALE_MAX = 0.9
-PROBLEM_DELTA = 0.10  # medyanın bu kadar altı = sorunlu
 MIN_ZONE_PIXELS = 3  # 3 piksel × 100 m² = 300 m²
-
-# Kırmızı → sarı → yeşil. Arayüzdeki lejant (frontend ndviColor) ile aynı duraklar kullanılır.
-COLOR_STOPS: list[tuple[float, tuple[int, int, int]]] = [
-    (0.0, (215, 48, 39)),
-    (0.3, (252, 141, 89)),
-    (0.5, (254, 224, 139)),
-    (0.7, (145, 207, 96)),
-    (0.9, (26, 152, 80)),
-]
+MAX_PNG_SIDE = 1024  # keskin (nearest) büyütmeyle PNG'nin en uzun kenarı bu değeri aşmaz
+MAX_PNG_SCALE = 8
+TRUE_COLOR_REFLECTANCE_MAX = 0.28  # bu yansıtım tam parlaklık sayılır
+TRUE_COLOR_GAMMA = 1.3
 
 
 @dataclass
-class SceneData:
-    """Bahçe penceresi için okunmuş bantlar (yansıtım, 0–1) ve sahne ızgarası."""
+class SceneBands:
+    """Bahçe penceresi için okunmuş bantlar (yansıtım, 0–1, veri yoksa NaN) ve sahne ızgarası.
 
-    red: np.ndarray  # B04, float32, nodata = NaN
-    nir: np.ndarray  # B08
-    scl: np.ndarray  # SCL, uint8, 10 m ızgarasına nearest ile örneklenmiş
+    20 m bantlar (B05, B8A, B11) okuma sırasında 10 m ızgarasına bilinear örneklenmiş olmalıdır;
+    SCL nearest ile örneklenir.
+    """
+
+    bands: dict[str, np.ndarray]
+    scl: np.ndarray  # uint8
     transform: Affine
     crs: CRS
 
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self.scl.shape
+
 
 @dataclass
-class Analysis:
+class IndexResult:
+    indeks: str
+    ortalama: float
+    medyan: float
+    p10: float
+    p90: float
+    minimum: float
+    maksimum: float
+    png: bytes  # mutlak skala, poligonla kırpılmış, keskin büyütülmüş
+    grid: bytes  # float32 (little-endian), satır sırası, geçersiz = NaN
+    sorunlu_bolgeler: dict[str, Any]
+
+
+@dataclass
+class SceneAnalysis:
     gecerli_piksel_orani: float
     bulutlu: bool
-    ortalama: float | None = None
-    medyan: float | None = None
-    p10: float | None = None
-    p90: float | None = None
-    minimum: float | None = None
-    maksimum: float | None = None
-    png: bytes | None = None
-    sorunlu_bolgeler: dict[str, Any] | None = None
-    koordinatlar: list[list[float]] | None = None  # PNG köşeleri: KB, KD, GD, GB [boylam, enlem]
+    satir: int = 0
+    sutun: int = 0
+    koordinatlar: list[list[float]] | None = (
+        None  # görüntü köşeleri: KB, KD, GD, GB [boylam, enlem]
+    )
+    indeksler: dict[str, IndexResult] = field(default_factory=dict)
+    gercek_renk_png: bytes | None = None
 
 
 def to_reflectance(
     dn: np.ndarray, scale: float = 0.0001, offset: float = 0.0, nodata: int = 0
 ) -> np.ndarray:
-    """Sayısal değeri yansıtıma çevirir. 2022 sonrası L2A ürünlerinde offset −0,1'dir; atlanırsa NDVI sapar."""
+    """Sayısal değeri yansıtıma çevirir. 2022 sonrası L2A ürünlerinde offset −0,1'dir; atlanırsa indeksler sapar."""
     out = dn.astype(np.float32) * np.float32(scale) + np.float32(offset)
     out[dn == nodata] = np.nan
     return out
-
-
-def compute_ndvi(red: np.ndarray, nir: np.ndarray) -> np.ndarray:
-    """NDVI = (B08 − B04) / (B08 + B04); payda 0 veya veri yoksa NaN."""
-    red = red.astype(np.float32)
-    nir = nir.astype(np.float32)
-    total = nir + red
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ndvi = (nir - red) / total
-    ndvi[~np.isfinite(ndvi) | (total == 0)] = np.nan
-    return np.clip(ndvi, -1.0, 1.0)
 
 
 def scl_valid_mask(scl: np.ndarray) -> np.ndarray:
@@ -88,41 +96,102 @@ def scl_valid_mask(scl: np.ndarray) -> np.ndarray:
 
 
 def garden_pixel_mask(
-    geometry_utm: dict[str, Any], shape_hw: tuple[int, int], transform: Affine
+    geometry_utm: dict[str, Any],
+    shape_hw: tuple[int, int],
+    transform: Affine,
+    *,
+    all_touched: bool = False,
 ) -> np.ndarray:
     """Bahçe içindeki pikseller (piksel merkezi sınırın içinde). Çok küçük bahçede dokunan pikseller de alınır."""
-    mask = geometry_mask([geometry_utm], out_shape=shape_hw, transform=transform, invert=True)
-    if not mask.any():
+    mask = geometry_mask(
+        [geometry_utm],
+        out_shape=shape_hw,
+        transform=transform,
+        invert=True,
+        all_touched=all_touched,
+    )
+    if not mask.any() and not all_touched:
         mask = geometry_mask(
             [geometry_utm], out_shape=shape_hw, transform=transform, invert=True, all_touched=True
         )
     return mask
 
 
-def colorize(ndvi: np.ndarray, valid: np.ndarray) -> np.ndarray:
-    """NDVI → RGBA. Geçersiz/bahçe dışı pikseller tamamen saydam."""
-    t = np.clip(
-        (np.nan_to_num(ndvi, nan=0.0) - NDVI_SCALE_MIN) / (NDVI_SCALE_MAX - NDVI_SCALE_MIN), 0, 1
-    )
-    xs = [(stop - NDVI_SCALE_MIN) / (NDVI_SCALE_MAX - NDVI_SCALE_MIN) for stop, _ in COLOR_STOPS]
-    rgba = np.zeros((*ndvi.shape, 4), dtype=np.uint8)
+# ---------------------------------------------------------------- renklendirme ve PNG
+def colorize(
+    values: np.ndarray,
+    valid: np.ndarray,
+    vmin: float,
+    vmax: float,
+    colormap: str,
+) -> np.ndarray:
+    """Değerleri [vmin, vmax] aralığında renk skalasına eşler → RGBA (geçersiz = tamamen saydam)."""
+    stops = COLORMAPS[colormap]
+    xs = [pos for pos, _ in stops]
+    span = (vmax - vmin) or 1.0
+    t = np.clip((np.nan_to_num(values, nan=vmin) - vmin) / span, 0, 1)
+    rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
     for channel in range(3):
-        ys = [color[channel] for _, color in COLOR_STOPS]
+        ys = [color[channel] for _, color in stops]
         rgba[..., channel] = np.interp(t, xs, ys).astype(np.uint8)
     rgba[..., 3] = np.where(valid, 255, 0)
     return rgba
 
 
-def render_png(ndvi: np.ndarray, valid: np.ndarray) -> bytes:
-    """10 m çözünürlükte PNG; yeniden örnekleme istemcide nearest ile yapılır (keskin pikseller)."""
-    image = Image.fromarray(colorize(ndvi, valid), mode="RGBA")
+def png_scale(shape_hw: tuple[int, int]) -> int:
+    """PNG büyütme katsayısı: küçük bahçelerde daha fazla, büyüklerde 1'e kadar iner."""
+    return max(1, min(MAX_PNG_SCALE, MAX_PNG_SIDE // max(shape_hw)))
+
+
+def _encode_png(rgba: np.ndarray) -> bytes:
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
+    Image.fromarray(rgba, mode="RGBA").save(buffer, format="PNG", optimize=True)
     return buffer.getvalue()
 
 
+def render_clipped_png(rgba: np.ndarray, geometry_utm: dict[str, Any], transform: Affine) -> bytes:
+    """10 m pikselleri keskin (nearest) büyütür ve bahçe poligonuyla ince çözünürlükte kırpar.
+
+    Piksel merkezi poligonun içinde olan ama bloğu sınırdan taşan pikseller böylece tam sınırda biter.
+    """
+    factor = png_scale(rgba.shape[:2])
+    big = np.repeat(np.repeat(rgba, factor, axis=0), factor, axis=1)
+    fine = Affine(
+        transform.a / factor,
+        transform.b,
+        transform.c,
+        transform.d,
+        transform.e / factor,
+        transform.f,
+    )
+    inside = geometry_mask(
+        [geometry_utm], out_shape=big.shape[:2], transform=fine, invert=True, all_touched=False
+    )
+    if not inside.any():
+        inside = geometry_mask(
+            [geometry_utm], out_shape=big.shape[:2], transform=fine, invert=True, all_touched=True
+        )
+    big = big.copy()
+    big[..., 3] = np.where(inside, big[..., 3], 0)
+    return _encode_png(big)
+
+
+def render_true_color_png(bands: dict[str, np.ndarray], in_garden_touched: np.ndarray) -> bytes:
+    """Gerçek renk (B04, B03, B02): skalasız; bahçe penceresi 10 m çözünürlükte, poligonla ayrıca kırpılmaz
+    (arayüz kırpar; böylece yumuşak/keskin çizim seçilebilir)."""
+    rgb = np.stack([bands["B04"], bands["B03"], bands["B02"]], axis=-1)
+    finite = np.isfinite(rgb).all(axis=-1)
+    scaled = np.clip(np.nan_to_num(rgb, nan=0.0) / TRUE_COLOR_REFLECTANCE_MAX, 0, 1) ** (
+        1 / TRUE_COLOR_GAMMA
+    )
+    rgba = np.zeros((*finite.shape, 4), dtype=np.uint8)
+    rgba[..., :3] = (scaled * 255).astype(np.uint8)
+    rgba[..., 3] = np.where(finite & in_garden_touched, 255, 0)
+    return _encode_png(rgba)
+
+
 def image_corners(transform: Affine, crs: CRS, shape_hw: tuple[int, int]) -> list[list[float]]:
-    """PNG'nin dört köşesi [boylam, enlem]: sol-üst, sağ-üst, sağ-alt, sol-alt (MapLibre image kaynağı sırası)."""
+    """Görüntünün dört köşesi [boylam, enlem]: sol-üst, sağ-üst, sağ-alt, sol-alt (MapLibre kaynak sırası)."""
     height, width = shape_hw
     west, south, east, north = array_bounds(height, width, transform)
     to_wgs84 = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
@@ -132,27 +201,30 @@ def image_corners(transform: Affine, crs: CRS, shape_hw: tuple[int, int]) -> lis
     ]
 
 
+# ---------------------------------------------------------------- sorunlu bölgeler
 def problem_zones(
-    ndvi: np.ndarray,
+    values: np.ndarray,
     valid: np.ndarray,
     median: float,
+    delta: float,
     transform: Affine,
     crs: CRS,
 ) -> dict[str, Any]:
-    """Bahçe medyanının 0,10 altındaki piksel kümelerini (≥ 3 piksel) poligona çevirir (GeoJSON, EPSG:4326)."""
-    low = valid & (ndvi < median - PROBLEM_DELTA)
+    """Bahçe medyanının `delta` altındaki piksel kümelerini (≥ 3 piksel) poligona çevirir (GeoJSON, EPSG:4326)."""
+    low = valid & (values < median - delta)
     pixel_area = abs(transform.a * transform.e)
     features: list[dict[str, Any]] = []
 
     if low.any():
-        labelled = low.astype(np.uint8)
-        for geometry, _ in shapes(labelled, mask=low, transform=transform, connectivity=4):
+        for geometry, _ in shapes(
+            low.astype(np.uint8), mask=low, transform=transform, connectivity=4
+        ):
             poly = shape(geometry)
             pixels = int(round(poly.area / pixel_area))
             if pixels < MIN_ZONE_PIXELS:
                 continue
             inside = (
-                geometry_mask([geometry], out_shape=ndvi.shape, transform=transform, invert=True)
+                geometry_mask([geometry], out_shape=values.shape, transform=transform, invert=True)
                 & low
             )
             features.append(
@@ -162,7 +234,7 @@ def problem_zones(
                     "properties": {
                         "alan_m2": round(poly.area, 1),
                         "piksel": pixels,
-                        "ortalama_ndvi": round(float(np.nanmean(ndvi[inside])), 3)
+                        "ortalama": round(float(np.nanmean(values[inside])), 3)
                         if inside.any()
                         else None,
                     },
@@ -173,30 +245,94 @@ def problem_zones(
     return {"type": "FeatureCollection", "features": features}
 
 
-def analyze_scene(scene: SceneData, geometry_wgs84: dict[str, Any]) -> Analysis:
-    """Bir sahneyi işler. Geçerli piksel oranı < %70 ise yalnızca oran döner (bulutlu)."""
+# ---------------------------------------------------------------- sahne analizi
+def _analyze_index(
+    definition: IndexDef,
+    values: np.ndarray,
+    valid_core: np.ndarray,
+    visible_core: np.ndarray,
+    scene: SceneBands,
+    geometry_utm: dict[str, Any],
+) -> IndexResult | None:
+    """İstatistikler yalnızca piksel merkezi bahçe içinde olan pikselleri sayar (`valid_core`).
+    Görüntü ve ham ızgara ise poligona değen pikselleri de içerir (`visible_core`): raster sınıra kadar
+    uzanır ve poligonla ince çözünürlükte kırpılır; sınırın dışında hiçbir şey görünmez."""
+    valid = valid_core & np.isfinite(values)
+    if not valid.any():
+        return None
+    visible = visible_core & np.isfinite(values)
+
+    selected = values[valid]
+    median = float(np.median(selected))
+    rgba = colorize(values, visible, definition.min, definition.max, definition.renk)
+    grid = np.where(visible, values, np.nan).astype("<f4")
+    return IndexResult(
+        indeks=definition.id,
+        ortalama=float(selected.mean()),
+        medyan=median,
+        p10=float(np.percentile(selected, 10)),
+        p90=float(np.percentile(selected, 90)),
+        minimum=float(selected.min()),
+        maksimum=float(selected.max()),
+        png=render_clipped_png(rgba, geometry_utm, scene.transform),
+        grid=grid.tobytes(),
+        sorunlu_bolgeler=problem_zones(
+            values, valid, median, definition.sorun_esigi, scene.transform, scene.crs
+        ),
+    )
+
+
+def analyze_scene(
+    scene: SceneBands, geometry_wgs84: dict[str, Any], outputs: set[str] | None = None
+) -> SceneAnalysis:
+    """Bir sahneden istenen çıktıları (indeksler ve gerçek renk) üretir.
+
+    "Bulutlu" kararı çekirdek bantlarla (SCL + B04/B08 + bahçe) verilir: geçerli piksel oranı < %70 ise
+    hiçbir çıktı üretilmez.
+    """
+    wanted = set(outputs) if outputs is not None else set(INDICES) | {TRUE_COLOR}
     geometry_utm = transform_geom("EPSG:4326", scene.crs, geometry_wgs84)
-    ndvi = compute_ndvi(scene.red, scene.nir)
-    in_garden = garden_pixel_mask(geometry_utm, ndvi.shape, scene.transform)
-    valid = in_garden & scl_valid_mask(scene.scl) & np.isfinite(ndvi)
+    shape_hw = scene.shape
+
+    in_garden = garden_pixel_mask(geometry_utm, shape_hw, scene.transform)
+    valid_core = (
+        in_garden
+        & scl_valid_mask(scene.scl)
+        & np.isfinite(scene.bands["B04"])
+        & np.isfinite(scene.bands["B08"])
+    )
+
+    touched = garden_pixel_mask(geometry_utm, shape_hw, scene.transform, all_touched=True)
+    visible_core = (
+        touched
+        & scl_valid_mask(scene.scl)
+        & np.isfinite(scene.bands["B04"])
+        & np.isfinite(scene.bands["B08"])
+    )
 
     garden_pixels = int(in_garden.sum())
-    ratio = float(valid.sum()) / garden_pixels if garden_pixels else 0.0
+    ratio = float(valid_core.sum()) / garden_pixels if garden_pixels else 0.0
     if ratio < MIN_VALID_RATIO:
-        return Analysis(gecerli_piksel_orani=round(ratio, 4), bulutlu=True)
+        return SceneAnalysis(gecerli_piksel_orani=round(ratio, 4), bulutlu=True)
 
-    values = ndvi[valid]
-    median = float(np.median(values))
-    return Analysis(
+    analysis = SceneAnalysis(
         gecerli_piksel_orani=round(ratio, 4),
         bulutlu=False,
-        ortalama=float(values.mean()),
-        medyan=median,
-        p10=float(np.percentile(values, 10)),
-        p90=float(np.percentile(values, 90)),
-        minimum=float(values.min()),
-        maksimum=float(values.max()),
-        png=render_png(ndvi, valid),
-        sorunlu_bolgeler=problem_zones(ndvi, valid, median, scene.transform, scene.crs),
-        koordinatlar=image_corners(scene.transform, scene.crs, ndvi.shape),
+        satir=shape_hw[0],
+        sutun=shape_hw[1],
+        koordinatlar=image_corners(scene.transform, scene.crs, shape_hw),
     )
+
+    for index_id in INDICES:
+        if index_id not in wanted:
+            continue
+        definition = INDICES[index_id]
+        values = compute_index(index_id, scene.bands)
+        result = _analyze_index(definition, values, valid_core, visible_core, scene, geometry_utm)
+        if result is not None:
+            analysis.indeksler[index_id] = result
+
+    if TRUE_COLOR in wanted:
+        analysis.gercek_renk_png = render_true_color_png(scene.bands, touched)
+
+    return analysis
