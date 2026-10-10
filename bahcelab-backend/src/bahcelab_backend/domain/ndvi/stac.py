@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, TypeVar
+from typing import Any
 
 import numpy as np
 import planetary_computer
@@ -27,8 +27,6 @@ logger = logging.getLogger(__name__)
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 COLLECTION = "sentinel-2-l2a"
 
-T = TypeVar("T")
-
 
 class NdviSourceError(Exception):
     """Uydu verisi kaynağına ulaşılamadı veya okunamadı (kullanıcıya gösterilebilir mesaj taşır)."""
@@ -42,7 +40,7 @@ class Scene:
     item: Item
 
 
-def with_retry(fn: Callable[[], T], attempts: int = 3, delay: float = 1.5) -> T:
+def with_retry[T](fn: Callable[[], T], attempts: int = 3, delay: float = 1.5) -> T:
     """Geçici ağ hatalarında artan bekleme ile tekrar dener."""
     last: Exception | None = None
     for attempt in range(attempts):

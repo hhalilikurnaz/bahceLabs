@@ -2,14 +2,12 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from fastapi import BackgroundTasks
-
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.models import NdviJobModel, NdviObservationModel
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import drop_alert
-from bahcelab_backend.domain.ndvi.runner import run_job
+from bahcelab_backend.domain.ndvi.runner import start_job
 from bahcelab_backend.domain.ndvi.schemas import NdviGozlem, NdviIs, NdviYanit
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
@@ -53,23 +51,19 @@ def to_is(job: NdviJobModel) -> NdviIs:
 class NdviCoordinator:
     """İşleri oluşturur ve arka plana verir; bahçe yaşam döngüsü olayları buradan geçer."""
 
-    def __init__(
-        self,
-        repo: NdviRepository,
-        storage: StorageBackend,
-        background_tasks: BackgroundTasks | None = None,
-    ) -> None:
+    def __init__(self, repo: NdviRepository, storage: StorageBackend) -> None:
         self.repo = repo
         self.storage = storage
-        self.background_tasks = background_tasks
 
     async def enqueue(self, garden_id: uuid.UUID, tur: str) -> NdviJobModel | None:
         """Aktif iş yoksa yeni iş açar ve arka plana verir. NDVI kapalıysa None."""
         if not get_settings().ndvi_enabled:
             return None
         job = await self.repo.create_job(garden_id, tur)
-        if job is not None and self.background_tasks is not None:
-            self.background_tasks.add_task(run_job, job.id)
+        if job is not None:
+            # İşleyici iş satırını (ve bahçeyi) kendi bağlantısından okur: önce commit, sonra başlat
+            await self.repo.session.commit()
+            start_job(job.id)
         return job
 
     async def start_initial(self, garden_id: uuid.UUID) -> None:

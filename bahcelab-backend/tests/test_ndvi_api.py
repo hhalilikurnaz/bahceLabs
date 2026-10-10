@@ -83,10 +83,7 @@ def jobs_started(monkeypatch):
     """Arka plan işini çalıştırmak yerine hangi işlerin sıraya alındığını kaydeder."""
     started: list[uuid.UUID] = []
 
-    async def fake_run(job_id):
-        started.append(job_id)
-
-    monkeypatch.setattr(ndvi_service, "run_job", fake_run)
+    monkeypatch.setattr(ndvi_service, "start_job", started.append)
     from bahcelab_backend.config import get_settings
 
     get_settings().ndvi_enabled = True  # app fixture teardown eski değeri geri yükler
@@ -569,3 +566,31 @@ async def test_sample_series_uses_real_pipeline_and_triggers_alert(harness: Harn
     assert alert is not None and alert.degisim_yuzde < -10
     zones = [o.sorunlu_bolge_geojson for o in observations if o.durum == "tamam"][-1]
     assert len(zones["features"]) >= 1  # son görüntüde sorunlu bölge var
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_runner_waits_for_job_row_committed_after_the_task_starts(harness: Harness):
+    """FastAPI arka plan görevi, isteğin commit'inden önce başlayabilir (gerçek uçtan uca denemede görüldü)."""
+    job_id = uuid.uuid4()
+    task = asyncio.create_task(
+        runner.run_job(
+            job_id,
+            session_factory=harness.factory,
+            storage=harness.storage,
+            search=harness.search_for(DAYS),
+            read=harness.read,
+            today=TODAY,
+        )
+    )
+    await asyncio.sleep(0.6)  # iş satırı henüz yok
+    async with harness.factory() as session:
+        session.add(
+            NdviJobModel(id=job_id, garden_id=harness.garden_id, tur="ilk", durum="bekliyor")
+        )
+        await session.commit()
+    await asyncio.wait_for(task, timeout=30)
+
+    async with harness.factory() as session:
+        job = await NdviRepository(session).get_job(job_id)
+    assert job.durum == "tamam" and job.islenen == 3

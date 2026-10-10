@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import BackgroundTasks, Cookie, Depends
+from fastapi import Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.api.auth.cookies import ACCESS_COOKIE
@@ -43,29 +43,25 @@ async def get_workspace_id(
     return user.workspace_id
 
 
-def _coordinator(session: AsyncSession, background_tasks: BackgroundTasks) -> NdviCoordinator:
-    return NdviCoordinator(NdviRepository(session), get_storage(), background_tasks)
+def _coordinator(session: AsyncSession) -> NdviCoordinator:
+    return NdviCoordinator(NdviRepository(session), get_storage())
 
 
 async def get_garden_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
-    background_tasks: BackgroundTasks,
 ) -> GardenService:
-    return GardenService(
-        GardenRepository(session, workspace_id), _coordinator(session, background_tasks)
-    )
+    return GardenService(GardenRepository(session, workspace_id), _coordinator(session))
 
 
 async def get_ndvi_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
-    background_tasks: BackgroundTasks,
 ) -> NdviService:
     return NdviService(
         GardenRepository(session, workspace_id),
         NdviRepository(session),
-        _coordinator(session, background_tasks),
+        _coordinator(session),
         get_storage(),
     )
 

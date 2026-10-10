@@ -26,7 +26,9 @@ async def lifespan(_app: FastAPI):
             # Önceki süreçte yarıda kalan NDVI işleri hata olarak işaretlenir (yeniden başlatılabilir)
             await fail_stale_jobs()
         except Exception:  # noqa: BLE001 - veritabanı hazır değilse API yine açılır
-            logging.getLogger(__name__).warning("Yarım kalan NDVI işleri temizlenemedi", exc_info=True)
+            logging.getLogger(__name__).warning(
+                "Yarım kalan NDVI işleri temizlenemedi", exc_info=True
+            )
     yield
 
 

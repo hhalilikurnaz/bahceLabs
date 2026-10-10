@@ -28,12 +28,30 @@ from bahcelab_backend.shared.storage import StorageBackend, get_storage
 
 logger = logging.getLogger(__name__)
 
+JOB_VISIBILITY_ATTEMPTS = 40
+JOB_VISIBILITY_DELAY = 0.25  # en fazla ~10 sn (commit'in görünmesi için güvenlik payı)
+
 _SLOTS: dict[int, asyncio.Semaphore] = {}
 
 
 def _slots(limit: int) -> asyncio.Semaphore:
     """Event loop başına tek semafor: tüm bahçelerin işleri aynı sınırı paylaşır."""
     return _SLOTS.setdefault(id(asyncio.get_running_loop()), asyncio.Semaphore(limit))
+
+
+_TASKS: set[asyncio.Task[None]] = set()
+
+
+def start_job(job_id: uuid.UUID) -> None:
+    """İşi, çalışan olay döngüsünde bağımsız bir görev olarak başlatır.
+
+    FastAPI `BackgroundTasks` kullanılmaz: o, isteğin transaction'ını (commit) iş bitene kadar
+    açık tutuyordu; dakikalarca süren işleme sırasında bahçe kaydı bile görünmüyordu.
+    Çağıran, iş satırını *commit ettikten sonra* bunu çağırmalıdır.
+    """
+    task = asyncio.get_running_loop().create_task(run_job(job_id))
+    _TASKS.add(task)  # görev çöp toplayıcıya kaptırılmasın
+    task.add_done_callback(_TASKS.discard)
 
 
 def png_key(garden_id: uuid.UUID, tarih: date) -> str:
@@ -131,19 +149,31 @@ async def _run(
 ) -> None:
     settings = get_settings()
 
+    # FastAPI arka plan görevini, isteği kapatan işlem (commit) tamamlanmadan başlatabilir:
+    # iş satırı görünene kadar kısa süre beklenir.
+    job: NdviJobModel | None = None
+    for _ in range(JOB_VISIBILITY_ATTEMPTS):
+        async with factory() as session:
+            job = await NdviRepository(session).get_job(job_id)
+        if job is not None:
+            break
+        await asyncio.sleep(JOB_VISIBILITY_DELAY)
+    if job is None or job.durum != "bekliyor":
+        return
+
     async with factory() as session:
         repo = NdviRepository(session)
-        job = await repo.get_job(job_id)
-        if job is None or job.durum != "bekliyor":
-            return
         garden_id, tur = job.garden_id, job.tur
         geometry = await _geometry(session, garden_id)
         geometry_hash = await repo.geometry_hash(garden_id)
         existing = await repo.existing_dates(garden_id)
         if geometry is None:  # bahçe arada silinmiş
             return
-        job.durum = "isleniyor"
-        job.baslangic = datetime.now(UTC)
+        await session.execute(
+            update(NdviJobModel)
+            .where(NdviJobModel.id == job_id, NdviJobModel.durum == "bekliyor")
+            .values(durum="isleniyor", baslangic=datetime.now(UTC))
+        )
         await session.commit()
 
     start = months_back(today, settings.ndvi_months)
