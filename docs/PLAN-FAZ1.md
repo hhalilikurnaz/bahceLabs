@@ -179,7 +179,7 @@ Bu belgenin 0. bölümü.
 - **Kurallar** (`rules.py`, saf fonksiyonlar, Türkçe açıklamalı):
   - İlaçlama (saatlik): uygun = rüzgâr < 15 ve hamle < 25 km/s, o saatte yağış yok, sonraki 6 saatte yağış olasılığı < %30, 10–28 °C. «Sınırda» ve «uygun değil» bantları (rüzgâr 15–20, hamle 25–32, olasılık %30–50, sıcaklık 8–10 / 28–30) ve nedenler. Günlük «en iyi aralık» yalnızca 05:00–21:00 gündüz saatlerinden seçilir.
   - Don: ≤ 2 °C sarı «Don riski», ≤ 0 °C kırmızı «Don tehlikesi»; kaç saat sürdüğü ve ayrı geceler ayrı uyarı. Sıcak: günlük max ≥ 38 °C sarı, ≥ 42 °C kırmızı.
-  - Su dengesi: son 7 / 30 gün yağış − ET₀ (bilgi; reçete değil). Yağış toplamları: son 7, 30 gün ve sezon başından beri (1 Eylül); geçen yılın aynı dönemiyle (veri %90'dan eksikse gösterilmez).
+  - Su dengesi: son 7 / 30 gün yağış − ET₀ (bilgi; reçete değil). Yağış toplamları: son 7, 30 gün ve sezon başından beri (su yılı: 1 Ekim); geçen yılın aynı dönemiyle (veri %90'dan eksikse gösterilmez).
 - **API (girişli, yalnızca kendi bahçesi, başkasınınki 404):** `GET /gardens/{id}/weather`, `GET /gardens/{id}/weather/history?from&to`, `GET /weather/ozet` (tüm bahçelerin özeti), `GET /indeks/uyari-ozeti` (bahçe listesi simgeleri için uydu uyarıları; iş başlatmaz).
 - **Örnek veri:** `make db-seed` Tömük için ağsız örnek tahmin ve geçmiş yazar (`kaynak = ornek`); internet varsa ilk istekte gerçek veriyle değişir.
 

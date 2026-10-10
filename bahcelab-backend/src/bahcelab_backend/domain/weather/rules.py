@@ -28,7 +28,7 @@ DAY_START_HOUR, DAY_END_HOUR = 5, 21
 FROST_YELLOW, FROST_RED = 2.0, 0.0
 HEAT_YELLOW, HEAT_RED = 38.0, 42.0
 
-SEASON_START_MONTH = 9  # yağış sezonu 1 Eylül'de başlar
+SEASON_START_MONTH = 10  # yağış sezonu = su yılı: 1 Ekim'de başlar (DSİ/MGM ile uyumlu)
 
 
 def _fmt(value: float, digits: int = 0) -> str:

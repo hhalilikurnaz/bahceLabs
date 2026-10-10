@@ -187,10 +187,11 @@ def test_water_balance_needs_data():
     assert rules.water_balance({}, date(2026, 10, 10), 7) is None
 
 
-def test_season_start():
-    assert rules.season_start(date(2026, 10, 10)) == date(2026, 9, 1)
-    assert rules.season_start(date(2027, 3, 1)) == date(2026, 9, 1)
-    assert rules.season_start(date(2026, 9, 1)) == date(2026, 9, 1)
+def test_season_start_is_the_water_year_october_first():
+    assert rules.season_start(date(2026, 10, 10)) == date(2026, 10, 1)
+    assert rules.season_start(date(2026, 10, 1)) == date(2026, 10, 1)
+    assert rules.season_start(date(2026, 9, 30)) == date(2025, 10, 1)
+    assert rules.season_start(date(2027, 3, 1)) == date(2026, 10, 1)
 
 
 def test_rain_total_with_last_year_comparison():
