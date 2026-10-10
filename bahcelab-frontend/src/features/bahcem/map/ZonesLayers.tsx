@@ -85,7 +85,7 @@ export function ZonesLayers() {
       note.textContent = hint
       card.append(note)
       popup?.remove()
-      popup = new Popup({ closeButton: true, maxWidth: '240px', className: 'bahcem-popup' }).setLngLat(e.lngLat).setDOMContent(card).addTo(map)
+      popup = new Popup({ closeButton: true, maxWidth: '240px', className: 'bahcem-popup surface-dark' }).setLngLat(e.lngLat).setDOMContent(card).addTo(map)
     }
 
     const onProblem = (e: MapLayerMouseEvent) => {

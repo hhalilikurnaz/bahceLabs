@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useGardenNav } from '../hooks/useGardenNav'
 import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl'
 import { useGardens } from '../api/useGardens'
 import type { GardenGeometry } from '../api/types'
@@ -28,7 +29,7 @@ export function GardenLayers() {
   const editingId = useBahcemStore((s) => s.editingGardenId)
   const draft = useBahcemStore((s) => s.draft)
   const imported = useBahcemStore((s) => s.imported)
-  const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const { open: openGarden } = useGardenNav()
   const { shown: ndviShown } = useIndexView()
 
   // Kaynak ve katmanlar
@@ -121,7 +122,7 @@ export function GardenLayers() {
       if (useBahcemStore.getState().mode !== 'idle') return
       const id = e.features?.[0]?.properties?.id as string | undefined
       if (id) {
-        selectGarden(id)
+        openGarden(id)
         useBahcemStore.getState().setLeftPanelOpen(true)
       }
     }
@@ -140,7 +141,7 @@ export function GardenLayers() {
       map.off('mouseenter', FILL, onEnter)
       map.off('mouseleave', FILL, onLeave)
     }
-  }, [map, styleVersion, selectGarden])
+  }, [map, styleVersion, openGarden])
 
   return null
 }

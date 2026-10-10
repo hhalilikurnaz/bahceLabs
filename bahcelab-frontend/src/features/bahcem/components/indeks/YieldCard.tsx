@@ -22,8 +22,8 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
     <section className="space-y-3 rounded-2xl bg-app-card p-3.5" aria-label="Verimlilik bölgeleri">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-[13px] font-semibold text-app-text">Verimlilik bölgeleri</h3>
-          <p className="mt-0.5 text-[11px] leading-snug text-app-text-muted">
+          <h3 className="text-small font-semibold text-app-text">Verimlilik bölgeleri</h3>
+          <p className="mt-0.5 text-caption leading-snug text-app-text-muted">
             Tüm geçerli geçmiş görüntülerin ortalamasından bahçe 3 bölgeye ayrılır; ileride blok bölmeye öneri olacak.
           </p>
         </div>
@@ -49,7 +49,7 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
             role="radio"
             aria-checked={indeks === id}
             onClick={() => setIndeks(id)}
-            className={`h-7 rounded-full border px-3 text-[11px] font-medium transition-colors ${
+            className={`h-7 rounded-full border px-3 text-caption font-medium transition-colors ${
               indeks === id ? 'border-app-accent bg-app-accent-soft text-app-accent' : 'border-app-border text-app-text-muted hover:text-app-text'
             }`}
           >
@@ -59,11 +59,11 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
       </div>
 
       {isLoading && (
-        <p className="flex items-center gap-2 text-[12px] text-app-text-muted">
+        <p className="flex items-center gap-2 text-caption text-app-text-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Bölgeler hesaplanıyor…
         </p>
       )}
-      {error && <p className="text-[12px] leading-snug text-app-text-muted">{describeError(error)}</p>}
+      {error && <p className="text-caption leading-snug text-app-text-muted">{describeError(error)}</p>}
 
       {data && (
         <>
@@ -73,7 +73,7 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
               if (!feature) return null
               const p = feature.properties
               return (
-                <li key={cls} className="flex items-center gap-2.5 text-[12px]">
+                <li key={cls} className="flex items-center gap-2.5 text-caption">
                   <i className="h-3 w-3 shrink-0 rounded-sm" style={{ background: YIELD_COLORS[cls] }} aria-hidden />
                   <span className="w-14 font-medium text-app-text">{p.etiket}</span>
                   <span className="flex-1 text-app-text-muted">{formatDecare(p.alan_m2 / 1000)}</span>
@@ -83,7 +83,7 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
               )
             })}
           </ul>
-          <p className="text-[11px] text-app-text-dim">
+          <p className="text-caption text-app-text-dim">
             {data.gozlemSayisi} görüntü · {formatDate(data.ilkTarih)} – {formatDate(data.sonTarih)}
           </p>
         </>

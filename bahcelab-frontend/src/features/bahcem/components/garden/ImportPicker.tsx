@@ -19,10 +19,10 @@ export function ImportPicker() {
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
-        <h2 className="text-[15px] font-semibold text-app-text">Poligon seçin</h2>
+        <h2 className="text-body font-semibold text-app-text">Poligon seçin</h2>
       </div>
 
-      <p className="px-4 pt-3 text-[13px] leading-relaxed text-app-text-muted">
+      <p className="px-4 pt-3 text-small leading-relaxed text-app-text-muted">
         Dosyada {imported.length} poligon bulundu. Bahçe olarak eklemek istediğinizi seçin; poligonlar
         haritada kesikli çizgiyle görünür. Alanlar yaklaşıktır, kayıtta sunucu yeniden hesaplar.
       </p>
@@ -37,8 +37,8 @@ export function ImportPicker() {
               }
               className="flex w-full items-center justify-between gap-3 rounded-xl bg-app-card px-3.5 py-3 text-left transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent"
             >
-              <span className="min-w-0 truncate text-[14px] font-medium text-app-text">{polygon.name}</span>
-              <span className="shrink-0 text-[12px] text-app-text-muted">≈ {formatDecare(polygon.areaDekar)}</span>
+              <span className="min-w-0 truncate text-body font-medium text-app-text">{polygon.name}</span>
+              <span className="shrink-0 text-caption text-app-text-muted">≈ {formatDecare(polygon.areaDekar)}</span>
             </button>
           </li>
         ))}

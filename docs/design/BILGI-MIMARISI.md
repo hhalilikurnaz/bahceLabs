@@ -7,7 +7,7 @@ Her yeni özelliğin yeri baştan belli olsun diye iskelet. Henüz olmayan uçla
 Bahçelerim      /bahcem                    (liste + harita)
 Pazar & Depo    /bahcem/pazar              Yakında – Adım 17
 Bildirimler     /bahcem/bildirimler        Yakında – Adım 8 (uygulama içi bildirim merkezi)
-Ayarlar         /bahcem/ayarlar            hesap, çıkış (çoklu kullanıcı: Adım 19)
+Ayarlar         /bahcem/ayarlar            hesap, çıkış, araçlar (çoklu kullanıcı: Adım 19)
 ```
 
 ## Bahçe sayfası (`/bahcem/:id/…`)
@@ -26,3 +26,6 @@ Ayarlar         /bahcem/ayarlar            hesap, çıkış (çoklu kullanıcı:
 - Uzman harita denetimleri (indeks seçici, görünüm, değişim, karşılaştır, zaman atlaması) harita üstü araç çubuğundadır; panelde yer almaz.
 - Bir özellik tek sekmeye aittir; başka sekmeden yalnızca bağlantıyla anılır.
 - Çiftçi dili: birincil ad anlamlıdır, teknik ad ikincil etikettir.
+
+## Not (Adım 7A)
+Eski "Hava durumu" sol menü ucu ve tüm bahçelerin hava özeti paneli kaldırıldı; bugünkü hava ve uyarılar Adım 7B'de bahçe listesi kartlarına (`GET /gardens/overview`) taşınır. Planlama simülasyonu bağlantısı Ayarlar → Araçlar altındadır.

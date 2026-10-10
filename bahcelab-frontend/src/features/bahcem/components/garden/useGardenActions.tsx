@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { useGardenNav } from '../../hooks/useGardenNav'
 import { describeError } from '../../api/gardensApi'
 import type { Garden } from '../../api/types'
 import { useDeleteGarden, useUpdateGarden } from '../../api/useGardens'
@@ -16,8 +18,8 @@ export function useGardenActions(): {
   const toast = useToast()
   const update = useUpdateGarden()
   const remove = useDeleteGarden()
-  const selectedId = useBahcemStore((s) => s.selectedGardenId)
-  const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const { gardenId: selectedId } = useBahcemRoute()
+  const nav = useGardenNav()
   const startEditingBoundary = useBahcemStore((s) => s.startEditingBoundary)
 
   const [toDelete, setToDelete] = useState<Garden | null>(null)
@@ -50,7 +52,7 @@ export function useGardenActions(): {
     setDeleteError(null)
     remove.mutate(toDelete.id, {
       onSuccess: () => {
-        if (selectedId === toDelete.id) selectGarden(null)
+        if (selectedId === toDelete.id) nav.close()
         toast.show(`“${toDelete.ad}” silindi.`)
         setToDelete(null)
       },

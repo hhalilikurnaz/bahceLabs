@@ -100,7 +100,7 @@ export function DateStrip() {
 
   return (
     <div
-      className={`absolute bottom-3 left-[4.25rem] right-[4.5rem] z-20 flex items-stretch gap-2 rounded-2xl border border-app-border bg-app-panel p-2 shadow-2xl transition-[left] duration-300 ease-out ${
+      className={`surface-dark absolute bottom-3 left-[4.25rem] right-[4.5rem] z-20 flex items-stretch gap-2 rounded-2xl border border-app-border bg-app-panel p-2 shadow-2xl transition-[left] duration-300 ease-out ${
         panelOpen ? 'md:left-[27.5rem]' : 'md:left-[4.25rem]'
       }`}
     >
@@ -111,7 +111,7 @@ export function DateStrip() {
           disabled={selectable.length < 2}
           aria-label={oynat ? 'Zaman atlamasını durdur' : 'Zaman atlamasını oynat'}
           aria-pressed={oynat}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-app-accent text-app-bg transition-colors hover:bg-app-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-app-primary text-app-on-primary transition-colors hover:bg-app-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-40"
         >
           {oynat ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
         </button>
@@ -119,7 +119,7 @@ export function DateStrip() {
           value={hiz}
           onChange={(e) => setHiz(Number(e.target.value) as (typeof SPEEDS)[number])}
           aria-label="Oynatma hızı"
-          className="h-6 w-14 cursor-pointer rounded-md border border-app-border bg-app-card px-1 text-[11px] text-app-text-muted outline-none"
+          className="h-6 w-14 cursor-pointer rounded-md border border-app-border bg-app-card px-1 text-caption text-app-text-muted outline-none"
         >
           {SPEEDS.map((s) => (
             <option key={s} value={s}>
@@ -143,7 +143,7 @@ export function DateStrip() {
             {(i === 0 || yearOf(scene.tarih) !== yearOf(scenes[i - 1].tarih)) && (
               <span
                 aria-hidden
-                className="flex shrink-0 items-center self-stretch rounded-lg bg-app-bg/60 px-2 text-[10px] font-semibold text-app-text-muted"
+                className="flex shrink-0 items-center self-stretch rounded-lg bg-app-bg/60 px-2 text-caption font-semibold text-app-text-muted"
               >
                 {yearOf(scene.tarih)}
               </span>
@@ -213,7 +213,7 @@ function DateCard({ gardenId, scene, layer, selected, onSelect }: DateCardProps)
           />
         )}
       </span>
-      <span className={`text-[10px] leading-none ${selected ? 'font-semibold text-app-text' : 'text-app-text-muted'}`}>
+      <span className={`text-caption leading-none ${selected ? 'font-semibold text-app-text' : 'text-app-text-muted'}`}>
         {formatDayMonth(scene.tarih)}
       </span>
     </button>

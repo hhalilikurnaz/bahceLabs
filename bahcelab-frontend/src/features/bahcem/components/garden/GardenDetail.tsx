@@ -4,6 +4,11 @@ import { describeError } from '../../api/gardensApi'
 import { PRODUCTS, type Garden } from '../../api/types'
 import { useRefreshIndices } from '../../api/indeksApi'
 import { useWeatherHistory } from '../../api/weatherApi'
+import { IconButton, Skeleton, Tabs } from '@/components/ui'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { useGardenNav } from '../../hooks/useGardenNav'
+import { GARDEN_TABS, GARDEN_TAB_LABELS, gardenPath } from '../../lib/routes'
+import { ComingSoon } from './ComingSoon'
 import { useIndexView } from '../../hooks/useIndexView'
 import { formatDecare } from '../../lib/geo'
 import { formatDate, shiftDays, todayIstanbul } from '../../lib/dates'
@@ -47,7 +52,7 @@ function ActionsMenu({
   }, [open])
 
   const item =
-    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] transition-colors hover:bg-app-card'
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-small transition-colors hover:bg-app-card'
   return (
     <div ref={ref} className="relative">
       <button
@@ -79,13 +84,12 @@ function ActionsMenu({
 
 /** Seçili bahçenin detayı: son değer, uyarılar, görünüm ayarları, verimlilik bölgeleri, grafik ve işleme durumu. */
 export function GardenDetail({ garden }: { garden: Garden }) {
-  const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const { close } = useGardenNav()
+  const { tab } = useBahcemRoute()
   const season = useBahcemStore((s) => s.season)
   const grafik = useBahcemStore((s) => s.grafikIndeksleri)
   const toggleGrafik = useBahcemStore((s) => s.toggleGrafikIndeksi)
   const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
-  const tab = useBahcemStore((s) => s.detailTab)
-  const setTab = useBahcemStore((s) => s.setDetailTab)
   const havaKatmani = useBahcemStore((s) => s.havaKatmani)
   const setHavaKatmani = useBahcemStore((s) => s.setHavaKatmani)
   const { data, scenes, isLoading, active, katman } = useIndexView()
@@ -127,14 +131,9 @@ export function GardenDetail({ garden }: { garden: Garden }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-start gap-2 border-b border-app-border px-3 py-3">
-        <button
-          type="button"
-          onClick={() => selectGarden(null)}
-          aria-label="Bahçe listesine dön"
-          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card hover:text-app-text"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-        </button>
+        <IconButton label="Bahçe listesine dön" onClick={close} className="-ml-1">
+          <ArrowLeft className="h-5 w-5" aria-hidden />
+        </IconButton>
         <div className="min-w-0 flex-1">
           {renaming ? (
             <input
@@ -151,12 +150,12 @@ export function GardenDetail({ garden }: { garden: Garden }) {
                   setRenaming(false)
                 }
               }}
-              className="h-8 w-full rounded-lg border border-app-accent bg-app-bg/70 px-2 text-[15px] font-semibold text-app-text outline-none"
+              className="h-8 w-full rounded-lg border border-app-accent bg-app-bg/70 px-2 text-body font-semibold text-app-text outline-none"
             />
           ) : (
-            <h2 className="truncate text-[16px] font-semibold text-app-text">{garden.ad}</h2>
+            <h2 className="truncate text-lead font-semibold text-app-text">{garden.ad}</h2>
           )}
-          <p className="mt-0.5 truncate text-[12px] text-app-text-muted">
+          <p className="mt-0.5 truncate text-caption text-app-text-muted">
             {productLabel(garden.urun)} · {formatDecare(garden.alanDekar)}
             {location && ` · ${location}`}
           </p>
@@ -171,77 +170,77 @@ export function GardenDetail({ garden }: { garden: Garden }) {
         />
       </header>
 
-      <div role="tablist" aria-label="Bahçe bilgileri" className="flex gap-1 border-b border-app-border px-3 pt-2">
-        {(
-          [
-            ['uydu', 'Uydu'],
-            ['hava', 'Hava'],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls="detail-panel"
-            onClick={() => setTab(id)}
-            className={`-mb-px h-9 rounded-t-lg border-b-2 px-4 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
-              tab === id ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted hover:text-app-text'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        label="Bahçe bilgileri"
+        idPrefix="garden"
+        value={tab}
+        items={GARDEN_TABS.map((id) => ({ id, label: GARDEN_TAB_LABELS[id], to: gardenPath(garden.id, id) }))}
+        className="border-b border-app-border px-3 pt-1"
+      />
 
-      <div id="detail-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+      <div
+        id={`garden-panel-${tab}`}
+        role="tabpanel"
+        aria-labelledby={`garden-tab-${tab}`}
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3"
+        data-testid="detail-panel"
+      >
         {tab === 'hava' ? (
           <WeatherTab gardenId={garden.id} />
+        ) : tab === 'gunluk' ? (
+          <ComingSoon title="Günlük" step="Adım 11–13" text="Gözlem ve hasat kaydı, ilaç defteri ve maliyet defteri burada olacak." />
+        ) : tab === 'rapor' ? (
+          <ComingSoon title="Rapor" step="Adım 16" text="Sezon raporu (PDF) ve paylaşım bağlantısı burada olacak." />
         ) : isLoading || !data ? (
           <div className="space-y-3" aria-label="Uydu verisi yükleniyor">
-            <div className="h-20 animate-pulse rounded-2xl bg-app-card" />
-            <div className="h-44 animate-pulse rounded-2xl bg-app-card" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-44" />
           </div>
         ) : (
           <>
-            <section className="flex items-center justify-between gap-3 rounded-2xl bg-app-card p-3.5" aria-label="Son değer">
+            {tab === 'durum' && (
+            <section className="flex items-center justify-between gap-3 rounded-md border border-app-border bg-app-card p-3.5" aria-label="Son değer">
               {latest ? (
                 <>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wide text-app-text-dim">Son {INDEX_DEFS[indexLayer].ad}</p>
-                    <p className="mt-0.5 text-[26px] font-semibold leading-none text-app-text">
+                    <p className="text-caption uppercase tracking-wide text-app-text-dim">Son {INDEX_DEFS[indexLayer].ad}</p>
+                    <p className="mt-0.5 text-h1 font-semibold leading-none text-app-text">
                       {formatIndexValue(indexLayer, latest.ortalama)}
                     </p>
-                    <p className="mt-1.5 text-[12px] text-app-text-muted" data-testid="latest-date">
+                    <p className="mt-1.5 text-caption text-app-text-muted" data-testid="latest-date">
                       {formatDate(latest.tarih)}
                     </p>
                   </div>
                   <span
-                    className="rounded-full px-3 py-1 text-[12px] font-semibold"
-                    style={{
-                      color: indexColor(indexLayer, latest.ortalama),
-                      backgroundColor: `color-mix(in srgb, ${indexColor(indexLayer, latest.ortalama)} 16%, transparent)`,
-                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-semibold text-app-text"
+                    style={{ backgroundColor: `color-mix(in srgb, ${indexColor(indexLayer, latest.ortalama)} 22%, transparent)` }}
                   >
+                    <i className="h-2 w-2 rounded-full" style={{ background: indexColor(indexLayer, latest.ortalama) }} aria-hidden />
                     {vigorLabel(indexLayer, latest.ortalama)}
                   </span>
                 </>
               ) : (
-                <p className="text-[13px] text-app-text-muted">
+                <p className="text-small text-app-text-muted">
                   {processing ? 'İlk görüntüler hazırlanıyor…' : 'Henüz kullanılabilir görüntü yok.'}
                 </p>
               )}
             </section>
+            )}
 
-            <AlertsCard alerts={data.uyarilar} />
+            {tab === 'analiz' ? (
+              scenes?.some((s) => s.durum === 'tamam') ? (
+                <YieldCard gardenId={garden.id} />
+              ) : (
+                <p className="px-1 text-small text-app-text-muted">Analiz için önce uydu görüntüleri hazır olmalı.</p>
+              )
+            ) : null}
 
-            {active || scenes?.some((s) => s.durum === 'tamam') ? <ViewPanel /> : null}
+            {tab === 'durum' && <AlertsCard alerts={data.uyarilar} />}
 
-            {scenes?.some((s) => s.durum === 'tamam') && <YieldCard gardenId={garden.id} />}
+            {tab === 'durum' && (active || scenes?.some((s) => s.durum === 'tamam') ? <ViewPanel /> : null)}
 
-            {scenes?.some((s) => s.durum === 'tamam') && (
-              <section className="rounded-2xl bg-app-card p-3.5">
+            {tab === 'durum' && scenes?.some((s) => s.durum === 'tamam') && (
+              <section className="rounded-md border border-app-border bg-app-card p-3.5">
                 <IndexChart
                   scenes={data.gozlemler}
                   season={season}
@@ -256,9 +255,9 @@ export function GardenDetail({ garden }: { garden: Garden }) {
               </section>
             )}
 
-            <StatusCard data={data} refreshing={refresh.isPending} onRefresh={onRefresh} refreshError={refreshError} />
+            {tab === 'durum' && <StatusCard data={data} refreshing={refresh.isPending} onRefresh={onRefresh} refreshError={refreshError} />}
             {katman !== TRUE_COLOR ? null : (
-              <p className="px-1 text-[11px] text-app-text-dim">{layerName(katman)} görüntüsü bulutsuz tarihler için üretilir.</p>
+              <p className="px-1 text-caption text-app-text-dim">{layerName(katman)} görüntüsü bulutsuz tarihler için üretilir.</p>
             )}
           </>
         )}

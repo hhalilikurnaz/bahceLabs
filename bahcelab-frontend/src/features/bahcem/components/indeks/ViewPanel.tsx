@@ -21,7 +21,7 @@ function Segmented<T extends string>({
 }) {
   return (
     <div title={disabledReason}>
-      <span className="mb-1 block text-[11px] font-medium text-app-text-muted">{label}</span>
+      <span className="mb-1 block text-caption font-medium text-app-text-muted">{label}</span>
       <div
         role="radiogroup"
         aria-label={label}
@@ -35,7 +35,7 @@ function Segmented<T extends string>({
             aria-checked={value === option.value}
             disabled={Boolean(disabledReason)}
             onClick={() => onChange(option.value)}
-            className={`h-8 flex-1 rounded-[10px] text-[12px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+            className={`h-8 flex-1 rounded-[10px] text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
               value === option.value ? 'bg-app-card-hover text-app-text shadow' : 'text-app-text-muted hover:text-app-text'
             } disabled:cursor-not-allowed`}
           >
@@ -48,7 +48,7 @@ function Segmented<T extends string>({
 }
 
 const selectClass =
-  'h-9 w-full cursor-pointer rounded-xl border border-app-border bg-app-card px-2.5 text-[12px] text-app-text outline-none focus:border-app-accent disabled:cursor-not-allowed disabled:opacity-50'
+  'h-9 w-full cursor-pointer rounded-xl border border-app-border bg-app-card px-2.5 text-caption text-app-text outline-none focus:border-app-accent disabled:cursor-not-allowed disabled:opacity-50'
 
 /** Katman (indeks) seçici, görünüm modları, değişim haritası ve karşılaştırma ayarları. */
 export function ViewPanel() {
@@ -89,7 +89,7 @@ export function ViewPanel() {
   return (
     <section className="space-y-3 rounded-2xl bg-app-card p-3.5" aria-label="Görünüm">
       <div>
-        <span className="mb-1.5 block text-[11px] font-medium text-app-text-muted">Katman</span>
+        <span className="mb-1.5 block text-caption font-medium text-app-text-muted">Katman</span>
         <div role="radiogroup" aria-label="Harita katmanı" className="flex flex-wrap gap-1.5">
           {LAYER_OPTIONS.map((option) => {
             const on = option.id === katman
@@ -101,7 +101,7 @@ export function ViewPanel() {
                 aria-checked={on}
                 onClick={() => setKatman(option.id)}
                 title={option.kisa}
-                className={`h-8 rounded-full border px-3 text-[12px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+                className={`h-8 rounded-full border px-3 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
                   on
                     ? 'border-app-accent bg-app-accent-soft text-app-accent'
                     : 'border-app-border text-app-text-muted hover:bg-app-card-hover hover:text-app-text'
@@ -113,11 +113,11 @@ export function ViewPanel() {
           })}
         </div>
         <details className="mt-2 group">
-          <summary className="cursor-pointer list-none text-[12px] text-app-text-muted marker:hidden">
+          <summary className="cursor-pointer list-none text-caption text-app-text-muted marker:hidden">
             <span className="font-medium text-app-text">{description.kisa}</span>
             <span className="ml-1 text-app-text-dim group-open:hidden">· ayrıntı</span>
           </summary>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-app-text-muted">{description.aciklama}</p>
+          <p className="mt-1.5 text-caption leading-relaxed text-app-text-muted">{description.aciklama}</p>
         </details>
       </div>
 
@@ -143,13 +143,13 @@ export function ViewPanel() {
         />
       </div>
       {gorunum === 'kontrastli' && isIndex && (
-        <p className="-mt-1 text-[11px] leading-snug text-app-text-dim">
+        <p className="-mt-1 text-caption leading-snug text-app-text-dim">
           Skala, seçili tarihte bahçe içindeki değerlerin p2–p98 aralığına gerilir; bahçe içi farklar belirginleşir.
         </p>
       )}
 
       <div>
-        <label htmlFor="degisim" className="mb-1 block text-[11px] font-medium text-app-text-muted">
+        <label htmlFor="degisim" className="mb-1 block text-caption font-medium text-app-text-muted">
           Değişim haritası
         </label>
         <select
@@ -187,7 +187,7 @@ export function ViewPanel() {
           </select>
         )}
         {degisim && active && (
-          <p className="mt-1.5 text-[11px] leading-snug text-app-text-muted" aria-live="polite">
+          <p className="mt-1.5 text-caption leading-snug text-app-text-muted" aria-live="polite">
             {reference
               ? `${formatDate(active.tarih)} − ${formatDate(reference)} · kırmızı: düşüş, yeşil: artış`
               : degisim.preset === 'ozel'
@@ -201,7 +201,7 @@ export function ViewPanel() {
         {karsilastirma ? (
           <div className="space-y-2 rounded-xl border border-app-border p-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-medium text-app-text">Karşılaştırma</span>
+              <span className="text-caption font-medium text-app-text">Karşılaştırma</span>
               <button
                 type="button"
                 onClick={() => setKarsilastirma(null)}
@@ -211,7 +211,7 @@ export function ViewPanel() {
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
             </div>
-            <p className="text-[11px] text-app-text-dim">
+            <p className="text-caption text-app-text-dim">
               Sol: {active ? `${description.ad ?? 'Gerçek renk'} · ${formatDate(active.tarih)}` : '—'}. Sağ tarafı seçin; ortadaki sürgüyle kaydırın.
             </p>
             <div className="grid grid-cols-2 gap-1.5">
@@ -246,7 +246,7 @@ export function ViewPanel() {
               </select>
             </div>
             {karsilastirma.tarihB && !findScene(scenes, karsilastirma.tarihB) && (
-              <p className="text-[11px] text-app-danger">Seçilen tarih bulunamadı.</p>
+              <p className="text-caption text-app-danger">Seçilen tarih bulunamadı.</p>
             )}
           </div>
         ) : (
@@ -254,7 +254,7 @@ export function ViewPanel() {
             type="button"
             onClick={startCompare}
             disabled={!active || dates.length < 2}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-app-border text-[12px] font-medium text-app-text transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-app-border text-caption font-medium text-app-text transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ArrowLeftRight className="h-4 w-4" aria-hidden />
             Karşılaştır (sürgü)

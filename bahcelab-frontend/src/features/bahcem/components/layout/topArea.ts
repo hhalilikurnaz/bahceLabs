@@ -6,5 +6,5 @@
 export function topAreaClass(leftPanelOpen: boolean, copilotOpen: boolean): string {
   const left = leftPanelOpen ? 'md:left-[27.5rem]' : 'md:left-[4.25rem]'
   const right = copilotOpen ? 'md:right-[calc(380px+0.75rem)]' : 'md:right-[8.25rem]'
-  return `absolute left-[4.25rem] right-[8.25rem] z-20 flex justify-center transition-[left,right] duration-300 ease-out ${left} ${right}`
+  return `surface-dark absolute left-[4.25rem] right-[8.25rem] z-20 flex justify-center transition-[left,right] duration-300 ease-out ${left} ${right}`
 }

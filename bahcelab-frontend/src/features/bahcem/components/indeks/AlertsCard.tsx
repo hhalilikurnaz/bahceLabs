@@ -20,20 +20,20 @@ export function AlertsCard({ alerts }: { alerts: Alert[] }) {
             role="alert"
             data-priority={alert.oncelik}
             className={`flex items-start gap-2.5 rounded-2xl border p-3.5 ${
-              high ? 'border-app-danger/40 bg-app-danger/10' : 'border-amber-400/30 bg-amber-400/10'
+              high ? 'border-app-danger/40 bg-app-danger/10' : 'border-app-warn/30 bg-app-warn/10'
             }`}
           >
-            <TriangleAlert className={`mt-0.5 h-4 w-4 shrink-0 ${high ? 'text-app-danger' : 'text-amber-300'}`} aria-hidden />
+            <TriangleAlert className={`mt-0.5 h-4 w-4 shrink-0 ${high ? 'text-app-danger' : 'text-app-warn'}`} aria-hidden />
             <div className="min-w-0">
-              <p className={`flex flex-wrap items-center gap-2 text-[13px] font-semibold ${high ? 'text-red-200' : 'text-amber-200'}`}>
+              <p className={`flex flex-wrap items-center gap-2 text-small font-semibold ${high ? 'text-app-danger' : 'text-app-warn'}`}>
                 {alert.baslik}
                 {high && (
-                  <span className="rounded-full bg-app-danger/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-200">
+                  <span className="rounded-full bg-app-danger/20 px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-app-danger">
                     Öncelikli
                   </span>
                 )}
               </p>
-              <p className="mt-1 text-[12px] leading-snug text-app-text-muted">{alert.mesaj}</p>
+              <p className="mt-1 text-caption leading-snug text-app-text-muted">{alert.mesaj}</p>
               {target && (
                 <button
                   type="button"
@@ -41,7 +41,7 @@ export function AlertsCard({ alerts }: { alerts: Alert[] }) {
                     setKatman(target)
                     setSelectedDate(alert.sonTarih)
                   }}
-                  className={`mt-2 text-[12px] font-medium underline-offset-2 hover:underline ${high ? 'text-red-200' : 'text-amber-200'}`}
+                  className={`mt-2 text-caption font-medium underline-offset-2 hover:underline ${high ? 'text-app-danger' : 'text-app-warn'}`}
                 >
                   {INDEX_DEFS[target].ad} görüntüsünü haritada göster
                 </button>

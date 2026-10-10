@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useGardenNav } from '../../hooks/useGardenNav'
 import { ArrowLeft, Loader2, TriangleAlert } from 'lucide-react'
 import { describeError, gardensApi } from '../../api/gardensApi'
 import { PRODUCTS, type Urun } from '../../api/types'
@@ -15,14 +16,14 @@ type Measure =
   | { status: 'error'; message: string }
 
 const field =
-  'h-10 w-full rounded-xl border border-app-border bg-app-bg/60 px-3 text-[14px] text-app-text outline-none transition-colors placeholder:text-app-text-dim focus:border-app-accent'
-const label = 'mb-1.5 block text-[12px] font-medium text-app-text-muted'
+  'h-10 w-full rounded-xl border border-app-border bg-app-bg/60 px-3 text-body text-app-text outline-none transition-colors placeholder:text-app-text-dim focus:border-app-accent'
+const label = 'mb-1.5 block text-caption font-medium text-app-text-muted'
 
 /** Sınır hazır olduktan sonra bahçe bilgilerini toplayıp kaydeder (sol panelde açılır). */
 export function GardenForm() {
   const draft = useBahcemStore((s) => s.draft)
   const resetFlow = useBahcemStore((s) => s.resetFlow)
-  const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const nav = useGardenNav()
   const toast = useToast()
   const create = useCreateGarden()
   const { focusGarden } = useFocusGarden()
@@ -99,7 +100,7 @@ export function GardenForm() {
         onSuccess: (garden) => {
           toast.show(`“${garden.ad}” kaydedildi.`)
           resetFlow()
-          selectGarden(garden.id)
+          nav.open(garden.id)
           focusGarden(garden)
         },
         onError: (err) => setServerError(describeError(err)),
@@ -118,7 +119,7 @@ export function GardenForm() {
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
-        <h2 className="text-[15px] font-semibold text-app-text">Yeni bahçe</h2>
+        <h2 className="text-body font-semibold text-app-text">Yeni bahçe</h2>
       </div>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
@@ -189,7 +190,7 @@ export function GardenForm() {
           <span className={label}>Alan</span>
           <div
             aria-live="polite"
-            className="flex h-10 items-center rounded-xl border border-app-border bg-app-card px-3 text-[14px] text-app-text"
+            className="flex h-10 items-center rounded-xl border border-app-border bg-app-card px-3 text-body text-app-text"
           >
             {measure.status === 'loading' && (
               <span className="flex items-center gap-2 text-app-text-muted">
@@ -199,7 +200,7 @@ export function GardenForm() {
             {measure.status === 'ok' && <span className="font-medium">{formatDecare(measure.dekar)}</span>}
             {measure.status === 'error' && <span className="text-app-text-dim">—</span>}
           </div>
-          <p className="mt-1 text-[11px] text-app-text-dim">Alan sunucuda sınırdan otomatik hesaplanır.</p>
+          <p className="mt-1 text-caption text-app-text-dim">Alan sunucuda sınırdan otomatik hesaplanır.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -238,14 +239,14 @@ export function GardenForm() {
         {(measure.status === 'error' || serverError) && (
           <p
             role="alert"
-            className="flex items-start gap-2 rounded-xl bg-app-danger/10 px-3 py-2.5 text-[13px] leading-snug text-app-danger"
+            className="flex items-start gap-2 rounded-xl bg-app-danger/10 px-3 py-2.5 text-small leading-snug text-app-danger"
           >
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {serverError ?? (measure.status === 'error' ? measure.message : '')}
           </p>
         )}
         {yearInvalid && (
-          <p role="alert" className="text-[12px] text-app-danger">
+          <p role="alert" className="text-caption text-app-danger">
             Dikim yılı geçerli bir yıl olmalı.
           </p>
         )}
@@ -256,14 +257,14 @@ export function GardenForm() {
           type="button"
           onClick={resetFlow}
           disabled={create.isPending}
-          className="h-10 flex-1 rounded-xl border border-app-border text-[14px] font-medium text-app-text transition-colors hover:bg-app-card"
+          className="h-10 flex-1 rounded-xl border border-app-border text-body font-medium text-app-text transition-colors hover:bg-app-card"
         >
           İptal
         </button>
         <button
           type="submit"
           disabled={!canSave}
-          className="h-10 flex-1 rounded-xl bg-app-accent text-[14px] font-semibold text-app-bg transition-colors hover:bg-app-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-10 flex-1 rounded-xl bg-app-primary text-body font-semibold text-app-on-primary transition-colors hover:bg-app-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {create.isPending ? 'Kaydediliyor…' : 'Kaydet'}
         </button>

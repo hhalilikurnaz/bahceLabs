@@ -1,7 +1,14 @@
 import { createContext, useContext } from 'react'
+import type { ToastTone } from '@/components/ui'
+
+export interface ToastOptions {
+  tone?: ToastTone
+  actionLabel?: string
+  onAction?: () => void
+}
 
 export interface ToastApi {
-  show: (message: string) => void
+  show: (message: string, options?: ToastOptions) => void
 }
 
 export const ToastContext = createContext<ToastApi | null>(null)

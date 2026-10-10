@@ -62,8 +62,8 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
 
   const trigger =
     variant === 'primary'
-      ? 'h-10 gap-2 bg-app-accent px-4 text-[14px] font-semibold text-app-bg hover:bg-app-accent-strong'
-      : 'h-9 gap-1.5 border border-app-border bg-app-card px-3 text-[13px] font-medium text-app-text hover:bg-app-card-hover'
+      ? 'h-10 gap-2 bg-app-primary px-4 text-body font-semibold text-app-on-primary hover:bg-app-primary-hover'
+      : 'h-9 gap-1.5 border border-app-border bg-app-card px-3 text-small font-medium text-app-text hover:bg-app-card-hover'
 
   const item =
     'flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-app-card disabled:opacity-50'
@@ -100,8 +100,8 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
           >
             <PencilRuler className="mt-0.5 h-4 w-4 shrink-0 text-app-accent" aria-hidden />
             <span>
-              <span className="block text-[14px] font-medium text-app-text">Haritada çiz</span>
-              <span className="block text-[12px] text-app-text-muted">Sınırı uydu görüntüsü üzerinde çizin</span>
+              <span className="block text-body font-medium text-app-text">Haritada çiz</span>
+              <span className="block text-caption text-app-text-muted">Sınırı uydu görüntüsü üzerinde çizin</span>
             </span>
           </button>
           <button
@@ -115,8 +115,8 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
           >
             <FileUp className="mt-0.5 h-4 w-4 shrink-0 text-app-accent" aria-hidden />
             <span>
-              <span className="block text-[14px] font-medium text-app-text">Dosya yükle</span>
-              <span className="block text-[12px] text-app-text-muted">KML, KMZ, GeoJSON</span>
+              <span className="block text-body font-medium text-app-text">Dosya yükle</span>
+              <span className="block text-caption text-app-text-muted">KML, KMZ, GeoJSON</span>
             </span>
           </button>
         </div>

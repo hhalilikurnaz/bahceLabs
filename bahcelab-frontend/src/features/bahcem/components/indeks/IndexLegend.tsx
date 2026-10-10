@@ -21,20 +21,20 @@ export function IndexLegend() {
 
   return (
     <div
-      className={`absolute bottom-[7.75rem] left-[4.25rem] z-20 w-72 rounded-xl border border-app-border bg-app-panel px-3 py-2.5 shadow-xl transition-[left] duration-300 ease-out ${
+      className={`surface-dark absolute bottom-[7.75rem] left-[4.25rem] z-20 w-72 rounded-xl border border-app-border bg-app-panel px-3 py-2.5 shadow-xl transition-[left] duration-300 ease-out ${
         panelOpen ? 'md:left-[27.5rem]' : 'md:left-[4.25rem]'
       }`}
       role="group"
       aria-label="Harita lejantı"
     >
-      <p className="break-words text-[12px] font-medium leading-snug text-app-text" data-testid="map-date-label">
+      <p className="break-words text-caption font-medium leading-snug text-app-text" data-testid="map-date-label">
         {info.etiket}
       </p>
 
       {showScale ? (
         <>
           <div className="mt-2 h-2.5 rounded-full" style={{ background: gradientCss(info.kind === 'fark' ? 'fark' : def.renk) }} />
-          <div className="relative mt-1 h-3 text-[10px] text-app-text-dim">
+          <div className="relative mt-1 h-3 text-caption text-app-text-dim">
             {ticks.map((tick, i) => (
               <span
                 key={i}
@@ -49,13 +49,13 @@ export function IndexLegend() {
               </span>
             ))}
           </div>
-          <p className="mt-2.5 flex justify-between text-[10px] text-app-text-dim">
+          <p className="mt-2.5 flex justify-between text-caption text-app-text-dim">
             <span>{KIND_LABEL[info.kind]}</span>
             {info.kind === 'fark' && <span>kırmızı: düşüş · yeşil: artış</span>}
           </p>
         </>
       ) : (
-        <p className="mt-1 text-[11px] text-app-text-dim">
+        <p className="mt-1 text-caption text-app-text-dim">
           {katman === TRUE_COLOR ? 'Skalasız doğal renkli görüntü' : 'Karşılaştırma: soldaki ve sağdaki görüntü'}
         </p>
       )}

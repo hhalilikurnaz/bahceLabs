@@ -141,7 +141,7 @@ export function PlaceSearch() {
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent text-[14px] text-app-text outline-none placeholder:text-app-text-dim"
+          className="min-w-0 flex-1 bg-transparent text-body text-app-text outline-none placeholder:text-app-text-dim"
         />
         {query && (
           <button
@@ -170,7 +170,7 @@ export function PlaceSearch() {
                 type="button"
                 onClick={() => choose(item)}
                 onMouseEnter={() => setActive(index)}
-                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] text-app-text transition-colors ${
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-small text-app-text transition-colors ${
                   index === active ? 'bg-app-card' : ''
                 }`}
               >
@@ -184,7 +184,7 @@ export function PlaceSearch() {
             </li>
           ))}
           {items.length === 0 && !isLoading && (
-            <li className="px-4 py-3 text-[13px] text-app-text-muted">
+            <li className="px-4 py-3 text-small text-app-text-muted">
               {failed && canSearch
                 ? 'Arama şu an yapılamıyor. Biraz sonra tekrar deneyin.'
                 : hasKey

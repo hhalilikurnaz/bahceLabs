@@ -62,7 +62,7 @@ function LayerSwitcher() {
           role="menu"
           className="absolute bottom-0 right-full mr-2 w-56 rounded-2xl border border-app-border bg-app-panel p-1.5 shadow-2xl"
         >
-          <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
+          <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase tracking-wider text-app-text-dim">
             Harita katmanı
           </p>
           {BASEMAPS.map((option) => (
@@ -75,7 +75,7 @@ function LayerSwitcher() {
                 setBasemap(option.id)
                 setOpen(false)
               }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[13px] text-app-text transition-colors hover:bg-app-card"
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-small text-app-text transition-colors hover:bg-app-card"
             >
               {option.label}
               {basemap === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
@@ -84,7 +84,7 @@ function LayerSwitcher() {
           {providers.length > 1 && (
             <>
               <div className="my-1 h-px bg-app-border" />
-              <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
+              <p className="px-3 pb-1 pt-1 text-caption font-semibold uppercase tracking-wider text-app-text-dim">
                 Altlık sağlayıcı
               </p>
               {BASEMAP_PROVIDERS.filter((p) => providers.includes(p.id)).map((option) => (
@@ -94,11 +94,11 @@ function LayerSwitcher() {
                   role="menuitemradio"
                   aria-checked={provider === option.id}
                   onClick={() => setProvider(option.id)}
-                  className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-[13px] text-app-text transition-colors hover:bg-app-card"
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-small text-app-text transition-colors hover:bg-app-card"
                 >
                   <span>
                     {option.label}
-                    <span className="block text-[11px] text-app-text-dim">{option.hint}</span>
+                    <span className="block text-caption text-app-text-dim">{option.hint}</span>
                   </span>
                   {provider === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
                 </button>
@@ -106,7 +106,7 @@ function LayerSwitcher() {
             </>
           )}
           <div className="my-1 h-px bg-app-border" />
-          <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
+          <p className="px-3 pb-1 pt-1 text-caption font-semibold uppercase tracking-wider text-app-text-dim">
             Bahçe katmanı
           </p>
           <button
@@ -115,13 +115,13 @@ function LayerSwitcher() {
             aria-checked={available && layerVisible}
             disabled={!available}
             onClick={() => setLayerVisible(!layerVisible)}
-            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] transition-colors ${
+            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-small transition-colors ${
               available ? 'text-app-text hover:bg-app-card' : 'cursor-not-allowed text-app-text-dim'
             }`}
           >
             <span>
               Göster
-              <span className="block text-[11px] text-app-text-dim">{hint}</span>
+              <span className="block text-caption text-app-text-dim">{hint}</span>
             </span>
             {available && layerVisible && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
           </button>
@@ -136,7 +136,7 @@ function LayerSwitcher() {
                   setKatman(option.id)
                   setLayerVisible(true)
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-[13px] text-app-text transition-colors hover:bg-app-card"
+                className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-small text-app-text transition-colors hover:bg-app-card"
               >
                 {option.ad}
                 {katman === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
@@ -189,7 +189,7 @@ export function MapControls() {
 
   return (
     <div
-      className={`absolute bottom-12 z-20 flex-col items-end gap-2 transition-[right] duration-300 ease-out ${
+      className={`surface-dark absolute bottom-12 z-20 flex-col items-end gap-2 transition-[right] duration-300 ease-out ${
         panelOpen ? 'hidden md:flex' : 'flex'
       } ${copilotOpen ? 'right-3 md:right-[calc(380px+0.75rem)]' : 'right-3'}`}
     >

@@ -41,14 +41,14 @@ export function ConfirmDialog({
         aria-describedby="confirm-message"
         className="w-full max-w-sm rounded-2xl border border-app-border bg-app-panel p-5 shadow-2xl"
       >
-        <h2 id="confirm-title" className="text-[16px] font-semibold text-app-text">
+        <h2 id="confirm-title" className="text-lead font-semibold text-app-text">
           {title}
         </h2>
-        <p id="confirm-message" className="mt-2 text-[13px] leading-relaxed text-app-text-muted">
+        <p id="confirm-message" className="mt-2 text-small leading-relaxed text-app-text-muted">
           {message}
         </p>
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-app-danger/10 px-3 py-2 text-[12px] text-app-danger">
+          <p role="alert" className="mt-3 rounded-lg bg-app-danger/10 px-3 py-2 text-caption text-app-danger">
             {error}
           </p>
         )}
@@ -58,7 +58,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="h-10 rounded-xl border border-app-border px-4 text-[14px] text-app-text transition-colors hover:bg-app-card"
+            className="h-10 rounded-xl border border-app-border px-4 text-body text-app-text transition-colors hover:bg-app-card"
           >
             Vazgeç
           </button>
@@ -66,7 +66,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="h-10 rounded-xl bg-app-danger px-4 text-[14px] font-semibold text-app-bg transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="h-10 rounded-xl bg-app-danger px-4 text-body font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {pending ? 'Siliniyor…' : confirmLabel}
           </button>

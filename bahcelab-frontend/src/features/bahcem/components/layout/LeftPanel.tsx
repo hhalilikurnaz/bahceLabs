@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, Search, Sprout, TriangleAlert } from 'lucide-react'
 import type { Garden } from '../../api/types'
 import { useSatelliteAlertOverview } from '../../api/indeksApi'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { useGardenNav } from '../../hooks/useGardenNav'
 import { useGardens } from '../../api/useGardens'
 import { useWeatherOverview } from '../../api/weatherApi'
 import { mergeAlerts } from '../../lib/weather'
@@ -11,17 +13,17 @@ import { AddGardenMenu } from '../garden/AddGardenMenu'
 import { GardenDetail } from '../garden/GardenDetail'
 import { GardenForm } from '../garden/GardenForm'
 import { GardenListItem } from '../garden/GardenListItem'
-import { WeatherOverviewPanel } from '../hava/WeatherOverviewPanel'
 import { ImportPicker } from '../garden/ImportPicker'
 import { useGardenActions } from '../garden/useGardenActions'
+import { SectionPanel } from './SectionPanel'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const SEASONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
 
 function GardenList() {
   const { data: gardens, isLoading, isError, refetch } = useGardens()
-  const selectedId = useBahcemStore((s) => s.selectedGardenId)
-  const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const { gardenId: selectedId } = useBahcemRoute()
+  const nav = useGardenNav()
   const season = useBahcemStore((s) => s.season)
   const setSeason = useBahcemStore((s) => s.setSeason)
   const busy = useBahcemStore((s) => s.mode !== 'idle')
@@ -40,7 +42,7 @@ function GardenList() {
   }, [gardens, query])
 
   function select(garden: Garden) {
-    selectGarden(garden.id)
+    nav.open(garden.id)
     focusGarden(garden)
   }
 
@@ -54,7 +56,7 @@ function GardenList() {
           <select
             value={season}
             onChange={(e) => setSeason(Number(e.target.value))}
-            className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-app-border bg-app-card pl-3.5 pr-9 text-[14px] font-medium text-app-text outline-none transition-colors hover:bg-app-card-hover focus-visible:border-app-accent"
+            className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-app-border bg-app-card pl-3.5 pr-9 text-body font-medium text-app-text outline-none transition-colors hover:bg-app-card-hover focus-visible:border-app-accent"
           >
             {SEASONS.map((year) => (
               <option key={year} value={year}>
@@ -80,7 +82,7 @@ function GardenList() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Bahçe ara"
-              className="h-10 w-full rounded-xl border border-app-border bg-app-bg/60 pl-9 pr-3 text-[14px] text-app-text outline-none placeholder:text-app-text-dim focus:border-app-accent"
+              className="h-10 w-full rounded-xl border border-app-border bg-app-bg/60 pl-9 pr-3 text-body text-app-text outline-none placeholder:text-app-text-dim focus:border-app-accent"
             />
           </label>
           {hasGardens && <AddGardenMenu variant="compact" />}
@@ -97,11 +99,11 @@ function GardenList() {
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
             <TriangleAlert className="h-6 w-6 text-app-danger" aria-hidden />
-            <p className="text-[13px] text-app-text-muted">Bahçeler yüklenemedi.</p>
+            <p className="text-small text-app-text-muted">Bahçeler yüklenemedi.</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="h-9 rounded-xl border border-app-border px-4 text-[13px] text-app-text hover:bg-app-card"
+              className="h-9 rounded-xl border border-app-border px-4 text-small text-app-text hover:bg-app-card"
             >
               Tekrar dene
             </button>
@@ -111,8 +113,8 @@ function GardenList() {
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-app-card text-app-accent">
               <Sprout className="h-7 w-7" strokeWidth={1.5} aria-hidden />
             </span>
-            <h2 className="mt-4 text-[15px] font-semibold text-app-text">Henüz bahçe eklemediniz</h2>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-app-text-muted">
+            <h2 className="mt-4 text-body font-semibold text-app-text">Henüz bahçe eklemediniz</h2>
+            <p className="mt-1.5 text-small leading-relaxed text-app-text-muted">
               Haritada bahçenizin sınırını çizin; uydu görüntüsü ve hava durumuyla izlemeye başlayın.
             </p>
             <div className="mt-5">
@@ -120,7 +122,7 @@ function GardenList() {
             </div>
           </div>
         ) : visible.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[13px] text-app-text-muted">
+          <p className="px-2 py-6 text-center text-small text-app-text-muted">
             “{query}” ile eşleşen bahçe yok.
           </p>
         ) : (
@@ -149,17 +151,16 @@ function GardenList() {
 export function LeftPanel() {
   const open = useBahcemStore((s) => s.leftPanelOpen)
   const mode = useBahcemStore((s) => s.mode)
-  const selectedId = useBahcemStore((s) => s.selectedGardenId)
+  const { section, gardenId: selectedId } = useBahcemRoute()
   const { data: gardens } = useGardens()
   const selected = selectedId ? gardens?.find((g) => g.id === selectedId) : undefined
-  const view = useBahcemStore((s) => s.panelView)
 
   return (
     <aside
-      aria-label={view === 'hava' ? 'Hava durumu' : 'Bahçeler'}
+      aria-label={section === 'bahceler' ? 'Bahçeler' : 'Bölüm paneli'}
       aria-hidden={!open}
       inert={!open}
-      className={`absolute bottom-3 left-[4.25rem] top-16 z-20 flex w-[min(360px,calc(100vw-5.25rem))] flex-col rounded-2xl border border-app-border bg-app-panel shadow-2xl transition-all duration-300 ease-out md:top-3 ${
+      className={`absolute bottom-3 left-[4.25rem] top-16 z-20 flex w-[min(360px,calc(100vw-5.25rem))] flex-col rounded-lg border border-app-border bg-app-panel shadow-e3 transition-all duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] md:top-3 ${
         open ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-6 opacity-0'
       }`}
     >
@@ -167,8 +168,8 @@ export function LeftPanel() {
         <GardenForm />
       ) : mode === 'import-pick' ? (
         <ImportPicker />
-      ) : view === 'hava' ? (
-        <WeatherOverviewPanel />
+      ) : section !== 'bahceler' ? (
+        <SectionPanel section={section} />
       ) : selected && mode === 'idle' ? (
         <GardenDetail key={selected.id} garden={selected} />
       ) : (

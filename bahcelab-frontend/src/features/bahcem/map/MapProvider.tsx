@@ -139,7 +139,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
   return (
     <MapContext.Provider value={value}>
       {/* maplibre-gl.css kapsayıcıya position:relative verir; bu yüzden yerleşimi dış sarmalayıcı yapar */}
-      <div className="absolute inset-0 bg-app-bg">
+      <div className="surface-dark absolute inset-0 bg-app-bg">
         <div ref={containerRef} className="h-full w-full" />
       </div>
       {children}

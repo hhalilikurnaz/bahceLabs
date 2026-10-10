@@ -1,5 +1,3 @@
-import { kml } from '@tmcw/togeojson'
-import JSZip from 'jszip'
 import type { GardenGeometry, Position } from '../api/types'
 import { geometryAreaDekar } from './geo'
 import type { ImportedPolygon } from '../stores/bahcemStore'
@@ -86,7 +84,9 @@ export function extractPolygons(geojson: unknown): ImportedPolygon[] {
 }
 
 async function kmlTextFromKmz(file: File): Promise<string> {
-  let zip: JSZip
+  // Ağır kütüphane yalnızca KMZ seçilince yüklenir
+  const { default: JSZip } = await import('jszip')
+  let zip: Awaited<ReturnType<typeof JSZip.loadAsync>>
   try {
     zip = await JSZip.loadAsync(await file.arrayBuffer())
   } catch {
@@ -98,11 +98,12 @@ async function kmlTextFromKmz(file: File): Promise<string> {
   return entry.async('text')
 }
 
-function parseKml(text: string): unknown {
+async function parseKml(text: string): Promise<unknown> {
   const doc = new DOMParser().parseFromString(text, 'text/xml')
   if (doc.querySelector('parsererror')) {
     throw new ImportError('KML dosyası okunamadı. Dosya bozuk olabilir.')
   }
+  const { kml } = await import('@tmcw/togeojson')
   return kml(doc)
 }
 
@@ -115,9 +116,9 @@ export async function parseGardenFile(file: File): Promise<ImportedPolygon[]> {
 
   let geojson: unknown
   if (name.endsWith('.kmz')) {
-    geojson = parseKml(await kmlTextFromKmz(file))
+    geojson = await parseKml(await kmlTextFromKmz(file))
   } else if (name.endsWith('.kml')) {
-    geojson = parseKml(await file.text())
+    geojson = await parseKml(await file.text())
   } else if (name.endsWith('.geojson') || name.endsWith('.json')) {
     try {
       geojson = JSON.parse(await file.text())

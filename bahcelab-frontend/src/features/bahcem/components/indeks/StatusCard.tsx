@@ -20,7 +20,7 @@ export function StatusCard({ data, refreshing, onRefresh, refreshError }: Status
     <section className="space-y-3 rounded-2xl bg-app-card p-3.5" aria-label="Uydu görüntüsü durumu">
       {active && (
         <div role="status" aria-live="polite">
-          <div className="flex items-center gap-2 text-[13px] font-medium text-app-text">
+          <div className="flex items-center gap-2 text-small font-medium text-app-text">
             <Loader2 className="h-4 w-4 animate-spin text-app-accent" aria-hidden />
             Uydu görüntüleri işleniyor…
           </div>
@@ -36,7 +36,7 @@ export function StatusCard({ data, refreshing, onRefresh, refreshError }: Status
               style={{ width: `${job?.toplam ? percent : 8}%` }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-app-text-muted">
+          <p className="mt-1.5 text-caption text-app-text-muted">
             {job && job.toplam > 0
               ? `${job.islenen} / ${job.toplam} sahne · son 13 ay`
               : job?.durum === 'bekliyor'
@@ -49,7 +49,7 @@ export function StatusCard({ data, refreshing, onRefresh, refreshError }: Status
       {job?.durum === 'hata' && (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-xl bg-app-danger/10 px-3 py-2.5 text-[12px] leading-snug text-app-danger"
+          className="flex items-start gap-2 rounded-xl bg-app-danger/10 px-3 py-2.5 text-caption leading-snug text-app-danger"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           {job.hataMesaji ?? 'Uydu görüntüleri işlenemedi.'}
@@ -57,24 +57,24 @@ export function StatusCard({ data, refreshing, onRefresh, refreshError }: Status
       )}
 
       {job?.durum === 'tamam' && job.hataMesaji && (
-        <p className="text-[11px] leading-snug text-amber-300">{job.hataMesaji}</p>
+        <p className="text-caption leading-snug text-app-warn">{job.hataMesaji}</p>
       )}
 
       {refreshError && (
-        <p role="alert" className="text-[12px] text-app-danger">
+        <p role="alert" className="text-caption text-app-danger">
           {refreshError}
         </p>
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] text-app-text-muted">
+        <span className="text-caption text-app-text-muted">
           {lastCheck ? `Son kontrol: ${lastCheck}` : active ? '' : 'Henüz kontrol edilmedi'}
         </span>
         <button
           type="button"
           onClick={onRefresh}
           disabled={active || refreshing}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-app-border px-3 text-[12px] font-medium text-app-text transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-app-border px-3 text-caption font-medium text-app-text transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
           Şimdi güncelle

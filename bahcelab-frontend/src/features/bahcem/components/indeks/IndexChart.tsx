@@ -161,7 +161,7 @@ export function IndexChart({
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(id)}
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
                 on ? 'border-app-border bg-app-card-hover text-app-text' : 'border-transparent text-app-text-dim hover:text-app-text-muted'
               }`}
             >
@@ -174,7 +174,7 @@ export function IndexChart({
           type="button"
           aria-pressed={weather !== null}
           onClick={onWeatherToggle}
-          className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+          className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
             weather !== null ? 'border-app-border bg-app-card-hover text-app-text' : 'border-transparent text-app-text-dim hover:text-app-text-muted'
           }`}
         >
@@ -183,7 +183,7 @@ export function IndexChart({
         </button>
       </div>
 
-      <div className="mb-1 flex min-h-5 items-start justify-between gap-2 text-[11px]">
+      <div className="mb-1 flex min-h-5 items-start justify-between gap-2 text-caption">
         <span className="shrink-0 font-medium text-app-text">Zaman grafiği</span>
         <span className="min-w-0 text-right leading-snug text-app-text-muted" aria-live="polite" data-testid="chart-tooltip">
           {shown
@@ -322,7 +322,7 @@ export function IndexChart({
         )}
       </svg>
 
-      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-app-text-muted">
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-app-text-muted">
         <span className="flex items-center gap-1.5">
           <i className="h-0.5 w-4 rounded bg-app-text-muted" aria-hidden />
           {season} sezonu
