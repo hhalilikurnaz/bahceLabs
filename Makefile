@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
+.PHONY: backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
 
 help:
 	@echo "BahçeLab — bahcelab-web monorepo"
@@ -42,3 +42,6 @@ frontend-install:
 
 frontend-dev:
 	npm run dev
+
+backend-typecheck:
+	cd bahcelab-backend && PYTHONPATH=src .venv/bin/mypy && .venv/bin/ruff check src tests scripts

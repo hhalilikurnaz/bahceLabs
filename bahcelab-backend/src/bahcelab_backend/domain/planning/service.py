@@ -1,3 +1,6 @@
+import uuid
+from typing import cast
+
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.planning.geometry_service import (
     GeometryValidationError,
@@ -8,10 +11,15 @@ from bahcelab_backend.domain.planning.repository import PlanRepository
 from bahcelab_backend.domain.planning.schemas import (
     CreatePlanRequest,
     GeoJsonPolygon,
+    GrowthSimulation,
+    MaintenancePlan,
     PlanningLand,
+    PlanningStepId,
+    PlantingPlan,
     ProductSelection,
     SaveLandRequest,
     SimulationPlan,
+    SimulationPlanStatus,
     UpdatePlanRequest,
 )
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
@@ -26,13 +34,13 @@ def _model_to_schema(plan: SimulationPlanModel, is_dirty: bool = False) -> Simul
         name=plan.name,
         workspace_id=plan.workspace_id,
         garden_id=plan.garden_id,
-        status=plan.status,
-        current_step=plan.current_step,
+        status=cast(SimulationPlanStatus, plan.status),
+        current_step=cast(PlanningStepId, plan.current_step),
         draft_land=draft_land,
         product_selection=product_selection,
-        planting_plan=plan.planting_plan,
-        maintenance_plan=plan.maintenance_plan,
-        growth_simulation=plan.growth_simulation,
+        planting_plan=PlantingPlan.model_validate(plan.planting_plan) if plan.planting_plan else None,
+        maintenance_plan=MaintenancePlan.model_validate(plan.maintenance_plan) if plan.maintenance_plan else None,
+        growth_simulation=GrowthSimulation.model_validate(plan.growth_simulation) if plan.growth_simulation else None,
         created_at=plan.created_at.isoformat(),
         updated_at=plan.updated_at.isoformat(),
         is_dirty=is_dirty,
@@ -44,7 +52,7 @@ class PlanningService:
         self.repo = repo
         self.garden_repo = garden_repo
 
-    async def _land_from_garden(self, garden_id) -> PlanningLand:
+    async def _land_from_garden(self, garden_id: uuid.UUID) -> PlanningLand:
         """Kayıtlı bahçenin sınırını plan taslağına aktarır (yalnızca kullanıcının kendi bahçesi)."""
         row = await self.garden_repo.get(garden_id) if self.garden_repo else None
         if row is None:
@@ -68,7 +76,7 @@ class PlanningService:
         plans = await self.repo.list_plans()
         return [_model_to_schema(p) for p in plans]
 
-    async def get_plan(self, plan_id) -> SimulationPlan:
+    async def get_plan(self, plan_id: uuid.UUID) -> SimulationPlan:
         plan = await self.repo.get_plan_or_404(plan_id)
         return _model_to_schema(plan)
 
@@ -81,14 +89,14 @@ class PlanningService:
             await self.repo.session.refresh(plan)
         return _model_to_schema(plan, is_dirty=True)
 
-    async def update_plan(self, plan_id, request: UpdatePlanRequest) -> SimulationPlan:
+    async def update_plan(self, plan_id: uuid.UUID, request: UpdatePlanRequest) -> SimulationPlan:
         plan = await self.repo.update_plan(plan_id, request)
         return _model_to_schema(plan)
 
-    async def delete_plan(self, plan_id) -> None:
+    async def delete_plan(self, plan_id: uuid.UUID) -> None:
         await self.repo.delete_plan(plan_id)
 
-    async def save_land(self, plan_id, request: SaveLandRequest) -> SimulationPlan:
+    async def save_land(self, plan_id: uuid.UUID, request: SaveLandRequest) -> SimulationPlan:
         plan = await self.repo.get_plan_or_404(plan_id)
 
         try:

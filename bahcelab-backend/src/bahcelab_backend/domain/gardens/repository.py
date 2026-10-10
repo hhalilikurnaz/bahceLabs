@@ -2,10 +2,12 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import Row, Select, delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import FunctionElement
 
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.ndvi.models import IndexObservationModel
@@ -38,7 +40,7 @@ _MEASURE_SQL = text(
 )
 
 
-def _geom_expr(geojson: dict[str, Any]):
+def _geom_expr(geojson: dict[str, Any]) -> FunctionElement[Any]:
     return func.ST_SetSRID(func.ST_GeomFromGeoJSON(json.dumps(geojson)), 4326)
 
 
@@ -52,7 +54,7 @@ class GardenRepository:
         row = (await self.session.execute(_MEASURE_SQL, {"geojson": json.dumps(geojson)})).one()
         return Measurement(bool(row.is_valid), row.reason, float(row.area_dekar))
 
-    def _select(self):
+    def _select(self) -> Select[Any]:
         # Her bahçenin son geçerli NDVI gözlemi (liste rozeti ve silüet rengi için)
         latest = (
             select(
@@ -77,7 +79,7 @@ class GardenRepository:
         )
 
     @staticmethod
-    def _row(values) -> GardenRow:
+    def _row(values: Row[GardenModel, str, float | None, date | None]) -> GardenRow:
         garden, geojson, ortalama, tarih = values
         return GardenRow(garden, json.loads(geojson), ortalama, tarih)
 
@@ -115,7 +117,7 @@ class GardenRepository:
             setattr(garden, key, value)
         if geojson is not None and area_dekar is not None:
             garden.geom = _geom_expr(geojson)
-            garden.alan_dekar = round(area_dekar, 3)
+            garden.alan_dekar = Decimal(str(round(area_dekar, 3)))
         await self.session.flush()
 
     async def delete(self, garden: GardenModel) -> None:

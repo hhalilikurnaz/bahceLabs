@@ -87,7 +87,7 @@ def search_scenes(geometry: dict[str, Any], start: date, end: date) -> list[Scen
             continue
         day = item.datetime.date()
         overlap = (
-            shape(item.geometry).intersection(garden).area / garden.area if garden.area else 0.0
+            shape(item.geometry or {}).intersection(garden).area / garden.area if garden.area else 0.0
         )
         cloud = float(item.properties.get("eo:cloud_cover", 100.0))
         key = (overlap, -cloud)

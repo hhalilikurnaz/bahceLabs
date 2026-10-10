@@ -34,6 +34,8 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
     "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "types-shapely>=2.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -54,3 +56,14 @@ target-version = "py312"
 select = ["E", "F", "I", "UP"]
 # Biçimlendirici kodu sarar; uzun Türkçe açıklama/docstring satırları için E501 kapalı
 ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["bahcelab_backend"]
+mypy_path = "src"
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true

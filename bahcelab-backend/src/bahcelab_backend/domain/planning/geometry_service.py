@@ -16,7 +16,10 @@ class GeometryValidationError(Exception):
 
 
 def _geojson_to_shape(geometry: GeoJsonPolygon) -> Polygon:
-    return shape(geometry.model_dump())
+    result = shape(geometry.model_dump())
+    if not isinstance(result, Polygon):
+        raise GeometryValidationError("Arazi sınırı bir çokgen olmalı.")
+    return result
 
 
 def _geodesic_area_and_perimeter(geom: Polygon) -> tuple[float, float]:
@@ -44,12 +47,13 @@ def validate_and_measure_land(geometry: GeoJsonPolygon) -> PlanningLand:
                 "Arazi sınırı geçersiz: self-intersection detected",
                 details={"reason": reason},
             )
-        geom = make_valid(geom)
-        if geom.geom_type != "Polygon":
+        fixed = make_valid(geom)
+        if not isinstance(fixed, Polygon):
             raise GeometryValidationError(
                 "Arazi sınırı geçersiz: düzeltme sonrası polygon elde edilemedi",
                 details={"reason": reason},
             )
+        geom = fixed
 
     area_m2, perimeter_m = _geodesic_area_and_perimeter(geom)
 

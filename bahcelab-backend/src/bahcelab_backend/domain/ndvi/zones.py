@@ -6,6 +6,7 @@ Bölgeler ileride blok bölmeye öneri olarak kullanılacaktır.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -14,7 +15,8 @@ import numpy as np
 from pyproj import Transformer
 from rasterio.features import shapes
 from rasterio.transform import Affine
-from shapely.geometry import MultiPolygon, mapping, shape
+from shapely.geometry import MultiPolygon, Polygon, mapping, shape
+from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform as shapely_transform
 
 MIN_OBSERVATIONS = 3
@@ -66,19 +68,21 @@ def _majority_filter(labels: np.ndarray, valid: np.ndarray, k: int) -> np.ndarra
     return np.where(valid, best, labels)
 
 
-def _pixel_to_lonlat(corners: tuple[tuple[float, float], ...], height: int, width: int):
+def _pixel_to_lonlat(
+    corners: tuple[tuple[float, float], ...], height: int, width: int
+) -> Callable[..., tuple[float, float]]:
     """Piksel (sütun, satır) → [boylam, enlem]; köşelerden afin dönüşüm (bahçe ölçeğinde yeterince doğru)."""
     tl, tr, _br, bl = corners
     ex = ((tr[0] - tl[0]) / width, (tr[1] - tl[1]) / width)
     ey = ((bl[0] - tl[0]) / height, (bl[1] - tl[1]) / height)
 
-    def convert(x: float, y: float, z: float | None = None):
+    def convert(x: float, y: float, z: float | None = None) -> tuple[float, float]:
         return (tl[0] + x * ex[0] + y * ey[0], tl[1] + x * ex[1] + y * ey[1])
 
     return convert
 
 
-def _area_m2(geometry) -> float:
+def _area_m2(geometry: BaseGeometry) -> float:
     return float(shapely_transform(_TO_EQUAL_AREA.transform, geometry).area)
 
 
@@ -146,7 +150,7 @@ def compute_yield_zones(
         ]
         if not flat:
             continue
-        multi = MultiPolygon(flat)
+        multi = MultiPolygon([g for g in flat if isinstance(g, Polygon)])
         features.append(
             {
                 "type": "Feature",

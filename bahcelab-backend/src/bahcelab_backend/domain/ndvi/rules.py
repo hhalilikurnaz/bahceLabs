@@ -8,6 +8,7 @@ from typing import Any
 
 from pyproj import Transformer
 from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform as shapely_transform
 from shapely.ops import unary_union
 
@@ -158,14 +159,14 @@ def _ndmi_alert(series: list[tuple[date, float]]) -> Uyari | None:
 _TO_EQUAL_AREA = Transformer.from_crs(4326, 6933, always_xy=True)
 
 
-def _zone_union(item: SceneWithIndices, indeks: str):
+def _zone_union(item: SceneWithIndices, indeks: str) -> BaseGeometry | None:
     row = item.indices.get(indeks)
     features = (row.sorunlu_bolge_geojson or {}).get("features", []) if row else []
     geoms = [shape(f["geometry"]) for f in features if f.get("geometry")]
     return unary_union(geoms) if geoms else None
 
 
-def _overlap_m2(a, b) -> float:
+def _overlap_m2(a: BaseGeometry, b: BaseGeometry) -> float:
     inter = a.intersection(b)
     if inter.is_empty:
         return 0.0
@@ -185,12 +186,13 @@ def build_alerts(scenes: list[SceneWithIndices]) -> list[Uyari]:
 
     if len(alerts) >= 2:
         by_date = {item.scene.tarih: item for item in scenes}
-        unions = {}
+        unions: dict[str, BaseGeometry] = {}
         for alert in alerts:
             item = by_date.get(alert.son_tarih)
-            zone = _zone_union(item, alert.indeks) if item and alert.indeks else None
-            if zone is not None:
-                unions[alert.indeks] = zone
+            name = alert.indeks
+            zone = _zone_union(item, name) if item and name else None
+            if zone is not None and name is not None:
+                unions[name] = zone
 
         overlapping: dict[str, float] = {}
         names = list(unions)
@@ -205,14 +207,14 @@ def build_alerts(scenes: list[SceneWithIndices]) -> list[Uyari]:
             for alert in alerts:
                 if alert.indeks in overlapping:
                     alert.oncelik = "yuksek"
-            members = [a for a in alerts if a.indeks in overlapping]
+            members = [a for a in alerts if a.indeks is not None and a.indeks in overlapping]
             area = max(overlapping.values())
-            labels = " + ".join(a.indeks.upper() for a in members)
+            labels = " + ".join((a.indeks or "").upper() for a in members)
             alerts.append(
                 Uyari(
                     tur="coklu_indeks",
                     indeks=None,
-                    indeksler=[a.indeks for a in members],
+                    indeksler=[a.indeks for a in members if a.indeks is not None],
                     oncelik="yuksek",
                     baslik="Aynı bölgede birden fazla indeks düşüyor",
                     mesaj=(

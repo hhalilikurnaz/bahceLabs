@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow, Measurement
@@ -11,6 +11,7 @@ from bahcelab_backend.domain.gardens.schemas import (
     GardenUpdate,
     GeoJsonGeometry,
     MeasureResponse,
+    Urun,
 )
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
@@ -33,7 +34,7 @@ def to_response(row: GardenRow) -> GardenResponse:
     return GardenResponse(
         id=g.id,
         ad=g.ad,
-        urun=g.urun,
+        urun=cast(Urun, g.urun),
         cesit=g.cesit,
         dikim_yili=g.dikim_yili,
         geometry=row.geojson,
@@ -94,14 +95,14 @@ class GardenService:
     async def list_gardens(self) -> list[GardenResponse]:
         return [to_response(r) for r in await self.repo.list_gardens()]
 
-    async def get(self, garden_id: uuid.UUID):
+    async def get(self, garden_id: uuid.UUID) -> GardenResponse:
         return to_response(await self._get_model(garden_id))
 
     async def measure(self, geometry: GeoJsonGeometry) -> MeasureResponse:
         _, area = await self._validated_area(geometry)
         return MeasureResponse(alan_dekar=round(area, 3), alan_m2=round(area * 1000, 1))
 
-    async def create(self, request: GardenCreate):
+    async def create(self, request: GardenCreate) -> GardenResponse:
         geojson, area = await self._validated_area(request.geometry)
         garden_id = await self.repo.create(
             values=request.model_dump(exclude={"geometry"}), geojson=geojson, area_dekar=area
@@ -110,7 +111,7 @@ class GardenService:
             await self.ndvi.start_initial(garden_id)  # son 13 ay arka planda işlenir
         return await self.get(garden_id)
 
-    async def update(self, garden_id: uuid.UUID, request: GardenUpdate):
+    async def update(self, garden_id: uuid.UUID, request: GardenUpdate) -> GardenResponse:
         row = await self._get_model(garden_id)
         garden: GardenModel = row.garden
 
