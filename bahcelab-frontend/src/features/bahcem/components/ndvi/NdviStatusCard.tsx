@@ -1,6 +1,6 @@
 import { Loader2, RefreshCw, TriangleAlert } from 'lucide-react'
 import type { NdviData } from '../../api/ndviApi'
-import { timeAgo } from '../../lib/ndvi'
+import { timeAgo } from '../../lib/dates'
 
 interface NdviStatusCardProps {
   data: NdviData

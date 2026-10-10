@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { NdviObservation } from '@/features/bahcem/api/ndviApi'
 import {
-  formatDate,
-  formatDayMonth,
   formatNdvi,
   ndviColor,
   ndviGradient,
   ndviRgb,
   NDVI_STOPS,
   pickActiveObservation,
-  timeAgo,
 } from '@/features/bahcem/lib/ndvi'
 
 const obs = (tarih: string, durum: 'tamam' | 'bulutlu' = 'tamam', pngVar = durum === 'tamam'): NdviObservation => ({
@@ -61,20 +58,9 @@ describe('NDVI renk skalası', () => {
 })
 
 describe('biçimlendirme', () => {
-  it('Türkçe ondalık ve tarih', () => {
+  it('Türkçe ondalık', () => {
     expect(formatNdvi(0.456)).toBe('0,46')
     expect(formatNdvi(null)).toBe('—')
-    expect(formatDayMonth('2026-10-09')).toBe('9 Eki')
-    expect(formatDate('2026-01-31')).toBe('31 Oca 2026')
-  })
-
-  it('göreli süre', () => {
-    const now = new Date('2026-10-10T12:00:00Z').getTime()
-    expect(timeAgo(null, now)).toBeNull()
-    expect(timeAgo('2026-10-10T11:59:40Z', now)).toBe('az önce')
-    expect(timeAgo('2026-10-10T11:15:00Z', now)).toBe('45 dk önce')
-    expect(timeAgo('2026-10-10T09:00:00Z', now)).toBe('3 saat önce')
-    expect(timeAgo('2026-10-07T12:00:00Z', now)).toBe('3 gün önce')
   })
 })
 

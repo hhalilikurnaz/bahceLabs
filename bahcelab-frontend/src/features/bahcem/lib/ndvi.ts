@@ -1,3 +1,4 @@
+import { MONTHS_SHORT } from './dates'
 import type { NdviObservation } from '../api/ndviApi'
 
 /**
@@ -42,19 +43,6 @@ export function formatNdvi(value: number | null | undefined): string {
   return value == null ? '—' : value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const MONTHS_SHORT = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
-
-/** "2026-10-09" → "9 Eki" */
-export function formatDayMonth(iso: string): string {
-  const [, month, day] = iso.split('-').map(Number)
-  return `${day} ${MONTHS_SHORT[month - 1]}`
-}
-
-/** "2026-10-09" → "9 Eki 2026" */
-export function formatDate(iso: string): string {
-  return `${formatDayMonth(iso)} ${iso.slice(0, 4)}`
-}
-
 export const monthLabels = MONTHS_SHORT
 
 /** Seçili tarih geçerliyse onu, değilse en son geçerli (bulutsuz) görüntüyü verir. */
@@ -64,15 +52,4 @@ export function pickActiveObservation(
 ): NdviObservation | null {
   const usable = (observations ?? []).filter((o) => o.durum === 'tamam' && o.pngVar)
   return usable.find((o) => o.tarih === selectedDate) ?? usable[usable.length - 1] ?? null
-}
-
-/** "3 saat önce" gibi göreli süre */
-export function timeAgo(iso: string | null, now = Date.now()): string | null {
-  if (!iso) return null
-  const minutes = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000))
-  if (minutes < 1) return 'az önce'
-  if (minutes < 60) return `${minutes} dk önce`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours} saat önce`
-  return `${Math.round(hours / 24)} gün önce`
 }

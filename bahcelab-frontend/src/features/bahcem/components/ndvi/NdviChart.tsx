@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { NdviObservation } from '../../api/ndviApi'
-import { formatDate, formatNdvi, monthLabels } from '../../lib/ndvi'
+import { dayOfYear, daysInYear, formatDate } from '../../lib/dates'
+import { formatNdvi, monthLabels } from '../../lib/ndvi'
 
 interface NdviChartProps {
   observations: NdviObservation[]
@@ -16,12 +17,6 @@ const M = { left: 32, right: 10, top: 12, bottom: 24 }
 const Y_MIN = 0
 const Y_MAX = 0.9
 const Y_TICKS = [0, 0.3, 0.6, 0.9]
-
-const dayOfYear = (iso: string): number => {
-  const [y, m, d] = iso.split('-').map(Number)
-  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86_400_000)
-}
-const daysInYear = (year: number) => (new Date(year, 1, 29).getMonth() === 1 ? 366 : 365)
 
 const x = (doy: number, year: number) =>
   M.left + ((doy - 1) / (daysInYear(year) - 1)) * (W - M.left - M.right)

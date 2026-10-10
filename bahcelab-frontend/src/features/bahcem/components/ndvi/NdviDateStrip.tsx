@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { Fragment, useEffect, useMemo, useRef } from 'react'
 import { Cloud } from 'lucide-react'
 import { ndviImageUrl, type NdviObservation } from '../../api/ndviApi'
 import { useNdviView } from '../../hooks/useNdviView'
-import { formatDate, formatDayMonth, formatNdvi } from '../../lib/ndvi'
+import { formatDate, formatDayMonth, yearOf } from '../../lib/dates'
+import { formatNdvi } from '../../lib/ndvi'
 import { useBahcemStore } from '../../stores/bahcemStore'
 
 /** Haritanın altında yatay tarih şeridi: küçük NDVI önizlemeleri, bulutlu tarihler soluk ve tıklanamaz. */
@@ -71,14 +72,24 @@ export function NdviDateStrip() {
         tabIndex={0}
         className="flex gap-1.5 overflow-x-auto pb-1 outline-none focus-visible:ring-2 focus-visible:ring-app-accent"
       >
-        {observations.map((o) => (
-          <DateCard
-            key={o.tarih}
-            gardenId={gardenId}
-            observation={o}
-            selected={o.tarih === active?.tarih}
-            onSelect={setNdviDate}
-          />
+        {observations.map((o, i) => (
+          <Fragment key={o.tarih}>
+            {/* Şerit 13 ayı kapsar: aynı gün/ay iki yılda da bulunur, bu yüzden yıl ayırıcısı gösterilir */}
+            {(i === 0 || yearOf(o.tarih) !== yearOf(observations[i - 1].tarih)) && (
+              <span
+                aria-hidden
+                className="flex shrink-0 items-center self-stretch rounded-lg bg-app-bg/60 px-2 text-[10px] font-semibold text-app-text-muted"
+              >
+                {yearOf(o.tarih)}
+              </span>
+            )}
+            <DateCard
+              gardenId={gardenId}
+              observation={o}
+              selected={o.tarih === active?.tarih}
+              onSelect={setNdviDate}
+            />
+          </Fragment>
         ))}
       </div>
     </div>
