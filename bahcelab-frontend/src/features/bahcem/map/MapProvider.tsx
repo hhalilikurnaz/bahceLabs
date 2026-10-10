@@ -18,11 +18,11 @@ interface MapProviderProps {
 export function MapProvider({ userId, children }: MapProviderProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
-  const initialView = useRef(loadView(userId))
-  const basemapRef = useRef<BasemapId>(initialView.current.basemap)
+  const [initialView] = useState(() => loadView(userId))
+  const basemapRef = useRef<BasemapId>(initialView.basemap)
 
   const [map, setMap] = useState<MapLibreMap | null>(null)
-  const [basemap, setBasemapState] = useState<BasemapId>(initialView.current.basemap)
+  const [basemap, setBasemapState] = useState<BasemapId>(initialView.basemap)
   const [styleVersion, setStyleVersion] = useState(0)
   const usingFallback = !getMaptilerKey()
 
@@ -30,7 +30,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
     const container = containerRef.current
     if (!container) return
 
-    const view = initialView.current
+    const view = initialView
     const instance = new MapLibreMap({
       container,
       style: buildStyle(view.basemap),
@@ -64,7 +64,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       mapRef.current = null
       setMap(null)
     }
-  }, [userId])
+  }, [userId, initialView])
 
   const setBasemap = useCallback(
     (next: BasemapId) => {
