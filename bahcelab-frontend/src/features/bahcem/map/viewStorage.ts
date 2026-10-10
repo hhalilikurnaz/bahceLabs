@@ -1,13 +1,15 @@
-import type { BasemapId } from './mapStyles'
+import type { BasemapId, BasemapProviderId } from './mapStyles'
 
 export interface MapView {
   center: [number, number]
   zoom: number
   basemap: BasemapId
+  /** Altlık sağlayıcısı (eski kayıtlarda yok → Mapbox) */
+  provider?: BasemapProviderId
 }
 
 /** Bahçesi olmayan kullanıcı için başlangıç: Türkiye geneli (bahçe varsa açılışta onların sınırına odaklanılır) */
-export const DEFAULT_VIEW: MapView = { center: [35.2, 39.0], zoom: 5, basemap: 'satellite' }
+export const DEFAULT_VIEW: MapView = { center: [35.2, 39.0], zoom: 5, basemap: 'satellite', provider: 'mapbox' }
 
 const keyFor = (userId: string) => `bahcelab_map_view_v1:${userId}`
 
@@ -19,7 +21,8 @@ function isView(value: unknown): value is MapView {
     v.center.length === 2 &&
     v.center.every((n) => Number.isFinite(n)) &&
     Number.isFinite(v.zoom) &&
-    (v.basemap === 'satellite' || v.basemap === 'hybrid' || v.basemap === 'streets')
+    (v.basemap === 'satellite' || v.basemap === 'hybrid' || v.basemap === 'streets') &&
+    (v.provider === undefined || v.provider === 'mapbox' || v.provider === 'maptiler')
   )
 }
 

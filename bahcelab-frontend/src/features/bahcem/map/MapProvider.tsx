@@ -6,7 +6,14 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import '../bahcem.css'
 import { MapContext } from './MapContext'
 import { getApiBaseUrl } from '@/lib/apiClient'
-import { buildStyle, getMaptilerKey, type BasemapId } from './mapStyles'
+import {
+  availableProviders,
+  buildStyle,
+  effectiveProvider,
+  warnOnce,
+  type BasemapId,
+  type BasemapProviderId,
+} from './mapStyles'
 import { loadView, saveView } from './viewStorage'
 
 setWorkerUrl(workerUrl)
@@ -26,16 +33,19 @@ export function MapProvider({ userId, children }: MapProviderProps) {
   const mapRef = useRef<MapLibreMap | null>(null)
   const [initialView] = useState(() => loadView(userId))
   const basemapRef = useRef<BasemapId>(initialView.basemap)
+  const providerRef = useRef<BasemapProviderId>(initialView.provider ?? 'mapbox')
 
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [basemap, setBasemapState] = useState<BasemapId>(initialView.basemap)
+  const [provider, setProviderState] = useState<BasemapProviderId>(initialView.provider ?? 'mapbox')
   // 'style.load' sayacı harita örneğine bağlı tutulur; yeni harita 0'dan başlar
   const [styleLoads, setStyleLoads] = useState<{ map: MapLibreMap | null; n: number }>({
     map: null,
     n: 0,
   })
   const styleVersion = styleLoads.map !== null && styleLoads.map === map ? styleLoads.n : 0
-  const usingFallback = !getMaptilerKey()
+  const providers = useMemo(() => availableProviders(), [])
+  const usingFallback = effectiveProvider(provider) === 'osm'
 
   useEffect(() => {
     const container = containerRef.current
@@ -44,7 +54,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
     const view = initialView
     const instance = new MapLibreMap({
       container,
-      style: buildStyle(view.basemap),
+      style: buildStyle(view.basemap, view.provider ?? 'mapbox'),
       center: view.center,
       zoom: view.zoom,
       attributionControl: false,
@@ -63,10 +73,23 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       window.clearTimeout(saveTimer)
       saveTimer = window.setTimeout(() => {
         const { lng, lat } = instance.getCenter()
-        saveView(userId, { center: [lng, lat], zoom: instance.getZoom(), basemap: basemapRef.current })
+        saveView(userId, {
+          center: [lng, lat],
+          zoom: instance.getZoom(),
+          basemap: basemapRef.current,
+          provider: providerRef.current,
+        })
       }, 400)
     }
     instance.on('moveend', persist)
+    // Mapbox token'ı geçersiz/yetkisizse (401/403) oturum boyunca MapTiler'a düşülür; tercih kaydı değişmez
+    instance.on('error', (event) => {
+      const status = (event.error as { status?: number } | undefined)?.status
+      if ((status === 401 || status === 403) && providerRef.current === 'mapbox' && availableProviders().includes('maptiler')) {
+        warnOnce('mapbox-401', 'Mapbox yetkilendirme hatası (401); MapTiler altlığına geçildi.')
+        instance.setStyle(buildStyle(basemapRef.current, 'maptiler'))
+      }
+    })
     instance.on('style.load', () =>
       setStyleLoads((prev) => ({ map: instance, n: prev.map === instance ? prev.n + 1 : 1 })),
     )
@@ -88,16 +111,29 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       setBasemapState(next)
       const instance = mapRef.current
       if (!instance) return
-      instance.setStyle(buildStyle(next))
+      instance.setStyle(buildStyle(next, providerRef.current))
       const { lng, lat } = instance.getCenter()
-      saveView(userId, { center: [lng, lat], zoom: instance.getZoom(), basemap: next })
+      saveView(userId, { center: [lng, lat], zoom: instance.getZoom(), basemap: next, provider: providerRef.current })
+    },
+    [userId],
+  )
+
+  const setProvider = useCallback(
+    (next: BasemapProviderId) => {
+      providerRef.current = next
+      setProviderState(next)
+      const instance = mapRef.current
+      if (!instance) return
+      instance.setStyle(buildStyle(basemapRef.current, next))
+      const { lng, lat } = instance.getCenter()
+      saveView(userId, { center: [lng, lat], zoom: instance.getZoom(), basemap: basemapRef.current, provider: next })
     },
     [userId],
   )
 
   const value = useMemo(
-    () => ({ map, basemap, setBasemap, styleVersion, usingFallback }),
-    [map, basemap, setBasemap, styleVersion, usingFallback],
+    () => ({ map, basemap, setBasemap, provider, setProvider, providers, styleVersion, usingFallback }),
+    [map, basemap, setBasemap, provider, setProvider, providers, styleVersion, usingFallback],
   )
 
   return (

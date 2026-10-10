@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Marker } from 'maplibre-gl'
 import { Check, Layers, LocateFixed, Loader2, Minus, Plus } from 'lucide-react'
-import { BASEMAPS } from '../../map/mapStyles'
+import { BASEMAPS, BASEMAP_PROVIDERS } from '../../map/mapStyles'
 import { useIndexView } from '../../hooks/useIndexView'
 import { LAYER_OPTIONS } from '../../lib/indices'
 import { useMap } from '../../map/useMap'
@@ -12,7 +12,7 @@ const controlButton =
   'flex h-10 w-10 items-center justify-center text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-app-accent disabled:opacity-50'
 
 function LayerSwitcher() {
-  const { basemap, setBasemap } = useMap()
+  const { basemap, setBasemap, provider, setProvider, providers } = useMap()
   const { gardenId, available, data, katman } = useIndexView()
   const layerVisible = useBahcemStore((s) => s.layerVisible)
   const setLayerVisible = useBahcemStore((s) => s.setLayerVisible)
@@ -81,6 +81,30 @@ function LayerSwitcher() {
               {basemap === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
             </button>
           ))}
+          {providers.length > 1 && (
+            <>
+              <div className="my-1 h-px bg-app-border" />
+              <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
+                Altlık sağlayıcı
+              </p>
+              {BASEMAP_PROVIDERS.filter((p) => providers.includes(p.id)).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={provider === option.id}
+                  onClick={() => setProvider(option.id)}
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-[13px] text-app-text transition-colors hover:bg-app-card"
+                >
+                  <span>
+                    {option.label}
+                    <span className="block text-[11px] text-app-text-dim">{option.hint}</span>
+                  </span>
+                  {provider === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
+                </button>
+              ))}
+            </>
+          )}
           <div className="my-1 h-px bg-app-border" />
           <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
             Bahçe katmanı
