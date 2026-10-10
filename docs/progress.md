@@ -277,6 +277,12 @@ npm run dev               # http://localhost:5173/planning
 
 ---
 
+## Faz 1 — Adım 5B (çoklu indeks)
+
+Tamamlandı: NDVI/MSAVI/NDRE/NDMI/CIgreen/gerçek renk, kontrastlı mod, değişim haritası, karşılaştırma, zaman atlaması, verimlilik bölgeleri. Ayrıntı: `docs/PLAN-FAZ1.md`.
+
+---
+
 ## Notlar
 
 - Referans görseldeki sayılar **sadece tasarım referansı** — hard-code yasak

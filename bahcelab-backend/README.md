@@ -88,24 +88,31 @@ Girişli kullanıcının kendi workspace'indeki bahçeler. Sınır GeoJSON `Poly
 Geçersiz sınır (kendini kesen), alan < 0,5 dekar veya > 5.000 dekar için `422` ve Türkçe mesaj döner
 (`error.code = INVALID_GEOMETRY`). Başka kullanıcının bahçesi `404`.
 
-## NDVI izleme (`/gardens/{id}/ndvi`)
+## Uydu indeksleri (`/gardens/{id}/indeks`)
 
 Sentinel-2 L2A (Microsoft Planetary Computer STAC, anahtar gerekmez). Bahçe kaydedilince son 13 ay arka
-planda işlenir; yalnızca bahçe sınırı penceresi COG'dan okunur.
+planda işlenir; her sahnede yalnızca bahçe penceresi COG'dan **bir kez** okunur (B02, B03, B04, B08, B05, B8A, B11, SCL)
+ve tüm indeksler aynı okumadan hesaplanır: NDVI, MSAVI2, NDRE, NDMI, CIgreen ve gerçek renk.
 
 | Uç nokta | Açıklama |
 |----------|----------|
-| `GET /gardens/{id}/ndvi` | Zaman serisi, uyarılar, işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar |
-| `POST /gardens/{id}/ndvi/refresh` | «Şimdi güncelle» (202). Aktif iş varsa onu döner |
-| `GET /gardens/{id}/ndvi/{YYYY-MM-DD}.png` | NDVI görüntüsü (yetkili, 10 m keskin piksel, bahçe dışı saydam) |
-| `GET /gardens/{id}/ndvi/{YYYY-MM-DD}/zones` | Sorunlu bölgeler (GeoJSON) |
+| `GET /indeks/tanimlar` | İndeks tanımları: ad, açıklama, skala aralığı, renk skalası |
+| `GET /gardens/{id}/indeks` | Sahneler (indeks özetleriyle), uyarılar, işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar |
+| `POST /gardens/{id}/indeks/refresh` | «Şimdi güncelle» (202). Aktif iş varsa onu döner |
+| `GET /gardens/{id}/indeks/{indeks}/{YYYY-MM-DD}.png` | Renkli görüntü (bahçe sınırına tam kırpılmış, dışı saydam); `indeks` = ndvi, msavi, ndre, ndmi, cigreen, gercek-renk |
+| `GET /gardens/{id}/indeks/{indeks}/{YYYY-MM-DD}.bin` | Ham ızgara (float32 LE, geçersiz = NaN): kontrastlı mod, değişim ve karşılaştırma için |
+| `GET /gardens/{id}/indeks/{indeks}/{YYYY-MM-DD}/zones` | Sorunlu bölgeler (GeoJSON) |
+| `GET /gardens/{id}/verimlilik-bolgeleri?indeks=ndvi\|msavi` | Geçmiş görüntülerin ortalamasından düşük / orta / yüksek verimlilik bölgeleri (alan ve pay ile) |
 
-- Maskeleme: SCL 3/8/9/10 ve bahçe dışı; geçerli piksel oranı < %70 → "bulutlu", atlanır.
-- Sorunlu bölge: medyanın 0,10 altı, ≥ 3 piksel. Uyarı: 10–25 gün öncesine göre %10'dan fazla düşüş.
-- PNG'ler `STORAGE_DIR` (varsayılan `uploads/`, git'e girmez) altında; `shared/storage.py` arayüzü S3/R2'ye hazır.
+- Maskeleme: SCL 3/8/9/10 ve bahçe dışı; geçerli piksel oranı < %70 → "bulutlu", atlanır. 20 m bantlar (B05, B8A, B11) 10 m ızgaraya bilinear örneklenir.
+- Sorunlu bölge: medyanın altı (NDVI/MSAVI 0,10, NDRE 0,05, NDMI 0,08, CIgreen 0,35), ≥ 3 piksel, 4-komşuluk.
+- Uyarılar (10–25 gün öncesine göre): NDVI/MSAVI > %10 düşüş; NDRE > %12 düşüş ("olası besin eksikliği / sararma"); NDMI > %15 göreli düşüş veya tarihsel medyanın altı ("olası su stresi"). Aynı bölgede birden çok indeks düşerse öncelik "yüksek" olur.
+- Verimlilik bölgeleri: piksel başına geçmiş ortalama, 1 boyutlu k-means (3 sınıf), 3×3 çoğunluk filtresi, çokgenleştirme.
+- Depolama: `STORAGE_DIR` (varsayılan `uploads/`, git'e girmez) altında `indeks/{bahçe}/{tarih}/{indeks}.png|.bin`; `shared/storage.py` arayüzü S3/R2'ye hazır.
 - Ayarlar: `NDVI_ENABLED`, `NDVI_MONTHS` (13), `NDVI_MAX_PARALLEL_SCENES` (2), `NDVI_REFRESH_HOURS` (12).
 - Ağ yoksa/Planetary Computer hata verirse iş "hata" olur ve anlaşılır mesaj döner; uygulama etkilenmez.
-- `make db-seed` ağsız demo için örnek NDVI serisi ekler (`kaynak = ornek`).
+- Eski (yalnız NDVI) kayıtlar migration `007` ile yeni tabloya taşınır; eksik indeksler yeniden indirmeden değil, yalnızca gereken bantlar okunarak tamamlanır.
+- `make db-seed` ağsız demo için tüm indekslerle örnek seri ekler (`kaynak = ornek`).
 
 ## Test
 

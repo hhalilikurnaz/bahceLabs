@@ -161,6 +161,14 @@ Bu belgenin 0. bölümü.
 
 **Ölçüm (Tömük, 26 dekar, gerçek Sentinel-2):** 13 aylık işleme ≈ 61 sn (113 sahne: 80 geçerli, 33 bulutlu; sahne başına ~1,1 sn, 2 paralel).
 
+### Adım 5B — Çoklu indeks ve görselleştirme ✅ (tamamlandı)
+
+- **Düzeltmeler:** (1) PNG artık bahçe sınırına tam kırpılır (ince çözünürlükte kırpma; istemcide canvas clip), sınır dışı hiçbir piksel görünmez. (2) Tarih biçimi tek yardımcıda (`lib/dates`, saat dilimi bağımsız); şerit, harita etiketi ve grafik aynı tarihi gösterir, yıl ayırıcıları ve testler eklendi.
+- **İndeksler:** NDVI, MSAVI2, NDRE, NDMI, CIgreen, gerçek renk — sahne başına tek okuma (7 bant + SCL), ek indirme yok. Genel `scene_observations` + `index_observations` tabloları (migration `007`, mevcut NDVI verisi yeniden indirilmeden taşındı).
+- **Uyarılar:** indeks bazlı Türkçe kurallar (NDRE sararma, NDMI su stresi, çoklu indeks → yüksek öncelik).
+- **Görselleştirme:** indeks seçici (panel + harita katmanı), Mutlak/Kontrastlı (p2–p98) ve Piksel/Yumuşak modları, değişim haritası (son 2 hafta, geçen yıl aynı dönem, özel tarih), kaydırmalı karşılaştırma (iki tarih veya iki indeks), zaman atlaması (oynat/duraklat, hız), çok indeksli grafik, verimlilik bölgeleri (düşük/orta/yüksek, alan ve pay).
+- **Ölçüm (Tömük, 26 dekar, gerçek Sentinel-2):** 13 aylık işleme ≈ 94 sn (113 sahne; yalnız NDVI iken ≈ 61 sn).
+
 ### Adım 6 — Hava durumu (Open-Meteo): tahmin, ilaçlama penceresi, don uyarısı
 
 - Anahtar gerekmez, bağımlılık eklenmez (`httpx`). Sorgu bahçenin `centroid`'i ile yapılır.
