@@ -3,7 +3,7 @@
 > Hedef: narenciye (limon) bahçeleri için tam ekran uydu haritası, sol panelde bahçe listesi, koyu ve sade arayüz.
 > Bahçe çizme, Sentinel-2 NDVI, hava durumu, bahçe günlüğü, sahada gözlem, AI Copilot.
 > Marka kuralı: başka hiçbir ürünün adı, logosu veya görseli kullanılmaz.
-> Durum: plan onaylandı (2026-10-10). **Adım 2 tamamlandı**, Adım 3'ten devam edilecek.
+> Durum: plan onaylandı (2026-10-10). **Adım 2, 3 ve 4 tamamlandı**, Adım 5'ten devam edilecek.
 
 ---
 
@@ -118,22 +118,25 @@ Bu belgenin 0. bölümü.
 
 **Çıkış kriteri:** `/bahcem` tam ekran uydu haritası açar; paneller açılıp kapanır; konsolda hata yok; `npm run build` ve `tsc -b` temiz.
 
-### Adım 4 — Bahçe ekleme: konum arama, yakınlaşma, poligon çizimi, alan, kaydetme
+### Adım 4 — Bahçe ekleme: konum arama, yakınlaşma, poligon çizimi, alan, kaydetme ✅ (tamamlandı)
 
-**Backend**
-- Yeni bağımlılık: `geoalchemy2` (PostGIS `geometry(Polygon,4326)` kolonu ve SQLAlchemy tipi için).
-- Migration `004_gardens.py`: `gardens` (`id`, `workspace_id` fk, `name`, `crop` varsayılan `limon`, `variety` nullable, `planting_year` nullable, `location_label`, `geom geometry(Polygon,4326)` + GIST index, `area_m2`, `perimeter_m`, `centroid geometry(Point,4326)`, `created_at`, `updated_at`). `simulation_plans.garden_id` buna foreign key olur.
-- Dosyalar: `domain/gardens/{models,repository,schemas,service}.py`, `api/gardens/router.py`. Alan/çevre ve geçerlilik `geometry_service.validate_and_measure_land` ile (yeniden kullanım).
-- Uç noktalar: `GET /gardens`, `POST /gardens`, `GET/PATCH/DELETE /gardens/{id}`, `POST /gardens/measure` (kaydetmeden alan hesabı, çizim sırasında canlı gösterim için). Kesişen/geçersiz poligon 422, kullanıcı başka workspace'in bahçesini göremez.
+**Backend** (`domain/gardens/`, `api/gardens/`, migration `004_gardens`)
+- `gardens` tablosu: `id`, `workspace_id` (FK, cascade), `ad`, `urun` (limon | portakal | mandalina | greyfurt | diger), `cesit`, `dikim_yili`, `geom geometry(Geometry,4326)` (yalnızca POLYGON/MULTIPOLYGON, CHECK), `alan_dekar`, `il`, `ilce`, `created_at`, `updated_at`; GiST indeksi `ix_gardens_geom`. `geoalchemy2` eklendi.
+- **Alan sunucuda:** `ST_Area(ST_Transform(geom, 32636)) / 1000`; istemcinin gönderdiği alan yok sayılır. Not: 32636 (UTM 36N, orta meridyen 33°D) Mersin için uygundur; 36°D'nin çok doğusunda (ör. Hatay) hata artar, o bölgeler için ileride bölge seçimi gerekebilir.
+- **Doğrulama (422, Türkçe):** `ST_IsValid` (kendini kesen sınır), alan < 0,5 veya > 5.000 dekar, kapalı olmayan halka, koordinat aralığı, ad/ürün/dikim yılı. Yükseklik (z) değerleri atılır.
+- **API** (giriş gerekli, yalnızca kendi workspace'i; başkasının bahçesi 404): `GET/POST /gardens`, `GET/PATCH/DELETE /gardens/{id}`, `POST /gardens/measure` (kaydetmeden doğrulama + alan). Cevapta Türkçe alanlara ek olarak planlamanın beklediği `name`, `location_label`, `area_m2` vardır.
+- **Planlama entegrasyonu:** `POST /planning/plans` `garden_id` ile çağrılınca bahçenin sınırı `draft_land`'a aktarılır ("Kayıtlı bahçe ile devam"); başka kullanıcının bahçesi 404, çok parçalı bahçe 422. Bahçe silinince planlardaki `garden_id` temizlenir.
+- `make db-seed`: test kullanıcısına Erdemli/Tömük'te ≈26 dekarlık "Tömük Limon Bahçesi".
 
-**Frontend**
-- Konum arama: MapTiler Geocoding API (aynı anahtar), `components/map/PlaceSearch.tsx`; seçimde `flyTo`.
-- Çizim: `terra-draw` + `terra-draw-maplibre-gl-adapter` (MapLibre ile doğrudan çalışır; ek CSS yaması gerekmez). Alternatif `@mapbox/mapbox-gl-draw` seçilirse MapLibre için sınıf yamaları gerekir.
-- `components/garden/DrawGardenFlow.tsx`: "Bahçe ekle" → çiz → canlı alan (`/gardens/measure`, debounce 300 ms) → ad/çeşit formu → kaydet.
-- Mevcut [gardenApi.real.ts](../bahcelab-frontend/src/features/planning-simulation/api/gardenApi.real.ts) yeni uç noktaya bağlanır (`ApiGarden` şekli zaten uyumlu); liste LeftPanel'de görünür, tıklayınca `fitBounds`. Garden listesi Planlama'daki `GardenListPanel` ile paylaşılır.
-- Alan birimi: m² ve dönüm (1 dönüm = 1000 m²) birlikte gösterilir.
+**Frontend** (`features/bahcem/`)
+- `terra-draw` + `terra-draw-maplibre-gl-adapter` (poligon çizimi ve sınır düzenleme), `@tmcw/togeojson` + `jszip` (KML/KMZ).
+- Akış: "Bahçe ekle" → **Haritada çiz** / **Dosya yükle (KML, KMZ, GeoJSON)**. Çizim zoom 14'ün altında pasif; canlı alan, geri al (Ctrl/Cmd+Z), Esc iptal, köşe sürükleme; ilk/son noktaya tıklayarak, çift tıklayarak veya Enter ile bitirme.
+- Dosyada birden fazla poligon varsa seçtirilir (hepsi haritada gösterilir).
+- Kaydetme formu (sol panel): ad, ürün, çeşit, dikim yılı, sunucudan gelen alan (salt okunur), il/ilçe (MapTiler ters geocoding: il = `county`, ilçe = `joint_municipality`/`municipality`; düzenlenebilir). Sunucu hataları formda gösterilir.
+- Kayıtlı bahçe yeşil kenarlı yarı saydam poligon; listeden/haritadan seçim, `fitBounds`; açılışta tüm bahçelere odaklanma; ad ile arama.
+- Liste öğesi "…" menüsü: Adını düzenle, Sınırı düzenle (terra-draw; çok parçalı/delikli bahçeler şimdilik düzenlenemez), Sil (onay penceresi).
 
-**Çıkış kriteri:** çizilen bahçe kaydedilir, yenilemede aynı yerde durur, alan shapely hesabıyla eşleşir (`tests/test_gardens_api.py`), geçersiz poligon reddedilir.
+**Çıkış kriteri karşılandı:** çizilen/yüklenen bahçe kaydedilir, yenilemede yerinde durur, alan PostGIS UTM hesabıyla eşleşir (`tests/test_gardens_api.py`), geçersiz sınır ve alan sınırları Türkçe mesajla reddedilir.
 
 ### Adım 5 — Bahçe sayfası: Sentinel-2 NDVI (Planetary Computer), tarih şeridi, grafik, uyarılar
 

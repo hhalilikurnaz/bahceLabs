@@ -21,7 +21,7 @@ cp bahcelab-backend/.env.example bahcelab-backend/.env
 # 4. Tablolar (Alembic)
 make db-migrate
 
-# 5. Geliştirme kullanıcısı: test@bahcelab.com / test1234
+# 5. Geliştirme verisi: test@bahcelab.com / test1234 kullanıcısı + Erdemli/Tömük'te örnek limon bahçesi (~26 dekar)
 make db-seed
 ```
 
@@ -72,6 +72,21 @@ curl -c jar.txt -X POST http://localhost:8001/auth/login \
   -d '{"email": "test@bahcelab.com", "password": "test1234"}'
 curl -b jar.txt http://localhost:8001/planning/plans
 ```
+
+## Bahçeler (`/gardens`)
+
+Girişli kullanıcının kendi workspace'indeki bahçeler. Sınır GeoJSON `Polygon`/`MultiPolygon` (EPSG:4326,
+`[boylam, enlem]`). **Alan istemciden alınmaz**: sunucu `ST_Area(ST_Transform(geom, 32636)) / 1000` ile dekar olarak hesaplar.
+
+| Uç nokta | Açıklama |
+|----------|----------|
+| `GET /gardens` | Bahçe listesi |
+| `POST /gardens` | `{ad, urun, cesit?, dikim_yili?, geometry, il?, ilce?}`; `urun`: limon, portakal, mandalina, greyfurt, diger |
+| `POST /gardens/measure` | `{geometry}` → `{alan_dekar, alan_m2}`; kaydetmeden doğrulama |
+| `GET/PATCH/DELETE /gardens/{id}` | PATCH'te yalnızca gönderilen alanlar değişir; `geometry` gelirse alan yeniden hesaplanır |
+
+Geçersiz sınır (kendini kesen), alan < 0,5 dekar veya > 5.000 dekar için `422` ve Türkçe mesaj döner
+(`error.code = INVALID_GEOMETRY`). Başka kullanıcının bahçesi `404`.
 
 ## Test
 

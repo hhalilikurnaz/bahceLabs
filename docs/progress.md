@@ -28,7 +28,7 @@
 /                  → Kurumsal landing (marketing) ✅
 /blog              → Blog placeholder ✅
 /login, /register  → Giriş / kayıt (gerçek backend auth) ✅
-/bahcem            → Giriş sonrası ana sayfa (şimdilik boş; Adım 3) ⬜
+/bahcem            → Giriş sonrası: tam ekran uydu haritası, bahçe ekleme/düzenleme (Adım 3–4) ✅
 /planning          → Planlama Merkezi (B1) ✅ — ProtectedRoute
 /planning/:planId  → Workspace shell (B0) ✅ — harita/polygon henüz yok (B2)
 Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sırada

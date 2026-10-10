@@ -8,6 +8,7 @@ import { useMap } from './useMap'
 
 const SOURCE = 'gardens'
 const FILL = 'gardens-fill'
+const CASING = 'gardens-selected-casing'
 const LINE = 'gardens-line'
 const DRAFT_SOURCE = 'garden-draft'
 const DRAFT_FILL = 'garden-draft-fill'
@@ -41,8 +42,16 @@ export function GardenLayers() {
         source: SOURCE,
         paint: {
           'fill-color': accent,
-          'fill-opacity': ['case', ['get', 'selected'], 0.4, 0.24],
+          'fill-opacity': ['case', ['get', 'selected'], 0.45, 0.2],
         },
+      })
+      // Seçili bahçe: açık renkli çerçeve + kalın yeşil kenar
+      map.addLayer({
+        id: CASING,
+        type: 'line',
+        source: SOURCE,
+        filter: ['==', ['get', 'selected'], true],
+        paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.85 },
       })
       map.addLayer({
         id: LINE,
@@ -50,7 +59,7 @@ export function GardenLayers() {
         source: SOURCE,
         paint: {
           'line-color': accent,
-          'line-width': ['case', ['get', 'selected'], 3.5, 2],
+          'line-width': ['case', ['get', 'selected'], 4, 2],
         },
       })
     }

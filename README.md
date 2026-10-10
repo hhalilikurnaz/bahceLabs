@@ -25,7 +25,7 @@ make docker-up
 make backend-install
 cp bahcelab-backend/.env.example bahcelab-backend/.env
 make db-migrate
-make db-seed              # test@bahcelab.com / test1234 (yalnızca geliştirme)
+make db-seed              # test@bahcelab.com / test1234 + örnek bahçe (yalnızca geliştirme)
 make backend-dev          # http://localhost:8001
 
 # Frontend (ayrı terminal)
@@ -50,7 +50,7 @@ Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API
 |-------|----------|
 | `make docker-up` | PostgreSQL + PostGIS başlat |
 | `make db-migrate` | Alembic migration'larını uygula |
-| `make db-seed` | Geliştirme kullanıcısı (test@bahcelab.com / test1234) |
+| `make db-seed` | Geliştirme kullanıcısı (test@bahcelab.com / test1234) ve örnek limon bahçesi |
 | `make backend-dev` | FastAPI dev server (port 8001) |
 | `make backend-test` | Backend testleri |
 | `npm run dev` | Frontend dev server |
