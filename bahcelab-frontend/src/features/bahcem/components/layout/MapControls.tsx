@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Marker } from 'maplibre-gl'
 import { Check, Layers, LocateFixed, Loader2, Minus, Plus } from 'lucide-react'
 import { BASEMAPS } from '../../map/mapStyles'
+import { useNdviView } from '../../hooks/useNdviView'
 import { useMap } from '../../map/useMap'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from './toastContext'
@@ -11,6 +12,17 @@ const controlButton =
 
 function LayerSwitcher() {
   const { basemap, setBasemap } = useMap()
+  const { gardenId, available, data } = useNdviView()
+  const ndviVisible = useBahcemStore((s) => s.ndviVisible)
+  const setNdviVisible = useBahcemStore((s) => s.setNdviVisible)
+  const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
+  const ndviHint = available
+    ? 'Seçili bahçenin uydu görüntüsü'
+    : !gardenId
+      ? 'Bir bahçe seçin'
+      : processing
+        ? 'Görüntüler işleniyor…'
+        : 'Kullanılabilir görüntü yok'
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -70,15 +82,19 @@ function LayerSwitcher() {
           <div className="my-1 h-px bg-app-border" />
           <button
             type="button"
-            role="menuitemradio"
-            aria-checked={false}
-            disabled
-            className="flex w-full cursor-not-allowed items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] text-app-text-dim"
+            role="menuitemcheckbox"
+            aria-checked={available && ndviVisible}
+            disabled={!available}
+            onClick={() => setNdviVisible(!ndviVisible)}
+            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] transition-colors ${
+              available ? 'text-app-text hover:bg-app-card' : 'cursor-not-allowed text-app-text-dim'
+            }`}
           >
             <span>
               NDVI
-              <span className="block text-[11px]">Bahçe ekleyince</span>
+              <span className="block text-[11px] text-app-text-dim">{ndviHint}</span>
             </span>
+            {available && ndviVisible && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
           </button>
         </div>
       )}

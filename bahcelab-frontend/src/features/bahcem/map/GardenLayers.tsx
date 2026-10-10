@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl'
 import { useGardens } from '../api/useGardens'
 import type { GardenGeometry } from '../api/types'
+import { useNdviView } from '../hooks/useNdviView'
 import { useBahcemStore } from '../stores/bahcemStore'
 import { cssColor } from './cssColor'
 import { useMap } from './useMap'
@@ -28,6 +29,7 @@ export function GardenLayers() {
   const draft = useBahcemStore((s) => s.draft)
   const imported = useBahcemStore((s) => s.imported)
   const selectGarden = useBahcemStore((s) => s.selectGarden)
+  const { shown: ndviShown } = useNdviView()
 
   // Kaynak ve katmanlar
   useEffect(() => {
@@ -42,7 +44,7 @@ export function GardenLayers() {
         source: SOURCE,
         paint: {
           'fill-color': accent,
-          'fill-opacity': ['case', ['get', 'selected'], 0.45, 0.2],
+          'fill-opacity': ['case', ['get', 'ndvi'], 0, ['get', 'selected'], 0.45, 0.2],
         },
       })
       // Seçili bahçe: açık renkli çerçeve + kalın yeşil kenar
@@ -92,11 +94,12 @@ export function GardenLayers() {
         .map((g) => ({
           type: 'Feature' as const,
           id: g.id,
-          properties: { id: g.id, selected: g.id === selectedId },
+          // NDVI gösterilirken seçili bahçenin yeşil dolgusu kalkar: renkler görünsün
+          properties: { id: g.id, selected: g.id === selectedId, ndvi: g.id === selectedId && ndviShown },
           geometry: g.geometry,
         })),
     })
-  }, [map, styleVersion, gardens, selectedId, editingId])
+  }, [map, styleVersion, gardens, selectedId, editingId, ndviShown])
 
   // Taslak: form açıkken tek sınır; dosyadan çok poligon geldiğinde seçim bitene kadar hepsi
   useEffect(() => {

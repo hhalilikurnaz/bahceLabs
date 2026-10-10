@@ -3,7 +3,9 @@ import { AttributionControl, Map as MapLibreMap, setWorkerUrl } from 'maplibre-g
 // Worker dosyası paketlenirken otomatik bulunamaz; Vite'a varlık olarak yayımlatıp adresini veriyoruz
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '../bahcem.css'
 import { MapContext } from './MapContext'
+import { getApiBaseUrl } from '@/lib/apiClient'
 import { buildStyle, getMaptilerKey, type BasemapId } from './mapStyles'
 import { loadView, saveView } from './viewStorage'
 
@@ -46,6 +48,9 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       center: view.center,
       zoom: view.zoom,
       attributionControl: false,
+      // NDVI PNG'leri yetkili uç noktadan gelir: çerez (httpOnly oturum) her koşulda gönderilsin
+      transformRequest: (url) =>
+        url.includes(`${getApiBaseUrl()}/gardens/`) ? { url, credentials: 'include' } : undefined,
       dragRotate: false,
       pitchWithRotate: false,
     })

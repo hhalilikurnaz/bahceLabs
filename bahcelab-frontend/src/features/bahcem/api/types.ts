@@ -27,6 +27,9 @@ export interface Garden {
   il: string | null
   ilce: string | null
   createdAt: string
+  /** Son geçerli (bulutsuz) NDVI gözleminin ortalaması ve tarihi; yoksa null */
+  sonNdviOrtalama: number | null
+  sonNdviTarihi: string | null
 }
 
 export interface GardenInput {

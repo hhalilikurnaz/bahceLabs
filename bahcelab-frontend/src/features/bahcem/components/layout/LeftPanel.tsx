@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Search, Sprout, TriangleAlert } from 'lucide-react'
-import { describeError } from '../../api/gardensApi'
 import type { Garden } from '../../api/types'
-import { useDeleteGarden, useGardens, useUpdateGarden } from '../../api/useGardens'
+import { useGardens } from '../../api/useGardens'
 import { useFocusGarden } from '../../map/useFocusGarden'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { AddGardenMenu } from '../garden/AddGardenMenu'
-import { ConfirmDialog } from '../garden/ConfirmDialog'
+import { GardenDetail } from '../garden/GardenDetail'
 import { GardenForm } from '../garden/GardenForm'
 import { GardenListItem } from '../garden/GardenListItem'
 import { ImportPicker } from '../garden/ImportPicker'
-import { useToast } from './toastContext'
+import { useGardenActions } from '../garden/useGardenActions'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const SEASONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
@@ -19,18 +18,13 @@ function GardenList() {
   const { data: gardens, isLoading, isError, refetch } = useGardens()
   const selectedId = useBahcemStore((s) => s.selectedGardenId)
   const selectGarden = useBahcemStore((s) => s.selectGarden)
-  const startEditingBoundary = useBahcemStore((s) => s.startEditingBoundary)
   const season = useBahcemStore((s) => s.season)
   const setSeason = useBahcemStore((s) => s.setSeason)
   const busy = useBahcemStore((s) => s.mode !== 'idle')
-  const toast = useToast()
   const { focusGarden } = useFocusGarden()
-  const update = useUpdateGarden()
-  const remove = useDeleteGarden()
+  const actions = useGardenActions()
 
   const [query, setQuery] = useState('')
-  const [toDelete, setToDelete] = useState<Garden | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const visible = useMemo(() => {
     const q = query.trim().toLocaleLowerCase('tr-TR')
@@ -41,36 +35,6 @@ function GardenList() {
   function select(garden: Garden) {
     selectGarden(garden.id)
     focusGarden(garden)
-  }
-
-  async function rename(garden: Garden, name: string) {
-    try {
-      await update.mutateAsync({ id: garden.id, patch: { ad: name } })
-    } catch (err) {
-      toast.show(describeError(err))
-      throw err
-    }
-  }
-
-  function editBoundary(garden: Garden) {
-    if (garden.geometry.type !== 'Polygon' || garden.geometry.coordinates.length !== 1) {
-      toast.show('Çok parçalı veya delikli bahçelerin sınırı şimdilik düzenlenemez.')
-      return
-    }
-    startEditingBoundary(garden.id)
-  }
-
-  function confirmDelete() {
-    if (!toDelete) return
-    setDeleteError(null)
-    remove.mutate(toDelete.id, {
-      onSuccess: () => {
-        if (selectedId === toDelete.id) selectGarden(null)
-        toast.show(`“${toDelete.ad}” silindi.`)
-        setToDelete(null)
-      },
-      onError: (err) => setDeleteError(describeError(err)),
-    })
   }
 
   const hasGardens = (gardens?.length ?? 0) > 0
@@ -116,7 +80,7 @@ function GardenList() {
         </div>
       </div>
 
-      <div className={`min-h-0 flex-1 overflow-y-auto px-3 pb-3 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
+      <div data-scroll-box className={`relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
         {isLoading ? (
           <ul className="space-y-2" aria-label="Bahçeler yükleniyor">
             {[0, 1, 2].map((i) => (
@@ -160,29 +124,16 @@ function GardenList() {
                 garden={garden}
                 selected={garden.id === selectedId}
                 onSelect={select}
-                onRename={rename}
-                onEditBoundary={editBoundary}
-                onDelete={(g) => {
-                  setDeleteError(null)
-                  setToDelete(g)
-                }}
+                onRename={actions.rename}
+                onEditBoundary={actions.editBoundary}
+                onDelete={actions.requestDelete}
               />
             ))}
           </ul>
         )}
       </div>
 
-      {toDelete && (
-        <ConfirmDialog
-          title="Bahçe silinsin mi?"
-          message={`“${toDelete.ad}” ve sınırı kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
-          confirmLabel="Sil"
-          pending={remove.isPending}
-          error={deleteError}
-          onConfirm={confirmDelete}
-          onCancel={() => setToDelete(null)}
-        />
-      )}
+      {actions.dialog}
     </>
   )
 }
@@ -190,6 +141,9 @@ function GardenList() {
 export function LeftPanel() {
   const open = useBahcemStore((s) => s.leftPanelOpen)
   const mode = useBahcemStore((s) => s.mode)
+  const selectedId = useBahcemStore((s) => s.selectedGardenId)
+  const { data: gardens } = useGardens()
+  const selected = selectedId ? gardens?.find((g) => g.id === selectedId) : undefined
 
   return (
     <aside
@@ -200,7 +154,15 @@ export function LeftPanel() {
         open ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-6 opacity-0'
       }`}
     >
-      {mode === 'form' ? <GardenForm /> : mode === 'import-pick' ? <ImportPicker /> : <GardenList />}
+      {mode === 'form' ? (
+        <GardenForm />
+      ) : mode === 'import-pick' ? (
+        <ImportPicker />
+      ) : selected && mode === 'idle' ? (
+        <GardenDetail key={selected.id} garden={selected} />
+      ) : (
+        <GardenList />
+      )}
     </aside>
   )
 }

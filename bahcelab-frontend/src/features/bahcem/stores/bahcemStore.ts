@@ -35,6 +35,9 @@ interface BahcemState {
   /** Çizim/düzenleme sırasındaki canlı alan (dekar); null = henüz hesaplanamıyor */
   liveAreaDekar: number | null
   mapZoom: number
+  /** Haritada gösterilen NDVI görüntüsünün tarihi; null = en son geçerli görüntü */
+  ndviDate: string | null
+  ndviVisible: boolean
 
   toggleLeftPanel: () => void
   setLeftPanelOpen: (open: boolean) => void
@@ -43,6 +46,8 @@ interface BahcemState {
   selectGarden: (id: string | null) => void
   setMapZoom: (zoom: number) => void
   setLiveArea: (dekar: number | null) => void
+  setNdviDate: (tarih: string | null) => void
+  setNdviVisible: (visible: boolean) => void
 
   startDrawing: () => void
   startImportPick: (polygons: ImportedPolygon[]) => void
@@ -71,12 +76,18 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   selectedGardenId: null,
   ...flowReset,
   mapZoom: 0,
+  ndviDate: null,
+  ndviVisible: true,
 
   toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
   setSeason: (season) => set({ season }),
-  selectGarden: (id) => set({ selectedGardenId: id }),
+  // Bahçe değişince tarih seçimi sıfırlanır (her bahçe en son görüntüyle açılır)
+  selectGarden: (id) =>
+    set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, ndviDate: null })),
+  setNdviDate: (ndviDate) => set({ ndviDate }),
+  setNdviVisible: (ndviVisible) => set({ ndviVisible }),
   setMapZoom: (mapZoom) => set({ mapZoom }),
   setLiveArea: (liveAreaDekar) => set({ liveAreaDekar }),
 

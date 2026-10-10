@@ -2,19 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal, Pencil, Trash2, Spline } from 'lucide-react'
 import type { Garden } from '../../api/types'
 import { formatDecare, largestOuterRing, silhouettePath } from '../../lib/geo'
+import { formatNdvi, ndviColor } from '../../lib/ndvi'
 
 export interface GardenListItemProps {
   garden: Garden
   selected?: boolean
-  /** Son geçerli NDVI ortalaması (Adım 5); yoksa gösterilmez */
-  ndvi?: number | null
   onSelect: (garden: Garden) => void
   onRename: (garden: Garden, name: string) => Promise<void>
   onEditBoundary: (garden: Garden) => void
   onDelete: (garden: Garden) => void
 }
 
-function NdviBadge({ value }: { value: number | null | undefined }) {
+function NdviBadge({ value }: { value: number | null }) {
   if (value == null) {
     return (
       <span className="rounded-md bg-app-bg/60 px-2 py-0.5 text-[11px] font-medium text-app-text-dim">
@@ -22,9 +21,13 @@ function NdviBadge({ value }: { value: number | null | undefined }) {
       </span>
     )
   }
+  const color = ndviColor(value)
   return (
-    <span className="rounded-md bg-app-accent-soft px-2 py-0.5 text-[11px] font-semibold text-app-accent">
-      NDVI {value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    <span
+      className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
+      style={{ color, backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)` }}
+    >
+      NDVI {formatNdvi(value)}
     </span>
   )
 }
@@ -32,7 +35,6 @@ function NdviBadge({ value }: { value: number | null | undefined }) {
 export function GardenListItem({
   garden,
   selected = false,
-  ndvi,
   onSelect,
   onRename,
   onEditBoundary,
@@ -46,10 +48,18 @@ export function GardenListItem({
   const [saving, setSaving] = useState(false)
 
   const path = silhouettePath(largestOuterRing(garden.geometry))
+  const ndvi = garden.sonNdviOrtalama
+  const tint = ndvi == null ? null : ndviColor(ndvi)
 
   // Haritadan seçilince listede görünür kıl
   useEffect(() => {
-    if (selected) rowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    // Yalnızca liste kutusunun kendi kaydırması: scrollIntoView üst düzeni de kaydırabilir
+    const row = rowRef.current
+    const box = row?.closest<HTMLElement>('[data-scroll-box]')
+    if (!selected || !row || !box) return
+    if (row.offsetTop < box.scrollTop || row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight) {
+      box.scrollTo({ top: row.offsetTop - 8, behavior: 'smooth' })
+    }
   }, [selected])
 
   useEffect(() => {
@@ -97,7 +107,13 @@ export function GardenListItem({
       <div className="flex min-w-0 flex-1 items-center gap-3 p-2.5">
         <svg viewBox="0 0 40 40" className="h-12 w-12 shrink-0 rounded-lg bg-app-bg/70" aria-hidden>
           {path && (
-            <path d={path} className="fill-app-accent/25 stroke-app-accent" strokeWidth={1.5} strokeLinejoin="round" />
+            <path
+              d={path}
+              className={tint ? undefined : 'fill-app-accent/25 stroke-app-accent'}
+              style={tint ? { fill: `color-mix(in srgb, ${tint} 55%, transparent)`, stroke: tint } : undefined}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+            />
           )}
         </svg>
 

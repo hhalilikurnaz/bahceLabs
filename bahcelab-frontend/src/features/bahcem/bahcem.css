@@ -1,0 +1,36 @@
+/* Harita üstündeki bilgi kartı (MapLibre Popup) — koyu uygulama teması */
+.bahcem-popup .maplibregl-popup-content {
+  background: var(--color-app-panel);
+  color: var(--color-app-text);
+  border: 1px solid var(--color-app-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+.bahcem-popup .maplibregl-popup-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-app-danger);
+}
+.bahcem-popup .ndvi-popup-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-app-text-dim);
+}
+.bahcem-popup .maplibregl-popup-close-button {
+  color: var(--color-app-text-muted);
+  font-size: 18px;
+  padding: 2px 8px;
+}
+.bahcem-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--color-app-panel); }
+.bahcem-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--color-app-panel); }
+.bahcem-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--color-app-panel); }
+.bahcem-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--color-app-panel); }
+
+/* NDVI küçük önizlemeleri ve harita katmanı: 10 m pikseller keskin kalsın */
+.ndvi-pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
