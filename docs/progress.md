@@ -19,7 +19,7 @@
 | Frontend API | Real mod varsayılan — Vite `/api` → backend |
 | Planlama giriş sayfası | `/planning` — Planlama Merkezi (giriş gerekli) |
 | Kurumsal site | `/` landing, `/blog` placeholder — `docs/frontend/marketing-and-auth.md` |
-| Auth (frontend) | `/login`, `/register` — localStorage stub; backend auth yok |
+| Auth | Gerçek: `/auth/*` (argon2 + JWT httpOnly cookie), `/login`, `/register`, `/bahcem` — bkz. `docs/PLAN-FAZ1.md` Adım 2 ✅ |
 | Referans UI (workspace) | Layout shell hazır — `docs/reference-design.md` |
 
 ### Nerede kaldık?
@@ -27,7 +27,8 @@
 ```
 /                  → Kurumsal landing (marketing) ✅
 /blog              → Blog placeholder ✅
-/login, /register  → Giriş / kayıt (frontend stub) ✅
+/login, /register  → Giriş / kayıt (gerçek backend auth) ✅
+/bahcem            → Giriş sonrası ana sayfa (şimdilik boş; Adım 3) ⬜
 /planning          → Planlama Merkezi (B1) ✅ — ProtectedRoute
 /planning/:planId  → Workspace shell (B0) ✅ — harita/polygon henüz yok (B2)
 Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sırada
@@ -70,7 +71,7 @@ Backend            → Plan CRUD + land endpoint hazır; BE4 planting engine sı
 
 ### Bilinen sınırlamalar ⬜
 
-- [ ] Backend kullanıcı auth (JWT/session) — kayıt verisi yalnızca `localStorage`
+- [x] Backend kullanıcı auth (JWT httpOnly cookie, refresh döndürme) — 2026-10-10
 - [x] Blog — repo içi markdown (`src/content/blog/`, 6 yazı)
 - [ ] Blog CMS / admin paneli (isteğe bağlı, ileride)
 - [ ] Landing’den planlama CTA (ürün hazır olunca)

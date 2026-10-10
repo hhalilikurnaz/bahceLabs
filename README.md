@@ -25,6 +25,7 @@ make docker-up
 make backend-install
 cp bahcelab-backend/.env.example bahcelab-backend/.env
 make db-migrate
+make db-seed              # test@bahcelab.com / test1234 (yalnızca geliştirme)
 make backend-dev          # http://localhost:8001
 
 # Frontend (ayrı terminal)
@@ -33,7 +34,7 @@ cp bahcelab-frontend/.env.example bahcelab-frontend/.env
 npm run dev               # http://localhost:5173/ (landing; port doluysa 5174, …)
 ```
 
-**Sayfalar:** `/` tanıtım (kaydırmalı Journey hero), `/blog`, `/login`, `/register`, `/planning` (giriş gerekli). Detay: [docs/frontend/marketing-and-auth.md](docs/frontend/marketing-and-auth.md).
+**Sayfalar:** `/` tanıtım (kaydırmalı Journey hero), `/blog`, `/login`, `/register`, `/bahcem` ve `/planning` (giriş gerekli; giriş sonrası `/bahcem`). Detay: [docs/frontend/marketing-and-auth.md](docs/frontend/marketing-and-auth.md).
 
 Canlıya yakın test / demo için production build kullan (`dist/` servis edilir; `src/`, `node_modules/` DevTools'ta görünmez):
 
@@ -48,6 +49,8 @@ Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API
 | Komut | Açıklama |
 |-------|----------|
 | `make docker-up` | PostgreSQL + PostGIS başlat |
+| `make db-migrate` | Alembic migration'larını uygula |
+| `make db-seed` | Geliştirme kullanıcısı (test@bahcelab.com / test1234) |
 | `make backend-dev` | FastAPI dev server (port 8001) |
 | `make backend-test` | Backend testleri |
 | `npm run dev` | Frontend dev server |

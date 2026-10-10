@@ -89,15 +89,20 @@ Kare üretimi için referans repo: `scripts/extract-frames.sh`, `docs/VIDEO.md`.
 
 | Dosya | Rol |
 |-------|-----|
-| `AuthContext.tsx` | Oturum, `login` / `register` / `logout` |
-| `authStorage.ts` | `localStorage` — kullanıcı listesi + oturum |
+| `AuthContext.tsx` | Oturum (`GET /auth/me` ile yüklenir), `login` / `register` / `logout` |
+| `authConfig.ts` | `REGISTRATION_ENABLED` — `VITE_REGISTRATION_ENABLED=true` ise `/register` gerçek form gösterir |
 | `AuthShell.tsx` | Sol panel (görsel + metin) / sağ form düzeni |
-| `ProtectedRoute.tsx` | Planlama rotaları koruması |
-| `LoginPage.tsx`, `RegisterPage.tsx` | Formlar |
+| `ProtectedRoute.tsx` | Korumalı rotalar; oturum kontrolü bitene kadar bekler, giriş yoksa `/login` |
+| `LoginPage.tsx`, `RegisterPage.tsx` | Formlar; başarılı girişte `/bahcem` (korumalı bir sayfadan yönlendirildiyse oraya) |
 
-### Önemli sınırlama
+API istemcisi `src/lib/apiClient.ts`: `credentials: 'include'`; 401 gelince `/auth/refresh` ile oturumu
+bir kez yeniler ve isteği tekrarlar, olmazsa kullanıcıyı çıkış durumuna alır (`ProtectedRoute` `/login`'e yönlendirir).
 
-Kimlik doğrulama **henüz backend’e bağlı değil**. Kayıt bilgileri yalnızca tarayıcıda saklanır (geliştirme / erken erişim). Phase 1 A gerçek auth entegrasyonu geldiğinde `AuthContext` ve API client güncellenecek.
+### Kimlik doğrulama
+
+Gerçek backend auth'a bağlı (`/auth/*`, argon2 + JWT). Token'lar **httpOnly cookie**'dir, frontend token
+saklamaz. Yerelde Vite proxy (`/api` → `:8001`) sayesinde tarayıcı ve API aynı origin'dir. Ayrıntı:
+[bahcelab-backend/README.md](../../bahcelab-backend/README.md#kimlik-doğrulama).
 
 ## Marka ve site meta
 
