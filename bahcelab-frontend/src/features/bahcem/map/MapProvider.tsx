@@ -27,7 +27,12 @@ export function MapProvider({ userId, children }: MapProviderProps) {
 
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [basemap, setBasemapState] = useState<BasemapId>(initialView.basemap)
-  const [styleVersion, setStyleVersion] = useState(0)
+  // 'style.load' sayacı harita örneğine bağlı tutulur; yeni harita 0'dan başlar
+  const [styleLoads, setStyleLoads] = useState<{ map: MapLibreMap | null; n: number }>({
+    map: null,
+    n: 0,
+  })
+  const styleVersion = styleLoads.map !== null && styleLoads.map === map ? styleLoads.n : 0
   const usingFallback = !getMaptilerKey()
 
   useEffect(() => {
@@ -57,7 +62,9 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       }, 400)
     }
     instance.on('moveend', persist)
-    instance.on('style.load', () => setStyleVersion((v) => v + 1))
+    instance.on('style.load', () =>
+      setStyleLoads((prev) => ({ map: instance, n: prev.map === instance ? prev.n + 1 : 1 })),
+    )
 
     mapRef.current = instance
     setMap(instance)

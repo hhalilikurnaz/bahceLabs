@@ -8,8 +8,8 @@ export interface MapContextValue {
   basemap: BasemapId
   setBasemap: (basemap: BasemapId) => void
   /**
-   * Altlık değişince (setStyle) eklenen katmanlar silinir. Katman/çizim ekleyen sonraki adımlar
-   * bu sayacı efekt bağımlılığı yapıp katmanlarını yeniden ekler.
+   * Stil yüklenince artar (0 = henüz yüklenmedi). Altlık değişince (setStyle) eklenen katmanlar
+   * silinir; katman/çizim ekleyen kod `styleVersion > 0` iken ekler ve bunu efekt bağımlılığı yapar.
    */
   styleVersion: number
   /** MapTiler anahtarı yoksa true: OSM yedek altlığı gösterilir */

@@ -2,8 +2,11 @@ import { TriangleAlert } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { topAreaClass } from './topArea'
+import { GardenLayers } from '../../map/GardenLayers'
+import { MapEffects } from '../../map/MapEffects'
 import { MapProvider } from '../../map/MapProvider'
 import { useMap } from '../../map/useMap'
+import { DrawController } from '../draw/DrawController'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { IconRail } from './IconRail'
 import { LeftPanel } from './LeftPanel'
@@ -46,10 +49,13 @@ export function BahcemLayout() {
     <div className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text">
       <ToastProvider>
         <MapProvider userId={user.id}>
+          <GardenLayers />
+          <MapEffects />
           <IconRail />
           <LeftPanel />
           <PlaceSearch />
           <FallbackNotice />
+          <DrawController />
           <CopilotButton />
           <MapControls />
           <CopilotDrawer />

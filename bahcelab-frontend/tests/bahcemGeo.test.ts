@@ -24,9 +24,10 @@ describe('parseCoordinates', () => {
 })
 
 describe('formatDecare', () => {
-  it('m² değerini dekara çevirir', () => {
-    expect(formatDecare(12500)).toBe('13 da')
-    expect(formatDecare(4200)).toBe('4,2 da')
+  it('dekarı okunur biçimlendirir', () => {
+    expect(formatDecare(26.008)).toBe('26,0 dekar')
+    expect(formatDecare(0.55)).toBe('0,55 dekar')
+    expect(formatDecare(1234.5)).toBe('1.235 dekar')
     expect(formatDecare(null)).toBe('—')
   })
 })

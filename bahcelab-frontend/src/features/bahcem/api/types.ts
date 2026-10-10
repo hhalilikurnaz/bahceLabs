@@ -1,0 +1,42 @@
+export const PRODUCTS = [
+  { value: 'limon', label: 'Limon' },
+  { value: 'portakal', label: 'Portakal' },
+  { value: 'mandalina', label: 'Mandalina' },
+  { value: 'greyfurt', label: 'Greyfurt' },
+  { value: 'diger', label: 'Diğer' },
+] as const
+
+export type Urun = (typeof PRODUCTS)[number]['value']
+
+export type Position = [number, number]
+export type PolygonCoordinates = Position[][]
+
+export type GardenGeometry =
+  | { type: 'Polygon'; coordinates: PolygonCoordinates }
+  | { type: 'MultiPolygon'; coordinates: PolygonCoordinates[] }
+
+export interface Garden {
+  id: string
+  ad: string
+  urun: Urun
+  cesit: string | null
+  dikimYili: number | null
+  geometry: GardenGeometry
+  /** Sunucuda ST_Area(ST_Transform(geom, 32636)) / 1000 ile hesaplanır */
+  alanDekar: number
+  il: string | null
+  ilce: string | null
+  createdAt: string
+}
+
+export interface GardenInput {
+  ad: string
+  urun: Urun
+  cesit: string | null
+  dikimYili: number | null
+  geometry: GardenGeometry
+  il: string | null
+  ilce: string | null
+}
+
+export type GardenPatch = Partial<GardenInput>

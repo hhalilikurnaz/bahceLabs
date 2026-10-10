@@ -61,3 +61,39 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
       bbox: f.bbox,
     }))
 }
+
+export interface AdminArea {
+  il: string | null
+  ilce: string | null
+}
+
+interface ReverseResponse {
+  features?: { place_type?: string[]; text?: string }[]
+}
+
+const DISTRICT_TYPES = ['joint_municipality', 'municipality', 'municipal_district']
+
+/**
+ * MapTiler ters geocoding: Türkiye'de il `county`, ilçe `joint_municipality`/`municipality`
+ * olarak döner. Bulunamayan alan null kalır (kullanıcı elle girebilir).
+ */
+export async function reverseGeocode(
+  lng: number,
+  lat: number,
+  signal?: AbortSignal,
+): Promise<AdminArea> {
+  const key = getMaptilerKey()
+  if (!key) return { il: null, ilce: null }
+
+  const params = new URLSearchParams({ key, language: 'tr' })
+  const response = await fetch(`https://api.maptiler.com/geocoding/${lng},${lat}.json?${params}`, {
+    signal,
+  })
+  if (!response.ok) throw new Error(`Geocoding ${response.status}`)
+
+  const features = ((await response.json()) as ReverseResponse).features ?? []
+  const textOf = (types: string[]) =>
+    features.find((f) => f.place_type?.some((t) => types.includes(t)))?.text?.trim() || null
+
+  return { il: textOf(['county']), ilce: textOf(DISTRICT_TYPES) }
+}
