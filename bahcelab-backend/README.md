@@ -114,6 +114,24 @@ ve tüm indeksler aynı okumadan hesaplanır: NDVI, MSAVI2, NDRE, NDMI, CIgreen 
 - Eski (yalnız NDVI) kayıtlar migration `007` ile yeni tabloya taşınır; eksik indeksler yeniden indirmeden değil, yalnızca gereken bantlar okunarak tamamlanır.
 - `make db-seed` ağsız demo için tüm indekslerle örnek seri ekler (`kaynak = ornek`).
 
+## Hava durumu (`/gardens/{id}/weather`)
+
+Kaynak Open-Meteo (anahtarsız ücretsiz plan; atıf: CC BY 4.0). Sağlayıcı `domain/weather/provider.py` arayüzünün arkasındadır;
+ticari kullanımda `OPEN_METEO_API_KEY` ayarlanır ya da başka bir sağlayıcı sınıfı yazılıp `get_provider()` değiştirilir.
+
+| Uç nokta | Açıklama |
+|----------|----------|
+| `GET /gardens/{id}/weather` | Şu an, 7 gün saatlik tahmin, günlük özet, ilaçlama penceresi (saat saat uygun / sınırda / uygun değil + nedenleri), don ve sıcak uyarıları, su dengesi, yağış toplamları |
+| `GET /gardens/{id}/weather/history?from&to` | Günlük geçmiş: min/max sıcaklık, yağış, ET₀ (varsayılan son 13 ay) |
+| `GET /weather/ozet` | Tüm bahçelerin kısa özeti (sol şerit listesi) |
+| `GET /indeks/uyari-ozeti` | Bahçe başına aktif uydu uyarıları (liste simgeleri) |
+
+- Bahçe merkezi 0,05° hücreye yuvarlanır; yakın bahçeler tek istek paylaşır. Tahmin 1 saat önbelleklenir (`WEATHER_CACHE_MINUTES`), geçmiş günde bir tamamlanır (`weather_daily`).
+- Ağ yoksa son önbellek `onbellekten: true` ve `guncelleme` ile döner; hiç önbellek yoksa 503.
+- Eşikler: ilaçlama rüzgâr < 15 km/s, hamle < 25 km/s, yağış yok, sonraki 6 saatte olasılık < %30, 10–28 °C; don ≤ 2 °C (sarı) / ≤ 0 °C (kırmızı); sıcak ≥ 38 °C. Kurallar `domain/weather/rules.py`'dedir.
+- Ayarlar: `OPEN_METEO_API_KEY`, `WEATHER_TIMEOUT_SECONDS`, `WEATHER_CACHE_MINUTES`, `WEATHER_CELL_DEGREES`, `WEATHER_HISTORY_DAYS`.
+- `make db-seed` Tömük için ağsız örnek hava verisi yazar (`kaynak = ornek`).
+
 ## Test
 
 ```bash

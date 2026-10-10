@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     ndvi_refresh_hours: int = 12
 
     # Hava durumu (Open-Meteo). Ticari kullanımda ücretli plan anahtarı buraya; sağlayıcı değişimi domain/weather/provider.py
-    weather_enabled: bool = True
     open_meteo_api_key: str | None = None
     weather_timeout_seconds: float = 8.0
     weather_cache_minutes: int = 60

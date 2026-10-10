@@ -373,10 +373,10 @@ class WeatherService:
 
 
 def _next_spray(forecast: Forecast, now: str) -> IlaclamaAraligi | None:
-    """Şimdiden sonraki ilk kesintisiz (en az 2 saat) uygun ilaçlama aralığı."""
+    """Şimdiden sonraki ilk kesintisiz (en az 2 saat) gündüz ilaçlama aralığı."""
     spray = rules.classify_spray_hours(forecast.hourly)
     ok = [
-        s.durum == "uygun" and h.zaman[:13] >= now[:13]
+        s.durum == "uygun" and h.zaman[:13] >= now[:13] and rules.is_daytime(h.zaman)
         for h, s in zip(forecast.hourly, spray, strict=True)
     ]
     i = 0

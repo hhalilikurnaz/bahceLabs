@@ -21,6 +21,8 @@ PROB_OK, PROB_EDGE = 30.0, 50.0  # % (sonraki 6 saatte en yüksek yağış olas�
 TEMP_OK = (10.0, 28.0)
 TEMP_EDGE = (8.0, 30.0)
 LOOKAHEAD_HOURS = 6
+# «En iyi aralık» yalnızca gündüz saatlerinden seçilir (gece uygun saat olsa da önerilmez)
+DAY_START_HOUR, DAY_END_HOUR = 5, 21
 
 # --- Don ve sıcak
 FROST_YELLOW, FROST_RED = 2.0, 0.0
@@ -96,6 +98,10 @@ def classify_spray_hours(hourly: list[HourlyPoint]) -> list[SprayHour]:
     return result
 
 
+def is_daytime(moment: str) -> bool:
+    return DAY_START_HOUR <= int(moment[11:13]) < DAY_END_HOUR
+
+
 @dataclass
 class SpraySummary:
     uygun_saat: int
@@ -109,9 +115,9 @@ def summarize_spray_day(hours: list[tuple[str, SprayHour]]) -> SpraySummary:
     counts = {"uygun": 0, "sinirda": 0, "uygun_degil": 0}
     best: tuple[int, int] | None = None
     start: int | None = None
-    for i, (_, hour) in enumerate(hours):
+    for i, (moment, hour) in enumerate(hours):
         counts[hour.durum] += 1
-        if hour.durum == "uygun":
+        if hour.durum == "uygun" and is_daytime(moment):
             start = i if start is None else start
             if best is None or (i - start) > (best[1] - best[0]):
                 best = (start, i)
@@ -120,7 +126,7 @@ def summarize_spray_day(hours: list[tuple[str, SprayHour]]) -> SpraySummary:
     window = None
     if best is not None:
         first, last = best
-        window = (hours[first][0][11:16], f"{(int(hours[last][0][11:13]) + 1) % 24:02d}:00")
+        window = (hours[first][0][11:16], f"{int(hours[last][0][11:13]) + 1:02d}:00")
     return SpraySummary(counts["uygun"], counts["sinirda"], counts["uygun_degil"], window)
 
 

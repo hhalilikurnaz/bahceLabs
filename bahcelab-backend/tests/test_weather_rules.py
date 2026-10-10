@@ -208,3 +208,15 @@ def test_rain_total_is_none_when_data_is_mostly_missing():
     rows = {today - timedelta(days=1): DailyPoint(tarih=today - timedelta(days=1), yagis=3.0)}
     total = rules.rain_total(rows, today - timedelta(days=7), today - timedelta(days=1))
     assert total.mm is None and total.gecen_yil_mm is None
+
+
+def test_best_window_is_chosen_from_daytime_only():
+    # Gece (00:00–04:00) uygun saatler olsa da pencere olarak önerilmez; 24:00 etiketi gün sonunu gösterir
+    data = [
+        HourlyPoint(zaman=f"2026-10-12T{h:02d}:00", sicaklik=20.0, ruzgar=5.0, hamle=8.0, yagis_olasiligi=0.0)
+        for h in range(24)
+    ]
+    spray = rules.classify_spray_hours(data)
+    summary = rules.summarize_spray_day([(h.zaman, s) for h, s in zip(data, spray, strict=True)])
+    assert summary.uygun_saat == 24
+    assert summary.en_iyi_aralik == ("05:00", "21:00")
