@@ -57,7 +57,8 @@ async function send(path: string, options: RequestInit): Promise<Response> {
   return fetch(`${getApiBaseUrl()}${path}`, { ...options, headers, credentials: 'include' })
 }
 
-export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+/** Ham yanıt (ikili veri vb.): 401'de oturum bir kez yenilenir, hata durumunda ApiError fırlatılır. */
+export async function apiRequestRaw(path: string, options: RequestInit = {}): Promise<Response> {
   let response = await send(path, options)
 
   if (response.status === 401 && !AUTH_PATHS_WITHOUT_REFRESH.includes(path)) {
@@ -78,10 +79,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
       body?.error?.details,
     )
   }
+  return response
+}
 
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await apiRequestRaw(path, options)
   if (response.status === 204) {
     return undefined as T
   }
-
   return response.json() as Promise<T>
 }

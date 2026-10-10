@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Marker } from 'maplibre-gl'
 import { Check, Layers, LocateFixed, Loader2, Minus, Plus } from 'lucide-react'
 import { BASEMAPS } from '../../map/mapStyles'
-import { useNdviView } from '../../hooks/useNdviView'
+import { useIndexView } from '../../hooks/useIndexView'
+import { LAYER_OPTIONS } from '../../lib/indices'
 import { useMap } from '../../map/useMap'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from './toastContext'
@@ -12,11 +13,12 @@ const controlButton =
 
 function LayerSwitcher() {
   const { basemap, setBasemap } = useMap()
-  const { gardenId, available, data } = useNdviView()
-  const ndviVisible = useBahcemStore((s) => s.ndviVisible)
-  const setNdviVisible = useBahcemStore((s) => s.setNdviVisible)
+  const { gardenId, available, data, katman } = useIndexView()
+  const layerVisible = useBahcemStore((s) => s.layerVisible)
+  const setLayerVisible = useBahcemStore((s) => s.setLayerVisible)
+  const setKatman = useBahcemStore((s) => s.setKatman)
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
-  const ndviHint = available
+  const hint = available
     ? 'Seçili bahçenin uydu görüntüsü'
     : !gardenId
       ? 'Bir bahçe seçin'
@@ -80,22 +82,42 @@ function LayerSwitcher() {
             </button>
           ))}
           <div className="my-1 h-px bg-app-border" />
+          <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-text-dim">
+            Bahçe katmanı
+          </p>
           <button
             type="button"
             role="menuitemcheckbox"
-            aria-checked={available && ndviVisible}
+            aria-checked={available && layerVisible}
             disabled={!available}
-            onClick={() => setNdviVisible(!ndviVisible)}
+            onClick={() => setLayerVisible(!layerVisible)}
             className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[13px] transition-colors ${
               available ? 'text-app-text hover:bg-app-card' : 'cursor-not-allowed text-app-text-dim'
             }`}
           >
             <span>
-              NDVI
-              <span className="block text-[11px] text-app-text-dim">{ndviHint}</span>
+              Göster
+              <span className="block text-[11px] text-app-text-dim">{hint}</span>
             </span>
-            {available && ndviVisible && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
+            {available && layerVisible && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
           </button>
+          {gardenId &&
+            LAYER_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={katman === option.id}
+                onClick={() => {
+                  setKatman(option.id)
+                  setLayerVisible(true)
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-[13px] text-app-text transition-colors hover:bg-app-card"
+              >
+                {option.ad}
+                {katman === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
+              </button>
+            ))}
         </div>
       )}
     </div>

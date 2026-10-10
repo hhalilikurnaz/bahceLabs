@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, MoreHorizontal, Pencil, Spline, TriangleAlert, Trash2 } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal, Pencil, Spline, Trash2 } from 'lucide-react'
 import { describeError } from '../../api/gardensApi'
 import { PRODUCTS, type Garden } from '../../api/types'
-import { useRefreshNdvi } from '../../api/ndviApi'
-import { useNdviView } from '../../hooks/useNdviView'
+import { useRefreshIndices } from '../../api/indeksApi'
+import { useIndexView } from '../../hooks/useIndexView'
 import { formatDecare } from '../../lib/geo'
 import { formatDate } from '../../lib/dates'
-import { formatNdvi, ndviColor } from '../../lib/ndvi'
+import { INDEX_DEFS, TRUE_COLOR, formatIndexValue, indexColor, layerName, vigorLabel } from '../../lib/indices'
+import { latestIndexValue } from '../../lib/scenes'
 import { useBahcemStore } from '../../stores/bahcemStore'
-import { NdviChart } from '../ndvi/NdviChart'
-import { NdviStatusCard } from '../ndvi/NdviStatusCard'
+import { AlertsCard } from '../indeks/AlertsCard'
+import { IndexChart } from '../indeks/IndexChart'
+import { StatusCard } from '../indeks/StatusCard'
+import { ViewPanel } from '../indeks/ViewPanel'
+import { YieldCard } from '../indeks/YieldCard'
 import { useGardenActions } from './useGardenActions'
 
 const productLabel = (value: string) => PRODUCTS.find((p) => p.value === value)?.label ?? value
@@ -71,21 +75,24 @@ function ActionsMenu({
   )
 }
 
-/** Seçili bahçenin detayı: son NDVI, uyarı, grafik ve işleme durumu. */
+/** Seçili bahçenin detayı: son değer, uyarılar, görünüm ayarları, verimlilik bölgeleri, grafik ve işleme durumu. */
 export function GardenDetail({ garden }: { garden: Garden }) {
   const selectGarden = useBahcemStore((s) => s.selectGarden)
   const season = useBahcemStore((s) => s.season)
-  const setNdviDate = useBahcemStore((s) => s.setNdviDate)
-  const { data, isLoading, active } = useNdviView()
-  const refresh = useRefreshNdvi(garden.id)
+  const grafik = useBahcemStore((s) => s.grafikIndeksleri)
+  const toggleGrafik = useBahcemStore((s) => s.toggleGrafikIndeksi)
+  const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
+  const { data, scenes, isLoading, active, katman } = useIndexView()
+  const refresh = useRefreshIndices(garden.id)
   const actions = useGardenActions()
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(garden.ad)
   const [refreshError, setRefreshError] = useState<string | null>(null)
 
-  const latest = [...(data?.gozlemler ?? [])].reverse().find((o) => o.durum === 'tamam' && o.ortalama !== null)
-  const alert = data?.uyarilar[0]
+  const indexLayer = katman === TRUE_COLOR ? 'ndvi' : katman
+  const latest = latestIndexValue(scenes, indexLayer)
   const location = [garden.ilce, garden.il].filter(Boolean).join(', ')
+  const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
 
   async function commitRename() {
     const next = name.trim()
@@ -153,78 +160,64 @@ export function GardenDetail({ garden }: { garden: Garden }) {
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {isLoading || !data ? (
-          <div className="space-y-3" aria-label="NDVI yükleniyor">
+          <div className="space-y-3" aria-label="Uydu verisi yükleniyor">
             <div className="h-20 animate-pulse rounded-2xl bg-app-card" />
             <div className="h-44 animate-pulse rounded-2xl bg-app-card" />
           </div>
         ) : (
           <>
-            <section className="flex items-center justify-between gap-3 rounded-2xl bg-app-card p-3.5" aria-label="Son NDVI">
+            <section className="flex items-center justify-between gap-3 rounded-2xl bg-app-card p-3.5" aria-label="Son değer">
               {latest ? (
                 <>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wide text-app-text-dim">Son NDVI</p>
+                    <p className="text-[11px] uppercase tracking-wide text-app-text-dim">Son {INDEX_DEFS[indexLayer].ad}</p>
                     <p className="mt-0.5 text-[26px] font-semibold leading-none text-app-text">
-                      {formatNdvi(latest.ortalama)}
+                      {formatIndexValue(indexLayer, latest.ortalama)}
                     </p>
-                    <p className="mt-1.5 text-[12px] text-app-text-muted">{formatDate(latest.tarih)}</p>
+                    <p className="mt-1.5 text-[12px] text-app-text-muted" data-testid="latest-date">
+                      {formatDate(latest.tarih)}
+                    </p>
                   </div>
                   <span
                     className="rounded-full px-3 py-1 text-[12px] font-semibold"
                     style={{
-                      color: ndviColor(latest.ortalama as number),
-                      backgroundColor: `color-mix(in srgb, ${ndviColor(latest.ortalama as number)} 16%, transparent)`,
+                      color: indexColor(indexLayer, latest.ortalama),
+                      backgroundColor: `color-mix(in srgb, ${indexColor(indexLayer, latest.ortalama)} 16%, transparent)`,
                     }}
                   >
-                    {latest.ortalama! >= 0.6 ? 'Güçlü' : latest.ortalama! >= 0.4 ? 'Orta' : 'Zayıf'}
+                    {vigorLabel(indexLayer, latest.ortalama)}
                   </span>
                 </>
               ) : (
                 <p className="text-[13px] text-app-text-muted">
-                  {data.isleme?.durum === 'bekliyor' || data.isleme?.durum === 'isleniyor'
-                    ? 'İlk görüntüler hazırlanıyor…'
-                    : 'Henüz kullanılabilir NDVI görüntüsü yok.'}
+                  {processing ? 'İlk görüntüler hazırlanıyor…' : 'Henüz kullanılabilir görüntü yok.'}
                 </p>
               )}
             </section>
 
-            {alert && (
-              <section
-                role="alert"
-                className="flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3.5"
-              >
-                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden />
-                <div>
-                  <p className="text-[13px] font-semibold text-amber-200">NDVI düşüşü</p>
-                  <p className="mt-1 text-[12px] leading-snug text-app-text-muted">{alert.mesaj}</p>
-                  <button
-                    type="button"
-                    onClick={() => setNdviDate(alert.sonTarih)}
-                    className="mt-2 text-[12px] font-medium text-amber-200 underline-offset-2 hover:underline"
-                  >
-                    Son görüntüyü haritada göster
-                  </button>
-                </div>
-              </section>
-            )}
+            <AlertsCard alerts={data.uyarilar} />
 
-            {data.gozlemler.some((o) => o.durum === 'tamam') && (
+            {active || scenes?.some((s) => s.durum === 'tamam') ? <ViewPanel /> : null}
+
+            {scenes?.some((s) => s.durum === 'tamam') && <YieldCard gardenId={garden.id} />}
+
+            {scenes?.some((s) => s.durum === 'tamam') && (
               <section className="rounded-2xl bg-app-card p-3.5">
-                <NdviChart
-                  observations={data.gozlemler}
+                <IndexChart
+                  scenes={data.gozlemler}
                   season={season}
+                  active={grafik}
                   activeDate={active?.tarih ?? null}
-                  onSelect={setNdviDate}
+                  onToggle={toggleGrafik}
+                  onSelect={setSelectedDate}
                 />
               </section>
             )}
 
-            <NdviStatusCard
-              data={data}
-              refreshing={refresh.isPending}
-              onRefresh={onRefresh}
-              refreshError={refreshError}
-            />
+            <StatusCard data={data} refreshing={refresh.isPending} onRefresh={onRefresh} refreshError={refreshError} />
+            {katman !== TRUE_COLOR ? null : (
+              <p className="px-1 text-[11px] text-app-text-dim">{layerName(katman)} görüntüsü bulutsuz tarihler için üretilir.</p>
+            )}
           </>
         )}
       </div>

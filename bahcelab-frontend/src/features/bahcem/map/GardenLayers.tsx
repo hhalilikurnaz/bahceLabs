@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl'
 import { useGardens } from '../api/useGardens'
 import type { GardenGeometry } from '../api/types'
-import { useNdviView } from '../hooks/useNdviView'
+import { useIndexView } from '../hooks/useIndexView'
 import { useBahcemStore } from '../stores/bahcemStore'
 import { cssColor } from './cssColor'
 import { useMap } from './useMap'
@@ -29,7 +29,7 @@ export function GardenLayers() {
   const draft = useBahcemStore((s) => s.draft)
   const imported = useBahcemStore((s) => s.imported)
   const selectGarden = useBahcemStore((s) => s.selectGarden)
-  const { shown: ndviShown } = useNdviView()
+  const { shown: ndviShown } = useIndexView()
 
   // Kaynak ve katmanlar
   useEffect(() => {

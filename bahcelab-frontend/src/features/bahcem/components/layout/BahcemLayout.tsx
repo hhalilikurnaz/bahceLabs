@@ -4,12 +4,14 @@ import { useBahcemStore } from '../../stores/bahcemStore'
 import { topAreaClass } from './topArea'
 import { GardenLayers } from '../../map/GardenLayers'
 import { MapEffects } from '../../map/MapEffects'
-import { NdviLayer } from '../../map/NdviLayer'
+import { IndexLayer } from '../../map/IndexLayer'
+import { ZonesLayers } from '../../map/ZonesLayers'
 import { MapProvider } from '../../map/MapProvider'
 import { useMap } from '../../map/useMap'
 import { DrawController } from '../draw/DrawController'
-import { NdviDateStrip } from '../ndvi/NdviDateStrip'
-import { NdviLegend } from '../ndvi/NdviLegend'
+import { DateStrip } from '../indeks/DateStrip'
+import { IndexLegend } from '../indeks/IndexLegend'
+import { SwipeHandle } from '../indeks/SwipeHandle'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { IconRail } from './IconRail'
 import { LeftPanel } from './LeftPanel'
@@ -53,7 +55,8 @@ export function BahcemLayout() {
       <ToastProvider>
         <MapProvider userId={user.id}>
           <GardenLayers />
-          <NdviLayer />
+          <IndexLayer />
+          <ZonesLayers />
           <MapEffects />
           <IconRail />
           <LeftPanel />
@@ -61,8 +64,9 @@ export function BahcemLayout() {
           <FallbackNotice />
           <DrawController />
           <CopilotButton />
-          <NdviLegend />
-          <NdviDateStrip />
+          <SwipeHandle />
+          <IndexLegend />
+          <DateStrip />
           <MapControls />
           <CopilotDrawer />
         </MapProvider>

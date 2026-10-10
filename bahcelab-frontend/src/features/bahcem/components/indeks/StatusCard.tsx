@@ -1,16 +1,16 @@
 import { Loader2, RefreshCw, TriangleAlert } from 'lucide-react'
-import type { NdviData } from '../../api/ndviApi'
+import type { IndexData } from '../../api/indeksApi'
 import { timeAgo } from '../../lib/dates'
 
-interface NdviStatusCardProps {
-  data: NdviData
+interface StatusCardProps {
+  data: IndexData
   refreshing: boolean
   onRefresh: () => void
   refreshError: string | null
 }
 
 /** İşleme durumu (ilerleme çubuğu), hata mesajı, son kontrol ve «Şimdi güncelle». */
-export function NdviStatusCard({ data, refreshing, onRefresh, refreshError }: NdviStatusCardProps) {
+export function StatusCard({ data, refreshing, onRefresh, refreshError }: StatusCardProps) {
   const job = data.isleme
   const active = job?.durum === 'bekliyor' || job?.durum === 'isleniyor'
   const percent = job && job.toplam > 0 ? Math.min(100, Math.round((job.islenen / job.toplam) * 100)) : 0

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal, Pencil, Trash2, Spline } from 'lucide-react'
 import type { Garden } from '../../api/types'
 import { formatDecare, largestOuterRing, silhouettePath } from '../../lib/geo'
-import { formatNdvi, ndviColor } from '../../lib/ndvi'
+import { formatIndexValue, indexColor } from '../../lib/indices'
 
 export interface GardenListItemProps {
   garden: Garden
@@ -21,13 +21,13 @@ function NdviBadge({ value }: { value: number | null }) {
       </span>
     )
   }
-  const color = ndviColor(value)
+  const color = indexColor('ndvi', value)
   return (
     <span
       className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
       style={{ color, backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)` }}
     >
-      NDVI {formatNdvi(value)}
+      NDVI {formatIndexValue('ndvi', value)}
     </span>
   )
 }
@@ -49,7 +49,7 @@ export function GardenListItem({
 
   const path = silhouettePath(largestOuterRing(garden.geometry))
   const ndvi = garden.sonNdviOrtalama
-  const tint = ndvi == null ? null : ndviColor(ndvi)
+  const tint = ndvi == null ? null : indexColor('ndvi', ndvi)
 
   // Haritadan seçilince listede görünür kıl
   useEffect(() => {
