@@ -36,3 +36,7 @@ bahcelab-backend/.env
 bahcelab-backend/.pytest_cache/
 bahcelab-backend/.ruff_cache/
 bahcelab-backend/*.egg-info/
+
+# Yerel gizli ayarlar (API anahtarları) — asla commit edilmez
+.env.local
+.env*.local
