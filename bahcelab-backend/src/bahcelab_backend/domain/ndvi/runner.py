@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import uuid
+import weakref
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -34,13 +35,22 @@ logger = logging.getLogger(__name__)
 JOB_VISIBILITY_ATTEMPTS = 40
 JOB_VISIBILITY_DELAY = 0.25  # en fazla ~10 sn (commit'in görünmesi için güvenlik payı)
 
-_SLOTS: dict[int, asyncio.Semaphore] = {}
+# Olay döngüsü → {sınır: semafor}. Döngü nesnesinin kendisi (zayıf referansla) anahtardır: `id(loop)`
+# döngü çöp toplandıktan sonra başka bir döngüye yeniden verilebilir ve eski (ölü) semaforu geri getirirdi.
+_SLOTS: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, dict[int, asyncio.Semaphore]] = (
+    weakref.WeakKeyDictionary()
+)
 _TASKS: set[asyncio.Task[None]] = set()
 
 
 def _slots(limit: int) -> asyncio.Semaphore:
-    """Event loop başına tek semafor: tüm bahçelerin işleri aynı sınırı paylaşır."""
-    return _SLOTS.setdefault(id(asyncio.get_running_loop()), asyncio.Semaphore(limit))
+    """Olay döngüsü ve sınır başına tek semafor: tüm bahçelerin işleri aynı sınırı paylaşır.
+
+    Sınır, semafor ilk oluşturulduğunda sabitlenmez; farklı bir sınır istenirse kendi semaforu kullanılır
+    (üretimde sınır sabit olduğundan tek semafor vardır).
+    """
+    by_limit = _SLOTS.setdefault(asyncio.get_running_loop(), {})
+    return by_limit.setdefault(limit, asyncio.Semaphore(limit))
 
 
 def start_job(job_id: uuid.UUID) -> None:

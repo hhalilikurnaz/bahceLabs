@@ -838,3 +838,25 @@ async def test_alert_overview_lists_every_garden_and_reads_only(user_client: Asy
     (item,) = response.json()
     assert item["garden_id"] == garden["id"]
     assert [a["indeks"] for a in item["uyarilar"]] == ["ndvi"]
+
+
+async def test_slot_semaphore_follows_the_requested_limit_per_loop():
+    """Regresyon: semafor `id(loop)` ile saklanıyordu; yeniden kullanılan id eski sınırdaki semaforu döndürüp
+    «tek sahne» sınırını aralıklı olarak 2'ye çıkarıyordu (sınır testi rastgele düşüyordu)."""
+    two = runner._slots(2)
+    one = runner._slots(1)
+    assert one is not two
+    assert (one._value, two._value) == (1, 2)
+    assert runner._slots(1) is one and runner._slots(2) is two
+
+
+def test_slot_semaphores_are_released_with_their_loop():
+    import gc
+
+    async def use() -> None:
+        runner._slots(2)
+
+    before = len(runner._SLOTS)
+    asyncio.run(use())
+    gc.collect()
+    assert len(runner._SLOTS) == before  # döngü kapanınca kayıt da gider; id yeniden kullanımı olamaz
