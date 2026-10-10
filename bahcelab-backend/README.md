@@ -88,6 +88,25 @@ Girişli kullanıcının kendi workspace'indeki bahçeler. Sınır GeoJSON `Poly
 Geçersiz sınır (kendini kesen), alan < 0,5 dekar veya > 5.000 dekar için `422` ve Türkçe mesaj döner
 (`error.code = INVALID_GEOMETRY`). Başka kullanıcının bahçesi `404`.
 
+## NDVI izleme (`/gardens/{id}/ndvi`)
+
+Sentinel-2 L2A (Microsoft Planetary Computer STAC, anahtar gerekmez). Bahçe kaydedilince son 13 ay arka
+planda işlenir; yalnızca bahçe sınırı penceresi COG'dan okunur.
+
+| Uç nokta | Açıklama |
+|----------|----------|
+| `GET /gardens/{id}/ndvi` | Zaman serisi, uyarılar, işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar |
+| `POST /gardens/{id}/ndvi/refresh` | «Şimdi güncelle» (202). Aktif iş varsa onu döner |
+| `GET /gardens/{id}/ndvi/{YYYY-MM-DD}.png` | NDVI görüntüsü (yetkili, 10 m keskin piksel, bahçe dışı saydam) |
+| `GET /gardens/{id}/ndvi/{YYYY-MM-DD}/zones` | Sorunlu bölgeler (GeoJSON) |
+
+- Maskeleme: SCL 3/8/9/10 ve bahçe dışı; geçerli piksel oranı < %70 → "bulutlu", atlanır.
+- Sorunlu bölge: medyanın 0,10 altı, ≥ 3 piksel. Uyarı: 10–25 gün öncesine göre %10'dan fazla düşüş.
+- PNG'ler `STORAGE_DIR` (varsayılan `uploads/`, git'e girmez) altında; `shared/storage.py` arayüzü S3/R2'ye hazır.
+- Ayarlar: `NDVI_ENABLED`, `NDVI_MONTHS` (13), `NDVI_MAX_PARALLEL_SCENES` (2), `NDVI_REFRESH_HOURS` (12).
+- Ağ yoksa/Planetary Computer hata verirse iş "hata" olur ve anlaşılır mesaj döner; uygulama etkilenmez.
+- `make db-seed` ağsız demo için örnek NDVI serisi ekler (`kaynak = ornek`).
+
 ## Test
 
 ```bash

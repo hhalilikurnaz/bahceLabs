@@ -43,7 +43,7 @@ def drop_alert(observations: list[NdviObservationModel]) -> NdviUyari | None:
     return NdviUyari(
         tur="ndvi_dusus",
         mesaj=(
-            f"NDVI düşüşü: ortalama {_tr_num(previous.ortalama)} → {_tr_num(latest.ortalama)} "
+            f"Ortalama NDVI {_tr_num(previous.ortalama)} → {_tr_num(latest.ortalama)} "
             f"({_tr_pct(change)} azalma, {days} günde). Sulama, hastalık veya stres belirtilerini kontrol edin."
         ),
         onceki_tarih=previous.tarih,

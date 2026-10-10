@@ -3,7 +3,7 @@
 > Hedef: narenciye (limon) bahçeleri için tam ekran uydu haritası, sol panelde bahçe listesi, koyu ve sade arayüz.
 > Bahçe çizme, Sentinel-2 NDVI, hava durumu, bahçe günlüğü, sahada gözlem, AI Copilot.
 > Marka kuralı: başka hiçbir ürünün adı, logosu veya görseli kullanılmaz.
-> Durum: plan onaylandı (2026-10-10). **Adım 2, 3 ve 4 tamamlandı**, Adım 5'ten devam edilecek.
+> Durum: plan onaylandı (2026-10-10). **Adım 2–5 tamamlandı**, Adım 6'dan devam edilecek.
 
 ---
 
@@ -138,20 +138,28 @@ Bu belgenin 0. bölümü.
 
 **Çıkış kriteri karşılandı:** çizilen/yüklenen bahçe kaydedilir, yenilemede yerinde durur, alan PostGIS jeodezik hesabıyla eşleşir (`tests/test_gardens_api.py`), geçersiz sınır ve alan sınırları Türkçe mesajla reddedilir.
 
-### Adım 5 — Bahçe sayfası: Sentinel-2 NDVI (Planetary Computer), tarih şeridi, grafik, uyarılar
+### Adım 5 — Uydu NDVI izleme (Sentinel-2, Planetary Computer) ✅ (tamamlandı)
 
-- Yeni bağımlılık yok: `httpx` (şu an dev bağımlılığı) ana bağımlılığa taşınır. Raster işleme için `rasterio` eklemeden Planetary Computer **Data API**'nin istatistik ve karo uç noktaları kullanılır.
-- Veri akışı:
-  1. STAC araması: `POST https://planetarycomputer.microsoft.com/api/stac/v1/search` (`collections: sentinel-2-l2a`, `intersects: bahçe poligonu`, `eo:cloud_cover < 30`, son 12 ay).
-  2. Her sahne için bahçe poligonu üzerinde `(B08-B04)/(B08+B04)` ifadesiyle istatistik (Data API `statistics`); `SCL` bandıyla bulut/gölge pikselleri maskelenir, geçerli piksel oranı %40'ın altındaysa sahne atlanır.
-  3. Sonuç `ndvi_observations` tablosuna yazılır (cache).
-- Migration `005_ndvi.py`: `ndvi_observations` (`garden_id`, `scene_id`, `acquired_at`, `mean`, `p10`, `p50`, `p90`, `valid_pixel_ratio`, `cloud_cover`; `unique(garden_id, scene_id)`), `garden_alerts` (`garden_id`, `kind`, `severity`, `message`, `observed_at`, `acknowledged_at`).
-- Backend: `domain/monitoring/{stac_client,ndvi_service,alert_rules,repository,schemas}.py`; uç noktalar: `GET /gardens/{id}/ndvi?from&to`, `POST /gardens/{id}/ndvi/refresh` (kuyruk yok; FastAPI `BackgroundTasks` + durum alanı), `GET /gardens/{id}/ndvi/tiles/{scene}` yönlendirmesi veya doğrudan istemciden karo URL'si, `GET /gardens/{id}/alerts`.
-- Uyarı kuralı (ilk sürüm): son geçerli gözlem ortalaması, önceki 3 gözlemin ortalamasından %15'ten fazla düşmüşse "NDVI düşüşü"; blok bazında eşik Adım 7'de eklenir. Eşikler yapılandırılabilir sabitlerdir ve belgelenir; narenciye ağaçları yıl boyu yeşil olduğundan mevsimsel salınım küçüktür (sapma esas alınır, mutlak değer değil).
-- Frontend: `features/bahcem/pages/GardenPage.tsx`; `components/ndvi/{DateStrip,NdviChart,NdviLegend,AlertList}.tsx`. Tarih şeridi gözlem tarihlerini gösterir; seçilen tarih haritada NDVI karosunu (MapLibre raster kaynağı, bahçe poligonuyla maskelenmiş) değiştirir. Grafik küçük, bağımlılıksız SVG bileşenidir.
-- Sınırlar: Planetary Computer anonim kullanımda hız sınırlıdır; sonuçlar cache'lenir. Sentinel-2 yaklaşık 5 günde bir geçer, bulut nedeniyle gerçek aralık daha uzundur; arayüz bunu "son geçerli gözlem: X gün önce" olarak açıkça yazar.
+**Backend** (`domain/ndvi/`, `api/ndvi/`, migration `006_ndvi`)
+- **Kaynak:** Microsoft Planetary Computer STAC (`sentinel-2-l2a`, anahtar gerekmez; `pystac-client`, `planetary-computer`). Bantlar B04, B08 (10 m) ve SCL (20 m → nearest ile 10 m). COG'dan yalnızca bahçe penceresi okunur (`rasterio` windowed read), tüm görüntü indirilmez.
+- **Yansıtım:** L2A ürünlerinde (baseline ≥ 04.00) `raster:bands` içindeki `scale`/`offset` (−0,1) uygulanır; ham sayısal değerle NDVI hesaplamak sapma yaratır.
+- **Maskeleme:** SCL 3, 8, 9, 10 ve bahçe dışı pikseller; bahçe içindeki geçerli piksel oranı < %70 ise tarih `bulutlu` olarak kaydedilir ve atlanır. NDVI = (B08 − B04) / (B08 + B04).
+- **Tablolar:** `ndvi_observations` (garden_id, tarih, scene_id, bulut_orani, gecerli_piksel_orani, ortalama, medyan, p10, p90, min, max, png_yolu, sorunlu_bolge_geojson, goruntu_koordinatlari, kaynak, created_at; `(garden_id, tarih)` benzersiz — aynı tarih ikinci kez hesaplanmaz) ve `ndvi_jobs` (bekliyor → isleniyor → tamam | hata, ilerleme; bahçe başına tek aktif iş).
+- **PNG:** 10 m piksel (keskin), kırmızı → sarı → yeşil (0,0–0,9), bahçe dışı/maskeli saydam; `shared/storage.py` içindeki `StorageBackend` arayüzüyle diskte (`uploads/ndvi/{bahçe}/{tarih}.png`, ileride S3/R2).
+- **Sorunlu bölgeler:** medyanın 0,10 altındaki piksel kümeleri (≥ 3 piksel = 300 m², 4-komşuluk) poligona çevrilir, GeoJSON olarak saklanır (alan, ortalama NDVI).
+- **Uyarı:** son geçerli görüntünün ortalaması, 10–25 gün önceki görüntüye göre %10'dan fazla düştüyse "NDVI düşüşü".
+- **İşleme:** bahçe kaydedilince son 13 ay arka planda; aynı anda en fazla 2 sahne; geçici ağ hatalarında tekrar deneme; bahçe açıldığında son kontrolden 12 saat geçtiyse yeni sahne araması; `POST .../refresh`. Sınır düzenlenince kayıtlar ve PNG'ler silinip yeniden işlenir (çalışan iş iptal edilir, sınır değiştiyse eski sonuçlar yazılmaz). Sunucu yeniden başlarsa yarım kalan işler "hata" olur ve yeniden başlatılabilir.
+- **API (hepsi girişli, yalnızca kendi bahçesi; başkasının bahçesi 404):** `GET /gardens/{id}/ndvi`, `GET /gardens/{id}/ndvi/{tarih}.png`, `GET /gardens/{id}/ndvi/{tarih}/zones`, `POST /gardens/{id}/ndvi/refresh`. Bahçe listesi yanıtında `son_ndvi_ortalama` / `son_ndvi_tarihi`.
+- **Örnek veri:** `make db-seed` Tömük bahçesi için ağsız demo serisi üretir (`kaynak = "ornek"`, arayüzde etiketli); «Şimdi güncelle» örnek kayıtları gerçek veriyle değiştirir.
+- **Alan hesabı** ayrıca `ST_Area(geom::geography)` olarak güncellendi (migration `005`).
 
-**Çıkış kriteri:** gerçek bir bahçe için en az bir NDVI gözlemi gelir, aynı sahne ikinci istekte cache'ten döner, bulutlu sahneler listede görünmez, veri yoksa boş durum gösterilir.
+**Frontend** (`features/bahcem/`)
+- Bahçe seçilince sol panel detaya döner: başlık, son NDVI + renkli rozet, uyarı kartı, bu/geçen sezon SVG grafiği (tarihe tıklayınca haritada o görüntü), işleme durumu ve «Şimdi güncelle».
+- Harita: NDVI PNG'si bahçe sınırına oturur (nearest), lejant, sorunlu bölgeler kesikli kırmızı çizgi (tıklayınca alan ve ortalama NDVI), katman seçicide NDVI aç/kapat.
+- Haritanın altında tarih şeridi (önizlemeler, bulutlu tarihler soluk ve tıklanamaz, ok tuşlarıyla gezinme). Liste rozeti/silüeti gerçek NDVI rengiyle.
+- Grafik için yeni kütüphane eklenmedi.
+
+**Ölçüm (Tömük, 26 dekar, gerçek Sentinel-2):** 13 aylık işleme ≈ 61 sn (113 sahne: 80 geçerli, 33 bulutlu; sahne başına ~1,1 sn, 2 paralel).
 
 ### Adım 6 — Hava durumu (Open-Meteo): tahmin, ilaçlama penceresi, don uyarısı
 
