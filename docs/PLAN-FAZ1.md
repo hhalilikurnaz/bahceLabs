@@ -3,7 +3,7 @@
 > Hedef: narenciye (limon) bahçeleri için tam ekran uydu haritası, sol panelde bahçe listesi, koyu ve sade arayüz.
 > Bahçe çizme, Sentinel-2 NDVI, hava durumu, bahçe günlüğü, sahada gözlem, AI Copilot.
 > Marka kuralı: başka hiçbir ürünün adı, logosu veya görseli kullanılmaz.
-> Durum: plan onaylandı (2026-10-10). **Adım 2–5 tamamlandı**, Adım 6'dan devam edilecek.
+> Durum: Adım 1–6 tamamlandı. **Güncel yol haritası Adım 7–20** (bkz. §2 sonu); Adım 7 (tasarım + net harita) sürüyor.
 
 ---
 
@@ -190,29 +190,37 @@ Bu belgenin 0. bölümü.
 - Bahçe listesinde aktif uyarı simgeleri (don, sıcak, uydu düşüşü; kırmızı/sarı).
 - Birimler °C, mm, km/s; Türkçe gün adları; saat dilimi Europe/Istanbul.
 
-### Adım 7 — Blok bölme, bahçe günlüğü, sahada gözlem
+### Güncel yol haritası — Adım 7–20 (2026-10-11 onayı; eski Adım 7/8 taslağının yerine geçer)
 
-- Migration `006_blocks_journal.py`:
-  - `garden_blocks` (`id`, `garden_id`, `name`, `geom geometry(Polygon,4326)`, `area_m2`)
-  - `journal_entries` (`id`, `garden_id`, `block_id` nullable, `entry_type` ∈ ilaçlama/gübreleme/sulama/budama/hasat/diğer, `occurred_at`, `product`, `dose`, `unit`, `note`, `created_by`, `weather_snapshot` JSONB)
-  - `field_observations` (`id`, `garden_id`, `block_id` nullable, `location geometry(Point,4326)`, `category` ∈ hastalık/zararlı/don/kuraklık/diğer, `severity` 1–3, `note`, `photo_key` nullable, `created_by`, `observed_at`)
-- Blok bölme: bahçe üzerine çizilen bir çizgi `shapely.ops.split` ile poligonu böler; `POST /gardens/{id}/blocks/split` (GeoJSON LineString) alan/geçerlilik doğrulaması yapar ve blokları yazar. Frontend çizim `terra-draw` çizgi modu ile yapılır. NDVI istatistiği blok bazında da hesaplanır (Adım 5 servisi blok poligonunu da kabul eder).
-- Günlük: `GET/POST /gardens/{id}/journal`, `PATCH/DELETE /journal/{id}`; yeni kayıtta o anki hava özeti otomatik eklenir (Adım 6).
-- Sahada gözlem: `GET/POST /gardens/{id}/observations`; telefonda "Gözlem ekle" `navigator.geolocation` ile konumu alır, haritada nokta olarak gösterilir. Fotoğraf: `POST /observations/{id}/photo` (multipart, `python-multipart` zaten bağımlılık) yerel `uploads/` klasörüne `StorageBackend` arayüzüyle yazılır; boyut ve tür (jpeg/png/webp) sınırlanır, dosya adı sunucuda üretilir.
-- Frontend: `components/journal/{JournalList,JournalForm}.tsx`, `components/blocks/{BlockSplitTool,BlockList}.tsx`, `components/observations/{ObservationPin,ObservationForm}.tsx`.
+| Adım | İçerik |
+|------|--------|
+| 7 | **Tasarım + net harita** (7A temel: altlık, tasarım sistemi, bilgi mimarisi · 7B bahçe listesi/sayfası/harita · 7C bahçe ekleme, giriş, erişilebilirlik) |
+| 8 | Durum ve Hava: bahçe durumu skoru, "Bugün" kartı, sulama önerisi, zararlı/hastalık risk kartı, uygulama içi bildirim merkezi |
+| 9 | Çok yıllık bölgeler: takılıp çıkarılabilir uydu kaynağı, iş kuyruğu |
+| 10 | Topografya ve don |
+| 11 | Günlük: gözlem ve hasat kaydı |
+| 12 | İlaç defteri, hasat bekleme süresi, kalıntı uyarısı |
+| 13 | Maliyet defteri |
+| 14 | Toprak örneklemesi |
+| 15 | Uygulama haritası ve denemeler |
+| 16 | Copilot ve PDF rapor |
+| 17 | Pazar & Depo |
+| 18 | WhatsApp/SMS bildirimi |
+| 19 | Çoklu kullanıcı |
+| 20 | Yayına hazırlık |
 
-**Çıkış kriteri:** bahçe iki bloğa bölünür, alanların toplamı bahçe alanına eşittir (±%0,5); günlük kaydı ve gözlem eklenip listelenir; başka workspace'in kayıtları görünmez.
+**Tasarım dokümanı (docs/design/TASARIM-IYILESTIRME.md) §8 kararları**
+- **Altlık:** Esri kullanılmaz (ücretsiz kullanımı ticari değil). Ana altlık **Mapbox Satellite** (raster karolar, MapLibre'de), yedek **MapTiler**. Adres arama MapTiler geocoding ile kalır.
+- **Logo:** bahcelabs.com landing'indeki logo; uygulamada tek logo, koyu ve açık zemin varyantı.
+- **Landing'e dokunulmaz.**
+- **Örnek bahçe yok.** Copilot düğmesi sağ üstte kalır, çekmece açılır, Adım 16'ya kadar "yakında" (yazı alanı kapalı).
+- **Skor kalibrasyonu ve fenoloji Adım 8'de;** belirli bir bahçeye göre ayar yapılmaz.
 
-### Adım 8 — AI Copilot (sağda açılır panel) ve sezon raporu (PDF)
+**Temel ilke — hazır veri yok.** Kodda, seed'de ve varsayılan harita görünümünde belirli bir bahçe/köy/koordinat veya örnek veri bulunmaz. Seed yalnızca test kullanıcısını oluşturur. Sahte/örnek veri yalnızca testlerde (fixture). Veri yoksa ekran dürüstçe söyler ("henüz görüntü yok", "işleniyor", "bu dönem bulutlu"). İlk açılış: kullanıcının bahçeleri varsa onların sınırına, yoksa Türkiye görünümüne.
 
-- Yeni bağımlılık: `anthropic` (resmi Python SDK). Model kimliği yapılandırmadan okunur (`copilot_model`, varsayılan güncel Sonnet sürümü).
-- Backend: `domain/copilot/{service,tools,prompt,schemas}.py`; `POST /gardens/{id}/copilot/chat` (SSE ile akış). Model, bahçe bağlamını **araçlar** üzerinden okur: `get_ndvi_series`, `get_weather`, `get_journal`, `get_alerts`, `get_observations`. Sistem istemi: yalnızca bu araçlardan gelen veriye dayan, veri yoksa "veri yok" de, tarım tavsiyesi yerine gözlem ve olası nedenler sun, kimyasal doz verme. API anahtarı yoksa uç nokta 503 + net mesaj döner.
-- Frontend: `components/copilot/{CopilotPanel,MessageList,Composer}.tsx` sağdaki `RightDock` içinde açılır; konuşma geçmişi oturumluk (DB'ye yazılmaz, karar 4); akış `fetch` + `ReadableStream`.
-- Sezon raporu: `GET /gardens/{id}/report?season=2026` PDF döner. Yeni bağımlılık: `reportlab` (saf Python, sistem paketi gerektirmez; Türkçe karakterler için DejaVu fontu repoya eklenir). İçerik: bahçe bilgisi ve alanı, NDVI grafiği (matplotlib yerine rapor için basit çizgi grafik reportlab ile çizilir), uyarılar, günlük özeti, gözlemler. Copilot kısa bir yorum paragrafı ekleyebilir; kapalıysa rapor onsuz üretilir.
+**Tasarım ilkesi.** OneSoil'den düzen/etkileşim ilhamı, kopya yok. "Limon Bahçesi" teması: paneller açık (krem/beyaz kartlar), koyu yeşil metin, limon sarısı yalnız marka ve birincil eylem, uyarı turuncusu ayrı; harita ve harita kontrolleri koyu. Fraunces + Manrope. Metin kontrastı ≥ AA (4,5:1), yazı ≥ 12 px, dokunma hedefi ≥ 44 px.
 
-**Çıkış kriteri:** Copilot yalnızca araç verisine dayanarak yanıtlar (veri olmayan bahçede "veri yok" der), PDF Türkçe karakterlerle doğru açılır.
-
----
+**Bahçe sayfası bilgi mimarisi:** `/bahcem/:id/durum | analiz | hava | gunluk | rapor` (bkz. docs/design/BILGI-MIMARISI.md).
 
 ## 3. Sıralama ve bağımlılıklar
 
