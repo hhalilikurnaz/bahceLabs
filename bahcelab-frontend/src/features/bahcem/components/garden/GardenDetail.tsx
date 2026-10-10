@@ -3,9 +3,10 @@ import { ArrowLeft, MoreHorizontal, Pencil, Spline, Trash2 } from 'lucide-react'
 import { describeError } from '../../api/gardensApi'
 import { PRODUCTS, type Garden } from '../../api/types'
 import { useRefreshIndices } from '../../api/indeksApi'
+import { useWeatherHistory } from '../../api/weatherApi'
 import { useIndexView } from '../../hooks/useIndexView'
 import { formatDecare } from '../../lib/geo'
-import { formatDate } from '../../lib/dates'
+import { formatDate, shiftDays, todayIstanbul } from '../../lib/dates'
 import { INDEX_DEFS, TRUE_COLOR, formatIndexValue, indexColor, layerName, vigorLabel } from '../../lib/indices'
 import { latestIndexValue } from '../../lib/scenes'
 import { useBahcemStore } from '../../stores/bahcemStore'
@@ -14,6 +15,7 @@ import { IndexChart } from '../indeks/IndexChart'
 import { StatusCard } from '../indeks/StatusCard'
 import { ViewPanel } from '../indeks/ViewPanel'
 import { YieldCard } from '../indeks/YieldCard'
+import { WeatherTab } from '../hava/WeatherTab'
 import { useGardenActions } from './useGardenActions'
 
 const productLabel = (value: string) => PRODUCTS.find((p) => p.value === value)?.label ?? value
@@ -82,8 +84,19 @@ export function GardenDetail({ garden }: { garden: Garden }) {
   const grafik = useBahcemStore((s) => s.grafikIndeksleri)
   const toggleGrafik = useBahcemStore((s) => s.toggleGrafikIndeksi)
   const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
+  const tab = useBahcemStore((s) => s.detailTab)
+  const setTab = useBahcemStore((s) => s.setDetailTab)
+  const havaKatmani = useBahcemStore((s) => s.havaKatmani)
+  const setHavaKatmani = useBahcemStore((s) => s.setHavaKatmani)
   const { data, scenes, isLoading, active, katman } = useIndexView()
   const refresh = useRefreshIndices(garden.id)
+  // Grafik hava katmanı: seçili sezonun takvim yılı (bugüne kadar)
+  const weatherTo = (() => {
+    const yesterday = shiftDays(todayIstanbul(), -1)
+    const yearEnd = `${season}-12-31`
+    return yearEnd < yesterday ? yearEnd : yesterday
+  })()
+  const weatherHistory = useWeatherHistory(garden.id, `${season}-01-01`, weatherTo, havaKatmani)
   const actions = useGardenActions()
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(garden.ad)
@@ -158,8 +171,34 @@ export function GardenDetail({ garden }: { garden: Garden }) {
         />
       </header>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-        {isLoading || !data ? (
+      <div role="tablist" aria-label="Bahçe bilgileri" className="flex gap-1 border-b border-app-border px-3 pt-2">
+        {(
+          [
+            ['uydu', 'Uydu'],
+            ['hava', 'Hava'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls="detail-panel"
+            onClick={() => setTab(id)}
+            className={`-mb-px h-9 rounded-t-lg border-b-2 px-4 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+              tab === id ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted hover:text-app-text'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div id="detail-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+        {tab === 'hava' ? (
+          <WeatherTab gardenId={garden.id} />
+        ) : isLoading || !data ? (
           <div className="space-y-3" aria-label="Uydu verisi yükleniyor">
             <div className="h-20 animate-pulse rounded-2xl bg-app-card" />
             <div className="h-44 animate-pulse rounded-2xl bg-app-card" />
@@ -210,6 +249,9 @@ export function GardenDetail({ garden }: { garden: Garden }) {
                   activeDate={active?.tarih ?? null}
                   onToggle={toggleGrafik}
                   onSelect={setSelectedDate}
+                  weather={havaKatmani ? (weatherHistory.data ?? []) : null}
+                  weatherLoading={weatherHistory.isLoading}
+                  onWeatherToggle={() => setHavaKatmani(!havaKatmani)}
                 />
               </section>
             )}

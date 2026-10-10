@@ -37,6 +37,11 @@ export interface Compare {
   bolme: number
 }
 
+/** Sol panelin ana görünümü: bahçe listesi/detayı ya da tüm bahçelerin hava özeti */
+export type PanelView = 'bahceler' | 'hava'
+/** Bahçe detayındaki sekme */
+export type DetailTab = 'uydu' | 'hava'
+
 /** Haritanın son çizimi hakkında bilgi: lejant ve etiket için */
 export interface RenderInfo {
   kind: 'mutlak' | 'kontrastli' | 'fark' | 'gercek'
@@ -60,6 +65,11 @@ interface BahcemState {
   liveAreaDekar: number | null
   mapZoom: number
 
+  panelView: PanelView
+  detailTab: DetailTab
+  /** Uydu grafiğinin altında günlük yağış ve sıcaklık gösterilsin mi */
+  havaKatmani: boolean
+
   // --- indeks görselleştirme
   katman: LayerId
   selectedDate: string | null // null = en son geçerli görüntü
@@ -82,6 +92,12 @@ interface BahcemState {
   selectGarden: (id: string | null) => void
   setMapZoom: (zoom: number) => void
   setLiveArea: (dekar: number | null) => void
+
+  setPanelView: (view: PanelView) => void
+  setDetailTab: (tab: DetailTab) => void
+  setHavaKatmani: (acik: boolean) => void
+  /** Bahçeyi seçer, Hava sekmesini açar ve paneli bahçe görünümüne alır (hava özetinden gelince) */
+  openGardenWeather: (id: string) => void
 
   setKatman: (katman: LayerId) => void
   setSelectedDate: (tarih: string | null) => void
@@ -135,6 +151,9 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   selectedGardenId: null,
   ...flowReset,
   mapZoom: 0,
+  panelView: 'bahceler',
+  detailTab: 'uydu',
+  havaKatmani: false,
 
   katman: 'ndvi',
   layerVisible: true,
@@ -149,11 +168,23 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
   setSeason: (season) => set({ season }),
-  selectGarden: (id) => set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, ...viewReset })),
+  selectGarden: (id) =>
+    set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, detailTab: 'uydu', panelView: 'bahceler', ...viewReset })),
   setMapZoom: (mapZoom) => set({ mapZoom }),
   setLiveArea: (liveAreaDekar) => set({ liveAreaDekar }),
 
   // Katman değişince grafik de o indeksi gösterir (en az bir indeks açık kalır)
+  setPanelView: (panelView) => set({ panelView }),
+  setDetailTab: (detailTab) => set({ detailTab }),
+  setHavaKatmani: (havaKatmani) => set({ havaKatmani }),
+  openGardenWeather: (id) =>
+    set((s) => ({
+      panelView: 'bahceler',
+      detailTab: 'hava',
+      leftPanelOpen: true,
+      ...(s.selectedGardenId === id ? {} : { selectedGardenId: id, ...viewReset }),
+    })),
+
   setKatman: (katman) =>
     set((s) => ({
       katman,

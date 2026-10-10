@@ -1,13 +1,17 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Search, Sprout, TriangleAlert } from 'lucide-react'
 import type { Garden } from '../../api/types'
+import { useSatelliteAlertOverview } from '../../api/indeksApi'
 import { useGardens } from '../../api/useGardens'
+import { useWeatherOverview } from '../../api/weatherApi'
+import { mergeAlerts } from '../../lib/weather'
 import { useFocusGarden } from '../../map/useFocusGarden'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { AddGardenMenu } from '../garden/AddGardenMenu'
 import { GardenDetail } from '../garden/GardenDetail'
 import { GardenForm } from '../garden/GardenForm'
 import { GardenListItem } from '../garden/GardenListItem'
+import { WeatherOverviewPanel } from '../hava/WeatherOverviewPanel'
 import { ImportPicker } from '../garden/ImportPicker'
 import { useGardenActions } from '../garden/useGardenActions'
 
@@ -23,6 +27,9 @@ function GardenList() {
   const busy = useBahcemStore((s) => s.mode !== 'idle')
   const { focusGarden } = useFocusGarden()
   const actions = useGardenActions()
+  const weather = useWeatherOverview(Boolean(gardens?.length))
+  const satellite = useSatelliteAlertOverview()
+  const alerts = useMemo(() => mergeAlerts(weather.data, satellite.data), [weather.data, satellite.data])
 
   const [query, setQuery] = useState('')
 
@@ -123,6 +130,7 @@ function GardenList() {
                 key={garden.id}
                 garden={garden}
                 selected={garden.id === selectedId}
+                alerts={alerts.get(garden.id)}
                 onSelect={select}
                 onRename={actions.rename}
                 onEditBoundary={actions.editBoundary}
@@ -144,10 +152,11 @@ export function LeftPanel() {
   const selectedId = useBahcemStore((s) => s.selectedGardenId)
   const { data: gardens } = useGardens()
   const selected = selectedId ? gardens?.find((g) => g.id === selectedId) : undefined
+  const view = useBahcemStore((s) => s.panelView)
 
   return (
     <aside
-      aria-label="Bahçeler"
+      aria-label={view === 'hava' ? 'Hava durumu' : 'Bahçeler'}
       aria-hidden={!open}
       inert={!open}
       className={`absolute bottom-3 left-[4.25rem] top-16 z-20 flex w-[min(360px,calc(100vw-5.25rem))] flex-col rounded-2xl border border-app-border bg-app-panel shadow-2xl transition-all duration-300 ease-out md:top-3 ${
@@ -158,6 +167,8 @@ export function LeftPanel() {
         <GardenForm />
       ) : mode === 'import-pick' ? (
         <ImportPicker />
+      ) : view === 'hava' ? (
+        <WeatherOverviewPanel />
       ) : selected && mode === 'idle' ? (
         <GardenDetail key={selected.id} garden={selected} />
       ) : (

@@ -204,6 +204,28 @@ export function layerImageUrl(gardenId: string, scene: Scene, layer: LayerId): s
   return typeof window === 'undefined' ? path : new URL(path, window.location.origin).toString()
 }
 
+export interface GardenSatelliteAlerts {
+  gardenId: string
+  uyarilar: { tur: Alert['tur']; indeks: IndexId | null; oncelik: Alert['oncelik']; baslik: string }[]
+}
+
+export const SATELLITE_ALERTS_KEY = ['indeks', 'uyari-ozeti'] as const
+
+/** Bahçe listesindeki uyarı simgeleri için tüm bahçelerin aktif uydu uyarıları (iş başlatmaz). */
+export function useSatelliteAlertOverview() {
+  return useQuery({
+    queryKey: SATELLITE_ALERTS_KEY,
+    queryFn: async (): Promise<GardenSatelliteAlerts[]> => {
+      const raw = await apiRequest<{ garden_id: string; uyarilar: { tur: Alert['tur']; indeks: IndexId | null; oncelik: Alert['oncelik']; baslik: string }[] }[]>(
+        '/indeks/uyari-ozeti',
+      )
+      return raw.map((r) => ({ gardenId: r.garden_id, uyarilar: r.uyarilar }))
+    },
+    staleTime: 60_000,
+    retry: 1,
+  })
+}
+
 export const indeksKey = (gardenId: string) => ['indeks', gardenId] as const
 
 const isActive = (job: Job | null | undefined) => job?.durum === 'bekliyor' || job?.durum === 'isleniyor'
@@ -224,6 +246,7 @@ export function useIndices(gardenId: string | null) {
   useEffect(() => {
     if (wasActive.current && !active) {
       void client.invalidateQueries({ queryKey: GARDENS_KEY })
+      void client.invalidateQueries({ queryKey: SATELLITE_ALERTS_KEY })
       // Ham ızgaralar yeni üretilmiş olabilir
       void client.invalidateQueries({ queryKey: ['grid'] })
     }

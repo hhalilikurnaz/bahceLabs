@@ -3,10 +3,13 @@ import { MoreHorizontal, Pencil, Trash2, Spline } from 'lucide-react'
 import type { Garden } from '../../api/types'
 import { formatDecare, largestOuterRing, silhouettePath } from '../../lib/geo'
 import { formatIndexValue, indexColor } from '../../lib/indices'
+import type { ListAlert } from '../../lib/weather'
 
 export interface GardenListItemProps {
   garden: Garden
   selected?: boolean
+  /** Aktif hava ve uydu uyarıları (kırmızılar önce) */
+  alerts?: ListAlert[]
   onSelect: (garden: Garden) => void
   onRename: (garden: Garden, name: string) => Promise<void>
   onEditBoundary: (garden: Garden) => void
@@ -35,6 +38,7 @@ function NdviBadge({ value }: { value: number | null }) {
 export function GardenListItem({
   garden,
   selected = false,
+  alerts = [],
   onSelect,
   onRename,
   onEditBoundary,
@@ -146,6 +150,24 @@ export function GardenListItem({
             <span className="mt-1 flex items-center gap-2">
               <span className="text-[12px] text-app-text-muted">{formatDecare(garden.alanDekar)}</span>
               <NdviBadge value={ndvi} />
+              {alerts.length > 0 && (
+                <span className="flex items-center gap-1" data-testid="garden-alerts">
+                  {alerts.slice(0, 3).map((alert, i) => (
+                    <span
+                      key={`${alert.tur}-${i}`}
+                      role="img"
+                      aria-label={alert.baslik}
+                      title={`${alert.baslik} (${alert.kaynak === 'hava' ? 'hava' : 'uydu'})`}
+                      data-priority={alert.seviye}
+                      className={`flex h-5 w-5 items-center justify-center rounded-full ${
+                        alert.seviye === 'kirmizi' ? 'bg-app-danger/20 text-red-300' : 'bg-amber-400/20 text-amber-300'
+                      }`}
+                    >
+                      <alert.Icon className="h-3 w-3" aria-hidden />
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
           </button>
         )}

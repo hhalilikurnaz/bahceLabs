@@ -20,7 +20,11 @@ export function useUpdateGarden() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: GardenPatch }) => gardensApi.update(id, patch),
-    onSuccess: () => client.invalidateQueries({ queryKey: GARDENS_KEY }),
+    onSuccess: () => {
+      // Sınır değişirse hava konumu (merkez nokta) da değişir
+      void client.invalidateQueries({ queryKey: ['weather'] })
+      return client.invalidateQueries({ queryKey: GARDENS_KEY })
+    },
   })
 }
 
@@ -28,6 +32,9 @@ export function useDeleteGarden() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => gardensApi.remove(id),
-    onSuccess: () => client.invalidateQueries({ queryKey: GARDENS_KEY }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['weather'] })
+      return client.invalidateQueries({ queryKey: GARDENS_KEY })
+    },
   })
 }

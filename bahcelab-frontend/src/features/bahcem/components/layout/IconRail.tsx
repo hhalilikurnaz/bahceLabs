@@ -115,7 +115,17 @@ function UserMenu() {
 
 export function IconRail() {
   const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
+  const view = useBahcemStore((s) => s.panelView)
+  const setView = useBahcemStore((s) => s.setPanelView)
+  const setPanelOpen = useBahcemStore((s) => s.setLeftPanelOpen)
   const togglePanel = useBahcemStore((s) => s.toggleLeftPanel)
+
+  // Aynı simgeye tekrar basmak paneli kapatır; başka görünümdeyken o görünümü açar
+  const show = (target: 'bahceler' | 'hava') => () => {
+    if (panelOpen && view === target) return togglePanel()
+    setView(target)
+    setPanelOpen(true)
+  }
   const toast = useToast()
 
   const soon = (label: string) => () => toast.show(`${label} sonraki adımlarda gelecek.`)
@@ -134,8 +144,8 @@ export function IconRail() {
       </Link>
 
       <div className="flex flex-col items-center gap-1.5">
-        <RailButton icon={Trees} label="Bahçeler" active={panelOpen} onClick={togglePanel} />
-        <RailButton icon={CloudSun} label="Hava durumu" onClick={soon('Hava durumu')} />
+        <RailButton icon={Trees} label="Bahçeler" active={panelOpen && view === 'bahceler'} onClick={show('bahceler')} />
+        <RailButton icon={CloudSun} label="Hava durumu" active={panelOpen && view === 'hava'} onClick={show('hava')} />
         <RailButton icon={NotebookPen} label="Günlük" onClick={soon('Günlük')} />
         <RailButton icon={FileText} label="Raporlar" onClick={soon('Raporlar')} />
         <Link to="/planning" aria-label="Planlama" className={`${itemBase} no-underline`}>

@@ -8,6 +8,9 @@
 
 export const MONTHS_SHORT = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
 
+export const WEEKDAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+export const WEEKDAYS_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+
 export interface IsoDate {
   year: number
   month: number // 1–12
@@ -83,4 +86,26 @@ export function timeAgo(iso: string | null, now = Date.now()): string | null {
   const hours = Math.round(minutes / 60)
   if (hours < 24) return `${hours} saat önce`
   return `${Math.round(hours / 24)} gün önce`
+}
+
+/** Haftanın günü (0 = Pazar) — saat dilimine bakmadan metinden hesaplanır */
+export function weekdayIndex(iso: string): number {
+  const { year, month, day } = parseIso(iso)
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+}
+
+/** "2026-10-12" → "Pzt" ya da "Pazartesi" */
+export const weekdayName = (iso: string, short = true): string => (short ? WEEKDAYS_SHORT : WEEKDAYS)[weekdayIndex(iso)]
+
+/** "2026-10-12T14:00" → "14:00" */
+export const formatHour = (moment: string): string => moment.slice(11, 16)
+
+/** Zaman damgasını (UTC ISO) Europe/Istanbul saatine göre "14:35" yazar */
+export function formatClockIstanbul(iso: string): string {
+  return new Date(iso).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' })
+}
+
+/** Bugünün tarihi, Europe/Istanbul takvimine göre ("YYYY-MM-DD") */
+export function todayIstanbul(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }

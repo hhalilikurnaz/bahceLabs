@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
+import { Cloud } from 'lucide-react'
 import type { Scene } from '../../api/indeksApi'
+import type { HistoryDay } from '../../api/weatherApi'
 import { dayOfYear, daysInYear, formatDate, MONTHS_SHORT } from '../../lib/dates'
 import { INDEX_DEFS, INDEX_IDS, formatIndexValue, type IndexId } from '../../lib/indices'
+import { formatMm, formatTemp } from '../../lib/weather'
 
 interface IndexChartProps {
   scenes: Scene[]
@@ -11,12 +14,26 @@ interface IndexChartProps {
   activeDate: string | null
   onToggle: (indeks: IndexId) => void
   onSelect: (tarih: string) => void
+  /** Hava katmanı: günlük yağış çubukları ve sıcaklık çizgisi aynı zaman ekseninde (null = kapalı) */
+  weather: HistoryDay[] | null
+  weatherLoading?: boolean
+  onWeatherToggle: () => void
+}
+
+function weatherNote(day: HistoryDay | undefined): string {
+  if (!day) return ''
+  const parts = [day.yagisMm != null ? formatMm(day.yagisMm) : null, day.min != null && day.max != null ? `${formatTemp(day.min)}/${formatTemp(day.max)}` : null]
+  const text = parts.filter(Boolean).join(' · ')
+  return text ? ` · hava: ${text}` : ''
 }
 
 /** Bu sezon noktasına verilen avantaj (viewBox birimi): aynı konumdaki iki sezondan bu sezon kazanır */
 const SEASON_TIE_BREAK = 4
 const W = 320
 const H = 176
+/** Hava katmanı açıkken indeks alanının altına eklenen şerit */
+const WEATHER_H = 78
+const WX = { tempTop: 6, tempBottom: 38, rainTop: 44, rainBottom: 74, rainCapMm: 30 }
 const M = { left: 32, right: 10, top: 12, bottom: 24 }
 
 const x = (doy: number, year: number) => M.left + ((doy - 1) / (daysInYear(year) - 1)) * (W - M.left - M.right)
@@ -56,7 +73,17 @@ const linePath = (points: Point[]) =>
   points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.px.toFixed(1)} ${p.py.toFixed(1)}`).join(' ')
 
 /** Birden fazla indeks aynı grafikte; bu sezon düz, geçen sezon kesikli çizgi; en yakın noktaya tıklayınca tarih seçilir. */
-export function IndexChart({ scenes, season, active, activeDate, onToggle, onSelect }: IndexChartProps) {
+export function IndexChart({
+  scenes,
+  season,
+  active,
+  activeDate,
+  onToggle,
+  onSelect,
+  weather,
+  weatherLoading = false,
+  onWeatherToggle,
+}: IndexChartProps) {
   const [hover, setHover] = useState<Point | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -69,6 +96,24 @@ export function IndexChart({ scenes, season, active, activeDate, onToggle, onSel
     [scenes, active, season],
   )
   const allPoints = useMemo(() => series.flatMap((s) => s.points), [series])
+
+  // Hava katmanı: yalnızca bu sezonun takvim yılındaki günler
+  const wx = useMemo(() => {
+    const days = (weather ?? []).filter((d) => d.tarih.startsWith(String(season)))
+    const means = days.flatMap((d) => (d.min != null && d.max != null ? [(d.min + d.max) / 2] : []))
+    const lo = means.length ? Math.floor(Math.min(...means) / 5) * 5 : 0
+    const hi = means.length ? Math.ceil(Math.max(...means) / 5) * 5 : 30
+    const tempY = (t: number) => H + WX.tempBottom - ((t - lo) / Math.max(1, hi - lo)) * (WX.tempBottom - WX.tempTop)
+    const line = days
+      .filter((d) => d.min != null && d.max != null)
+      .map((d, i) => {
+        const mean = ((d.min as number) + (d.max as number)) / 2
+        return `${i === 0 ? 'M' : 'L'}${x(dayOfYear(d.tarih), season).toFixed(1)} ${tempY(mean).toFixed(1)}`
+      })
+      .join(' ')
+    const byDate = new Map(days.map((d) => [d.tarih, d]))
+    return { days, lo, hi, tempY, line, byDate }
+  }, [weather, season])
 
   const monthStarts = useMemo(
     () => MONTHS_SHORT.map((label, m) => ({ label, px: x(dayOfYear(`${season}-${String(m + 1).padStart(2, '0')}-01`), season) })),
@@ -125,20 +170,31 @@ export function IndexChart({ scenes, season, active, activeDate, onToggle, onSel
             </button>
           )
         })}
+        <button
+          type="button"
+          aria-pressed={weather !== null}
+          onClick={onWeatherToggle}
+          className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
+            weather !== null ? 'border-app-border bg-app-card-hover text-app-text' : 'border-transparent text-app-text-dim hover:text-app-text-muted'
+          }`}
+        >
+          <Cloud className="h-3 w-3" aria-hidden />
+          Hava katmanı
+        </button>
       </div>
 
       <div className="mb-1 flex min-h-5 items-center justify-between gap-2 text-[11px]">
         <span className="shrink-0 font-medium text-app-text">Zaman grafiği</span>
         <span className="truncate text-right text-app-text-muted" aria-live="polite" data-testid="chart-tooltip">
           {shown
-            ? `${INDEX_DEFS[shown.indeks].ad} · ${formatDate(shown.tarih)} · ${formatIndexValue(shown.indeks, shown.value)}${shown.bulut !== null ? ` · bulut %${Math.round(shown.bulut)}` : ''}${shown.year !== season ? ' · geçen sezon' : ''}`
+            ? `${INDEX_DEFS[shown.indeks].ad} · ${formatDate(shown.tarih)} · ${formatIndexValue(shown.indeks, shown.value)}${shown.bulut !== null ? ` · bulut %${Math.round(shown.bulut)}` : ''}${shown.year !== season ? ' · geçen sezon' : ''}${weatherNote(wx.byDate.get(shown.tarih))}`
             : ''}
         </span>
       </div>
 
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${W} ${H + (weather ? WEATHER_H : 0)}`}
         className="w-full"
         role="img"
         aria-label="İndeks zaman grafiği; tarihlere alttaki şeritten de erişebilirsiniz"
@@ -162,7 +218,7 @@ export function IndexChart({ scenes, season, active, activeDate, onToggle, onSel
             x1={activePoints[0].px}
             x2={activePoints[0].px}
             y1={M.top}
-            y2={H - M.bottom}
+            y2={weather ? H + WX.rainBottom : H - M.bottom}
             strokeDasharray="2 3"
             strokeWidth={1}
             style={{ stroke: 'var(--color-app-text-muted)' }}
@@ -195,6 +251,41 @@ export function IndexChart({ scenes, season, active, activeDate, onToggle, onSel
               ))}
             </g>
           ),
+        )}
+
+        {weather && (
+          <g aria-label="Hava katmanı: günlük yağış ve sıcaklık" data-testid="weather-layer">
+            <line x1={M.left} x2={W - M.right} y1={H + WX.rainBottom} y2={H + WX.rainBottom} style={{ stroke: 'var(--color-app-border)' }} strokeWidth={1} />
+            {wx.days.map((d) =>
+              d.yagisMm && d.yagisMm > 0 ? (
+                <rect
+                  key={d.tarih}
+                  x={x(dayOfYear(d.tarih), season) - 0.9}
+                  width={1.8}
+                  y={H + WX.rainBottom - (Math.min(d.yagisMm, WX.rainCapMm) / WX.rainCapMm) * (WX.rainBottom - WX.rainTop)}
+                  height={(Math.min(d.yagisMm, WX.rainCapMm) / WX.rainCapMm) * (WX.rainBottom - WX.rainTop)}
+                  rx={0.6}
+                  fill="#60a5fa"
+                  opacity={0.85}
+                />
+              ) : null,
+            )}
+            <path d={wx.line} fill="none" strokeWidth={1.4} strokeLinejoin="round" style={{ stroke: '#fb923c' }} />
+            <text x={M.left - 6} y={wx.tempY(wx.hi) + 3} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+              {wx.hi}°
+            </text>
+            <text x={M.left - 6} y={wx.tempY(wx.lo) + 3} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+              {wx.lo}°
+            </text>
+            <text x={M.left - 6} y={H + WX.rainBottom} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+              mm
+            </text>
+            {wx.days.length === 0 && (
+              <text x={W / 2} y={H + WEATHER_H / 2} textAnchor="middle" fontSize={10} style={{ fill: 'var(--color-app-text-dim)' }}>
+                {weatherLoading ? 'Hava verisi yükleniyor…' : 'Bu sezon için hava verisi yok'}
+              </text>
+            )}
+          </g>
         )}
 
         {hover && (
@@ -240,6 +331,18 @@ export function IndexChart({ scenes, season, active, activeDate, onToggle, onSel
           <i className="h-0 w-4 border-t-2 border-dashed border-app-text-muted" aria-hidden />
           {season - 1} sezonu
         </span>
+        {weather && (
+          <>
+            <span className="flex items-center gap-1.5">
+              <i className="h-2 w-2 rounded-sm bg-blue-400" aria-hidden />
+              Günlük yağış
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="h-0.5 w-4 rounded" style={{ background: '#fb923c' }} aria-hidden />
+              Ortalama sıcaklık
+            </span>
+          </>
+        )}
         {!single && <span className="text-app-text-dim">Çizgiler her indeksin kendi skalasına göre normalize edilir</span>}
       </div>
     </div>
