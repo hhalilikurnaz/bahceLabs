@@ -3,7 +3,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-
 DataAvailability = Literal["available", "no_data", "not_configured", "unavailable"]
 SimulationPlanStatus = Literal["draft", "saved", "applied"]
 PlanningStepId = Literal["land", "product", "planting", "maintenance", "simulation"]

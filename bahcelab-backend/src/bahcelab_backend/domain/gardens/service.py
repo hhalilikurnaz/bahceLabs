@@ -12,6 +12,7 @@ from bahcelab_backend.domain.gardens.schemas import (
     GeoJsonGeometry,
     MeasureResponse,
 )
+from bahcelab_backend.domain.ndvi.service import NdviCoordinator
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 
@@ -41,6 +42,8 @@ def to_response(row: GardenRow) -> GardenResponse:
         ilce=g.ilce,
         created_at=g.created_at,
         updated_at=g.updated_at,
+        son_ndvi_ortalama=row.son_ndvi_ortalama,
+        son_ndvi_tarihi=row.son_ndvi_tarihi,
         name=g.ad,
         location_label=_location_label(g.il, g.ilce),
         area_m2=round(area * 1000, 1),
@@ -72,8 +75,9 @@ def _check_measurement(m: Measurement) -> None:
 
 
 class GardenService:
-    def __init__(self, repo: GardenRepository) -> None:
+    def __init__(self, repo: GardenRepository, ndvi: NdviCoordinator | None = None) -> None:
         self.repo = repo
+        self.ndvi = ndvi
 
     async def _validated_area(self, geometry: GeoJsonGeometry) -> tuple[dict[str, Any], float]:
         geojson = geometry.to_geojson_dict()
@@ -102,6 +106,8 @@ class GardenService:
         garden_id = await self.repo.create(
             values=request.model_dump(exclude={"geometry"}), geojson=geojson, area_dekar=area
         )
+        if self.ndvi:
+            await self.ndvi.start_initial(garden_id)  # son 13 ay arka planda işlenir
         return await self.get(garden_id)
 
     async def update(self, garden_id: uuid.UUID, request: GardenUpdate):
@@ -114,8 +120,12 @@ class GardenService:
 
         values = request.model_dump(exclude={"geometry"}, exclude_unset=True)
         await self.repo.update(garden, values=values, geojson=geojson, area_dekar=area)
+        if geojson is not None and self.ndvi:
+            await self.ndvi.restart_after_boundary_change(garden_id)  # eski NDVI kayıtları geçersiz
         return await self.get(garden_id)
 
     async def delete(self, garden_id: uuid.UUID) -> None:
         row = await self._get_model(garden_id)
         await self.repo.delete(row.garden)
+        if self.ndvi:
+            self.ndvi.purge_files(garden_id)

@@ -20,3 +20,6 @@ htmlcov/
 
 # Alembic
 # (migrations are tracked)
+
+# Yerel dosya depolama (NDVI PNG)
+uploads/

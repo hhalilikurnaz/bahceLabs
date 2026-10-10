@@ -1,12 +1,14 @@
 import json
 import uuid
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.gardens.models import GardenModel
+from bahcelab_backend.domain.ndvi.models import NdviObservationModel
 from bahcelab_backend.domain.planning.models import SimulationPlanModel
 
 
@@ -21,6 +23,8 @@ class Measurement:
 class GardenRow:
     garden: GardenModel
     geojson: dict[str, Any]
+    son_ndvi_ortalama: float | None = None  # son geçerli (bulutsuz) NDVI gözleminin ortalaması
+    son_ndvi_tarihi: date | None = None
 
 
 # Alan elipsoit üzerinde (geography) hesaplanır: Türkiye'nin her yerinde UTM bölgesinden bağımsız doğrudur
@@ -49,18 +53,42 @@ class GardenRepository:
         return Measurement(bool(row.is_valid), row.reason, float(row.area_dekar))
 
     def _select(self):
-        return select(GardenModel, func.ST_AsGeoJSON(GardenModel.geom).label("geojson")).where(
-            GardenModel.workspace_id == self.workspace_id
+        # Her bahçenin son geçerli NDVI gözlemi (liste rozeti ve silüet rengi için)
+        latest = (
+            select(
+                NdviObservationModel.garden_id.label("gid"),
+                NdviObservationModel.ortalama.label("son_ortalama"),
+                NdviObservationModel.tarih.label("son_tarih"),
+            )
+            .where(NdviObservationModel.durum == "tamam")
+            .distinct(NdviObservationModel.garden_id)
+            .order_by(NdviObservationModel.garden_id, NdviObservationModel.tarih.desc())
+            .subquery()
         )
+        return (
+            select(
+                GardenModel,
+                func.ST_AsGeoJSON(GardenModel.geom).label("geojson"),
+                latest.c.son_ortalama,
+                latest.c.son_tarih,
+            )
+            .outerjoin(latest, latest.c.gid == GardenModel.id)
+            .where(GardenModel.workspace_id == self.workspace_id)
+        )
+
+    @staticmethod
+    def _row(values) -> GardenRow:
+        garden, geojson, ortalama, tarih = values
+        return GardenRow(garden, json.loads(geojson), ortalama, tarih)
 
     async def list_gardens(self) -> list[GardenRow]:
         result = await self.session.execute(self._select().order_by(GardenModel.created_at.desc()))
-        return [GardenRow(g, json.loads(gj)) for g, gj in result.all()]
+        return [self._row(values) for values in result.all()]
 
     async def get(self, garden_id: uuid.UUID) -> GardenRow | None:
         result = await self.session.execute(self._select().where(GardenModel.id == garden_id))
-        row = result.first()
-        return GardenRow(row[0], json.loads(row[1])) if row else None
+        values = result.first()
+        return self._row(values) if values else None
 
     async def create(
         self, *, values: dict[str, Any], geojson: dict[str, Any], area_dekar: float

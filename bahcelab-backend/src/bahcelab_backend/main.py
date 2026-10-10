@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,8 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
+from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.ndvi.runner import fail_stale_jobs
 from bahcelab_backend.shared.errors import AppError
 from bahcelab_backend.shared.exception_handlers import (
     app_error_handler,
@@ -18,6 +21,12 @@ from bahcelab_backend.shared.exception_handlers import (
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    if get_settings().ndvi_enabled:
+        try:
+            # Önceki süreçte yarıda kalan NDVI işleri hata olarak işaretlenir (yeniden başlatılabilir)
+            await fail_stale_jobs()
+        except Exception:  # noqa: BLE001 - veritabanı hazır değilse API yine açılır
+            logging.getLogger(__name__).warning("Yarım kalan NDVI işleri temizlenemedi", exc_info=True)
     yield
 
 
@@ -47,6 +56,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router)
     app.include_router(gardens_router)
+    app.include_router(ndvi_router)
     app.include_router(planning_router)
 
     @app.get("/health", tags=["system"])

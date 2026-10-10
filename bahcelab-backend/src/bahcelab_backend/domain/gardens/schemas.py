@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, field_validator, model_validator
@@ -151,6 +151,8 @@ class GardenResponse(BaseModel):
     ilce: str | None
     created_at: datetime
     updated_at: datetime
+    son_ndvi_ortalama: float | None = None
+    son_ndvi_tarihi: date | None = None
     # Planlama ekranının beklediği alanlar
     name: str
     location_label: str | None

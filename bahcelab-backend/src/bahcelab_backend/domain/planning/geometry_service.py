@@ -1,7 +1,7 @@
+from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import Polygon, mapping, shape
 from shapely.validation import explain_validity
-from pyproj import Geod
 
 from bahcelab_backend.domain.planning.schemas import GeoJsonPolygon, PlanningLand
 

@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     api_debug: bool = True
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Dosya depolama (NDVI PNG'leri). Yerelde diskte; ileride S3/R2 uygulaması aynı arayüze takılır.
+    storage_dir: str = "uploads"
+
+    # NDVI işleme: false ise bahçe kaydında arka plan işi başlatılmaz (testler, ağsız ortam)
+    ndvi_enabled: bool = True
+    ndvi_months: int = 13
+    ndvi_max_parallel_scenes: int = 2
+    ndvi_refresh_hours: int = 12
+
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
     access_token_minutes: int = 15

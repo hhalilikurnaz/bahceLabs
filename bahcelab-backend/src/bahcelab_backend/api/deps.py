@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Cookie, Depends
+from fastapi import BackgroundTasks, Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.api.auth.cookies import ACCESS_COOKIE
@@ -12,9 +12,12 @@ from bahcelab_backend.domain.auth.security import decode_access_token
 from bahcelab_backend.domain.auth.service import AuthService
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
+from bahcelab_backend.domain.ndvi.repository import NdviRepository
+from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
+from bahcelab_backend.shared.storage import get_storage
 
 
 async def get_auth_service(
@@ -40,11 +43,31 @@ async def get_workspace_id(
     return user.workspace_id
 
 
+def _coordinator(session: AsyncSession, background_tasks: BackgroundTasks) -> NdviCoordinator:
+    return NdviCoordinator(NdviRepository(session), get_storage(), background_tasks)
+
+
 async def get_garden_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    background_tasks: BackgroundTasks,
 ) -> GardenService:
-    return GardenService(GardenRepository(session, workspace_id))
+    return GardenService(
+        GardenRepository(session, workspace_id), _coordinator(session, background_tasks)
+    )
+
+
+async def get_ndvi_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    background_tasks: BackgroundTasks,
+) -> NdviService:
+    return NdviService(
+        GardenRepository(session, workspace_id),
+        NdviRepository(session),
+        _coordinator(session, background_tasks),
+        get_storage(),
+    )
 
 
 async def get_plan_repository(
