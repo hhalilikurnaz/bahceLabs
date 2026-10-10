@@ -22,7 +22,13 @@ from rasterio.windows import bounds as window_bounds
 from shapely.geometry import shape
 
 from bahcelab_backend.domain.ndvi.indices import ALL_BANDS, BAND_SCL, BANDS_10M
-from bahcelab_backend.domain.ndvi.processing import SceneBands, to_reflectance
+from bahcelab_backend.domain.ndvi.processing import (
+    MIN_VALID_RATIO,
+    SceneBands,
+    garden_pixel_mask,
+    scl_valid_mask,
+    to_reflectance,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +168,16 @@ def _read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str]) -> Scen
     with rasterio.Env(**_GDAL_ENV):
         ref = _reference_window(hrefs["B04"], geometry)
 
+    # Önce yalnızca SCL: bahçede geçerli piksel oranı düşükse (bulutlu) ek bantlar hiç indirilmez
+    scl = _read_one(hrefs[BAND_SCL], ref, BAND_SCL).astype(np.uint8)
+    geometry_utm = transform_geom("EPSG:4326", ref.crs, geometry)
+    in_garden = garden_pixel_mask(geometry_utm, scl.shape, ref.transform)
+    if in_garden.any() and (in_garden & scl_valid_mask(scl)).sum() / in_garden.sum() < MIN_VALID_RATIO:
+        return SceneBands(bands={}, scl=scl, transform=ref.transform, crs=ref.crs)
+
     # Tüm bantlar aynı anda okunur (ağ beklemesi baskın): sahne başına tek okuma turu
     with ThreadPoolExecutor(max_workers=_READ_THREADS) as pool:
-        futures = {key: pool.submit(_read_one, hrefs[key], ref, key) for key in [*wanted, BAND_SCL]}
+        futures = {key: pool.submit(_read_one, hrefs[key], ref, key) for key in wanted}
         arrays = {key: future.result() for key, future in futures.items()}
 
     reflectance: dict[str, np.ndarray] = {}
@@ -173,7 +186,7 @@ def _read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str]) -> Scen
         reflectance[key] = to_reflectance(arrays[key], scale, offset)
     return SceneBands(
         bands=reflectance,
-        scl=arrays[BAND_SCL].astype(np.uint8),
+        scl=scl,
         transform=ref.transform,
         crs=ref.crs,
     )

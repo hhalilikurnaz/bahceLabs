@@ -287,33 +287,29 @@ def analyze_scene(
 ) -> SceneAnalysis:
     """Bir sahneden istenen çıktıları (indeksler ve gerçek renk) üretir.
 
-    "Bulutlu" kararı çekirdek bantlarla (SCL + B04/B08 + bahçe) verilir: geçerli piksel oranı < %70 ise
-    hiçbir çıktı üretilmez.
+    "Bulutlu" kararı yalnızca SCL ve bahçe sınırıyla verilir: geçerli piksel oranı < %70 ise
+    hiçbir çıktı üretilmez (bu durumda `scene.bands` boş olabilir).
     """
     wanted = set(outputs) if outputs is not None else set(INDICES) | {TRUE_COLOR}
     geometry_utm = transform_geom("EPSG:4326", scene.crs, geometry_wgs84)
     shape_hw = scene.shape
 
     in_garden = garden_pixel_mask(geometry_utm, shape_hw, scene.transform)
-    valid_core = (
-        in_garden
-        & scl_valid_mask(scene.scl)
-        & np.isfinite(scene.bands["B04"])
-        & np.isfinite(scene.bands["B08"])
-    )
-
-    touched = garden_pixel_mask(geometry_utm, shape_hw, scene.transform, all_touched=True)
-    visible_core = (
-        touched
-        & scl_valid_mask(scene.scl)
-        & np.isfinite(scene.bands["B04"])
-        & np.isfinite(scene.bands["B08"])
-    )
-
+    scl_ok = scl_valid_mask(scene.scl)
     garden_pixels = int(in_garden.sum())
-    ratio = float(valid_core.sum()) / garden_pixels if garden_pixels else 0.0
+    # Önce yalnızca SCL ile eleme: bulutlu sahnede ek bantlar hiç okunmaz (`scene.bands` boştur)
+    ratio = float((in_garden & scl_ok).sum()) / garden_pixels if garden_pixels else 0.0
+    if ratio < MIN_VALID_RATIO or "B04" not in scene.bands:
+        return SceneAnalysis(gecerli_piksel_orani=round(ratio, 4), bulutlu=True)
+
+    # Veri yok (NaN) pikseller de geçersiz sayılır
+    finite = np.isfinite(scene.bands["B04"]) & np.isfinite(scene.bands["B08"])
+    valid_core = in_garden & scl_ok & finite
+    ratio = float(valid_core.sum()) / garden_pixels
     if ratio < MIN_VALID_RATIO:
         return SceneAnalysis(gecerli_piksel_orani=round(ratio, 4), bulutlu=True)
+    touched = garden_pixel_mask(geometry_utm, shape_hw, scene.transform, all_touched=True)
+    visible_core = touched & scl_ok & finite
 
     analysis = SceneAnalysis(
         gecerli_piksel_orani=round(ratio, 4),

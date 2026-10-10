@@ -544,3 +544,10 @@ def test_months_back():
     assert months_back(date(2026, 10, 10), 13) == date(2025, 9, 10)
     assert months_back(date(2026, 3, 31), 13) == date(2025, 2, 28)
     assert months_back(date(2026, 1, 15), 1) == date(2025, 12, 15)
+
+
+def test_cloudy_scene_is_decided_by_scl_alone():
+    scl = np.full((SIZE, SIZE), 9, dtype=np.uint8)  # tamamı bulut
+    empty = SceneBands(bands={}, scl=scl, transform=scene().transform, crs=scene().crs)
+    result = analyze_scene(empty, GARDEN)
+    assert result.bulutlu and not result.indeksler
