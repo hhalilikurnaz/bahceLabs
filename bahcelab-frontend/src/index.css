@@ -31,6 +31,8 @@
   --text-display--line-height: 36px;
   --text-metric: 44px;
   --text-metric--line-height: 48px;
+  --text-score: 56px;
+  --text-score--line-height: 60px;
 
   /* Köşe */
   --radius-sm: 8px;

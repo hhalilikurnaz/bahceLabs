@@ -19,7 +19,7 @@ Masaüstünde (≥ 1180 px) üç bölge: **sol liste | orta harita | sağ bahçe
 ## Bahçe sayfası (`/bahcem/:id/…`)
 ```
 /bahcem/:id
-├── durum    Durum   en güncel değer + açıklama, zaman grafiği, uyarılar (Adım 8: skor, "Bugün" kartı)
+├── durum    Durum   skor kartı (0–100, etiket, tek cümle, "Neden bu skor?" dökümü, güven) + "Bugün" (≤ 3 madde); 3 özet kart; ortak zaman eksenli 3 grafik: parametre · birikmiş yağış · GDD (dönem: bu/geçen sezon/özel; fenoloji bantları; senkron imleç); uyarılar
 ├── analiz   Analiz  Bölgeler (şimdi: verimlilik bölgeleri; Adım 9: çok yıllık), Sorunlu alanlar (tıkla → haritada odak)
 │                    Yakında: Topografya & don (10) · Toprak örneklemesi (14) · Uygulama haritası & denemeler (15)
 ├── hava     Hava    hava, 7 gün, ilaçlama penceresi, su durumu · Yakında: Sulama önerisi (8) · Zararlı/hastalık riski (8)

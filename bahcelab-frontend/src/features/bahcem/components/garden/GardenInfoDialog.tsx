@@ -4,14 +4,16 @@ import { describeError } from '../../api/gardensApi'
 import type { Garden } from '../../api/types'
 import { useUpdateGarden } from '../../api/useGardens'
 import { parseOptionalInt, validateGardenFields, type GardenFieldErrors } from '../../lib/gardenFields'
-import { GARDEN_LIMITS } from '../../lib/config'
 import { useToast } from '../layout/toastContext'
+import { VarietyField } from './VarietyField'
+import { varietyPayload, varietyValueOf, type VarietyValue } from '../../lib/variety'
 
 /** «Bilgileri tamamla»: çeşit, dikim yılı ve ağaç sayısı sonradan girilir (PATCH). Kaydedince kartlar güncellenir. */
 export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose: () => void }) {
   const update = useUpdateGarden()
   const toast = useToast()
-  const [cesit, setCesit] = useState(garden.cesit ?? '')
+  const [variety, setVariety] = useState<VarietyValue>(varietyValueOf(garden.cesitKodu, garden.cesit))
+  const cesit = variety.metin
   const [dikimYili, setDikimYili] = useState(garden.dikimYili?.toString() ?? '')
   const [agacSayisi, setAgacSayisi] = useState(garden.agacSayisi?.toString() ?? '')
   const [errors, setErrors] = useState<GardenFieldErrors>({})
@@ -30,7 +32,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
     if (Object.keys(found).length > 0) return
     setServerError(null)
     update.mutate(
-      { id: garden.id, patch: { cesit: cesit.trim() || null, dikimYili: parseOptionalInt(dikimYili), agacSayisi: parseOptionalInt(agacSayisi) } },
+      { id: garden.id, patch: { ...varietyPayload(variety), dikimYili: parseOptionalInt(dikimYili), agacSayisi: parseOptionalInt(agacSayisi) } },
       {
         onSuccess: () => {
           toast.show('Bahçe bilgileri kaydedildi.')
@@ -58,7 +60,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
           </h2>
           <p className="mt-1 text-small text-app-text-muted">“{garden.ad}” için bilgileri girin; hepsi isteğe bağlıdır.</p>
         </div>
-        <TextField label="Çeşit" autoFocus maxLength={GARDEN_LIMITS.varietyMax} value={cesit} onChange={(e) => setCesit(e.target.value)} placeholder="Örn. Interdonato" error={errors.cesit} />
+        <VarietyField urun={garden.urun} value={variety} onChange={setVariety} error={errors.cesit} label="Çeşit" />
         <div className="grid grid-cols-2 gap-3">
           <TextField label="Dikim yılı" inputMode="numeric" value={dikimYili} onChange={(e) => setDikimYili(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2015" error={errors.dikimYili} />
           <TextField label="Ağaç sayısı" inputMode="numeric" value={agacSayisi} onChange={(e) => setAgacSayisi(e.target.value.replace(/\D/g, '').slice(0, 7))} placeholder="500" error={errors.agacSayisi} />

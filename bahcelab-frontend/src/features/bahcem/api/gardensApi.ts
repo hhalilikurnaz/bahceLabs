@@ -6,6 +6,7 @@ interface ApiGarden {
   ad: string
   urun: Urun
   cesit: string | null
+  cesit_kodu: string | null
   dikim_yili: number | null
   agac_sayisi: number | null
   geometry: GardenGeometry
@@ -23,6 +24,7 @@ function fromApi(garden: ApiGarden): Garden {
     ad: garden.ad,
     urun: garden.urun,
     cesit: garden.cesit,
+    cesitKodu: garden.cesit_kodu,
     dikimYili: garden.dikim_yili,
     agacSayisi: garden.agac_sayisi,
     geometry: garden.geometry,
@@ -40,6 +42,7 @@ const toApi = (patch: GardenPatch) => {
   if ('ad' in patch) body.ad = patch.ad
   if ('urun' in patch) body.urun = patch.urun
   if ('cesit' in patch) body.cesit = patch.cesit
+  if ('cesitKodu' in patch) body.cesit_kodu = patch.cesitKodu
   if ('dikimYili' in patch) body.dikim_yili = patch.dikimYili
   if ('agacSayisi' in patch) body.agac_sayisi = patch.agacSayisi
   if ('geometry' in patch) body.geometry = patch.geometry

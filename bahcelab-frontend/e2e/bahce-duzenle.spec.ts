@@ -26,11 +26,11 @@ test('bahçe bilgilerini tamamla: doğrulama, kaydet, kart güncellenir', async 
   await page.getByRole('button', { name: 'Kaydet' }).click()
   await expect(page.getByText(/Dikim yılı 1900 ile/)).toBeVisible()
 
-  await page.getByLabel('Çeşit').fill('Interdonato')
+  await page.getByLabel('Çeşit', { exact: true }).selectOption({ label: 'Enterdonat' })
   await page.getByLabel('Dikim yılı').fill('2012')
   await page.getByLabel('Ağaç sayısı').fill('480')
   await page.getByRole('button', { name: 'Kaydet' }).click()
-  await expect(page.getByTestId('product-facts')).toContainText('Interdonato')
+  await expect(page.getByTestId('product-facts')).toContainText('Enterdonat')
   await expect(page.getByTestId('product-facts')).toContainText('480 ağaç')
   await expect(page.getByRole('button', { name: 'Bilgileri tamamla' })).toHaveCount(0)
 })

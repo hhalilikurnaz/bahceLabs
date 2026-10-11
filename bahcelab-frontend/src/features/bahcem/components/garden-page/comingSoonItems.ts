@@ -43,6 +43,5 @@ export const COPILOT_ITEMS: ComingSoonItem[] = [
 ]
 
 export const STATUS_ITEMS: ComingSoonItem[] = [
-  { title: 'Bahçe skoru ve "Bugün"', step: 'Adım 8', text: 'Tek bakışta bahçenin puanı ve bugün yapılacaklar.' },
-  { title: 'Sulama önerisi', step: 'Adım 8', text: 'Su dengesine göre ne zaman sulanacağı.' },
+  { title: 'Sulama önerisi ve zararlı/hastalık riski', step: 'Adım 8B', text: 'Su ihtiyacı ve risk tahminleri Hava sekmesinde ve Bugün kartında görünecek.' },
 ]

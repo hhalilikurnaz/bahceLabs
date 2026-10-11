@@ -20,6 +20,8 @@ export interface Garden {
   ad: string
   urun: Urun
   cesit: string | null
+  /** Katalog çeşit kodu; 'diger' ise `cesit` serbest metindir */
+  cesitKodu: string | null
   dikimYili: number | null
   agacSayisi: number | null
   geometry: GardenGeometry
@@ -37,6 +39,7 @@ export interface GardenInput {
   ad: string
   urun: Urun
   cesit: string | null
+  cesitKodu?: string | null
   dikimYili: number | null
   agacSayisi?: number | null
   geometry: GardenGeometry

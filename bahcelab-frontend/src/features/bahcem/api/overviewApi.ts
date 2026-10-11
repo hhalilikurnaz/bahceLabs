@@ -21,6 +21,8 @@ export interface GardenOverview {
   il: string | null
   ilce: string | null
   durum: GardenStatus
+  /** 0–100; geçmiş/görüntü yetersizse null */
+  skor: number | null
   durumNedeni: string | null
   indeks: string
   sonGoruntu: { tarih: string; kucukResimUrl: string } | null
@@ -50,6 +52,7 @@ function mapGarden(g: ApiGardenOverview): GardenOverview {
     il: g.il,
     ilce: g.ilce,
     durum: g.durum,
+    skor: g.skor,
     durumNedeni: g.durum_nedeni,
     indeks: g.indeks,
     sonGoruntu: g.son_goruntu

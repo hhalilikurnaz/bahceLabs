@@ -26,7 +26,8 @@ export function GardenPage({ garden }: { garden: Garden }) {
   const setFullMap = useBahcemStore((s) => s.setFullMap)
   const actions = useGardenActions()
   const overview = useGardensOverview()
-  const status = overview.data?.bahceler.find((g) => g.id === garden.id)?.durum
+  const summary = overview.data?.bahceler.find((g) => g.id === garden.id)
+  const status = summary?.durum
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(garden.ad)
 
@@ -76,7 +77,7 @@ export function GardenPage({ garden }: { garden: Garden }) {
             ) : (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h2 className="truncate font-display text-h1 text-app-text">{garden.ad}</h2>
-                {status && <StatusBadge status={status} />}
+                {status && <StatusBadge status={status} score={summary?.skor} />}
               </div>
             )}
             <p className="mt-0.5 truncate text-small text-app-text-muted">{subtitle}</p>

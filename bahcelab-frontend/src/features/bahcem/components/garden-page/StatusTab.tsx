@@ -1,68 +1,93 @@
-import { Cloud } from 'lucide-react'
-import { useState } from 'react'
+import { CalendarRange } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Chip, ErrorState, SelectField, Skeleton } from '@/components/ui'
+import { Button, Card, ErrorState, SelectField, Skeleton } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
 import { useRefreshIndices } from '../../api/indeksApi'
+import { usePhenology, useSeriesForSeasons } from '../../api/agroApi'
 import type { Garden } from '../../api/types'
-import { useWeather, useWeatherHistory } from '../../api/weatherApi'
+import { useWeather } from '../../api/weatherApi'
 import { useIndexView } from '../../hooks/useIndexView'
 import { archivePath } from '../../lib/archive'
-import { shiftDays, todayIstanbul } from '../../lib/dates'
-import { INDEX_DEFS, INDEX_IDS, isIndexId, type IndexId } from '../../lib/indices'
-import { useBahcemStore } from '../../stores/bahcemStore'
+import { formatDate, shiftDays, todayIstanbul } from '../../lib/dates'
+import { INDEX_DEFS, INDEX_IDS, formatIndexValue, isIndexId, type IndexId } from '../../lib/indices'
+import { periodRange, seasonStartYear, type Band, type PeriodKind } from '../../lib/seasonAxis'
 import { WeatherAlertsCard } from '../hava/WeatherAlertsCard'
 import { AlertsCard } from '../indeks/AlertsCard'
+import { SeriesChartCard } from '../indeks/SeriesChartCard'
 import { StatusLine } from '../indeks/StatusLine'
 import { TimeChart } from '../indeks/TimeChart'
-import { WeatherChart } from '../indeks/WeatherChart'
 import { ComingSoonList } from './ComingSoonList'
 import { STATUS_ITEMS } from './comingSoonItems'
 import { LatestValueCard } from './LatestValueCard'
-import { ReservedSlots } from './ReservedSlots'
+import { PeriodSelector } from './PeriodSelector'
+import { PhenologyEditor } from './PhenologyEditor'
+import { RuleBadge } from './RuleBadge'
+import { ScoreCard } from './ScoreCard'
 import { ProductCard, TodayWeatherCard } from './SummaryCards'
+import { TodayCard } from './TodayCard'
 
-const THIS_YEAR = new Date().getFullYear()
-const SEASONS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2]
+const nf = (digits: number) => (v: number) => v.toLocaleString('tr-TR', { maximumFractionDigits: digits })
+const mm = nf(0)
 
-/** Durum sekmesi: üç özet kart, tek parametre seçici, zaman grafiği, uyarılar ve uydu verisi durumu. */
+/** Durum sekmesi: skor + «Bugün», üç özet kart, ortak zaman eksenli üç grafik (parametre · yağış · GDD), uyarılar. */
 export function StatusTab({ garden }: { garden: Garden }) {
   const gardenId = garden.id
   const navigate = useNavigate()
   const { data, scenes, isLoading, isError, isFetching, refetch, active, katman } = useIndexView()
-  const season = useBahcemStore((s) => s.season)
-  const setSeason = useBahcemStore((s) => s.setSeason)
-  const havaKatmani = useBahcemStore((s) => s.havaKatmani)
-  const setHavaKatmani = useBahcemStore((s) => s.setHavaKatmani)
   const refresh = useRefreshIndices(gardenId)
   const weather = useWeather(gardenId)
+  const phenology = usePhenology(gardenId)
+  const today = todayIstanbul()
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [compare, setCompare] = useState<IndexId | ''>('')
-  const [hoverDoy, setHoverDoy] = useState<number | null>(null)
+  const [hoverDate, setHoverDate] = useState<string | null>(null)
+  const [kind, setKind] = useState<PeriodKind>('bu')
+  const [custom, setCustom] = useState({ from: shiftDays(today, -90), to: today })
+  const [editing, setEditing] = useState(false)
 
-  const yesterday = shiftDays(todayIstanbul(), -1)
-  const yearEnd = `${season}-12-31`
-  const weatherHistory = useWeatherHistory(gardenId, `${season}-01-01`, yearEnd < yesterday ? yearEnd : yesterday, havaKatmani)
+  const range = useMemo(() => periodRange(kind, today, custom), [kind, today, custom])
+  const seasons = useMemo(() => {
+    const first = seasonStartYear(range.from)
+    const last = seasonStartYear(range.to < today ? range.to : today)
+    return Array.from({ length: Math.max(1, last - first + 1) }, (_, i) => first + i).filter((y) => y <= seasonStartYear(today))
+  }, [range, today])
+  const agro = useSeriesForSeasons(gardenId, seasons)
+
+  const bands = useMemo<Band[]>(
+    () => (phenology.data?.evreler ?? []).map((e) => ({ kod: e.kod, ad: e.ad, baslangic: e.baslangic, bitis: e.bitis, ozel: e.ozel })),
+    [phenology.data],
+  )
+  const bandNote = phenology.data?.kural?.durum === 'dogrulanmadi' ? 'ön değer' : undefined
 
   const indexLayer: IndexId = isIndexId(katman) ? katman : 'ndvi'
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
   const hasImages = scenes?.some((s) => s.durum === 'tamam') ?? false
 
+  // Büyük özet rakamlar: aralığın son (bugüne kadar) günü
+  const lastDay = [...agro.days].reverse().find((d) => d.tarih <= range.to && d.tarih <= today)
+  const latestInRange = [...(scenes ?? [])].reverse().find((s) => s.durum === 'tamam' && s.indeksler[indexLayer] && s.tarih >= range.from && s.tarih <= range.to)
+  const rainSummary = lastDay
+    ? { value: mm(lastDay.yagisBirikimli), unit: 'mm', caption: lastDay.oncekiYagisBirikimli !== null ? `geçen sezon aynı gün: ${mm(lastDay.oncekiYagisBirikimli)} mm` : 'geçen sezon verisi yok' }
+    : null
+  const gddSummary = lastDay && lastDay.gddBirikimli !== null
+    ? { value: mm(lastDay.gddBirikimli), unit: 'GDD', caption: `geçen sezon aynı gün: ${lastDay.oncekiGddBirikimli !== null ? mm(lastDay.oncekiGddBirikimli) : '—'}` }
+    : null
+  const paramSummary = latestInRange
+    ? { value: formatIndexValue(indexLayer, latestInRange.indeksler[indexLayer]?.ortalama), caption: `${formatDate(latestInRange.tarih)} · son net görüntü` }
+    : null
+
   if (isError && !data) {
     return (
       <Card>
-        <ErrorState
-          title="Uydu verisi alınamadı"
-          description="İnternet bağlantınızı kontrol edip tekrar deneyin."
-          retrying={isFetching}
-          onRetry={() => void refetch()}
-        />
+        <ErrorState title="Uydu verisi alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
       </Card>
     )
   }
   if (isLoading || !data) {
     return (
       <div className="space-y-3" aria-label="Uydu verisi yükleniyor" aria-busy>
+        <Skeleton className="h-44" />
         <div className="grid grid-cols-1 gap-2 @md:grid-cols-3">
           <Skeleton className="h-36" />
           <Skeleton className="h-36" />
@@ -75,7 +100,6 @@ export function StatusTab({ garden }: { garden: Garden }) {
 
   return (
     <div className="space-y-3">
-      <ReservedSlots />
       <StatusLine
         data={data}
         refreshing={refresh.isPending}
@@ -85,6 +109,12 @@ export function StatusTab({ garden }: { garden: Garden }) {
         }}
         refreshError={refreshError}
       />
+
+      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2" data-testid="score-today">
+        <ScoreCard gardenId={gardenId} />
+        <TodayCard gardenId={gardenId} />
+      </div>
+
       <div className="grid grid-cols-1 gap-2 @md:grid-cols-3" data-testid="summary-cards">
         <LatestValueCard indeks={indexLayer} scenes={scenes} loading={false} processing={processing} alerts={data.uyarilar} />
         <ProductCard garden={garden} />
@@ -92,53 +122,146 @@ export function StatusTab({ garden }: { garden: Garden }) {
       </div>
 
       {hasImages && (
-        <Card aria-label="Zaman grafiği" data-testid="time-chart" className="space-y-3">
-          <h3 className="font-display text-h2 text-app-text" data-testid="chart-title">
-            {INDEX_DEFS[indexLayer].ad} – zaman grafiği
-          </h3>
-          <div className="flex flex-wrap items-end gap-3">
-            <SelectField label="Sezon" value={season} onChange={(event) => setSeason(Number(event.target.value))} className="w-36">
-              {SEASONS.map((year) => (
-                <option key={year} value={year}>
-                  {year} sezonu
-                </option>
-              ))}
-            </SelectField>
-            <SelectField label="Karşılaştır" value={compare} onChange={(event) => setCompare(event.target.value as IndexId | '')} className="w-48">
-              <option value="">İkinci parametre yok</option>
-              {INDEX_IDS.filter((id) => id !== indexLayer).map((id) => (
-                <option key={id} value={id}>
-                  {INDEX_DEFS[id].ad}
-                </option>
-              ))}
-            </SelectField>
-            <Chip selected={havaKatmani} onClick={() => setHavaKatmani(!havaKatmani)} icon={<Cloud className="h-4 w-4" aria-hidden />}>
-              Yağış ve sıcaklık
-            </Chip>
+        <section aria-label="Zaman grafikleri" className="space-y-3" data-testid="charts">
+          <Card className="space-y-3 p-3">
+            <h3 className="font-display text-h2 text-app-text">Sezon grafikleri</h3>
+            <PeriodSelector kind={kind} onKind={setKind} custom={custom} onCustom={setCustom} max={today} />
+            <p className="text-caption text-app-text-dim" data-testid="period-label">
+              {formatDate(range.from)} – {formatDate(range.to)} · üç grafik aynı zaman eksenindedir
+            </p>
+          </Card>
+
+          <Card aria-label="Parametre grafiği" data-testid="time-chart" className="space-y-2 p-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h3 className="font-display text-h2 text-app-text" data-testid="chart-title">
+                {INDEX_DEFS[indexLayer].ad} – zaman grafiği
+              </h3>
+              <SelectField label="Karşılaştır" value={compare} onChange={(event) => setCompare(event.target.value as IndexId | '')} className="w-56">
+                <option value="">İkinci parametre yok</option>
+                {INDEX_IDS.filter((id) => id !== indexLayer).map((id) => (
+                  <option key={id} value={id}>
+                    {INDEX_DEFS[id].ad}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="flex gap-3">
+              <div className="min-w-0 flex-1">
+                <TimeChart
+                  scenes={data.gozlemler}
+                  indeks={indexLayer}
+                  range={range}
+                  compare={compare || null}
+                  activeDate={active?.tarih ?? null}
+                  onSelect={(tarih) => navigate(archivePath(gardenId, { parametre: indexLayer, tarih }))}
+                  bands={bands}
+                  bandNote={bandNote}
+                  hoverDate={hoverDate}
+                  onHoverDate={setHoverDate}
+                />
+              </div>
+              <div className="w-24 shrink-0 self-center text-right" data-testid="time-chart-summary">
+                {paramSummary ? (
+                  <>
+                    <p className="tabular whitespace-nowrap font-display text-display text-app-text">{paramSummary.value}</p>
+                    <p className="text-small font-semibold text-app-text-muted">{INDEX_DEFS[indexLayer].ad}</p>
+                    <p className="mt-0.5 text-caption text-app-text-muted">{paramSummary.caption}</p>
+                  </>
+                ) : (
+                  <p className="text-caption text-app-text-dim">Bu dönemde net görüntü yok</p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-app-text-muted">
+              <span className="flex items-center gap-1.5">
+                <i className="h-0.5 w-4 rounded" style={{ background: INDEX_DEFS[indexLayer].cizgi }} aria-hidden /> Bu dönem
+              </span>
+              <span className="flex items-center gap-1.5">
+                <i className="h-0 w-4 border-t-2 border-dashed" style={{ borderColor: INDEX_DEFS[indexLayer].cizgi }} aria-hidden /> Geçen yıl aynı dönem
+              </span>
+            </div>
+          </Card>
+
+          {agro.loading ? (
+            <Skeleton className="h-52" aria-label="Yağış ve sıcaklık serisi yükleniyor" />
+          ) : agro.error ? (
+            <Card>
+              <ErrorState title="Yağış ve GDD serisi alınamadı" description={describeError(agro.error)} retrying={false} onRetry={() => window.location.reload()} />
+            </Card>
+          ) : (
+            <>
+              <SeriesChartCard
+                testId="rain-chart"
+                title="Birikmiş yağış"
+                summary={rainSummary}
+                days={agro.days}
+                pick={(d) => ({ current: d.yagisBirikimli, previous: d.oncekiYagisBirikimli })}
+                color="var(--color-app-water)"
+                unit="mm"
+                format={(v) => `${mm(v)} mm`}
+                range={range}
+                bands={bands}
+                bandNote={bandNote}
+                hoverDate={hoverDate}
+                onHoverDate={setHoverDate}
+                emptyText="Bu dönem için yağış verisi yok"
+                note={<p className="mt-1 text-caption text-app-text-dim">Sezon başından (1 Ekim) birikmiş; kaynak: hava servisi geçmiş analizi.</p>}
+              />
+              <SeriesChartCard
+                testId="gdd-chart"
+                title="Etkili sıcaklık toplamı (GDD)"
+                summary={gddSummary}
+                days={agro.days}
+                pick={(d) => ({ current: d.gddBirikimli, previous: d.oncekiGddBirikimli })}
+                color="var(--color-app-warn)"
+                unit="GDD"
+                format={(v) => mm(v)}
+                range={range}
+                bands={bands}
+                bandNote={bandNote}
+                hoverDate={hoverDate}
+                onHoverDate={setHoverDate}
+                emptyText={agro.latest && agro.latest.gddTabanC === null ? 'Bu ürün için GDD tabanı tanımlı değil' : 'Bu dönem için sıcaklık verisi yok'}
+                note={
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-caption text-app-text-dim">
+                    {agro.latest?.gddTabanC != null && <span>Taban {agro.latest.gddTabanC.toLocaleString('tr-TR')} °C · günlük max(0, (Tmax+Tmin)/2 − taban)</span>}
+                    <RuleBadge meta={agro.latest?.gddKural ?? null} />
+                  </div>
+                }
+              />
+              {agro.series.flatMap((s) => s.notlar).length > 0 && (
+                <p className="px-1 text-caption text-app-text-dim" data-testid="series-notes">
+                  {[...new Set(agro.series.flatMap((s) => s.notlar))].join(' ')}
+                </p>
+              )}
+            </>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 px-1 text-caption text-app-text-muted" data-testid="phenology-note">
+              {phenology.data?.kuralYok ? (
+                <span>Bu ürün için fenoloji kuralı tanımlı değil; evre bantları gösterilmiyor.</span>
+              ) : (
+                <>
+                  <span>Arka plandaki bantlar fenoloji evreleridir{garden.cesitKodu ? '' : ' (çeşit seçilmediğinden ürün değerleri)'}.</span>
+                  <RuleBadge meta={phenology.data?.kural ?? null} />
+                </>
+              )}
+            </div>
+            {phenology.data && !phenology.data.kuralYok && (
+              <>
+                <Button icon={<CalendarRange className="h-4 w-4" aria-hidden />} onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
+                  {editing ? 'Evre tarihlerini gizle' : 'Evre tarihlerini düzenle'}
+                </Button>
+                {editing && <PhenologyEditor gardenId={gardenId} phenology={phenology.data} />}
+              </>
+            )}
           </div>
-          <TimeChart
-            scenes={data.gozlemler}
-            indeks={indexLayer}
-            season={season}
-            compare={compare || null}
-            activeDate={active?.tarih ?? null}
-            onSelect={(tarih) => navigate(archivePath(gardenId, { parametre: indexLayer, tarih }))}
-            hoverDoy={hoverDoy}
-            onHoverDoy={setHoverDoy}
-          />
-        </Card>
-      )}
-      {hasImages && havaKatmani && (
-        <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2" data-testid="weather-layer">
-          <h3 className="font-display text-h2 text-app-text">Yağış ve sıcaklık</h3>
-          <WeatherChart days={weatherHistory.data ?? []} season={season} loading={weatherHistory.isLoading} hoverDoy={hoverDoy} onHoverDoy={setHoverDoy} />
-          <p className="text-caption text-app-text-dim">Adım 8'de birikmiş yağış ve GDD (büyüme derece günü) bu karta eklenecek.</p>
-        </Card>
+        </section>
       )}
 
       <AlertsCard alerts={data.uyarilar} />
       <WeatherAlertsCard alerts={weather.data?.uyarilar ?? []} quiet />
-
       <ComingSoonList heading="Yakında" items={STATUS_ITEMS} />
     </div>
   )

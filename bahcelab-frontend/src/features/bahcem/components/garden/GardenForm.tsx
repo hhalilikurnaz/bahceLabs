@@ -5,6 +5,8 @@ import { describeError, gardensApi } from '../../api/gardensApi'
 import { PRODUCTS, type GardenGeometry, type Urun } from '../../api/types'
 import { useCreateGarden } from '../../api/useGardens'
 import { useGardenNav } from '../../hooks/useGardenNav'
+import { VarietyField } from './VarietyField'
+import { varietyPayload, type VarietyValue } from '../../lib/variety'
 import { GARDEN_LIMITS } from '../../lib/config'
 import { areaProblem, parseOptionalInt, validateGardenFields, type GardenFieldErrors } from '../../lib/gardenFields'
 import { boundsCenter, formatDecare, geometryBounds, largestOuterRing, silhouettePath } from '../../lib/geo'
@@ -42,7 +44,8 @@ export function GardenForm() {
 
   const [ad, setAd] = useState(draft?.suggestedName ?? '')
   const [urun, setUrun] = useState<Urun>('limon')
-  const [cesit, setCesit] = useState('')
+  const [variety, setVariety] = useState<VarietyValue>({ kod: '', metin: '' })
+  const cesit = variety.metin
   const [dikimYili, setDikimYili] = useState('')
   const [agacSayisi, setAgacSayisi] = useState('')
   const [il, setIl] = useState('')
@@ -100,7 +103,7 @@ export function GardenForm() {
       {
         ad: ad.trim(),
         urun,
-        cesit: cesit.trim() || null,
+        ...varietyPayload(variety),
         dikimYili: parseOptionalInt(dikimYili),
         agacSayisi: parseOptionalInt(agacSayisi),
         geometry,
@@ -164,14 +167,21 @@ export function GardenForm() {
         />
 
         <div className="grid grid-cols-2 gap-3">
-          <SelectField label="Ürün" value={urun} onChange={(e) => setUrun(e.target.value as Urun)}>
+          <SelectField
+            label="Ürün"
+            value={urun}
+            onChange={(e) => {
+              setUrun(e.target.value as Urun)
+              setVariety((v) => (v.kod === 'diger' ? v : { kod: '', metin: '' })) // çeşit listesi ürüne bağlıdır
+            }}
+          >
             {PRODUCTS.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
               </option>
             ))}
           </SelectField>
-          <TextField label="Çeşit (isteğe bağlı)" maxLength={GARDEN_LIMITS.varietyMax} value={cesit} onChange={(e) => setCesit(e.target.value)} placeholder="Interdonato" error={errors.cesit} />
+          <VarietyField urun={urun} value={variety} onChange={setVariety} error={errors.cesit} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

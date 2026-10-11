@@ -18,6 +18,7 @@ export interface ApiGardenOverview {
   il: string | null
   ilce: string | null
   durum: ApiGardenStatus
+  skor: number | null
   durum_nedeni: string | null
   indeks: string
   son_goruntu: { tarih: string; kucuk_resim_url: string } | null

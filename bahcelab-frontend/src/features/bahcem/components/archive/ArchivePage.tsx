@@ -38,6 +38,7 @@ export function ArchivePage() {
   const renkKorlugu = useBahcemStore((s) => s.renkKorlugu)
   const [visibleDates, setVisibleDates] = useState<string[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [hoverDate, setHoverDate] = useState<string | null>(null)
 
   const garden = gardens?.find((g) => g.id === gardenId)
   const rings = useMemo<Rings>(() => (garden ? ringsOf(garden.geometry) : []), [garden])
@@ -119,7 +120,7 @@ export function ArchivePage() {
           </div>
 
           <div className="min-w-0 rounded-md border border-app-border bg-app-card px-2 py-1 lg:col-start-2" data-testid="archive-chart">
-            <TimeChart scenes={scenes} indeks={chartIndex} season={season} activeDate={selected} compact onSelect={(tarih) => update({ tarih })} />
+            <TimeChart scenes={scenes} indeks={chartIndex} range={{ from: `${season}-01-01`, to: `${season}-12-31` }} activeDate={selected} compact onSelect={(tarih) => update({ tarih })} hoverDate={hoverDate} onHoverDate={setHoverDate} />
           </div>
           <div className="flex min-h-[420px] min-w-0 flex-col lg:col-start-2 lg:min-h-0">
             <ArchiveViewer garden={garden} rings={rings} scenes={scenes} dates={dates} state={{ ...state, tarih: selected }} settings={settings} onChange={(patch) => update(patch)} />

@@ -119,7 +119,7 @@ export function GardenCard({ overview, garden, selected, onRename, onEditBoundar
             {where && ` · ${where}`}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <StatusBadge status={overview.durum} />
+            <StatusBadge status={overview.durum} score={overview.skor} />
             {overview.hava && (
               <span className="tabular inline-flex items-center gap-1 text-small font-semibold text-app-text" title={overview.hava.aciklama}>
                 <WeatherIcon name={overview.hava.ikon} className="h-4 w-4 text-app-text-muted" aria-hidden />

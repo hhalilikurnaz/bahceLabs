@@ -53,6 +53,7 @@ Frontend (`bahcelab-frontend/src/`):
 - **Liste** → `GET /gardens/overview` (tek istek: bahçe, durum, küçük resim, 30 günlük seri, uyarılar, hava önbelleği) + arka planda `/weather/ozet` ile hava önbelleği tazelenir.
 - **Bahçe sayfası** → rota `/bahcem/:id/(durum|analiz|hava|gunluk|rapor|arsiv)`; seçili bahçe URL'den gelir (`RouteSync`). Yerleşim: sol liste | harita | sağ panel (ADR 0006).
 - **Bahçe ekleme** (ADR 0007): `DrawController` (terra-draw) → `GardenForm` (sağ panel, canlı) → `POST /gardens` → `ProcessingWatcher` işi izler; bahçe bilgileri `PATCH /gardens/{id}` (`agac_sayisi` dahil).
+- **Durum skoru / Bugün / seriler** (ADR 0008): `domain/agro/` — `rules/katalog.yaml` (sürümlü, kural başına `durum` + `kaynak`), `score.py` ve `today.py` saf; `GET /gardens/{id}/durum|bugun|agro/seriler|agro/fenoloji`. Liste ve harita aynı `derive_status` fonksiyonunu kullanır. Doğrulanmamış kurallar: `docs/agro/KURAL-DURUMU.md`.
 - **Ana harita** her zaman en güncel geçerli görüntüyü çizer (`IndexLayer` → `lib/rasterRender.ts`); **Arşiv** aynı çizimi canvas'ta kullanır ve `GET /gardens/{id}/indeks/arsiv` ile sayfalanmış, net/en net işaretli listeyi alır (`domain/ndvi/archive.py`).
 - **Hava** → hücre (0,05°) başına 1 saat önbellek, geçmiş günde bir tamamlanır; ağ yoksa son önbellek ve zaman damgası.
 - **Durum etiketi** (İyi/İzle/Dikkat/Veri yok): `domain/overview/status.py` içinde TEK fonksiyon (`derive_status`); Adım 8'de skora bağlanır.

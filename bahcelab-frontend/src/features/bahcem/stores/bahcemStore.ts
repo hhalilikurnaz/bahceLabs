@@ -55,8 +55,6 @@ interface BahcemState {
   setSheet: (sheet: SheetState) => void
   mapZoom: number
 
-  /** Uydu grafiğinin altında günlük yağış ve sıcaklık gösterilsin mi */
-  havaKatmani: boolean
 
   // --- indeks görselleştirme (ana harita her zaman en güncel geçerli görüntüyü gösterir; tarih seçimi Arşiv'dedir)
   katman: LayerId
@@ -85,7 +83,6 @@ interface BahcemState {
   watchProcessing: (id: string, ad: string, ignoreJobId?: string | null) => void
   clearWatched: () => void
 
-  setHavaKatmani: (acik: boolean) => void
 
   setKatman: (katman: LayerId) => void
   setLayerVisible: (visible: boolean) => void
@@ -204,7 +201,6 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   drawShape: 'polygon',
   sheet: 'half',
   watched: null,
-  havaKatmani: false,
 
   katman: 'ndvi',
   layerVisible: true,
@@ -234,7 +230,6 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   watchProcessing: (id, ad, ignoreJobId = null) => set({ watched: { id, ad, ignoreJobId } }),
   clearWatched: () => set({ watched: null }),
 
-  setHavaKatmani: (havaKatmani) => set({ havaKatmani }),
 
   setKatman: (katman) => set({ katman }),
   setLayerVisible: (layerVisible) => set({ layerVisible }),
