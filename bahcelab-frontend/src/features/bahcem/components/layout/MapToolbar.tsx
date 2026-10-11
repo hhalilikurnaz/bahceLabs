@@ -64,32 +64,25 @@ export function MapToolbar() {
           <Switch label="Renk körlüğüne uygun skala" checked={renkKorlugu} onChange={setRenkKorlugu} />
         </div>
       )}
-      <div className="pointer-events-auto flex w-[min(26rem,100%)] flex-col gap-2 rounded-lg border border-app-border bg-app-panel p-2 shadow-e2" role="toolbar" aria-label="Harita görünümü" data-testid="map-toolbar">
-        <div className="flex items-center gap-2">
-          <SelectField label="Parametre" hideLabel value={katman} onChange={(e) => setKatman(e.target.value as LayerId)} className="min-w-0 flex-1">
-            {LAYER_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.ad}
-              </option>
-            ))}
-          </SelectField>
-          <button
-            type="button"
-            aria-label="Görünüm ayarları"
-            aria-expanded={settingsOpen}
-            onClick={() => setSettingsOpen((v) => !v)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-          >
-            <Settings2 className="h-5 w-5" aria-hidden />
-          </button>
-          <Link
-            to={archivePath(gardenId, { parametre: katman, tarih: active?.tarih ?? null })}
-            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md bg-app-primary px-3 text-body font-semibold text-app-on-primary hover:bg-app-primary-hover"
-          >
-            <Archive className="h-4 w-4" aria-hidden />
-            Tüm görüntüler
-          </Link>
-        </div>
+      <div
+        className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-lg border border-app-border bg-app-panel p-2 shadow-e2"
+        role="toolbar"
+        aria-label="Harita görünümü"
+        data-testid="map-toolbar"
+      >
+        {shown && active && (
+          <p className="px-2 text-small text-app-text" data-testid="map-capsule">
+            En güncel: <strong>{formatDate(active.tarih)}</strong>
+            {active.bulutOrani != null && <span className="text-app-text-muted"> · bulut %{Math.round(active.bulutOrani)}</span>}
+          </p>
+        )}
+        <SelectField label="Parametre" hideLabel value={katman} onChange={(e) => setKatman(e.target.value as LayerId)} className="w-40">
+          {LAYER_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.ad}
+            </option>
+          ))}
+        </SelectField>
         <Segmented
           label="Görünüm"
           value={skala}
@@ -98,15 +91,24 @@ export function MapToolbar() {
             { value: 'kendi', label: 'Bahçenin kendi farkları' },
             { value: 'genel', label: 'Genel skala' },
           ]}
-          className="w-full"
         />
+        <button
+          type="button"
+          aria-label="Görünüm ayarları"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((v) => !v)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+        >
+          <Settings2 className="h-5 w-5" aria-hidden />
+        </button>
+        <Link
+          to={archivePath(gardenId, { parametre: katman, tarih: active?.tarih ?? null })}
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md bg-app-primary px-3 text-body font-semibold text-app-on-primary hover:bg-app-primary-hover"
+        >
+          <Archive className="h-4 w-4" aria-hidden />
+          Tüm görüntüler
+        </Link>
       </div>
-      {shown && active && (
-        <p className="pointer-events-auto rounded-full border border-app-border bg-app-panel px-4 py-1.5 text-small text-app-text shadow-e2" data-testid="map-capsule">
-          En güncel görüntü: <strong>{formatDate(active.tarih)}</strong>
-          {active.bulutOrani != null && ` · bulut %${Math.round(active.bulutOrani)}`}
-        </p>
-      )}
     </div>
   )
 }

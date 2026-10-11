@@ -8,7 +8,7 @@ test('kapsül → Tüm görüntüler → parametre değiştir → tarih seç →
   await page.goto(`/bahcem/${garden.id}/durum`)
 
   const capsule = page.getByTestId('map-capsule')
-  await expect(capsule).toContainText('En güncel görüntü')
+  await expect(capsule).toContainText('En güncel')
   const latestText = await capsule.innerText()
 
   await page.getByRole('link', { name: 'Tüm görüntüler' }).click()

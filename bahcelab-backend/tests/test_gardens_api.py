@@ -164,6 +164,8 @@ async def test_field_validation_messages_are_turkish(user_client: AsyncClient):
         ({"ad": "   "}, "Bahçe adı boş olamaz"),
         ({"urun": "elma"}, "Ürün şunlardan biri"),
         ({"dikim_yili": 1850}, "Dikim yılı"),
+        ({"agac_sayisi": 0}, "Ağaç sayısı"),
+        ({"agac_sayisi": 5_000_000}, "Ağaç sayısı"),
     ]:
         response = await user_client.post("/gardens", json=garden_body(**overrides))
         assert response.status_code == 422, overrides
@@ -307,3 +309,30 @@ async def test_plan_from_garden_rejects_foreign_and_multipart_gardens(
     )
     assert response.status_code == 422
     assert "Çok parçalı" in response.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_garden_details_can_be_completed_later_with_patch(user_client: AsyncClient):
+    """«Bilgileri tamamla»: çeşit, dikim yılı ve ağaç sayısı sonradan eklenir; sınır ve alan değişmez."""
+    created = (await user_client.post("/gardens", json=garden_body())).json()
+    assert created["cesit"] is None and created["dikim_yili"] is None and created["agac_sayisi"] is None
+
+    patched = await user_client.patch(
+        f"/gardens/{created['id']}",
+        json={"cesit": "Interdonato", "dikim_yili": 2012, "agac_sayisi": 640},
+    )
+    assert patched.status_code == 200
+    body = patched.json()
+    assert (body["cesit"], body["dikim_yili"], body["agac_sayisi"]) == ("Interdonato", 2012, 640)
+    assert body["alan_dekar"] == created["alan_dekar"] and body["geometry"] == created["geometry"]
+
+    # null göndermek isteğe bağlı alanı temizler; gönderilmeyen alan değişmez
+    cleared = (await user_client.patch(f"/gardens/{created['id']}", json={"agac_sayisi": None})).json()
+    assert cleared["agac_sayisi"] is None and cleared["cesit"] == "Interdonato"
+
+    bad = await user_client.patch(f"/gardens/{created['id']}", json={"agac_sayisi": -3})
+    assert bad.status_code == 422
+    assert "Ağaç sayısı" in bad.json()["error"]["details"]["errors"][0]["msg"]
+    assert (await user_client.get(f"/gardens/{created['id']}")).json()["agac_sayisi"] is None
+

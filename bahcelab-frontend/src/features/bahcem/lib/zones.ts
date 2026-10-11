@@ -55,3 +55,41 @@ export function isHomogeneous(means: readonly number[], indeks: IndexId, share: 
   const def = INDEX_DEFS[indeks]
   return Math.max(...means) - Math.min(...means) < share * (def.max - def.min)
 }
+
+/** Alan ağırlıklı bahçe ortalaması (bölge ortalamaları ve alanlarından). */
+export function gardenMean(zones: readonly { mean: number; area: number }[]): number | null {
+  const total = zones.reduce((sum, z) => sum + z.area, 0)
+  return total > 0 ? zones.reduce((sum, z) => sum + z.mean * z.area, 0) / total : null
+}
+
+export interface ZoneRelative {
+  /** Bahçe ortalamasına göre yüzde fark (− düşük, + yüksek) */
+  diffPercent: number
+  /** Fark, "yerinde kontrol edin" eşiğini aşan ZAYIF bölge mi */
+  actionable: boolean
+  text: string
+}
+
+const POSSESSIVE_BY_LAST_DIGIT = ["ı", "u", "si", "ü", "ü", "i", "sı", "si", "i", "u"] as const
+const POSSESSIVE_BY_TENS = { 10: "u", 20: "si", 30: "u", 40: "ı", 50: "si", 60: "ı", 70: "i", 80: "i", 90: "ı" } as const
+
+/** Sayıya Türkçe iyelik eki: 16 → "'sı", 40 → "'ı", 9 → "'u", 20 → "'si" (okunuşa göre). */
+export function turkishPossessive(n: number): string {
+  const value = Math.abs(Math.round(n))
+  if (value === 100) return "'ü"
+  const last = value % 10
+  if (last === 0 && value > 0) return `'${POSSESSIVE_BY_TENS[value as keyof typeof POSSESSIVE_BY_TENS] ?? 'ı'}`
+  return `'${POSSESSIVE_BY_LAST_DIGIT[last]}`
+}
+
+/** "Düşük – bahçe ortalamasından %9 düşük, alanın %16'sı" biçiminde göreli açıklama. */
+export function describeZone(label: string, mean: number, overall: number, sharePercent: number, actionableDiffPercent: number): ZoneRelative {
+  const diffPercent = Math.abs(overall) < 1e-9 ? 0 : ((mean - overall) / Math.abs(overall)) * 100
+  const rounded = Math.round(Math.abs(diffPercent))
+  const direction = rounded === 0 ? 'bahçe ortalamasına yakın' : `bahçe ortalamasından %${rounded} ${diffPercent < 0 ? 'düşük' : 'yüksek'}`
+  return {
+    diffPercent,
+    actionable: diffPercent <= -actionableDiffPercent,
+    text: `${label} – ${direction}, alanın %${Math.round(sharePercent)}${turkishPossessive(sharePercent)}`,
+  }
+}

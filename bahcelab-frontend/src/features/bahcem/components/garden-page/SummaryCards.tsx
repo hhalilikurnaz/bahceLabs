@@ -1,23 +1,37 @@
 import { Sprout } from 'lucide-react'
+import { useState } from 'react'
 import { Card, Skeleton } from '@/components/ui'
 import { useWeather } from '../../api/weatherApi'
 import { PRODUCTS, type Garden } from '../../api/types'
 import { formatTemp } from '../../lib/weather'
+import { GardenInfoDialog } from '../garden/GardenInfoDialog'
 import { WeatherIcon } from '../hava/WeatherIcon'
 
 const productLabel = (value: string): string => PRODUCTS.find((p) => p.value === value)?.label ?? value
 
-/** Ürün · çeşit ve ağaç yaşı (dikim yılı girilmişse). */
+/** Ürün · çeşit, ağaç yaşı ve ağaç sayısı. Eksik bilgi varsa «Bilgileri tamamla» formu açılır. */
 export function ProductCard({ garden }: { garden: Garden }) {
+  const [editing, setEditing] = useState(false)
   const age = garden.dikimYili ? new Date().getFullYear() - garden.dikimYili : null
+  const missing = !garden.cesit || garden.dikimYili === null || garden.agacSayisi === null
+  const facts = [garden.cesit, age !== null && age >= 0 ? `Ağaç yaşı: ${age} yıl` : null, garden.agacSayisi !== null ? `${garden.agacSayisi.toLocaleString('tr-TR')} ağaç` : null].filter(Boolean)
   return (
     <Card aria-label="Ürün" data-testid="product-card" className="p-3">
       <h3 className="flex items-center gap-1.5 text-body font-semibold text-app-text">
         <Sprout className="h-4 w-4 text-app-accent" aria-hidden /> Ürün
       </h3>
       <p className="mt-1 font-display text-h1 text-app-text">{productLabel(garden.urun)}</p>
-      <p className="text-small text-app-text-muted">{garden.cesit ?? 'Çeşit girilmemiş'}</p>
-      <p className="mt-1 text-small text-app-text-dim">{age !== null && age >= 0 ? `Ağaç yaşı: ${age} yıl` : 'Ağaç yaşı girilmemiş'}</p>
+      {facts.length > 0 && (
+        <p className="text-small text-app-text-muted" data-testid="product-facts">
+          {facts.join(' · ')}
+        </p>
+      )}
+      {missing && (
+        <button type="button" onClick={() => setEditing(true)} className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-app-accent underline-offset-2 hover:underline">
+          Bilgileri tamamla
+        </button>
+      )}
+      {editing && <GardenInfoDialog garden={garden} onClose={() => setEditing(false)} />}
     </Card>
   )
 }

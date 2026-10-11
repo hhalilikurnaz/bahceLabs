@@ -40,8 +40,10 @@ export function valueRange(values: Float32Array, def: IndexDef, skala: Scale): V
   return { vmin: low, vmax: high, homogeneous: false }
 }
 
+/** Kendi farkları: tek tonlu sıralı skala (kırmızı yok). Genel skala: parametrenin skalası (renk körlüğü seçeneğine göre). */
 export function colorRange(range: ValueRange, def: IndexDef, settings: ViewSettings): ColorRange {
-  return { vmin: range.vmin, vmax: range.vmax, colormap: safeColormap(def.renk, settings.renkKorlugu) }
+  const colormap = settings.skala === 'kendi' ? 'sirali' : safeColormap(def.renk, settings.renkKorlugu)
+  return { vmin: range.vmin, vmax: range.vmax, colormap }
 }
 
 export type ViewKind = 'kendi' | 'genel' | 'gercek' | 'fark'
@@ -75,10 +77,10 @@ export function legendHint(info: RenderInfo): string {
   if (info.kind === 'kendi') {
     return info.homogeneous
       ? 'Bahçe homojen – belirgin güçlü/zayıf kesim yok.'
-      : 'Renkler yalnızca bu bahçenin kendi içindeki farkı gösterir: en zayıf kesimden en güçlü kesime.'
+      : 'Renkler yalnızca bu bahçenin kendi içindeki farkı gösterir: açık ton zayıf, koyu ton güçlü kesim.'
   }
   if (info.kind === 'genel') return 'Sabit skala: farklı tarihler ve bahçeler aynı renkle kıyaslanabilir.'
-  if (info.kind === 'fark') return 'İki tarih arasındaki fark. Mevsim değişimi normal olabilir.'
+  if (info.kind === 'fark') return 'İki tarih arasındaki fark; kahverengi düşüş, yeşil artış. Mevsimsel değişim normal olabilir.'
   return 'Uydunun gördüğü doğal renkler; skala yoktur.'
 }
 

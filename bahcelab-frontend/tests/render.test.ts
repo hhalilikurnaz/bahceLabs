@@ -90,11 +90,11 @@ describe('değişim (fark)', () => {
     expect(() => diffGrid(new Float32Array(2), new Float32Array(3))).toThrow()
   })
 
-  it('düşüş kırmızı, artış yeşil, değişmeyen açık gri/beyaz', () => {
+  it('düşüş kahverengi (kırmızı değil), artış yeşil, değişmeyen açık gri/beyaz', () => {
     const rgba = colorizeGrid(Float32Array.from([-0.25, 0, 0.25]), diffRange(0.25))
     const [down, same, up] = [0, 4, 8].map((i) => Array.from(rgba.slice(i, i + 3)))
-    expect(down[0]).toBeGreaterThan(200)
-    expect(down[1]).toBeLessThan(80)
+    expect(down[0]).toBeGreaterThan(down[2]) // kahverengi: kırmızı kanal baskın ama yeşil de yüksek (saf kırmızı değil)
+    expect(down[1]).toBeGreaterThan(60)
     expect(same.every((c) => c > 235)).toBe(true)
     expect(up[1]).toBeGreaterThan(up[0])
   })

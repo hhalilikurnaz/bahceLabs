@@ -8,7 +8,7 @@ export type IndexId = (typeof INDEX_IDS)[number]
 export const TRUE_COLOR = 'gercek-renk' as const
 export type LayerId = IndexId | typeof TRUE_COLOR
 
-export type ColormapId = 'rdylgn' | 'mavi' | 'yesil' | 'fark' | 'viridis' | 'farkKb'
+export type ColormapId = 'rdylgn' | 'mavi' | 'yesil' | 'fark' | 'viridis' | 'farkKb' | 'sirali'
 export type Rgb = [number, number, number]
 export type Stops = [number, Rgb][]
 
@@ -34,13 +34,21 @@ export const COLORMAPS: Record<ColormapId, Stops> = {
     [0.7, [49, 163, 84]],
     [1.0, [0, 90, 50]],
   ],
-  // değişim haritası: kırmızı = düşüş, beyaz = değişmedi, yeşil = artış
+  // değişim haritası: ayrışan nötr skala — kahverengi = düşüş, beyaz = değişmedi, yeşil = artış (kırmızı kullanılmaz)
   fark: [
-    [0.0, [215, 48, 39]],
-    [0.35, [252, 174, 145]],
+    [0.0, [140, 81, 10]],
+    [0.35, [216, 179, 101]],
     [0.5, [245, 245, 245]],
-    [0.65, [166, 217, 106]],
-    [1.0, [26, 152, 80]],
+    [0.65, [128, 205, 120]],
+    [1.0, [26, 120, 60]],
+  ],
+  // "Bahçenin kendi farkları": tek renk tonlu sıralı skala (açık → koyu yeşil); parlaklık tek yönlü artar, renk körlüğüne uygundur
+  sirali: [
+    [0.0, [237, 248, 220]],
+    [0.3, [186, 228, 150]],
+    [0.6, [90, 180, 100]],
+    [0.85, [30, 120, 70]],
+    [1.0, [0, 68, 38]],
   ],
   // Renk körlüğüne uygun skalalar: viridis (koyu mor → sarı) ve mavi–turuncu fark skalası
   viridis: [

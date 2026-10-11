@@ -21,6 +21,7 @@ export interface Garden {
   urun: Urun
   cesit: string | null
   dikimYili: number | null
+  agacSayisi: number | null
   geometry: GardenGeometry
   /** Sunucuda ST_Area(ST_Transform(geom, 32636)) / 1000 ile hesaplanır */
   alanDekar: number
@@ -37,6 +38,7 @@ export interface GardenInput {
   urun: Urun
   cesit: string | null
   dikimYili: number | null
+  agacSayisi?: number | null
   geometry: GardenGeometry
   il: string | null
   ilce: string | null

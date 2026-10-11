@@ -9,16 +9,16 @@ import { useWeather, useWeatherHistory } from '../../api/weatherApi'
 import { useIndexView } from '../../hooks/useIndexView'
 import { archivePath } from '../../lib/archive'
 import { shiftDays, todayIstanbul } from '../../lib/dates'
-import { isIndexId, type IndexId } from '../../lib/indices'
+import { INDEX_DEFS, INDEX_IDS, isIndexId, type IndexId } from '../../lib/indices'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { WeatherAlertsCard } from '../hava/WeatherAlertsCard'
 import { AlertsCard } from '../indeks/AlertsCard'
-import { StatusCard } from '../indeks/StatusCard'
+import { StatusLine } from '../indeks/StatusLine'
 import { TimeChart } from '../indeks/TimeChart'
+import { WeatherChart } from '../indeks/WeatherChart'
 import { ComingSoonList } from './ComingSoonList'
 import { STATUS_ITEMS } from './comingSoonItems'
 import { LatestValueCard } from './LatestValueCard'
-import { ParameterPicker } from './ParameterPicker'
 import { ReservedSlots } from './ReservedSlots'
 import { ProductCard, TodayWeatherCard } from './SummaryCards'
 
@@ -32,12 +32,13 @@ export function StatusTab({ garden }: { garden: Garden }) {
   const { data, scenes, isLoading, active, katman } = useIndexView()
   const season = useBahcemStore((s) => s.season)
   const setSeason = useBahcemStore((s) => s.setSeason)
-  const setKatman = useBahcemStore((s) => s.setKatman)
   const havaKatmani = useBahcemStore((s) => s.havaKatmani)
   const setHavaKatmani = useBahcemStore((s) => s.setHavaKatmani)
   const refresh = useRefreshIndices(gardenId)
   const weather = useWeather(gardenId)
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [compare, setCompare] = useState<IndexId | ''>('')
+  const [hoverDoy, setHoverDoy] = useState<number | null>(null)
 
   const yesterday = shiftDays(todayIstanbul(), -1)
   const yearEnd = `${season}-12-31`
@@ -63,6 +64,15 @@ export function StatusTab({ garden }: { garden: Garden }) {
   return (
     <div className="space-y-3">
       <ReservedSlots />
+      <StatusLine
+        data={data}
+        refreshing={refresh.isPending}
+        onRefresh={() => {
+          setRefreshError(null)
+          refresh.mutate(undefined, { onError: (err) => setRefreshError(describeError(err)) })
+        }}
+        refreshError={refreshError}
+      />
       <div className="grid grid-cols-1 gap-2 @md:grid-cols-3" data-testid="summary-cards">
         <LatestValueCard indeks={indexLayer} scenes={scenes} loading={false} processing={processing} alerts={data.uyarilar} />
         <ProductCard garden={garden} />
@@ -71,12 +81,22 @@ export function StatusTab({ garden }: { garden: Garden }) {
 
       {hasImages && (
         <Card aria-label="Zaman grafiği" data-testid="time-chart" className="space-y-3">
-          <ParameterPicker value={indexLayer} onChange={setKatman} />
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <SelectField label="Sezon" value={season} onChange={(event) => setSeason(Number(event.target.value))} className="w-40">
+          <h3 className="font-display text-h2 text-app-text" data-testid="chart-title">
+            {INDEX_DEFS[indexLayer].ad} – zaman grafiği
+          </h3>
+          <div className="flex flex-wrap items-end gap-3">
+            <SelectField label="Sezon" value={season} onChange={(event) => setSeason(Number(event.target.value))} className="w-36">
               {SEASONS.map((year) => (
                 <option key={year} value={year}>
                   {year} sezonu
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Karşılaştır" value={compare} onChange={(event) => setCompare(event.target.value as IndexId | '')} className="w-48">
+              <option value="">İkinci parametre yok</option>
+              {INDEX_IDS.filter((id) => id !== indexLayer).map((id) => (
+                <option key={id} value={id}>
+                  {INDEX_DEFS[id].ad}
                 </option>
               ))}
             </SelectField>
@@ -88,26 +108,25 @@ export function StatusTab({ garden }: { garden: Garden }) {
             scenes={data.gozlemler}
             indeks={indexLayer}
             season={season}
+            compare={compare || null}
             activeDate={active?.tarih ?? null}
             onSelect={(tarih) => navigate(archivePath(gardenId, { parametre: indexLayer, tarih }))}
-            weather={havaKatmani ? (weatherHistory.data ?? []) : null}
-            weatherLoading={weatherHistory.isLoading}
+            hoverDoy={hoverDoy}
+            onHoverDoy={setHoverDoy}
           />
+        </Card>
+      )}
+      {hasImages && havaKatmani && (
+        <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2" data-testid="weather-layer">
+          <h3 className="font-display text-h2 text-app-text">Yağış ve sıcaklık</h3>
+          <WeatherChart days={weatherHistory.data ?? []} season={season} loading={weatherHistory.isLoading} hoverDoy={hoverDoy} onHoverDoy={setHoverDoy} />
+          <p className="text-caption text-app-text-dim">Adım 8'de birikmiş yağış ve GDD (büyüme derece günü) bu karta eklenecek.</p>
         </Card>
       )}
 
       <AlertsCard alerts={data.uyarilar} />
       <WeatherAlertsCard alerts={weather.data?.uyarilar ?? []} quiet />
 
-      <StatusCard
-        data={data}
-        refreshing={refresh.isPending}
-        onRefresh={() => {
-          setRefreshError(null)
-          refresh.mutate(undefined, { onError: (err) => setRefreshError(describeError(err)) })
-        }}
-        refreshError={refreshError}
-      />
       <ComingSoonList heading="Yakında" items={STATUS_ITEMS} />
     </div>
   )

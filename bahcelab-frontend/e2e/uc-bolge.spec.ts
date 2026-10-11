@@ -20,7 +20,7 @@ test('bahçe → sağ panel → sekmeler → Tam harita → Esc; ana ekran en g�
   // Durum: 3 özet kart, grafik, kapsül (en güncel görüntü)
   await expect(page.getByTestId('summary-cards').getByRole('region')).toHaveCount(3)
   await expect(page.getByTestId('time-chart')).toBeVisible()
-  await expect(page.getByTestId('map-capsule')).toContainText('En güncel görüntü')
+  await expect(page.getByTestId('map-capsule')).toContainText('En güncel')
   await expect(page.getByTestId('latest-change')).toBeVisible()
 
   for (const tab of ['Analiz', 'Hava', 'Günlük', 'Rapor', 'Durum']) {

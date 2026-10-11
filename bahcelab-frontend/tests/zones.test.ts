@@ -52,3 +52,29 @@ describe('bölge sınırı ve homojenlik', () => {
     expect(isHomogeneous([0.5], 'ndvi', ZONES.homogeneityRangeShare)).toBe(true)
   })
 })
+
+import { describeZone, gardenMean, turkishPossessive } from '@/features/bahcem/lib/zones'
+
+describe('göreli bölge metni', () => {
+  it('alan ağırlıklı bahçe ortalaması', () => {
+    expect(gardenMean([{ mean: 0.4, area: 100 }, { mean: 0.6, area: 300 }])).toBeCloseTo(0.55)
+    expect(gardenMean([])).toBeNull()
+  })
+
+  it('düşük bölge ortalamadan %9 düşük, alanın %16\'sı biçiminde yazılır', () => {
+    const rel = describeZone('Düşük', 0.455, 0.5, 16, 8)
+    expect(rel.text).toBe("Düşük – bahçe ortalamasından %9 düşük, alanın %16'sı")
+    expect(rel.actionable).toBe(true)
+  })
+
+  it('"yerinde kontrol edin" yalnızca eşiğin üstündeki zayıf farkta açılır', () => {
+    expect(describeZone('Düşük', 0.47, 0.5, 20, 8).actionable).toBe(false) // %6 düşük
+    expect(describeZone('Düşük', 0.459, 0.5, 20, 8).actionable).toBe(true) // %8,2 düşük
+    expect(describeZone('Yüksek', 0.6, 0.5, 20, 8).actionable).toBe(false) // yüksek bölge asla
+  })
+
+  it('farksız bölge "ortalamaya yakın" der', () => {
+    expect(describeZone('Orta', 0.501, 0.5, 40, 8).text).toBe("Orta – bahçe ortalamasına yakın, alanın %40'ı")
+    expect([9, 10, 16, 20, 30, 40, 50, 100].map(turkishPossessive)).toEqual(["'u", "'u", "'sı", "'si", "'u", "'ı", "'si", "'ü"])
+  })
+})

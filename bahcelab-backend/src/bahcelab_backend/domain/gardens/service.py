@@ -37,6 +37,7 @@ def to_response(row: GardenRow) -> GardenResponse:
         urun=cast(Urun, g.urun),
         cesit=g.cesit,
         dikim_yili=g.dikim_yili,
+        agac_sayisi=g.agac_sayisi,
         geometry=row.geojson,
         alan_dekar=area,
         il=g.il,

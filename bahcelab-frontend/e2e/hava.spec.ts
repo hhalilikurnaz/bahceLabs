@@ -54,7 +54,7 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
 
   await page.goto(`/bahcem/${garden.id}/hava`)
   await expect(page.getByTestId('current-temp')).toContainText('20')
-  await expect(page.getByTestId('daily-forecast')).toContainText('yağış olasılığı %0')
+  await expect(page.getByTestId('daily-forecast')).toContainText('Olasılık %')
   await expect(page.getByTestId('daily-forecast')).toContainText('11:00–21:00')
 
   // Saatlik şerit: satıra odaklanıp ok tuşuyla saat seç

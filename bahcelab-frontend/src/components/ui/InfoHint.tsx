@@ -8,10 +8,12 @@ interface InfoHintProps {
   /** Tek cümlelik açıklama */
   text: string
   className?: string
+  /** Açılır metnin yönü: ekranın altındaki öğelerde `top` */
+  placement?: 'bottom' | 'top'
 }
 
 /** "Bu ne demek?" açıklaması: tıkla/odakla aç, ESC veya dışarı tıkla kapat. */
-export function InfoHint({ label, text, className }: InfoHintProps) {
+export function InfoHint({ label, text, className, placement = 'bottom' }: InfoHintProps) {
   const [open, setOpen] = useState(false)
   const id = useId()
   const ref = useRef<HTMLSpanElement>(null)
@@ -44,7 +46,7 @@ export function InfoHint({ label, text, className }: InfoHintProps) {
         <span
           id={id}
           role="tooltip"
-          className="absolute right-0 top-full z-40 mt-1 w-64 rounded-md border border-app-border bg-app-card p-3 text-small text-app-text shadow-e2"
+          className={cx('absolute right-0 z-40 w-64 rounded-md border border-app-border bg-app-card p-3 text-small text-app-text shadow-e2', placement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1')}
         >
           {text}
         </span>

@@ -8,6 +8,7 @@ Urun = Literal["limon", "portakal", "mandalina", "greyfurt", "diger"]
 
 MIN_DEKAR = 0.5
 MAX_DEKAR = 5000.0
+MAX_AGAC_SAYISI = 1_000_000
 
 
 def _number(value: Any) -> bool:
@@ -99,12 +100,20 @@ class _GardenFields(BaseModel):
             raise ValueError(f"Dikim yılı 1900 ile {limit} arasında olmalı.")
         return value
 
+    @field_validator("agac_sayisi", check_fields=False)
+    @classmethod
+    def _trees(cls, value: int | None) -> int | None:
+        if value is not None and not (1 <= value <= MAX_AGAC_SAYISI):
+            raise ValueError(f"Ağaç sayısı 1 ile {MAX_AGAC_SAYISI:,} arasında olmalı.".replace(",", "."))
+        return value
+
 
 class GardenCreate(_GardenFields):
     ad: str
     urun: Urun = "limon"
     cesit: str | None = None
     dikim_yili: int | None = None
+    agac_sayisi: int | None = None
     geometry: GeoJsonGeometry
     il: str | None = None
     ilce: str | None = None
@@ -117,6 +126,7 @@ class GardenUpdate(_GardenFields):
     urun: Urun | None = None
     cesit: str | None = None
     dikim_yili: int | None = None
+    agac_sayisi: int | None = None
     geometry: GeoJsonGeometry | None = None
     il: str | None = None
     ilce: str | None = None
@@ -145,6 +155,7 @@ class GardenResponse(BaseModel):
     urun: Urun
     cesit: str | None
     dikim_yili: int | None
+    agac_sayisi: int | None
     geometry: dict[str, Any]
     alan_dekar: float
     il: str | None

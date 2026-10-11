@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, ForeignKey, Numeric, SmallInteger, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,6 +25,7 @@ class GardenModel(Base):
     urun: Mapped[str] = mapped_column(String(20), nullable=False, default="limon")
     cesit: Mapped[str | None] = mapped_column(String(100), nullable=True)
     dikim_yili: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    agac_sayisi: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Polygon veya MultiPolygon, EPSG:4326. GiST indeksi migration'da oluşturulur.
     geom = mapped_column(
         Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False), nullable=False

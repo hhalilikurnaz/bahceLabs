@@ -66,6 +66,8 @@ export const RASTER = {
 export const ZONES = {
   /** Sınıf ortalamaları arasındaki fark, parametre aralığının bu payından azsa bahçe homojen sayılır */
   homogeneityRangeShare: 0.05,
+  /** Bölgenin bahçe ortalamasından bu yüzdeden fazla sapması "yerinde kontrol edin" önerisini açar */
+  actionableDiffPercent: 8,
   /** Bölge sınırlarını yumuşatan Chaikin tur sayısı (0 = ham sınır) */
   smoothingIterations: 2,
   /** Bölgelerin harita dolgu opaklığı (saydam: altındaki görüntü görünür) */
@@ -91,8 +93,11 @@ export const CHART = {
   fontPx: 12,
   heightPx: 240,
   compactHeightPx: 96,
-  weatherHeightPx: 84,
   margin: { left: 48, right: 14, top: 14, bottom: 30 },
+  /** İkinci parametre (sağ eksen) açıkken sağ kenar boşluğu, px */
+  marginRightCompare: 52,
+  /** Hava grafiği (yağış çubukları + sıcaklık çizgisi) yüksekliği ve yağış ekseninin üst sınırı */
+  weatherChartHeightPx: 170,
   marginCompact: { left: 48, right: 14, top: 8, bottom: 22 },
   /** Y ekseni: değer aralığına eklenen dolgu payı, en küçük açıklık (parametre aralığının payı) ve çentik sayısı */
   yPaddingShare: 0.15,
@@ -103,10 +108,18 @@ export const CHART = {
   /** İmleç, bu kadar gün içindeki en yakın görüntüyü yakalar */
   hoverGapDays: 8,
   tooltipWidthPx: 220,
-  rainCapMm: 30,
-  weatherTempTop: 6,
-  weatherTempBottom: 38,
-  weatherRainTop: 44,
+  /** Yağış ekseninin en küçük üst sınırı, mm */
+  rainMinAxisMm: 10,
+} as const
+
+/** Bahçe alanı sınırları (sunucudaki `schemas.py` ile aynı olmalı) */
+export const GARDEN_LIMITS = {
+  nameMax: 120,
+  varietyMax: 100,
+  plantingYearMin: 1900,
+  treesMin: 1,
+  treesMax: 1_000_000,
+  minDekar: 0.5,
 } as const
 
 export const TREND = {

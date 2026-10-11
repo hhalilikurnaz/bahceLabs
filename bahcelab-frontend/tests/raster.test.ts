@@ -70,3 +70,32 @@ describe('lejant metni', () => {
     expect(legendHint(base)).not.toContain('homojen')
   })
 })
+
+import { colorRange } from '@/features/bahcem/lib/raster'
+
+describe('palet kuralları', () => {
+  const range = { vmin: 0.3, vmax: 0.6, homogeneous: false }
+
+  it('kendi farkları kırmızısız tek tonlu sıralı skala kullanır (renk körlüğü seçeneğinden bağımsız)', () => {
+    for (const renkKorlugu of [false, true]) {
+      const cr = colorRange(range, INDEX_DEFS.ndvi, { skala: 'kendi', cizim: 'ham', renkKorlugu })
+      expect(cr.colormap).toBe('sirali')
+      for (const [, [r, g, b]] of COLORMAPS.sirali) expect(g).toBeGreaterThanOrEqual(r) // kırmızı baskın durak yok
+    }
+    const lum = COLORMAPS.sirali.map(([, [r, g, b]]) => 0.2126 * r + 0.7152 * g + 0.0722 * b)
+    expect(lum).toEqual([...lum].sort((a, b) => b - a)) // açıktan koyuya tek yönlü
+  })
+
+  it('genel skala mevcut skalasında kalır', () => {
+    expect(colorRange(range, INDEX_DEFS.ndvi, { skala: 'genel', cizim: 'ham', renkKorlugu: false }).colormap).toBe('rdylgn')
+    expect(colorRange(range, INDEX_DEFS.ndvi, { skala: 'genel', cizim: 'ham', renkKorlugu: true }).colormap).toBe('viridis')
+  })
+
+  it('değişim skalasının ortası nötr, uçları kahverengi ve yeşildir (kırmızı yok)', () => {
+    const stops = COLORMAPS.fark
+    expect(stops[2][1]).toEqual([245, 245, 245])
+    expect(stops[0][1][0]).toBeGreaterThan(stops[0][1][1]) // kahverengi: r > g
+    expect(stops[0][1][1]).toBeGreaterThan(60) // saf kırmızı değil
+    expect(stops[stops.length - 1][1][1]).toBeGreaterThan(stops[stops.length - 1][1][0])
+  })
+})
