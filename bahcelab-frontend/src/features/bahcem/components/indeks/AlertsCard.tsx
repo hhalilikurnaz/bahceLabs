@@ -1,13 +1,14 @@
 import { TriangleAlert } from 'lucide-react'
-import { Badge, Button, cx } from '@/components/ui'
+import { Link } from 'react-router-dom'
+import { Badge, cx } from '@/components/ui'
 import type { Alert } from '../../api/indeksApi'
 import { INDEX_DEFS } from '../../lib/indices'
-import { useBahcemStore } from '../../stores/bahcemStore'
+import { archivePath } from '../../lib/archive'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
 
 /** Uydu uyarıları; aynı bölgede birden fazla parametre düşüyorsa öncelikli (kırmızı) gösterilir. */
 export function AlertsCard({ alerts }: { alerts: Alert[] }) {
-  const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
-  const setKatman = useBahcemStore((s) => s.setKatman)
+  const { gardenId } = useBahcemRoute()
   if (alerts.length === 0) return null
 
   return (
@@ -32,17 +33,13 @@ export function AlertsCard({ alerts }: { alerts: Alert[] }) {
                 {high && <Badge tone="danger">Öncelikli</Badge>}
               </p>
               <p className="mt-1 text-small text-app-text-muted">{alert.mesaj}</p>
-              {target && (
-                <Button
-                  className="mt-2 -ml-2"
-                  variant="ghost"
-                  onClick={() => {
-                    setKatman(target)
-                    setSelectedDate(alert.sonTarih)
-                  }}
+              {target && gardenId && (
+                <Link
+                  className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-app-accent underline-offset-2 hover:underline"
+                  to={archivePath(gardenId, { parametre: target, tarih: alert.sonTarih })}
                 >
-                  {INDEX_DEFS[target].ad} görüntüsünü haritada göster
-                </Button>
+                  {INDEX_DEFS[target].ad} görüntüsünü arşivde aç
+                </Link>
               )}
             </div>
           </div>

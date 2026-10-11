@@ -3,6 +3,8 @@ import { describeError } from '../../api/gardensApi'
 import { useYieldZones, type YieldClass } from '../../api/indeksApi'
 import { formatDate } from '../../lib/dates'
 import { formatDecare } from '../../lib/geo'
+import { ZONES } from '../../lib/config'
+import { isHomogeneous } from '../../lib/zones'
 import { INDEX_DEFS, YIELD_COLORS, formatIndexValue } from '../../lib/indices'
 import { useBahcemStore } from '../../stores/bahcemStore'
 
@@ -22,7 +24,7 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
   const { data, isLoading, error } = useYieldZones(gardenId, indeks, true)
 
   const features = data?.bolgeler.features ?? []
-  const homogeneous = features.length > 0 && features.length < 2
+  const homogeneous = features.length > 0 && isHomogeneous(features.map((f) => f.properties.ortalama), indeks, ZONES.homogeneityRangeShare)
 
   return (
     <Card className="space-y-3" aria-label="Bölgeler" data-testid="yield-card">
@@ -48,7 +50,7 @@ export function YieldCard({ gardenId }: { gardenId: string }) {
       {data && (
         <>
           {homogeneous ? (
-            <p className="text-body text-app-text-muted">Bahçe homojen: bölgeler arasında belirgin fark yok.</p>
+            <p className="text-body text-app-text-muted" data-testid="homogeneous-note">Bahçe homojen – belirgin güçlü/zayıf kesim yok.</p>
           ) : (
             <ul className="space-y-2">
               {ORDER.map((cls) => {

@@ -47,6 +47,62 @@ export const LIST = {
   controlsMinGardens: 5,
 } as const
 
+export const RASTER = {
+  /** "Bahçenin kendi farkları" görünümünde p2–p98 yayılımı, parametre aralığının bu payından azsa bahçe homojen sayılır */
+  homogeneityRangeShare: 0.06,
+  /** Kendi farkları görünümünde renk aralığını belirleyen yüzdelikler */
+  stretchLowPercentile: 2,
+  stretchHighPercentile: 98,
+  /** Harita üzerindeki indeks katmanının opaklığı */
+  opacity: 0.94,
+} as const
+
+export const ZONES = {
+  /** Sınıf ortalamaları arasındaki fark, parametre aralığının bu payından azsa bahçe homojen sayılır */
+  homogeneityRangeShare: 0.05,
+  /** Bölge sınırlarını yumuşatan Chaikin tur sayısı (0 = ham sınır) */
+  smoothingIterations: 2,
+  /** Bölgelerin harita dolgu opaklığı (saydam: altındaki görüntü görünür) */
+  fillOpacity: 0.28,
+  outlineWidthPx: 2.5,
+} as const
+
+export const ARCHIVE = {
+  /** Karşılaştırma kaydırıcısının başlangıç konumu (0–1) */
+  compareStart: 0.5,
+  /** Zaman atlaması kare süresi, ms */
+  timelapseFrameMs: 700,
+  /** Seçili görüntüye en yakın kaç komşu önceden yüklenir */
+  preloadNeighbors: 2,
+  /** Sağ taraftaki küçük resim ızgarası sayfa boyutu */
+  pageSize: 100,
+  /** Küçük resim ızgarasında bir görüntünün kenarı, px */
+  thumbPx: 88,
+} as const
+
+export const CHART = {
+  /** Grafik yazı boyutu, px (gerçek piksel; ölçeklenmez) */
+  fontPx: 12,
+  heightPx: 240,
+  compactHeightPx: 96,
+  weatherHeightPx: 84,
+  margin: { left: 48, right: 14, top: 14, bottom: 30 },
+  marginCompact: { left: 48, right: 14, top: 8, bottom: 22 },
+  /** Y ekseni: değer aralığına eklenen dolgu payı, en küçük açıklık (parametre aralığının payı) ve çentik sayısı */
+  yPaddingShare: 0.15,
+  minSpanShare: 0.08,
+  yTicks: 4,
+  /** Bir ay etiketinin kapladığı yaklaşık genişlik, px */
+  monthLabelPx: 34,
+  /** İmleç, bu kadar gün içindeki en yakın görüntüyü yakalar */
+  hoverGapDays: 8,
+  tooltipWidthPx: 220,
+  rainCapMm: 30,
+  weatherTempTop: 6,
+  weatherTempBottom: 38,
+  weatherRainTop: 44,
+} as const
+
 export const TREND = {
   /** "Son X güne göre değişim" için karşılaştırma aralığı ve en yakın görüntü toleransı, gün */
   compareDays: 14,

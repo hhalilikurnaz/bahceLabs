@@ -1,31 +1,36 @@
-import { SlidersHorizontal } from 'lucide-react'
-import { Card, SelectField, Skeleton } from '@/components/ui'
+import { Cloud } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Card, Chip, SelectField, Skeleton } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
 import { useRefreshIndices } from '../../api/indeksApi'
+import type { Garden } from '../../api/types'
 import { useWeather, useWeatherHistory } from '../../api/weatherApi'
 import { useIndexView } from '../../hooks/useIndexView'
+import { archivePath } from '../../lib/archive'
 import { shiftDays, todayIstanbul } from '../../lib/dates'
 import { isIndexId, type IndexId } from '../../lib/indices'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { WeatherAlertsCard } from '../hava/WeatherAlertsCard'
 import { AlertsCard } from '../indeks/AlertsCard'
-import { IndexChart } from '../indeks/IndexChart'
 import { StatusCard } from '../indeks/StatusCard'
-import { ViewPanel } from '../indeks/ViewPanel'
-import { useState } from 'react'
+import { TimeChart } from '../indeks/TimeChart'
+import { ComingSoonList } from './ComingSoonList'
+import { STATUS_ITEMS } from './comingSoonItems'
 import { LatestValueCard } from './LatestValueCard'
 import { ParameterPicker } from './ParameterPicker'
+import { ReservedSlots } from './ReservedSlots'
+import { ProductCard, TodayWeatherCard } from './SummaryCards'
 
 const THIS_YEAR = new Date().getFullYear()
 const SEASONS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2]
 
-/** Durum sekmesi: seçili parametrenin en güncel değeri, zaman grafiği, uyarılar ve uydu verisi durumu. */
-export function StatusTab({ gardenId }: { gardenId: string }) {
+/** Durum sekmesi: üç özet kart, tek parametre seçici, zaman grafiği, uyarılar ve uydu verisi durumu. */
+export function StatusTab({ garden }: { garden: Garden }) {
+  const gardenId = garden.id
+  const navigate = useNavigate()
   const { data, scenes, isLoading, active, katman } = useIndexView()
   const season = useBahcemStore((s) => s.season)
-  const grafik = useBahcemStore((s) => s.grafikIndeksleri)
-  const toggleGrafik = useBahcemStore((s) => s.toggleGrafikIndeksi)
-  const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
   const setSeason = useBahcemStore((s) => s.setSeason)
   const setKatman = useBahcemStore((s) => s.setKatman)
   const havaKatmani = useBahcemStore((s) => s.havaKatmani)
@@ -44,54 +49,55 @@ export function StatusTab({ gardenId }: { gardenId: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2" aria-label="Uydu verisi yükleniyor" aria-busy>
-        <Skeleton className="h-40" />
-        <Skeleton className="h-40" />
-        <Skeleton className="h-64 @2xl:col-span-2" />
+      <div className="space-y-3" aria-label="Uydu verisi yükleniyor" aria-busy>
+        <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3">
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+        </div>
+        <Skeleton className="h-72" />
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      <AlertsCard alerts={data.uyarilar} />
-      <WeatherAlertsCard alerts={weather.data?.uyarilar ?? []} quiet />
-
-      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
-        <LatestValueCard indeks={indexLayer} scenes={scenes} loading={false} processing={processing} />
-        <Card aria-label="Parametre seçimi" className="space-y-2">
-          <h3 className="text-body font-semibold text-app-text">Haritada gösterilen</h3>
-          <ParameterPicker value={indexLayer} onChange={setKatman} />
-        </Card>
+      <ReservedSlots />
+      <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3" data-testid="summary-cards">
+        <LatestValueCard indeks={indexLayer} scenes={scenes} loading={false} processing={processing} alerts={data.uyarilar} />
+        <ProductCard garden={garden} />
+        <TodayWeatherCard gardenId={gardenId} />
       </div>
 
       {hasImages && (
-        <Card aria-label="Zaman grafiği" data-testid="time-chart">
-          <SelectField
-            label="Sezon"
-            value={season}
-            onChange={(event) => setSeason(Number(event.target.value))}
-            className="mb-3 w-40"
-          >
-            {SEASONS.map((year) => (
-              <option key={year} value={year}>
-                {year} sezonu
-              </option>
-            ))}
-          </SelectField>
-          <IndexChart
+        <Card aria-label="Zaman grafiği" data-testid="time-chart" className="space-y-3">
+          <ParameterPicker value={indexLayer} onChange={setKatman} />
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <SelectField label="Sezon" value={season} onChange={(event) => setSeason(Number(event.target.value))} className="w-40">
+              {SEASONS.map((year) => (
+                <option key={year} value={year}>
+                  {year} sezonu
+                </option>
+              ))}
+            </SelectField>
+            <Chip selected={havaKatmani} onClick={() => setHavaKatmani(!havaKatmani)} icon={<Cloud className="h-4 w-4" aria-hidden />}>
+              Yağış ve sıcaklık
+            </Chip>
+          </div>
+          <TimeChart
             scenes={data.gozlemler}
+            indeks={indexLayer}
             season={season}
-            active={grafik}
             activeDate={active?.tarih ?? null}
-            onToggle={toggleGrafik}
-            onSelect={setSelectedDate}
+            onSelect={(tarih) => navigate(archivePath(gardenId, { parametre: indexLayer, tarih }))}
             weather={havaKatmani ? (weatherHistory.data ?? []) : null}
             weatherLoading={weatherHistory.isLoading}
-            onWeatherToggle={() => setHavaKatmani(!havaKatmani)}
           />
         </Card>
       )}
+
+      <AlertsCard alerts={data.uyarilar} />
+      <WeatherAlertsCard alerts={weather.data?.uyarilar ?? []} quiet />
 
       <StatusCard
         data={data}
@@ -102,19 +108,7 @@ export function StatusTab({ gardenId }: { gardenId: string }) {
         }}
         refreshError={refreshError}
       />
-
-      {hasImages && (
-        <details className="group rounded-md border border-app-border bg-app-card">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-body font-semibold text-app-text marker:hidden">
-            <SlidersHorizontal className="h-4 w-4 text-app-text-muted" aria-hidden />
-            Harita ayarları
-            <span className="ml-auto text-small font-normal text-app-text-dim group-open:hidden">göster</span>
-          </summary>
-          <div className="border-t border-app-border p-4">
-            <ViewPanel />
-          </div>
-        </details>
-      )}
+      <ComingSoonList heading="Yakında" items={STATUS_ITEMS} />
     </div>
   )
 }

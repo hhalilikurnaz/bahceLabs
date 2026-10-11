@@ -25,3 +25,6 @@ export const isGardenTab = (value: string | undefined): value is GardenTab =>
   (GARDEN_TABS as readonly string[]).includes(value ?? '')
 
 export const gardenPath = (id: string, tab: GardenTab = 'durum'): string => `/bahcem/${id}/${tab}`
+
+/** Görüntü arşivi: `/bahcem/:id/arsiv?parametre=ndvi&tarih=YYYY-MM-DD` */
+export const ARCHIVE_SEGMENT = 'arsiv'

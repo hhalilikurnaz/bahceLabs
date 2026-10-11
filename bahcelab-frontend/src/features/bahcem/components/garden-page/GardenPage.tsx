@@ -117,7 +117,7 @@ export function GardenPage({ garden }: { garden: Garden }) {
         className="min-h-0 flex-1 overflow-y-auto bg-app-bg p-3"
         data-testid="detail-panel"
       >
-        {tab === 'durum' && <StatusTab gardenId={garden.id} />}
+        {tab === 'durum' && <StatusTab garden={garden} />}
         {tab === 'analiz' && <AnalysisTab gardenId={garden.id} />}
         {tab === 'hava' && <WeatherTab gardenId={garden.id} />}
         {tab === 'gunluk' && <ComingSoonList heading="Günlük" items={JOURNAL_ITEMS} />}

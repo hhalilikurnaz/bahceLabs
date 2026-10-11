@@ -3,7 +3,9 @@ import type { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Popup 
 import { loadMapLibre } from './maplibre'
 import { useYieldZones, useZones } from '../api/indeksApi'
 import { useIndexView } from '../hooks/useIndexView'
+import { ZONES } from '../lib/config'
 import { formatDecare } from '../lib/geo'
+import { smoothGeometry } from '../lib/zones'
 import { INDEX_DEFS, YIELD_COLORS, formatIndexValue, isIndexId } from '../lib/indices'
 import { useBahcemStore } from '../stores/bahcemStore'
 import { cssColor } from './cssColor'
@@ -25,10 +27,9 @@ export function ZonesLayers() {
   const verimlilik = useBahcemStore((s) => s.verimlilik)
   const verimlilikIndeksi = useBahcemStore((s) => s.verimlilikIndeksi)
   const mode = useBahcemStore((s) => s.mode)
-  const karsilastirma = useBahcemStore((s) => s.karsilastirma)
 
   const zoneIndex = isIndexId(katman) ? katman : null
-  const showProblem = shown && zoneIndex !== null && !verimlilik && !karsilastirma
+  const showProblem = shown && zoneIndex !== null && !verimlilik
   const { data: zones } = useZones(gardenId, zoneIndex ?? 'ndvi', active?.tarih ?? null, showProblem)
   const { data: yieldData } = useYieldZones(gardenId, verimlilikIndeksi, verimlilik && mode === 'idle')
 
@@ -56,12 +57,17 @@ export function ZonesLayers() {
         YIELD_COLORS.orta,
         YIELD_COLORS.yuksek,
       ]
-      map.addLayer({ id: YIELD_FILL, type: 'fill', source: YIELD_SOURCE, paint: { 'fill-color': color, 'fill-opacity': 0.55 } })
-      map.addLayer({ id: YIELD_LINE, type: 'line', source: YIELD_SOURCE, paint: { 'line-color': '#ffffff', 'line-width': 1.5, 'line-opacity': 0.8 } })
+      map.addLayer({ id: YIELD_FILL, type: 'fill', source: YIELD_SOURCE, paint: { 'fill-color': color, 'fill-opacity': ZONES.fillOpacity } })
+      map.addLayer({ id: YIELD_LINE, type: 'line', source: YIELD_SOURCE, paint: { 'line-color': color, 'line-width': ZONES.outlineWidthPx, 'line-opacity': 1 } })
     }
     ;(map.getSource(ZONES_SOURCE) as GeoJSONSource).setData(showProblem && zones ? (zones as GeoJSON.FeatureCollection) : empty)
     ;(map.getSource(YIELD_SOURCE) as GeoJSONSource).setData(
-      verimlilik && yieldData && mode === 'idle' ? (yieldData.bolgeler as GeoJSON.FeatureCollection) : empty,
+      verimlilik && yieldData && mode === 'idle'
+        ? {
+            type: 'FeatureCollection',
+            features: yieldData.bolgeler.features.map((f) => ({ ...f, geometry: smoothGeometry(f.geometry, ZONES.smoothingIterations) })),
+          }
+        : empty,
     )
   }, [map, styleVersion, showProblem, zones, verimlilik, yieldData, mode])
 

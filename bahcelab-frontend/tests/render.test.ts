@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   canvasScale,
   colorizeGrid,
-  compositeSplit,
   diffGrid,
   diffRange,
   lonLatToPixel,
@@ -11,7 +10,6 @@ import {
   pixelToLonLat,
   resampleTo,
   ringsToPixels,
-  splitPredicate,
   type Corners,
   type Grid,
 } from '@/features/bahcem/lib/render'
@@ -149,25 +147,5 @@ describe('coğrafi eşleme ve yeniden örnekleme', () => {
     expect(canvasScale(20, 20)).toBe(32)
     expect(canvasScale(200, 100)).toBe(5)
     expect(canvasScale(1000, 1000)).toBe(4)
-  })
-})
-
-describe('karşılaştırma (swipe) birleştirme', () => {
-  it('ayırıcının sağındaki pikseller B, solundakiler A kaynağından gelir', () => {
-    const a = new Uint8ClampedArray(4 * 4).fill(10)
-    const b = new Uint8ClampedArray(4 * 4).fill(200)
-    const out = compositeSplit(a, b, 4, 1, (x) => x > 2)
-    expect(Array.from(out)).toEqual([...Array(8).fill(10), ...Array(8).fill(200)])
-  })
-
-  it('ekran ayırıcısı piksel konumuna çevrilir (haritayı kaydırınca da tutarlı)', () => {
-    // Basit projeksiyon: ekran x = (boylam − 34) × 100000
-    const screenX = (lng: number) => (lng - 34) * 100000
-    const rightOf = splitPredicate(CORNERS, 4, 5, screenX, 250) // 250 px → 2,5 sütun
-    expect(rightOf(2.2, 1)).toBe(false)
-    expect(rightOf(2.8, 1)).toBe(true)
-    const panned = splitPredicate(CORNERS, 4, 5, (lng) => screenX(lng) + 100, 250) // harita 100 px sağa kaydı
-    expect(panned(1.2, 1)).toBe(false)
-    expect(panned(1.8, 1)).toBe(true) // ayırıcı artık 1,5. sütunda
   })
 })

@@ -27,6 +27,7 @@ export function GardenMapLabels() {
   const { data: overview } = useGardensOverview()
   const mode = useBahcemStore((s) => s.mode)
   const zoom = useBahcemStore((s) => s.mapZoom)
+  const selectedId = useBahcemStore((s) => s.selectedGardenId)
   const [points, setPoints] = useState<Record<string, Point>>({})
   const [hover, setHover] = useState<{ id: string; at: Point } | null>(null)
   const frame = useRef(0)
@@ -84,7 +85,8 @@ export function GardenMapLabels() {
         centers.map((c) => {
           const p = points[c.id]
           const item = byId.get(c.id)
-          if (!p || !item) return null
+          // Seçili bahçenin adı haritada gösterilmez: sağ panelin başlığında zaten var ve görüntünün üstünü kapatır
+          if (!p || !item || c.id === selectedId) return null
           const Icon = STATUS_META[item.durum].Icon
           return (
             <span

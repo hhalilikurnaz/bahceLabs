@@ -11,7 +11,7 @@ interface SegmentedProps<T extends string> {
 /** Tek seçimli düğme grubu (radiogroup); her düğme 44 px yüksekliğinde. */
 export function Segmented<T extends string>({ label, value, onChange, options, className }: SegmentedProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className={cx('inline-flex rounded-md bg-app-text/8 p-1', className)}>
+    <div role="radiogroup" aria-label={label} className={cx('inline-flex rounded-md bg-app-text/8 p-0.5', className)}>
       {options.map((option) => {
         const selected = option.value === value
         return (
@@ -22,7 +22,7 @@ export function Segmented<T extends string>({ label, value, onChange, options, c
             aria-checked={selected}
             onClick={() => onChange(option.value)}
             className={cx(
-              'min-h-9 flex-1 rounded-sm px-3 text-small font-semibold transition-colors duration-[var(--duration-fast)]',
+              'min-h-11 flex-1 rounded-sm px-3 text-small font-semibold transition-colors duration-[var(--duration-fast)]',
               selected ? 'bg-app-card text-app-text shadow-e1' : 'text-app-text-muted hover:text-app-text',
             )}
           >

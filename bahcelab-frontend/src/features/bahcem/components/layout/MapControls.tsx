@@ -4,7 +4,6 @@ import { loadMapLibre } from '../../map/maplibre'
 import { Check, Layers, LocateFixed, Loader2, Minus, Plus } from 'lucide-react'
 import { BASEMAPS, BASEMAP_PROVIDERS } from '../../map/mapStyles'
 import { useIndexView } from '../../hooks/useIndexView'
-import { LAYER_OPTIONS } from '../../lib/indices'
 import { useMap } from '../../map/useMap'
 import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { useBahcemStore } from '../../stores/bahcemStore'
@@ -15,10 +14,9 @@ const controlButton =
 
 function LayerSwitcher() {
   const { basemap, setBasemap, provider, setProvider, providers } = useMap()
-  const { gardenId, available, data, katman } = useIndexView()
+  const { gardenId, available, data } = useIndexView()
   const layerVisible = useBahcemStore((s) => s.layerVisible)
   const setLayerVisible = useBahcemStore((s) => s.setLayerVisible)
-  const setKatman = useBahcemStore((s) => s.setKatman)
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
   const hint = available
     ? 'Seçili bahçenin uydu görüntüsü'
@@ -127,23 +125,6 @@ function LayerSwitcher() {
             </span>
             {available && layerVisible && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
           </button>
-          {gardenId &&
-            LAYER_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={katman === option.id}
-                onClick={() => {
-                  setKatman(option.id)
-                  setLayerVisible(true)
-                }}
-                className="flex min-h-11 w-full items-center justify-between rounded-sm px-3 text-left text-body text-app-text transition-colors hover:bg-app-card-hover"
-              >
-                {option.ad}
-                {katman === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
-              </button>
-            ))}
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useGardens } from '../../api/useGardens'
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
-import { gardenPath, isGardenTab } from '../../lib/routes'
+import { ARCHIVE_SEGMENT, gardenPath, isGardenTab } from '../../lib/routes'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from './toastContext'
 
@@ -28,6 +28,6 @@ export function RouteSync() {
     navigate('/bahcem', { replace: true })
   }, [missing, navigate, toast])
 
-  if (gardenId && rawTab !== undefined && !isGardenTab(rawTab)) return <Navigate to={gardenPath(gardenId)} replace />
+  if (gardenId && rawTab !== undefined && !isGardenTab(rawTab) && rawTab !== ARCHIVE_SEGMENT) return <Navigate to={gardenPath(gardenId)} replace />
   return null
 }

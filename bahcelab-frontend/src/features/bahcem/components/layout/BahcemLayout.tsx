@@ -13,9 +13,7 @@ import { IndexLayer } from '../../map/IndexLayer'
 import { ZonesLayers } from '../../map/ZonesLayers'
 import { MapProvider } from '../../map/MapProvider'
 import { useMap } from '../../map/useMap'
-import { DateStrip } from '../indeks/DateStrip'
 import { IndexLegend } from '../indeks/IndexLegend'
-import { SwipeHandle } from '../indeks/SwipeHandle'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { FullMapBar } from './FullMapBar'
 import { IconRail } from './IconRail'
@@ -23,6 +21,7 @@ import { DetailPanel } from './DetailPanel'
 import { LeftPanel } from './LeftPanel'
 import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
+import { MapToolbar } from './MapToolbar'
 import { PlaceSearch } from './PlaceSearch'
 import { RouteSync } from './RouteSync'
 import { ToastProvider } from './ToastProvider'
@@ -103,9 +102,8 @@ export function BahcemLayout() {
             </Suspense>
           )}
           <CopilotButton />
-          <SwipeHandle />
           <IndexLegend />
-          <DateStrip />
+          <MapToolbar />
           <MapControls />
           <MapAttribution />
           <FullMapBar />

@@ -8,7 +8,7 @@ export type IndexId = (typeof INDEX_IDS)[number]
 export const TRUE_COLOR = 'gercek-renk' as const
 export type LayerId = IndexId | typeof TRUE_COLOR
 
-export type ColormapId = 'rdylgn' | 'mavi' | 'yesil' | 'fark'
+export type ColormapId = 'rdylgn' | 'mavi' | 'yesil' | 'fark' | 'viridis' | 'farkKb'
 export type Rgb = [number, number, number]
 export type Stops = [number, Rgb][]
 
@@ -42,6 +42,29 @@ export const COLORMAPS: Record<ColormapId, Stops> = {
     [0.65, [166, 217, 106]],
     [1.0, [26, 152, 80]],
   ],
+  // Renk körlüğüne uygun skalalar: viridis (koyu mor → sarı) ve mavi–turuncu fark skalası
+  viridis: [
+    [0.0, [68, 1, 84]],
+    [0.25, [59, 82, 139]],
+    [0.5, [33, 145, 140]],
+    [0.75, [94, 201, 98]],
+    [1.0, [253, 231, 37]],
+  ],
+  farkKb: [
+    [0.0, [179, 88, 6]],
+    [0.35, [241, 163, 64]],
+    [0.5, [245, 245, 245]],
+    [0.65, [153, 187, 220]],
+    [1.0, [33, 102, 172]],
+  ],
+}
+
+/** Renk körlüğü seçeneği açıkken kırmızı–yeşil içeren skalalar yerine güvenli olanı kullanılır. */
+export function safeColormap(colormap: ColormapId, colorBlind: boolean): ColormapId {
+  if (!colorBlind) return colormap
+  if (colormap === 'rdylgn' || colormap === 'yesil') return 'viridis'
+  if (colormap === 'fark') return 'farkKb'
+  return colormap
 }
 
 export interface IndexDef {
@@ -197,9 +220,9 @@ export function vigorLabel(id: IndexId, value: number): string {
 
 export type YieldClassId = 'dusuk' | 'orta' | 'yuksek'
 
-/** Verimlilik bölgesi renkleri (düşük → yüksek): kırmızı, sarı, yeşil */
+/** Bölge renkleri (zayıf → güçlü): indeks skalasından (kırmızı–sarı–yeşil) ayrı, tek renkli mor tonları */
 export const YIELD_COLORS: Record<YieldClassId, string> = {
-  dusuk: '#d73027',
-  orta: '#fee08b',
-  yuksek: '#1a9850',
+  dusuk: '#c4b5fd',
+  orta: '#8b5cf6',
+  yuksek: '#4c1d95',
 }

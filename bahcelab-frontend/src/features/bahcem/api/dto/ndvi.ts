@@ -57,3 +57,28 @@ export interface ApiIndexOverview {
   uyarilar: ApiAlert[]
   eksik_cikti: boolean
 }
+
+export interface ApiArchiveScene {
+  tarih: string
+  durum: 'tamam' | 'bulutlu'
+  deger: number | null
+  bulut_orani: number | null
+  gecerli_piksel_orani: number
+  net: boolean
+  en_net: boolean
+  kucuk_resim_url: string | null
+  ham_veri_var: boolean
+}
+
+export interface ApiArchive {
+  parametre: string
+  sezon: number
+  sezonlar: number[]
+  toplam: number
+  net_sayisi: number
+  bulutlu_sayisi: number
+  sayfa: number
+  boyut: number
+  sayfa_sayisi: number
+  sahneler: ApiArchiveScene[]
+}

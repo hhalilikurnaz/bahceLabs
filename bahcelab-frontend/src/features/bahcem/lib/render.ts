@@ -147,49 +147,5 @@ export function canvasScale(rows: number, cols: number): number {
   return Math.max(4, Math.min(32, Math.floor(1024 / Math.max(rows, cols))))
 }
 
-// ---------------------------------------------------------------- karşılaştırma (swipe)
-/**
- * İki RGBA görüntüyü ayırıcı çizgiyle birleştirir: `rightOf(x, y)` doğruysa piksel B'den, değilse A'dan gelir.
- */
-export function compositeSplit(
-  a: Uint8ClampedArray,
-  b: Uint8ClampedArray,
-  width: number,
-  height: number,
-  rightOf: (x: number, y: number) => boolean,
-): Uint8ClampedArray {
-  const out = new Uint8ClampedArray(a.length)
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4
-      const src = rightOf(x + 0.5, y + 0.5) ? b : a
-      out[i] = src[i]
-      out[i + 1] = src[i + 1]
-      out[i + 2] = src[i + 2]
-      out[i + 3] = src[i + 3]
-    }
-  }
-  return out
-}
-
-/**
- * Ekranda dikey bir ayırıcı çizginin (ekran x = splitX) görüntü pikseline göre hangi tarafta kaldığını bulan
- * fonksiyon. `screenOf` (boylam, enlem) → ekran x veren harita projeksiyonudur; görüntü köşelerinden
- * ekran x'in piksel konumuna göre afin olduğu varsayılır (bahçe ölçeğinde yeterince doğru).
- */
-export function splitPredicate(
-  corners: Corners,
-  rows: number,
-  cols: number,
-  screenX: (lng: number, lat: number) => number,
-  splitX: number,
-): (x: number, y: number) => boolean {
-  const [tl, tr, , bl] = corners
-  const x0 = screenX(tl[0], tl[1])
-  const dxPerCol = (screenX(tr[0], tr[1]) - x0) / cols
-  const dxPerRow = (screenX(bl[0], bl[1]) - x0) / rows
-  return (x, y) => x0 + dxPerCol * x + dxPerRow * y > splitX
-}
-
 /** Fark değerlerini ±aralığa göre 0–1 skalaya (0,5 = değişim yok) taşır */
 export const diffRange = (halfRange: number): ColorRange => ({ vmin: -halfRange, vmax: halfRange, colormap: 'fark' })

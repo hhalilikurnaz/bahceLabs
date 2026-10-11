@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { GardenGeometry } from '../api/types'
-import { INDEX_IDS, type IndexId, type LayerId } from '../lib/indices'
+import type { LayerId } from '../lib/indices'
+import { DEFAULT_VIEW, type RenderInfo, type Scale, type Smoothing } from '../lib/raster'
 
 /** Bahçe ekleme/düzenleme akışının aşaması */
 export type FlowMode =
@@ -21,29 +22,6 @@ export interface Draft {
   geometry: GardenGeometry
   source: 'draw' | 'file'
   suggestedName?: string
-}
-
-/** Değer görünümü: sabit skala ya da o tarihin bahçe içi p2–p98 aralığına gerilmiş */
-export type ViewMode = 'mutlak' | 'kontrastli'
-/** Çizim: keskin 10 m pikseller ya da yalnızca görsel yumuşatma (bilinear) */
-export type DrawStyle = 'piksel' | 'yumusak'
-export type ChangePreset = 'ikihafta' | 'gecenyil' | 'ozel'
-
-export interface Compare {
-  /** Sağ taraftaki görüntü (A: soldaki = seçili tarih ve katman) */
-  tarihB: string | null
-  katmanB: LayerId
-  /** Ayırıcı çizginin harita genişliğine oranı (0–1) */
-  bolme: number
-}
-
-/** Haritanın son çizimi hakkında bilgi: lejant ve etiket için */
-export interface RenderInfo {
-  kind: 'mutlak' | 'kontrastli' | 'fark' | 'gercek'
-  vmin: number
-  vmax: number
-  indeks: IndexId | null
-  etiket: string
 }
 
 interface BahcemState {
@@ -67,17 +45,12 @@ interface BahcemState {
   /** Uydu grafiğinin altında günlük yağış ve sıcaklık gösterilsin mi */
   havaKatmani: boolean
 
-  // --- indeks görselleştirme
+  // --- indeks görselleştirme (ana harita her zaman en güncel geçerli görüntüyü gösterir; tarih seçimi Arşiv'dedir)
   katman: LayerId
-  selectedDate: string | null // null = en son geçerli görüntü
   layerVisible: boolean
-  gorunum: ViewMode
-  cizim: DrawStyle
-  degisim: { preset: ChangePreset; tarih: string | null } | null
-  karsilastirma: Compare | null
-  oynat: boolean
-  hiz: 0.5 | 1 | 2
-  grafikIndeksleri: IndexId[]
+  skala: Scale
+  cizim: Smoothing
+  renkKorlugu: boolean
   verimlilik: boolean
   verimlilikIndeksi: 'ndvi' | 'msavi'
   renderInfo: RenderInfo | null
@@ -95,16 +68,10 @@ interface BahcemState {
   setHavaKatmani: (acik: boolean) => void
 
   setKatman: (katman: LayerId) => void
-  setSelectedDate: (tarih: string | null) => void
   setLayerVisible: (visible: boolean) => void
-  setGorunum: (gorunum: ViewMode) => void
-  setCizim: (cizim: DrawStyle) => void
-  setDegisim: (degisim: BahcemState['degisim']) => void
-  setKarsilastirma: (karsilastirma: Compare | null) => void
-  patchKarsilastirma: (patch: Partial<Compare>) => void
-  setOynat: (oynat: boolean) => void
-  setHiz: (hiz: BahcemState['hiz']) => void
-  toggleGrafikIndeksi: (indeks: IndexId) => void
+  setSkala: (skala: Scale) => void
+  setCizim: (cizim: Smoothing) => void
+  setRenkKorlugu: (acik: boolean) => void
   setVerimlilik: (acik: boolean) => void
   setVerimlilikIndeksi: (indeks: 'ndvi' | 'msavi') => void
   setRenderInfo: (info: RenderInfo | null) => void
@@ -149,15 +116,41 @@ const flowReset = {
   liveAreaDekar: null,
 }
 
-/** Bahçe değişince görselleştirme tercihleri (katman hariç) sıfırlanır: her bahçe en son görüntüyle açılır */
+/** Bahçe değişince geçici görünüm durumları sıfırlanır (parametre ve görünüm tercihleri korunur) */
 const viewReset = {
   fullMap: false,
-  selectedDate: null,
-  degisim: null,
-  karsilastirma: null,
-  oynat: false,
   verimlilik: false,
   renderInfo: null,
+}
+
+const VIEW_PREFS_KEY = 'bahcelab.viewPrefs'
+
+interface ViewPrefs {
+  skala: Scale
+  cizim: Smoothing
+  renkKorlugu: boolean
+}
+
+/** Görünüm tercihleri (skala, çizim, renk körlüğü) tarayıcıda saklanır; erişilemezse varsayılan. */
+function readViewPrefs(): ViewPrefs {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(VIEW_PREFS_KEY) ?? 'null') as Partial<ViewPrefs> | null
+    return {
+      skala: raw?.skala === 'genel' ? 'genel' : DEFAULT_VIEW.skala,
+      cizim: raw?.cizim === 'yumusak' ? 'yumusak' : DEFAULT_VIEW.cizim,
+      renkKorlugu: raw?.renkKorlugu === true,
+    }
+  } catch {
+    return { ...DEFAULT_VIEW }
+  }
+}
+
+function writeViewPrefs(prefs: ViewPrefs): void {
+  try {
+    window.localStorage.setItem(VIEW_PREFS_KEY, JSON.stringify(prefs))
+  } catch {
+    /* saklama yoksa tercih yalnızca oturum boyunca geçerli olur */
+  }
 }
 
 export const useBahcemStore = create<BahcemState>((set) => ({
@@ -174,10 +167,7 @@ export const useBahcemStore = create<BahcemState>((set) => ({
 
   katman: 'ndvi',
   layerVisible: true,
-  gorunum: 'mutlak',
-  cizim: 'piksel',
-  hiz: 1,
-  grafikIndeksleri: ['ndvi'],
+  ...readViewPrefs(),
   verimlilikIndeksi: 'ndvi',
   ...viewReset,
 
@@ -194,33 +184,13 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   setMapZoom: (mapZoom) => set({ mapZoom }),
   setLiveArea: (liveAreaDekar) => set({ liveAreaDekar }),
 
-  // Katman değişince grafik de o indeksi gösterir (en az bir indeks açık kalır)
   setHavaKatmani: (havaKatmani) => set({ havaKatmani }),
 
-  setKatman: (katman) =>
-    set((s) => ({
-      katman,
-      grafikIndeksleri:
-        katman !== 'gercek-renk' && !s.grafikIndeksleri.includes(katman) ? [katman] : s.grafikIndeksleri,
-    })),
-  setSelectedDate: (selectedDate) => set({ selectedDate }),
+  setKatman: (katman) => set({ katman }),
   setLayerVisible: (layerVisible) => set({ layerVisible }),
-  setGorunum: (gorunum) => set({ gorunum }),
-  setCizim: (cizim) => set({ cizim }),
-  setDegisim: (degisim) => set(degisim ? { degisim, karsilastirma: null, oynat: false } : { degisim: null }),
-  setKarsilastirma: (karsilastirma) =>
-    set({ karsilastirma, ...(karsilastirma ? { degisim: null, oynat: false } : {}) }),
-  patchKarsilastirma: (patch) =>
-    set((s) => (s.karsilastirma ? { karsilastirma: { ...s.karsilastirma, ...patch } } : {})),
-  setOynat: (oynat) => set({ oynat }),
-  setHiz: (hiz) => set({ hiz }),
-  toggleGrafikIndeksi: (indeks) =>
-    set((s) => {
-      const on = s.grafikIndeksleri.includes(indeks)
-      if (on && s.grafikIndeksleri.length === 1) return {} // en az bir indeks
-      const next = on ? s.grafikIndeksleri.filter((i) => i !== indeks) : [...s.grafikIndeksleri, indeks]
-      return { grafikIndeksleri: INDEX_IDS.filter((i) => next.includes(i)) }
-    }),
+  setSkala: (skala) => set((s) => (writeViewPrefs({ ...s, skala }), { skala })),
+  setCizim: (cizim) => set((s) => (writeViewPrefs({ ...s, cizim }), { cizim })),
+  setRenkKorlugu: (renkKorlugu) => set((s) => (writeViewPrefs({ ...s, renkKorlugu }), { renkKorlugu })),
   setVerimlilik: (verimlilik) => set({ verimlilik }),
   setVerimlilikIndeksi: (verimlilikIndeksi) => set({ verimlilikIndeksi }),
   setRenderInfo: (renderInfo) => set({ renderInfo }),

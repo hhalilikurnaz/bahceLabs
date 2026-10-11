@@ -41,3 +41,8 @@ export const SETTINGS_ITEMS: ComingSoonItem[] = [
 export const COPILOT_ITEMS: ComingSoonItem[] = [
   { title: 'Fotoğrafla teşhis', step: 'Adım 16', text: 'Yaprak veya meyve fotoğrafından olası sorunları öğrenin.' },
 ]
+
+export const STATUS_ITEMS: ComingSoonItem[] = [
+  { title: 'Bahçe skoru ve "Bugün"', step: 'Adım 8', text: 'Tek bakışta bahçenin puanı ve bugün yapılacaklar.' },
+  { title: 'Sulama önerisi', step: 'Adım 8', text: 'Su dengesine göre ne zaman sulanacağı.' },
+]

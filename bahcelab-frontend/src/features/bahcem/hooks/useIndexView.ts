@@ -1,18 +1,17 @@
 import { useIndices } from '../api/indeksApi'
-import { pickScene } from '../lib/scenes'
+import { latestUsableScene } from '../lib/scenes'
 import { useBahcemStore } from '../stores/bahcemStore'
 
-/** Seçili bahçenin indeks verisi, haritada gösterilen sahne ve gösterim durumu (tek yerde). */
+/** Seçili bahçenin indeks verisi ve haritada gösterilen (en güncel geçerli) sahne — tek yerde. */
 export function useIndexView() {
   const gardenId = useBahcemStore((s) => s.selectedGardenId)
   const katman = useBahcemStore((s) => s.katman)
-  const date = useBahcemStore((s) => s.selectedDate)
   const visible = useBahcemStore((s) => s.layerVisible)
   const mode = useBahcemStore((s) => s.mode)
   const query = useIndices(gardenId)
 
   const scenes = query.data?.gozlemler
-  const active = pickScene(scenes, katman, date)
+  const active = latestUsableScene(scenes, katman)
   return {
     gardenId,
     katman,
