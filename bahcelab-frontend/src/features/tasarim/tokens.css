@@ -1,0 +1,99 @@
+/* Komuta Merkezi tasarım önizlemesi: iki görsel yön, aynı yapı. Yalnızca /tasarim-onizleme (geliştirme). */
+.kc {
+  --kc-font-ui: 'Manrope', system-ui, sans-serif;
+  --kc-font-display: 'Fraunces', Georgia, serif;
+  --kc-font-num: 'Manrope', system-ui, sans-serif;
+  --kc-lemon: #f2c94c;
+  --kc-on-lemon: #14190f;
+  font-family: var(--kc-font-ui);
+  color: var(--kc-ink);
+  background: var(--kc-bg);
+  font-variant-numeric: tabular-nums;
+}
+/* Yön 1 — Gece Bahçe: koyu yeşil-siyah, yumuşak köşe, serif başlıklı */
+.kc[data-yon='gece'] {
+  --kc-bg: #09120e;
+  --kc-s1: #0f1b15;
+  --kc-s2: #15261e;
+  --kc-s3: #1c3126;
+  --kc-line: #21392d;
+  --kc-line2: #2f4d3d;
+  --kc-ink: #e9f0e6;
+  --kc-ink2: #a5b7aa;
+  --kc-ink3: #78907f;
+  --kc-ok: #7fcb6b;
+  --kc-warn: #f2a04a;
+  --kc-bad: #f0705c;
+  --kc-water: #6cb4ee;
+  --kc-series: #8fd67f;
+  --kc-prev: #8aa092;
+  --kc-band: rgb(143 214 127 / 0.13);
+  --kc-r: 14px;
+  --kc-r-sm: 9px;
+  --kc-font-title: 'Fraunces', Georgia, serif;
+  --kc-title-weight: 600;
+  --kc-label-case: none;
+  --kc-label-track: 0.01em;
+  --kc-label-size: 12px;
+  --kc-zone-1: #c9794f;
+  --kc-zone-2: #d9bd5c;
+  --kc-zone-3: #5fb4a2;
+  --kc-zone-4: #4f86c6;
+  --kc-zone-5: #8a6fc9;
+}
+/* Yön 2 — Toprak: koyu antrasit + sıcak kum, dar köşe, sans + mono rakam */
+.kc[data-yon='toprak'] {
+  --kc-bg: #111314;
+  --kc-s1: #191c1e;
+  --kc-s2: #212528;
+  --kc-s3: #2a2f33;
+  --kc-line: #31373b;
+  --kc-line2: #454d52;
+  --kc-ink: #efe9dd;
+  --kc-ink2: #b0a894;
+  --kc-ink3: #7f7967;
+  --kc-ok: #a9c58a;
+  --kc-warn: #e2a85a;
+  --kc-bad: #e57a62;
+  --kc-water: #86b4cc;
+  --kc-series: #c8d9a5;
+  --kc-prev: #9a927f;
+  --kc-band: rgb(226 190 140 / 0.12);
+  --kc-r: 4px;
+  --kc-r-sm: 3px;
+  --kc-font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --kc-font-num: 'IBM Plex Mono', ui-monospace, monospace;
+  --kc-font-display: 'IBM Plex Sans', system-ui, sans-serif;
+  --kc-font-title: 'IBM Plex Sans', system-ui, sans-serif;
+  --kc-title-weight: 600;
+  --kc-label-case: uppercase;
+  --kc-label-track: 0.09em;
+  --kc-label-size: 10.5px;
+  --kc-zone-1: #d27b58;
+  --kc-zone-2: #e0c06a;
+  --kc-zone-3: #8fb996;
+  --kc-zone-4: #7da6c9;
+  --kc-zone-5: #a98fcf;
+}
+.kc * { box-sizing: border-box; }
+.kc .num { font-family: var(--kc-font-num); font-variant-numeric: tabular-nums; }
+.kc .title { font-family: var(--kc-font-title); font-weight: var(--kc-title-weight); letter-spacing: -0.01em; }
+.kc .label { font-size: var(--kc-label-size); text-transform: var(--kc-label-case); letter-spacing: var(--kc-label-track); color: var(--kc-ink3); font-weight: 600; }
+.kc .card { background: var(--kc-s1); border: 1px solid var(--kc-line); border-radius: var(--kc-r); }
+.kc .raised { background: var(--kc-s2); border: 1px solid var(--kc-line); border-radius: var(--kc-r-sm); }
+.kc .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--kc-line2); color: var(--kc-ink2); font-size: 12px; font-weight: 600; background: transparent; cursor: pointer; }
+.kc[data-yon='toprak'] .chip { border-radius: 3px; }
+.kc .chip[data-on='true'] { background: var(--kc-s3); color: var(--kc-ink); border-color: var(--kc-ink3); }
+.kc .primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--kc-r-sm); background: var(--kc-lemon); color: var(--kc-on-lemon); font-weight: 700; font-size: 12.5px; border: 0; cursor: pointer; }
+.kc .ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: var(--kc-r-sm); background: transparent; color: var(--kc-ink2); font-weight: 600; font-size: 12.5px; border: 1px solid var(--kc-line2); cursor: pointer; }
+.kc .scroll { scrollbar-width: thin; scrollbar-color: var(--kc-line2) transparent; }
+.kc .pin { transform: translate(-50%, -100%); display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px 4px 7px; border-radius: 999px; background: rgb(10 14 12 / 0.86); border: 1px solid var(--kc-warn); color: #fff; font: 700 11.5px var(--kc-font-ui); white-space: nowrap; box-shadow: 0 2px 10px rgb(0 0 0 / 0.5); }
+.kc[data-yon='toprak'] .pin { border-radius: 3px; }
+.kc .pin i { width: 8px; height: 8px; border-radius: 50%; background: var(--kc-warn); display: block; }
+.kc .zonepin { transform: translate(-50%, -50%); padding: 3px 8px; border-radius: 999px; background: rgb(10 14 12 / 0.78); color: #fff; font: 700 11px var(--kc-font-ui); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) { .kc .grow { transition: width 0.25s ease, height 0.25s ease; } }
+/* İlaçlama paleti (renk körü dostu) ve gece */
+.kc { --kc-spray-ok: #14808a; --kc-spray-edge: #d99a00; --kc-spray-no: #8d9893; --kc-night: #cfd4d1; --kc-night-ink: #3a4540; }
+.kc[data-yon='toprak'] { --kc-spray-ok: #3f9aa5; --kc-night: #cdc8bc; --kc-night-ink: #46423a; }
+.kc .spray-edge { background: repeating-linear-gradient(135deg, var(--kc-spray-edge) 0 3px, color-mix(in srgb, var(--kc-spray-edge) 45%, #fff) 3px 6px); }
+.kc .spray-no { background-color: var(--kc-spray-no); background-image: radial-gradient(circle, rgb(255 255 255 / 0.6) 1.1px, transparent 1.3px); background-size: 5px 5px; }

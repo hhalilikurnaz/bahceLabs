@@ -11,6 +11,9 @@ const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage').the
 const BlogPage = lazy(() => import('@/features/marketing/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
 const BlogPostPage = lazy(() => import('@/features/marketing/pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })))
 
+// Tasarım önizlemesi yalnızca geliştirmede yüklenir (üretim paketine girmez)
+const TasarimOnizleme = import.meta.env.DEV ? lazy(() => import('@/features/tasarim/TasarimOnizleme').then((m) => ({ default: m.TasarimOnizleme }))) : null
+
 function PageFallback() {
   return (
     <div className="flex h-dvh items-center justify-center bg-forest" role="status" aria-label="Sayfa yükleniyor">
@@ -32,6 +35,9 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      {TasarimOnizleme && (
+        <Route path="/tasarim-onizleme/:yon/:ekran" element={<ProtectedRoute><TasarimOnizleme /></ProtectedRoute>} />
+      )}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       {/* Bahçelerim, bölümler ve bahçe sayfası. Üst rota sabit kalır: harita sayfalar arasında yeniden kurulmaz.
