@@ -1,4 +1,4 @@
-# BahçeLab — Bilgi mimarisi (Adım 7A)
+# BahçeLab — Bilgi mimarisi (Adım 7A, 7B-2'de güncellendi)
 
 Her yeni özelliğin yeri baştan belli olsun diye iskelet. Henüz olmayan uçlar "Yakında – Adım N" boş durumu gösterir; ölü/işlevsiz menü ucu bırakılmaz.
 
@@ -10,6 +10,9 @@ Bildirimler     /bahcem/bildirimler        Yakında – Adım 8 (bildirim merkez
 Ayarlar         /bahcem/ayarlar            hesap, çıkış · Bildirim tercihleri ve telefon/WhatsApp onayı (Adım 18–19)
 ```
 
+## Yerleşim (7B-2, ADR 0006)
+Masaüstünde üç bölge: **sol liste | orta harita | sağ bahçe paneli** (sürüklenerek ya da ← → ile boyutlanır, genişlik tarayıcıda saklanır). Bahçe seçilince ikisi birlikte görünür; «Tam harita» ikisini de kapatır (Esc geri açar). Copilot çekmecesi sağ panelin üstünde açılır. Dar ekranda bahçe paneli listenin yerine geçer.
+
 ## Bahçe sayfası (`/bahcem/:id/…`)
 ```
 /bahcem/:id
@@ -18,13 +21,17 @@ Ayarlar         /bahcem/ayarlar            hesap, çıkış · Bildirim tercihle
 │                    Yakında: Topografya & don (10) · Toprak örneklemesi (14) · Uygulama haritası & denemeler (15)
 ├── hava     Hava    hava, 7 gün, ilaçlama penceresi, su durumu · Yakında: Sulama önerisi (8) · Zararlı/hastalık riski (8)
 ├── gunluk   Günlük  Yakında: Gözlemler (11) · Hasat (11) · İlaç defteri (12) · Maliyet & işçi/yevmiye (13) · Kayıt dosyası İTU/GlobalG.A.P. (13B)
-└── rapor    Rapor   Yakında: Sezon raporu PDF (16) · Hasar raporu (10/16) · Paylaşım linki (16)
+├── rapor    Rapor   Yakında: Sezon raporu PDF (16) · Hasar raporu (10/16) · Paylaşım linki (16)
+└── arsiv    Görüntü arşivi (tam sayfa)  ?parametre=ndvi&tarih=YYYY-MM-DD&mod=tek|karsilastir|degisim|zaman&b=…&sezon=…&net=0
+             parametreler (değer · 14 günlük değişim · mini grafik) | büyük görüntüleyici (4 mod) | ay ay küçük resim ızgarası
 ```
+Durum sekmesi: üstte 3 özet kart (en güncel değer + cümle · ürün/ağaç yaşı · bugünün havası), tek parametre seçici + zaman grafiği (noktaya tıkla → Arşiv'de o tarih), uyarılar; Adım 8 için "Bahçe skoru" ve "Bugün" yerleri ayrılmıştır (`ReservedSlots`). Her sekmenin altında kısa "Yakında" listesi bulunur.
 Copilot (sağ üst çekmece): Yakında – Adım 16 (Fotoğrafla teşhis dahil).
 `/bahcem/:id` → `/bahcem/:id/durum`. Bilinmeyen bahçe → liste + bildirim.
 
 ## Kurallar
-- Uzman harita denetimleri (indeks seçici, görünüm, değişim, karşılaştır, zaman atlaması) harita üstü araç çubuğundadır; panelde yer almaz.
+- Ana ekran HER ZAMAN en güncel geçerli görüntüyü gösterir; tarih seçimi, karşılaştırma, değişim haritası ve zaman atlaması yalnızca Arşiv'dedir. Harita araç çubuğu: parametre, görünüm (Bahçenin kendi farkları / Genel skala), ayarlar, «Tüm görüntüler».
+- Renk yalnızca durum kuralına göre kırmızı olur (sunucudaki uyarılar); mevsim normali içindeki değişim nötr gösterilir.
 - Bir özellik tek sekmeye aittir; başka sekmeden yalnızca bağlantıyla anılır.
 - Çiftçi dili: birincil ad anlamlıdır, teknik ad ikincil etikettir.
 

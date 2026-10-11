@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 
 export const PASSWORD = 'test1234'
@@ -32,4 +33,16 @@ export async function createGarden(
   })
   expect(response.status(), await response.text()).toBe(201)
   return response.json()
+}
+
+/**
+ * Bahçeye gerçek işleme hattından geçen örnek uydu serisi yazar (yalnızca TEST aracı; ürün kodunda sahte veri yoktur).
+ * `flat`: mekânsal deseni olmayan, homojen bahçe.
+ */
+export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): void {
+  execFileSync(
+    '../bahcelab-backend/.venv/bin/python',
+    ['-m', 'tests.support.seed_scenes', gardenId, ...(options.flat ? ['--flat'] : [])],
+    { cwd: '../bahcelab-backend', env: { ...process.env, PYTHONPATH: 'src' }, stdio: 'pipe' },
+  )
 }

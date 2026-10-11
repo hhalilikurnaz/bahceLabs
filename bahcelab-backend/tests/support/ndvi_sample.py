@@ -125,6 +125,7 @@ def build_sample_series(
     today: date,
     months: int = 13,
     seed: int = 7,
+    flat: bool = False,
 ) -> tuple[list[SceneObservationModel], list[IndexObservationModel]]:
     """13 aylık örnek seri: gerçek işleme hattından (analyze_scene + persist_analysis) geçirilir."""
     rng = random.Random(seed)
@@ -142,6 +143,9 @@ def build_sample_series(
     )
     # Bahçenin sabit "verimlilik" deseni: doğuda güçlü, batıda zayıf (verimlilik bölgeleri için)
     vigor = 0.07 * (cols / max(width - 1, 1) - 0.5)
+
+    if flat:  # homojen bahçe: mekânsal desen yok (yalnızca zamanla değişen ortalama)
+        texture, patch, vigor = texture * 0, patch * 0, vigor * 0
 
     start = months_back(today, months)
     days: list[date] = []

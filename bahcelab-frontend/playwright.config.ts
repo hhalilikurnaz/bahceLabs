@@ -17,7 +17,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
     viewport: { width: 1440, height: 900 },
-    launchOptions: executablePath ? { executablePath } : undefined,
+    // Başsız tarayıcıda harita (WebGL2) için yazılım oluşturucu (SwiftShader) açılır
+    launchOptions: { executablePath, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] },
     channel: executablePath ? undefined : 'chrome',
   },
 })

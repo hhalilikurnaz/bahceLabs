@@ -14,7 +14,6 @@ import { IndexLayer } from '../../map/IndexLayer'
 import { ZonesLayers } from '../../map/ZonesLayers'
 import { MapProvider } from '../../map/MapProvider'
 import { useMap } from '../../map/useMap'
-import { IndexLegend } from '../indeks/IndexLegend'
 import { ArchivePage } from '../archive/ArchivePage'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { FullMapBar } from './FullMapBar'
@@ -105,7 +104,6 @@ export function BahcemLayout() {
             </Suspense>
           )}
           <CopilotButton />
-          <IndexLegend />
           <MapToolbar />
           <MapControls />
           <MapAttribution />

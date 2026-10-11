@@ -50,7 +50,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
   if (isLoading || !data) {
     return (
       <div className="space-y-3" aria-label="Uydu verisi yükleniyor" aria-busy>
-        <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 @md:grid-cols-3">
           <Skeleton className="h-36" />
           <Skeleton className="h-36" />
           <Skeleton className="h-36" />
@@ -63,7 +63,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
   return (
     <div className="space-y-3">
       <ReservedSlots />
-      <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3" data-testid="summary-cards">
+      <div className="grid grid-cols-1 gap-2 @md:grid-cols-3" data-testid="summary-cards">
         <LatestValueCard indeks={indexLayer} scenes={scenes} loading={false} processing={processing} alerts={data.uyarilar} />
         <ProductCard garden={garden} />
         <TodayWeatherCard gardenId={gardenId} />

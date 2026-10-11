@@ -28,10 +28,10 @@ test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve
   await page.getByRole('button', { name: 'Kaydet' }).click()
 
   await expect(page).toHaveURL(/\/bahcem\/[0-9a-f-]{36}\/durum$/)
-  await expect(page.getByRole('heading', { name: 'İçe aktarılan' })).toBeVisible()
+  await expect(page.getByTestId('garden-page').getByRole('heading', { name: 'İçe aktarılan' })).toBeVisible()
 
   // Liste: kart, durum etiketi (henüz görüntü yok → dürüst "Veri yok")
-  await page.getByRole('button', { name: 'Bahçe listesine dön' }).click()
+  await page.getByRole('button', { name: 'Bahçe panelini kapat' }).click()
   const card = page.getByTestId('garden-card')
   await expect(card).toHaveCount(1)
   await expect(card).toHaveAttribute('data-status', 'veri_yok')
@@ -42,7 +42,7 @@ test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve
   await page.getByRole('menuitem', { name: 'Adını düzenle' }).click()
   await page.getByLabel('Bahçe adı').fill('Yeni Ad')
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { name: 'Yeni Ad' })).toBeVisible()
+  await expect(page.getByTestId('garden-card').getByRole('heading', { name: 'Yeni Ad' })).toBeVisible()
 
   // Sil (onaylı)
   await page.getByRole('button', { name: 'Yeni Ad işlemleri' }).click()

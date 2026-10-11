@@ -35,7 +35,13 @@ export const MAP = {
 } as const
 
 /** Odaklanırken harita kenarlarında bırakılan boşluk, px */
-export const FOCUS_PAD = { top: 90, bottom: 70, side: 24 } as const
+export const FOCUS_PAD = {
+  top: 90,
+  bottom: 70,
+  side: 24,
+  /** Seçili bahçeye odaklanırken alt boşluk: araç çubuğu, lejant ve kapsül görüntünün üstünü kapatmasın */
+  bottomSelected: 300,
+} as const
 
 export const LIST = {
   /** Bahçe kartı küçük resim kenarı, px */

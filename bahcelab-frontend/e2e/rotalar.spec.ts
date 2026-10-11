@@ -10,7 +10,8 @@ test('bahçe açılınca URL, sekmeler, geri tuşu ve derin bağlantı çalış�
   await page.goto('/bahcem')
   await page.getByRole('link', { name: 'Rota Bahçesi bahçesini aç' }).click()
   await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
-  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-kind', 'detail')
+  await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'true')
+  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'true')
 
   await page.getByRole('tab', { name: 'Analiz' }).click()
   await expect(page).toHaveURL(/\/analiz$/)
@@ -19,7 +20,7 @@ test('bahçe açılınca URL, sekmeler, geri tuşu ve derin bağlantı çalış�
 
   await page.goto(`/bahcem/${garden.id}/gunluk`)
   await expect(page.getByRole('tab', { name: 'Günlük', selected: true })).toBeVisible()
-  await expect(page.getByTestId('coming-soon').first()).toContainText('Yakında – Adım')
+  await expect(page.getByTestId('coming-soon').first()).toContainText('Adım')
 })
 
 test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', async ({ page }) => {

@@ -97,7 +97,7 @@ export function ArchiveViewer({ garden, rings, scenes, dates, state, settings, o
   const labelA = `${layerName(layer)} · ${formatDate(shownDate ?? '')}`
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-3" aria-label="Görüntüleyici" onKeyDown={onKey} data-testid="archive-viewer" data-mode={state.mod}>
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3" aria-label="Görüntüleyici" onKeyDown={onKey} data-testid="archive-viewer" data-mode={state.mod}>
       <div className="flex flex-wrap items-center gap-2">
         <Segmented
           label="Görüntüleme biçimi"
@@ -109,7 +109,7 @@ export function ArchiveViewer({ garden, rings, scenes, dates, state, settings, o
             { value: 'degisim', label: 'Değişim haritası' },
             { value: 'zaman', label: 'Zaman atlaması' },
           ]}
-          className="max-w-full overflow-x-auto"
+          className="max-w-full min-w-0 overflow-x-auto"
         />
         {state.mod === 'karsilastir' && (
           <Segmented

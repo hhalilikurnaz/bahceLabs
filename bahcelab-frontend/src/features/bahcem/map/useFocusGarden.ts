@@ -6,28 +6,34 @@ import { FOCUS_PAD, MAP } from '../lib/config'
 import { useMap } from './useMap'
 
 /** Sol panel (ve açıksa Copilot) haritayı kapladığı için odaklarken görünen alanı (yerleşim sınırları) korur. */
-export function useFocusPadding() {
-  const { insets } = usePanelLayout()
+export function useFocusPadding(selected = false) {
+  const { insets, desktop } = usePanelLayout()
   return useCallback(
-    () => ({ top: FOCUS_PAD.top, bottom: FOCUS_PAD.bottom, left: insets.left + FOCUS_PAD.side, right: insets.right + FOCUS_PAD.side }),
-    [insets.left, insets.right],
+    () => ({
+      top: FOCUS_PAD.top,
+      bottom: selected && desktop ? FOCUS_PAD.bottomSelected : FOCUS_PAD.bottom,
+      left: insets.left + FOCUS_PAD.side,
+      right: insets.right + FOCUS_PAD.side,
+    }),
+    [insets.left, insets.right, selected, desktop],
   )
 }
 
 export function useFocusGarden() {
   const { map } = useMap()
   const padding = useFocusPadding()
+  const selectedPadding = useFocusPadding(true)
 
   const focusGarden = useCallback(
     (garden: Garden, options: { animate?: boolean } = {}) => {
       if (!map) return
       map.fitBounds(geometryBounds(garden.geometry), {
-        padding: padding(),
+        padding: selectedPadding(),
         maxZoom: MAP.focusMaxZoom,
         duration: options.animate === false ? 0 : 1200,
       })
     },
-    [map, padding],
+    [map, selectedPadding],
   )
 
   const focusAll = useCallback(

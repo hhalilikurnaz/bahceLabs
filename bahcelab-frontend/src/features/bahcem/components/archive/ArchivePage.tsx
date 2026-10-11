@@ -73,7 +73,7 @@ export function ArchivePage() {
   const pickSecond = state.mod === 'karsilastir' || state.mod === 'degisim'
 
   return (
-    <div className="absolute inset-y-0 left-[var(--rail-w)] right-0 z-[25] flex flex-col overflow-hidden bg-app-bg" data-testid="archive-page">
+    <div className="absolute inset-y-0 left-[var(--rail-w)] right-0 z-[25] flex min-w-0 flex-col overflow-hidden bg-app-bg" data-testid="archive-page">
       <header className="flex items-center gap-2 border-b border-app-border bg-app-panel px-3 py-2">
         <IconButton label="Bahçeye dön" onClick={back}>
           <ArrowLeft className="h-5 w-5" aria-hidden />
@@ -103,8 +103,8 @@ export function ArchivePage() {
           actions={<Button onClick={back}>Bahçeye dön</Button>}
         />
       ) : (
-        <div className="grid min-h-0 flex-1 grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto p-3 lg:grid-cols-[250px_minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:overflow-hidden">
-          <div className="lg:hidden">
+        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto overflow-x-hidden p-3 lg:grid-cols-[250px_minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:overflow-hidden">
+          <div className="min-w-0 lg:hidden">
             <ArchiveParams scenes={scenes} date={selected} value={state.parametre} onChange={(parametre) => update({ parametre })} layout="tabs" />
           </div>
           <div className="hidden min-h-0 overflow-y-auto lg:row-span-2 lg:block">

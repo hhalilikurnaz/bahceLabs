@@ -11,7 +11,7 @@ const productLabel = (value: string): string => PRODUCTS.find((p) => p.value ===
 export function ProductCard({ garden }: { garden: Garden }) {
   const age = garden.dikimYili ? new Date().getFullYear() - garden.dikimYili : null
   return (
-    <Card aria-label="Ürün" data-testid="product-card">
+    <Card aria-label="Ürün" data-testid="product-card" className="p-3">
       <h3 className="flex items-center gap-1.5 text-body font-semibold text-app-text">
         <Sprout className="h-4 w-4 text-app-accent" aria-hidden /> Ürün
       </h3>
@@ -27,7 +27,7 @@ export function TodayWeatherCard({ gardenId }: { gardenId: string }) {
   const { data, isLoading, isError } = useWeather(gardenId)
   const today = data?.gunler[0]
   return (
-    <Card aria-label="Bugünün havası" data-testid="today-weather">
+    <Card aria-label="Bugünün havası" data-testid="today-weather" className="p-3">
       <h3 className="text-body font-semibold text-app-text">Bugün hava</h3>
       {isLoading ? (
         <Skeleton className="mt-2 h-14" />

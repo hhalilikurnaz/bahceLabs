@@ -41,9 +41,9 @@ Frontend (`bahcelab-frontend/src/`):
 |---|---|
 | `components/ui/` | Tasarım sistemi bileşenleri (yalnız token kullanır) |
 | `features/bahcem/api/` | HTTP istemcisi + `dto/` (sunucu yanıt tipleri) → arayüz modelleri; `any` yok |
-| `features/bahcem/lib/` | Saf mantık (sıralama, şiddet, düzen, tarih, render); `config.ts` arayüz sabitleri |
+| `features/bahcem/lib/` | Saf mantık (sıralama, şiddet, düzen, tarih, render, `raster` görünüm kuralları, `archive` adres durumu, `chartScale`); `config.ts` arayüz sabitleri |
 | `features/bahcem/hooks/` | Rota/düzen/veri kancaları |
-| `features/bahcem/components/` | Ekranlar (`garden`, `garden-page`, `hava`, `indeks`, `layout`, `draw`) |
+| `features/bahcem/components/` | Ekranlar (`garden`, `garden-page`, `hava`, `indeks`, `archive`, `layout`, `draw`) |
 | `features/bahcem/map/` | MapLibre katmanları (tembel yüklenir: `map/maplibre.ts`) |
 | `features/bahcem/stores/` | zustand: yalnızca arayüz durumu (sunucu verisi react-query'de) |
 
@@ -51,7 +51,8 @@ Frontend (`bahcelab-frontend/src/`):
 
 - **Bahçe oluştur** → `POST /gardens` (alan sunucuda PostGIS ile) → son 13 ay arka planda işlenir (iş kuyruğu: süreç içi, DB'de durum) → sahne başına tek okuma, tüm indeksler + gerçek renk → PNG/ham ızgara depolamaya, özetler DB'ye.
 - **Liste** → `GET /gardens/overview` (tek istek: bahçe, durum, küçük resim, 30 günlük seri, uyarılar, hava önbelleği) + arka planda `/weather/ozet` ile hava önbelleği tazelenir.
-- **Bahçe sayfası** → rota `/bahcem/:id/(durum|analiz|hava|gunluk|rapor)`; seçili bahçe URL'den gelir (`RouteSync`).
+- **Bahçe sayfası** → rota `/bahcem/:id/(durum|analiz|hava|gunluk|rapor|arsiv)`; seçili bahçe URL'den gelir (`RouteSync`). Yerleşim: sol liste | harita | sağ panel (ADR 0006).
+- **Ana harita** her zaman en güncel geçerli görüntüyü çizer (`IndexLayer` → `lib/rasterRender.ts`); **Arşiv** aynı çizimi canvas'ta kullanır ve `GET /gardens/{id}/indeks/arsiv` ile sayfalanmış, net/en net işaretli listeyi alır (`domain/ndvi/archive.py`).
 - **Hava** → hücre (0,05°) başına 1 saat önbellek, geçmiş günde bir tamamlanır; ağ yoksa son önbellek ve zaman damgası.
 - **Durum etiketi** (İyi/İzle/Dikkat/Veri yok): `domain/overview/status.py` içinde TEK fonksiyon (`derive_status`); Adım 8'de skora bağlanır.
 
@@ -74,7 +75,7 @@ Frontend (yalnızca `.env.local`; commit edilmez): `VITE_MAPBOX_TOKEN`, `VITE_MA
 
 ## 6. Kalite kapıları
 
-Backend: `make backend-test` (pytest, DB gerekir) · `make backend-typecheck` (mypy + ruff). Frontend: `npx tsc -b` (strict) · `npx oxlint src` · `npx vitest run` · `npm run build` · `npm run test:e2e` (Playwright, çalışan backend + Vite gerekir).
+Backend: `make backend-test` (pytest, DB gerekir) · `make backend-typecheck` (mypy + ruff). Frontend: `npx tsc -b` (strict) · `npx oxlint src` · `npx vitest run` · `npm run build` · `npm run test:e2e` (Playwright, çalışan backend + Vite gerekir; başsız tarayıcıda WebGL için SwiftShader bayrakları config'dedir; uydu serisi `tests.support.seed_scenes` test aracıyla yazılır).
 
 ## 7. Planlı (yapılmamış)
 

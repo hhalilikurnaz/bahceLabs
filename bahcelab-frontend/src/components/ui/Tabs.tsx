@@ -42,8 +42,8 @@ export function Tabs<T extends string>({ label, items, value, onChange, idPrefix
       {items.map((item) => {
         const selected = item.id === value
         const classes = cx(
-          '-mb-px inline-flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-body font-semibold transition-colors duration-[var(--duration-fast)]',
-          selected ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted hover:text-app-text',
+          '-mb-px inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-t-md border-b-[3px] px-3.5 text-lead font-semibold transition-colors duration-[var(--duration-fast)]',
+          selected ? 'border-app-accent bg-app-accent-soft text-app-accent-strong' : 'border-transparent text-app-text-muted hover:text-app-text',
         )
         const common = {
           role: 'tab' as const,

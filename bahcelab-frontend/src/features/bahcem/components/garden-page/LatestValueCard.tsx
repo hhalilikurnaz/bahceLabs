@@ -40,7 +40,7 @@ export function LatestValueCard({ indeks, scenes, loading, processing, alerts }:
   }
 
   return (
-    <Card aria-label={`${def.ad}: en güncel değer`} data-testid="latest-value">
+    <Card aria-label={`${def.ad}: en güncel değer`} data-testid="latest-value" className="p-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-body font-semibold text-app-text">
           {def.ad} <span className="text-small font-medium text-app-text-dim">{def.teknik}</span>
