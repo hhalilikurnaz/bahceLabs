@@ -101,6 +101,13 @@ test('üç grafik aynı zaman ekseninde, imleç senkron; dönem seçici ve fenol
   await expect(page.getByTestId('rain-chart').getByTestId('chart-tooltip')).toBeVisible()
   await expect(page.getByTestId('gdd-chart').getByTestId('chart-tooltip')).toBeVisible()
 
+  // Varsayılan dönem: sezonun ilk 90 gününde «Son 12 ay» (sezon ayırıcı çizgisiyle), sonra «Bu sezon»
+  const now = new Date()
+  const seasonStart = Date.UTC(now.getUTCMonth() >= 9 ? now.getUTCFullYear() : now.getUTCFullYear() - 1, 9, 1)
+  const early = (Date.now() - seasonStart) / 86_400_000 < 90
+  await expect(page.getByRole('radio', { name: early ? 'Son 12 ay' : 'Bu sezon' })).toBeChecked()
+  if (early) await expect(page.getByTestId('time-chart').getByTestId('season-mark')).toHaveCount(1)
+
   // Dönem: geçen sezon ve özel aralık
   const before = await page.getByTestId('period-label').innerText()
   await page.getByRole('radio', { name: 'Geçen sezon' }).click()

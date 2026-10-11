@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import statistics
 from datetime import date, timedelta
 from typing import Any
 
@@ -12,6 +11,8 @@ from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform as shapely_transform
 from shapely.ops import unary_union
 
+from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.agro.score import ScoreConfig, baseline
 from bahcelab_backend.domain.ndvi.repository import SceneWithIndices
 from bahcelab_backend.domain.ndvi.schemas import Uyari
 
@@ -34,7 +35,10 @@ def display_name(indeks: str) -> str:
     return f"{FARMER_NAMES.get(indeks, indeks.upper())} ({indeks.upper()})"
 
 
-# İndeks bazlı düşüş eşikleri (yüzde) ve açıklayıcı Türkçe metinler
+# İndeks bazlı düşüş eşikleri (yüzde) ve açıklayıcı Türkçe metinler.
+# Uyarı, ham "son 10–25 günde %X düşüş" ile DEĞİL, bahçenin kendi mevsim normuna göre üretilir (skorla aynı norm):
+#   düzeltilmiş değişim = gerçek değişim − normun aynı aralıktaki beklenen değişimi < −eşik
+#   ve son değer, kendi normunun `norm_alti_yuzde` (yoksa eşiğin yarısı) kadar altında olmalı.
 DROP_RULES: dict[str, dict[str, Any]] = {
     "ndvi": {
         "esik": 10.0,
@@ -51,11 +55,15 @@ DROP_RULES: dict[str, dict[str, Any]] = {
         "baslik": "Klorofil / besin düşüşü",
         "ek": "Olası besin eksikliği / sararma; yaprak kontrolü önerilir.",
     },
+    "ndmi": {
+        "esik": 15.0,  # bağıl düşüş
+        "baslik": "Olası su stresi",
+        "ek": "Yaprak su içeriği azalıyor olabilir; sulama programını ve toprak nemini kontrol edin.",
+        "min_taban": 0.05,  # norm bu değerin altındaysa bağıl değişim anlamsız (sıfıra yakın)
+        "mutlak_alti": 0.05,  # son değer normun en az bu kadar altında olmalı
+    },
 }
-NDMI_DROP_PCT = 15.0  # bağıl düşüş
-NDMI_BELOW_MEDIAN = 0.05  # geçmiş medyanın bu kadar altı
-NDMI_MIN_HISTORY = 6
-NDMI_MIN_BASE = 0.05  # bağıl düşüş, taban değer bundan küçükse anlamsız (sıfıra yakın)
+DEFAULT_MIN_BASE = 0.0
 
 
 def _tr_pct(value: float) -> str:
@@ -92,17 +100,35 @@ def _change_pct(previous: float, latest: float) -> float:
     return round((latest - previous) / previous * 100, 2)
 
 
-def _drop_alert(indeks: str, series: list[tuple[date, float]]) -> Uyari | None:
+def _drop_alert(indeks: str, series: list[tuple[date, float]], cfg: ScoreConfig) -> Uyari | None:
+    """Mevsim normuna göre düzeltilmiş düşüş; norm (geçen yıl aynı dönem / kendi taban) yoksa uyarı üretilmez."""
     rule = DROP_RULES[indeks]
     window = _compare_window(series)
     if window is None:
         return None
     (prev_date, prev), (last_date, last) = window
-    if not prev:
+    norm_last = baseline([p for p in series if p[0] < last_date], last_date, cfg)
+    norm_prev = baseline([p for p in series if p[0] < prev_date], prev_date, cfg)
+    if norm_last is None or norm_prev is None:
         return None
-    change = _change_pct(prev, last)
-    if change >= -rule["esik"]:  # tam eşik değeri "fazla" sayılmaz
+    min_base = float(rule.get("min_taban", DEFAULT_MIN_BASE))
+    if not prev or prev <= min_base or norm_prev.deger <= min_base or norm_last.deger <= 0:
         return None
+
+    actual = _change_pct(prev, last)
+    expected = round((norm_last.deger - norm_prev.deger) / norm_prev.deger * 100, 2)  # mevsimsel beklenen değişim
+    adjusted = actual - expected
+    deviation = (last - norm_last.deger) / norm_last.deger * 100
+    esik = float(rule["esik"])
+    if adjusted >= -esik:  # tam eşik değeri "fazla" sayılmaz
+        return None
+    if "mutlak_alti" in rule:
+        if last >= norm_last.deger - float(rule["mutlak_alti"]):
+            return None
+    elif deviation >= -esik / 2:
+        return None
+
+    source = "bu dönemin kendi normu (geçen yıl aynı dönem)" if norm_last.kaynak == "gecmis_sezon" else "son haftalardaki kendi düzeyi"
     days = (last_date - prev_date).days
     return Uyari(
         tur="indeks_dusus",
@@ -111,63 +137,20 @@ def _drop_alert(indeks: str, series: list[tuple[date, float]]) -> Uyari | None:
         oncelik="normal",
         baslik=rule["baslik"],
         mesaj=(
-            f"Ortalama {display_name(indeks)} {_tr_num(prev)} → {_tr_num(last)} "
-            f"({_tr_pct(change)} azalma, {days} günde). {rule['ek']}"
+            f"{display_name(indeks)}: son değer {_tr_num(last)}; {source} {_tr_num(norm_last.deger)} "
+            f"({_tr_pct(deviation)} {'altında' if deviation < 0 else 'üstünde'}). Son {days} günde "
+            f"{_tr_pct(actual)} {'azaldı' if actual < 0 else 'arttı'}; mevsimsel beklenen değişim {_tr_pct(expected)} "
+            f"{'azalma' if expected < 0 else 'artış'} olduğundan beklenenden {_tr_pct(adjusted)} fazla düştü. {rule['ek']}"
         ),
         onceki_tarih=prev_date,
         onceki_ortalama=round(prev, 4),
         son_tarih=last_date,
         son_ortalama=round(last, 4),
-        degisim_yuzde=change,
-    )
-
-
-def _ndmi_alert(series: list[tuple[date, float]]) -> Uyari | None:
-    """Belirgin düşüş (bağıl %15) veya bahçenin geçmiş medyanının belirgin altında → olası su stresi."""
-    if len(series) < 2:
-        return None
-    last_date, last = series[-1]
-    reasons: list[str] = []
-    prev_date: date | None = None
-    prev: float | None = None
-    change: float | None = None
-
-    window = _compare_window(series)
-    if window is not None:
-        (prev_date, prev), _ = window
-        if prev > NDMI_MIN_BASE:
-            change = _change_pct(prev, last)
-            if change < -NDMI_DROP_PCT:
-                days = (last_date - prev_date).days
-                reasons.append(
-                    f"ortalama {display_name('ndmi')} {_tr_num(prev)} → {_tr_num(last)} ({_tr_pct(change)} azalma, {days} günde)"
-                )
-
-    history = [value for _, value in series[:-1]]
-    if len(history) >= NDMI_MIN_HISTORY:
-        median = statistics.median(history)
-        if last < median - NDMI_BELOW_MEDIAN:
-            reasons.append(
-                f"son değer {_tr_num(last)}, bahçenin geçmiş medyanı {_tr_num(median)}'nın belirgin altında"
-            )
-
-    if not reasons:
-        return None
-    return Uyari(
-        tur="indeks_dusus",
-        indeks="ndmi",
-        indeksler=["ndmi"],
-        oncelik="normal",
-        baslik="Olası su stresi",
-        mesaj=(
-            f"Yaprak suyu (NDMI): {'; '.join(reasons)}. Yaprak su içeriği azalıyor olabilir; "
-            "sulama programını ve toprak nemini kontrol edin."
-        ),
-        onceki_tarih=prev_date,
-        onceki_ortalama=round(prev, 4) if prev is not None else None,
-        son_tarih=last_date,
-        son_ortalama=round(last, 4),
-        degisim_yuzde=change,
+        degisim_yuzde=actual,
+        norm_degeri=round(norm_last.deger, 4),
+        norm_kaynagi=norm_last.kaynak,
+        beklenen_degisim_yuzde=expected,
+        normdan_sapma_yuzde=round(deviation, 2),
     )
 
 
@@ -188,60 +171,85 @@ def _overlap_m2(a: BaseGeometry, b: BaseGeometry) -> float:
     return float(shapely_transform(_TO_EQUAL_AREA.transform, inter).area)
 
 
-def build_alerts(scenes: list[SceneWithIndices]) -> list[Uyari]:
-    """Tüm indeksler için uyarılar. Aynı bölgede birden fazla indeks düşüyorsa öncelik yükselir."""
+def _components(alerts: list[Uyari], overlaps: dict[tuple[str, str], float]) -> list[list[Uyari]]:
+    """Aynı bölgede (alan örtüşmesi) düşen indeksleri bağlı bileşenlere ayırır."""
+    parent = {a.indeks or "": a.indeks or "" for a in alerts}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for first, second in overlaps:
+        parent[find(first)] = find(second)
+    groups: dict[str, list[Uyari]] = {}
+    for alert in alerts:
+        groups.setdefault(find(alert.indeks or ""), []).append(alert)
+    return list(groups.values())
+
+
+def build_alerts(scenes: list[SceneWithIndices], cfg: ScoreConfig | None = None) -> list[Uyari]:
+    """Uyarılar: mevsim normuna göre düzeltilmiş düşüşler (skorla aynı norm).
+
+    Aynı gün aynı bölgede birden fazla indeks düşüyorsa bunlar TEK olayda birleşir (bir olay = bir uyarı):
+    `indeksler` etkilenen tüm indeksleri listeler ve öncelik yüksektir; bölgeleri ayrı olanlar kendi uyarılarını korur.
+    """
+    cfg = cfg or ScoreConfig.from_settings(get_settings())
     alerts: list[Uyari] = []
     for indeks in DROP_RULES:
-        alert = _drop_alert(indeks, index_series(scenes, indeks))
+        alert = _drop_alert(indeks, index_series(scenes, indeks), cfg)
         if alert:
             alerts.append(alert)
-    ndmi = _ndmi_alert(index_series(scenes, "ndmi"))
-    if ndmi:
-        alerts.append(ndmi)
 
     if len(alerts) >= 2:
         by_date = {item.scene.tarih: item for item in scenes}
-        unions: dict[str, BaseGeometry] = {}
+        unions: dict[tuple[date, str], BaseGeometry] = {}
         for alert in alerts:
             item = by_date.get(alert.son_tarih)
-            name = alert.indeks
-            zone = _zone_union(item, name) if item and name else None
-            if zone is not None and name is not None:
-                unions[name] = zone
+            zone = _zone_union(item, alert.indeks) if item and alert.indeks else None
+            if zone is not None and alert.indeks is not None:
+                unions[(alert.son_tarih, alert.indeks)] = zone
 
-        overlapping: dict[str, float] = {}
-        names = list(unions)
-        for i, first in enumerate(names):
-            for second in names[i + 1 :]:
+        overlaps: dict[tuple[str, str], float] = {}
+        keys = list(unions)
+        for i, first in enumerate(keys):
+            for second in keys[i + 1 :]:
+                if first[0] != second[0]:
+                    continue  # farklı günlerin düşüşleri aynı olay sayılmaz
                 area = _overlap_m2(unions[first], unions[second])
                 if area >= OVERLAP_MIN_M2:
-                    overlapping[first] = max(overlapping.get(first, 0.0), area)
-                    overlapping[second] = max(overlapping.get(second, 0.0), area)
+                    overlaps[(first[1], second[1])] = area
 
-        if overlapping:
-            for alert in alerts:
-                if alert.indeks in overlapping:
-                    alert.oncelik = "yuksek"
-            members = [a for a in alerts if a.indeks is not None and a.indeks in overlapping]
-            area = max(overlapping.values())
-            labels = " + ".join(display_name(a.indeks) for a in members if a.indeks)
-            alerts.append(
+        merged: list[Uyari] = []
+        remaining = list(alerts)
+        for group in _components(alerts, overlaps):
+            members = [a for a in group if any(a.indeks in pair for pair in overlaps)]
+            if len(members) < 2:
+                continue
+            area = max(v for (x, y), v in overlaps.items() if x in {a.indeks for a in members} and y in {a.indeks for a in members})
+            names = [a.indeks for a in members if a.indeks]
+            area_text = f"{round(area):,}".replace(",", ".")
+            details = "; ".join(
+                f"{display_name(a.indeks)} normunun {_tr_pct(a.normdan_sapma_yuzde or 0)} altında" for a in members if a.indeks
+            )
+            merged.append(
                 Uyari(
                     tur="coklu_indeks",
                     indeks=None,
-                    indeksler=[a.indeks for a in members if a.indeks is not None],
+                    indeksler=sorted(names),
                     oncelik="yuksek",
                     baslik="Aynı bölgede birden fazla indeks düşüyor",
                     mesaj=(
-                        f"{labels} aynı bölgede (≈ {round(area):,} m²) birlikte düşüyor".replace(
-                            ",", "."
-                        )
-                        + "; bu bölgede saha kontrolü öncelikli."
+                        f"Aynı bölgede (≈ {area_text} m²) birlikte düşüyor: {details}. "
+                        "Bu, tek bir olay olarak değerlendirildi; bu bölgede saha kontrolü öncelikli."
                     ),
                     son_tarih=max(a.son_tarih for a in members),
                     degisim_yuzde=None,
                 )
             )
+            remaining = [a for a in remaining if a not in members]
+        alerts = [*remaining, *merged]
 
     order = {"yuksek": 0, "normal": 1}
     return sorted(alerts, key=lambda a: (order[a.oncelik], a.tur != "coklu_indeks", a.indeks or ""))

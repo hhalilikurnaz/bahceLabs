@@ -11,7 +11,7 @@ import { useIndexView } from '../../hooks/useIndexView'
 import { archivePath } from '../../lib/archive'
 import { formatDate, shiftDays, todayIstanbul } from '../../lib/dates'
 import { INDEX_DEFS, INDEX_IDS, formatIndexValue, isIndexId, type IndexId } from '../../lib/indices'
-import { periodRange, seasonStartYear, type Band, type PeriodKind } from '../../lib/seasonAxis'
+import { defaultPeriod, periodRange, seasonBoundaries, seasonStartYear, type Band, type PeriodKind } from '../../lib/seasonAxis'
 import { WeatherAlertsCard } from '../hava/WeatherAlertsCard'
 import { AlertsCard } from '../indeks/AlertsCard'
 import { SeriesChartCard } from '../indeks/SeriesChartCard'
@@ -42,7 +42,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [compare, setCompare] = useState<IndexId | ''>('')
   const [hoverDate, setHoverDate] = useState<string | null>(null)
-  const [kind, setKind] = useState<PeriodKind>('bu')
+  const [kind, setKind] = useState<PeriodKind>(() => defaultPeriod(today))
   const [custom, setCustom] = useState({ from: shiftDays(today, -90), to: today })
   const [editing, setEditing] = useState(false)
 
@@ -58,6 +58,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
     () => (phenology.data?.evreler ?? []).map((e) => ({ kod: e.kod, ad: e.ad, baslangic: e.baslangic, bitis: e.bitis, ozel: e.ozel })),
     [phenology.data],
   )
+  const marks = useMemo(() => seasonBoundaries(range), [range])
   const bandNote = phenology.data?.kural?.durum === 'dogrulanmadi' ? 'ön değer' : undefined
 
   const indexLayer: IndexId = isIndexId(katman) ? katman : 'ndvi'
@@ -155,6 +156,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
                   activeDate={active?.tarih ?? null}
                   onSelect={(tarih) => navigate(archivePath(gardenId, { parametre: indexLayer, tarih }))}
                   bands={bands}
+                  seasonMarks={marks}
                   bandNote={bandNote}
                   hoverDate={hoverDate}
                   onHoverDate={setHoverDate}
@@ -201,6 +203,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
                 format={(v) => `${mm(v)} mm`}
                 range={range}
                 bands={bands}
+                seasonMarks={marks}
                 bandNote={bandNote}
                 hoverDate={hoverDate}
                 onHoverDate={setHoverDate}
@@ -218,6 +221,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
                 format={(v) => mm(v)}
                 range={range}
                 bands={bands}
+                seasonMarks={marks}
                 bandNote={bandNote}
                 hoverDate={hoverDate}
                 onHoverDate={setHoverDate}

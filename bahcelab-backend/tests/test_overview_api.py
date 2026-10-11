@@ -122,10 +122,13 @@ async def test_overview_with_images_series_and_thumbnail(user_client: AsyncClien
 async def test_overview_status_follows_alerts(user_client: AsyncClient, factory):
     garden = await garden_at(user_client)
     gid = garden["id"]
+    # Bahçenin kendi tabanı (son aylar düz 0,7) + son haftada ani düşüş: mevsim normuna göre uyarı üretilir
+    for ago in range(130, 18, -10):
+        await add_scene(factory, gid, TODAY - timedelta(days=ago), {**ALL_MEANS, "ndvi": 0.7})
     await add_scene(factory, gid, TODAY - timedelta(days=18), {**ALL_MEANS, "ndvi": 0.7})
     await add_scene(factory, gid, TODAY - timedelta(days=2), {**ALL_MEANS, "ndvi": 0.5})
     (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
-    assert item["durum"] == "izle"
+    assert item["durum"] in ("izle", "dikkat") and item["skor"] is not None
     assert [(u["kaynak"], u["seviye"]) for u in item["uyarilar"]] == [("uydu", "sari")]
     assert item["durum_nedeni"] == item["uyarilar"][0]["baslik"]
 

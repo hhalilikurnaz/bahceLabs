@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipBand, dateAtFraction, monthTicks, periodRange, seasonRange, seasonStartYear, shiftYears, stageAt, xFraction } from '@/features/bahcem/lib/seasonAxis'
+import { clipBand, dateAtFraction, defaultPeriod, last12Months, seasonBoundaries, monthTicks, periodRange, seasonRange, seasonStartYear, shiftYears, stageAt, xFraction } from '@/features/bahcem/lib/seasonAxis'
 
 describe('sezon ekseni', () => {
   it('su yılı 1 Ekim\'de başlar', () => {
@@ -49,5 +49,21 @@ describe('sezon ekseni', () => {
     expect(clipBand({ ...band, baslangic: '2026-02-01', bitis: '2026-02-20' }, range)).toBeNull()
     expect(stageAt([band], '2026-04-01')?.kod).toBe('ciceklenme')
     expect(stageAt([band], '2026-05-10')).toBeNull()
+  })
+
+  it('varsayılan dönem: sezonun ilk 90 gününde son 12 ay, sonra bu sezon', () => {
+    expect(defaultPeriod('2026-10-01')).toBe('son12')
+    expect(defaultPeriod('2026-12-29')).toBe('son12') // 89. gün
+    expect(defaultPeriod('2026-12-30')).toBe('bu') // 90. gün
+    expect(defaultPeriod('2027-03-15')).toBe('bu')
+    expect(defaultPeriod('2026-09-30')).toBe('bu') // sezon sonu
+  })
+
+  it('son 12 ay: bir yıl önceki günün ertesinden bugüne; sezon ayırıcı çizgisi içerdeki 1 Ekim', () => {
+    expect(last12Months('2026-10-11')).toEqual({ from: '2025-10-12', to: '2026-10-11' })
+    expect(periodRange('son12', '2026-10-11')).toEqual({ from: '2025-10-12', to: '2026-10-11' })
+    expect(seasonBoundaries({ from: '2025-10-12', to: '2026-10-11' })).toEqual(['2026-10-01'])
+    expect(seasonBoundaries({ from: '2025-10-01', to: '2026-09-30' })).toEqual([]) // aralığın ilk günü ayırıcı değil
+    expect(seasonBoundaries({ from: '2024-06-01', to: '2026-03-01' })).toEqual(['2024-10-01', '2025-10-01'])
   })
 })

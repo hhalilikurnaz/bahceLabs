@@ -58,7 +58,12 @@ class Uyari(BaseModel):
     onceki_ortalama: float | None = None
     son_tarih: date
     son_ortalama: float | None = None
-    degisim_yuzde: float | None = None  # negatif: düşüş
+    degisim_yuzde: float | None = None  # negatif: düşüş (ham değişim)
+    # Mevsim normu (skorla aynı): geçen yıl aynı dönem ya da bahçenin kendi son günleri
+    norm_degeri: float | None = None
+    norm_kaynagi: str | None = None
+    beklenen_degisim_yuzde: float | None = None  # normun aynı aralıktaki beklenen (mevsimsel) değişimi
+    normdan_sapma_yuzde: float | None = None  # son değerin normdan sapması (negatif: altında)
 
 
 class IndeksYanit(BaseModel):

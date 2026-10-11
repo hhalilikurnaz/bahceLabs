@@ -16,6 +16,7 @@ interface TimeChartProps {
   onSelect?: (tarih: string) => void
   compact?: boolean
   bands?: Band[]
+  seasonMarks?: string[]
   bandNote?: string
   hoverDate: string | null
   onHoverDate: (date: string | null) => void
@@ -28,7 +29,7 @@ function seriesOf(scenes: Scene[], indeks: IndexId) {
 }
 
 /** Seçili parametrenin uydu ortalamaları: bu dönem + bir yıl önceki aynı dönem (kesikli) ve isteğe bağlı ikinci parametre. */
-export function TimeChart({ scenes, indeks, range, compare = null, activeDate = null, onSelect, compact = false, bands, bandNote, hoverDate, onHoverDate }: TimeChartProps) {
+export function TimeChart({ scenes, indeks, range, compare = null, activeDate = null, onSelect, compact = false, bands, seasonMarks, bandNote, hoverDate, onHoverDate }: TimeChartProps) {
   const def = INDEX_DEFS[indeks]
   const def2 = compare && compare !== indeks ? INDEX_DEFS[compare] : null
   const lines = useMemo<ChartLine[]>(() => {
@@ -59,6 +60,7 @@ export function TimeChart({ scenes, indeks, range, compare = null, activeDate = 
       range={range}
       lines={lines}
       bands={bands}
+      seasonMarks={seasonMarks}
       bandNote={bandNote}
       leftFormat={(v) => formatIndexValue(indeks, v)}
       rightFormat={def2 ? (v) => formatIndexValue(def2.id, v) : undefined}

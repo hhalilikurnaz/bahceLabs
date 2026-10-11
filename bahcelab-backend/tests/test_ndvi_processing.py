@@ -448,45 +448,44 @@ def _series(**by_index):
     return sorted(items, key=lambda i: i.scene.tarih)
 
 
-def test_ndvi_alert_needs_more_than_ten_percent_in_window():
-    alerts = build_alerts(_series(ndvi=[(17, 0.70), (0, 0.60)]))  # −%14,3
-    assert [a.indeks for a in alerts] == ["ndvi"] and alerts[0].degisim_yuzde == pytest.approx(
-        -14.29, abs=0.01
-    )
+def _with_norm(value: float, **by_index):
+    """Bahçenin kendi tabanını (son günlerdeki düzey) oluşturan sabit geçmiş + verilen noktalar."""
+    history = [(d, value) for d in range(130, 20, -10)]
+    return _series(**{name: [*history, *points] for name, points in by_index.items()})
+
+
+def test_ndvi_alert_needs_more_than_ten_percent_beyond_the_seasonal_norm():
+    alerts = build_alerts(_with_norm(0.70, ndvi=[(17, 0.70), (0, 0.60)]))  # −%14,3, norm düz 0,70
+    assert [a.indeks for a in alerts] == ["ndvi"] and alerts[0].degisim_yuzde == pytest.approx(-14.29, abs=0.01)
     assert alerts[0].baslik == "Canlılık düşüşü" and "%14,3" in alerts[0].mesaj
-    assert build_alerts(_series(ndvi=[(17, 0.70), (0, 0.64)])) == []  # −%8,6
-    assert build_alerts(_series(ndvi=[(17, 0.70), (0, 0.63)])) == []  # tam %10 eşik aşılmadı
-    assert build_alerts(_series(ndvi=[(5, 0.70), (0, 0.40)])) == []  # < 10 gün
-    assert build_alerts(_series(ndvi=[(40, 0.70), (0, 0.40)])) == []  # > 25 gün
+    assert alerts[0].norm_kaynagi == "son_gunler" and alerts[0].norm_degeri == pytest.approx(0.70, abs=0.01)
+    assert build_alerts(_with_norm(0.70, ndvi=[(17, 0.70), (0, 0.64)])) == []  # −%8,6
+    assert build_alerts(_with_norm(0.70, ndvi=[(17, 0.70), (0, 0.63)])) == []  # tam %10 eşik aşılmadı
+    assert build_alerts(_with_norm(0.70, ndvi=[(5, 0.70), (0, 0.40)])) == []  # < 10 gün
+    assert build_alerts(_with_norm(0.70, ndvi=[(40, 0.70), (0, 0.40)])) == []  # > 25 gün
+    # Norm için yeterli geçmiş yoksa ham düşüş tek başına uyarı üretmez
+    assert build_alerts(_series(ndvi=[(17, 0.70), (0, 0.60)])) == []
 
 
 def test_ndre_threshold_is_twelve_percent_and_mentions_nutrition():
-    assert build_alerts(_series(ndre=[(17, 0.40), (0, 0.36)])) == []  # −%10: NDRE için yetmez
-    (alert,) = build_alerts(_series(ndre=[(17, 0.40), (0, 0.34)]))  # −%15
-    assert (
-        alert.indeks == "ndre"
-        and "besin eksikliği" in alert.mesaj
-        and "yaprak kontrolü" in alert.mesaj
-    )
+    assert build_alerts(_with_norm(0.40, ndre=[(17, 0.40), (0, 0.36)])) == []  # −%10: NDRE için yetmez
+    (alert,) = build_alerts(_with_norm(0.40, ndre=[(17, 0.40), (0, 0.34)]))  # −%15
+    assert alert.indeks == "ndre" and "besin eksikliği" in alert.mesaj and "yaprak kontrolü" in alert.mesaj
 
 
-def test_ndmi_alert_on_sharp_drop_or_below_historic_median():
-    (alert,) = build_alerts(_series(ndmi=[(17, 0.30), (0, 0.22)]))  # −%26,7
+def test_ndmi_alert_needs_a_sharp_drop_and_a_clear_gap_to_the_norm():
+    (alert,) = build_alerts(_with_norm(0.30, ndmi=[(17, 0.30), (0, 0.22)]))  # −%26,7; normun 0,08 altında
     assert alert.baslik == "Olası su stresi" and "NDMI" in alert.mesaj and "Yaprak suyu" in alert.mesaj
-
-    history = [(d, 0.30) for d in (90, 80, 70, 60, 50, 40, 30)]
-    (below,) = build_alerts(
-        _series(ndmi=[*history, (0, 0.23)])
-    )  # pencere yok ama medyanın 0,07 altında
-    assert "medyan" in below.mesaj
-    assert build_alerts(_series(ndmi=[*history, (0, 0.27)])) == []  # 0,03 altı: belirgin değil
-    assert (
-        build_alerts(_series(ndmi=[(17, 0.02), (0, 0.001)])) == []
-    )  # taban sıfıra yakın: bağıl düşüş anlamsız
+    assert build_alerts(_with_norm(0.30, ndmi=[(17, 0.30), (0, 0.27)])) == []  # normun 0,03 altı: belirgin değil
+    assert build_alerts(_with_norm(0.30, ndmi=[(0, 0.23)])) == []  # son aralıkta düşüş yok: yalnızca "düşük" olmak uyarı değil
+    assert build_alerts(_with_norm(0.02, ndmi=[(17, 0.02), (0, 0.001)])) == []  # taban sıfıra yakın: bağıl düşüş anlamsız
 
 
-def test_alerts_priority_rises_when_indices_drop_in_the_same_area():
-    items = _series(ndvi=[(17, 0.70), (0, 0.55)], ndre=[(17, 0.40), (0, 0.30)])
+def test_alerts_merge_into_one_event_when_indices_drop_in_the_same_area():
+    items = _with_norm(0.70, ndvi=[(17, 0.70), (0, 0.55)])
+    ndre = _with_norm(0.40, ndre=[(17, 0.40), (0, 0.30)])
+    for base, extra in zip(items, ndre, strict=True):
+        base.indices.update(extra.indices)
     zone = {
         "type": "Feature",
         "properties": {},
@@ -507,12 +506,9 @@ def test_alerts_priority_rises_when_indices_drop_in_the_same_area():
         for row in item.indices.values():
             row.sorunlu_bolge_geojson = {"type": "FeatureCollection", "features": [zone]}
     alerts = build_alerts(items)
-    assert alerts[0].tur == "coklu_indeks" and alerts[0].oncelik == "yuksek"
+    # Bir olay = bir uyarı: bireysel uyarılar çoklu uyarıda erir
+    assert len(alerts) == 1 and alerts[0].tur == "coklu_indeks" and alerts[0].oncelik == "yuksek"
     assert set(alerts[0].indeksler) == {"ndvi", "ndre"} and "saha kontrolü" in alerts[0].mesaj
-    assert {a.indeks: a.oncelik for a in alerts if a.tur == "indeks_dusus"} == {
-        "ndvi": "yuksek",
-        "ndre": "yuksek",
-    }
 
     # Bölgeler farklı yerlerdeyse öncelik yükselmez
     far = dict(
@@ -535,9 +531,8 @@ def test_alerts_priority_rises_when_indices_drop_in_the_same_area():
         "features": [far],
     }
     separate = build_alerts(items)
-    assert all(a.oncelik == "normal" for a in separate) and all(
-        a.tur == "indeks_dusus" for a in separate
-    )
+    assert sorted(a.indeks or "" for a in separate) == ["ndre", "ndvi"]
+    assert all(a.oncelik == "normal" for a in separate) and all(a.tur == "indeks_dusus" for a in separate)
 
 
 def test_months_back():

@@ -20,6 +20,8 @@ export interface ChartLine {
   opacity?: number
   /** Noktalar işaretlenir (seyrek ölçümler: uydu görüntüleri); sürekli günlük seride kapalı */
   dots?: boolean
+  /** Birikimli seri: değer düşünce (yeni sezon başı) çizgi kesilir, düşey inme çizilmez */
+  cumulative?: boolean
   /** Tooltip ve seçim için: geçen sezon gibi yardımcı çizgi birincil sayılmaz */
   secondary?: boolean
   /** Tooltip'te gösterilecek asıl tarih (kaydırılmış önceki sezon noktaları için) */
@@ -31,6 +33,8 @@ interface LineChartPanelProps {
   range: DateRange
   lines: ChartLine[]
   bands?: Band[]
+  /** Yeni sezon ayırıcı çizgileri (1 Ekim tarihleri) */
+  seasonMarks?: string[]
   /** Fenoloji bantlarının arkada doğrulanmamış (ön değer) olduğunu tooltip'te belirtir */
   bandNote?: string
   leftFormat: (value: number) => string
@@ -71,7 +75,7 @@ function nearest(points: ChartPoint[], date: string, maxGapDays: number): ChartP
  * Fenoloji bantları arka plandadır; imlecin altındaki evre ipucu kutusunda adıyla yazılır.
  */
 export function LineChartPanel({
-  range, lines, bands = [], bandNote, leftFormat, rightFormat, leftDefault, rightDefault, zeroBased = false, minSpan,
+  range, lines, bands = [], seasonMarks = [], bandNote, leftFormat, rightFormat, leftDefault, rightDefault, zeroBased = false, minSpan,
   height, compact = false, hoverDate, onHoverDate, activeDate = null, onSelectDate, ariaLabel, emptyText, testId,
 }: LineChartPanelProps) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
@@ -98,8 +102,17 @@ export function LineChartPanel({
   const yOf = (value: number, domain: Domain) => m.top + (1 - (value - domain.min) / (domain.max - domain.min || 1)) * plotH
   const domainFor = (line: ChartLine) => (line.axis === 'right' && rightDomain ? rightDomain : leftDomain)
   const inRange = (p: ChartPoint) => p.date >= range.from && p.date <= range.to
-  const pathOf = (line: ChartLine) =>
-    line.points.filter(inRange).map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.date).toFixed(1)} ${yOf(p.value, domainFor(line)).toFixed(1)}`).join(' ')
+  const pathOf = (line: ChartLine) => {
+    let previous: number | null = null
+    return line.points
+      .filter(inRange)
+      .map((p) => {
+        const breaks = previous === null || (line.cumulative === true && p.value < previous)
+        previous = p.value
+        return `${breaks ? 'M' : 'L'}${x(p.date).toFixed(1)} ${yOf(p.value, domainFor(line)).toFixed(1)}`
+      })
+      .join(' ')
+  }
 
   const ticks = monthTicks(range)
   const step = monthLabelStep(plotW, CHART.monthLabelPx + (range.to > range.from && ticks.some((t) => t.year) ? 18 : 0))
@@ -169,6 +182,18 @@ export function LineChartPanel({
           )
         })}
 
+        {seasonMarks
+          .filter((d) => d > range.from && d <= range.to)
+          .map((d) => (
+            <g key={`sezon-${d}`} data-testid="season-mark" pointerEvents="none">
+              <line x1={x(d)} x2={x(d)} y1={m.top} y2={h - m.bottom} strokeDasharray="5 3" style={{ stroke: 'var(--color-app-text-muted)' }} />
+              {!compact && (
+                <text x={x(d) + 4} y={h - m.bottom - 6} style={{ ...FONT, fill: 'var(--color-app-text-muted)', fontSize: 11 }}>
+                  Yeni sezon
+                </text>
+              )}
+            </g>
+          ))}
         {leftTicks.map((t) => (
           <g key={`l${t}`}>
             <line x1={m.left} x2={width - m.right} y1={yOf(t, leftDomain)} y2={yOf(t, leftDomain)} style={{ stroke: 'var(--color-app-border)' }} />

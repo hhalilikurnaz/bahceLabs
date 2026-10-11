@@ -10,7 +10,7 @@ interface PeriodSelectorProps {
   max: string
 }
 
-/** Dönem seçici: bu sezon / geçen sezon / özel aralık (sezon 1 Ekim'de başlar). */
+/** Dönem seçici: bu sezon / geçen sezon / son 12 ay / özel aralık (sezon 1 Ekim'de başlar). */
 export function PeriodSelector({ kind, onKind, custom, onCustom, max }: PeriodSelectorProps) {
   const invalid = custom.from > custom.to
   return (
@@ -22,6 +22,7 @@ export function PeriodSelector({ kind, onKind, custom, onCustom, max }: PeriodSe
         options={[
           { value: 'bu', label: 'Bu sezon' },
           { value: 'gecen', label: 'Geçen sezon' },
+          { value: 'son12', label: 'Son 12 ay' },
           { value: 'ozel', label: 'Özel aralık' },
         ]}
         className="w-full"

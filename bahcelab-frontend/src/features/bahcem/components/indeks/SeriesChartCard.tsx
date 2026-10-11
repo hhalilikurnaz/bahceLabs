@@ -15,6 +15,7 @@ interface SeriesChartCardProps {
   format: (value: number) => string
   range: DateRange
   bands: Band[]
+  seasonMarks?: string[]
   bandNote?: string
   hoverDate: string | null
   onHoverDate: (date: string | null) => void
@@ -24,13 +25,13 @@ interface SeriesChartCardProps {
 }
 
 /** Birikimli seri kartı (yağış mm / GDD): solda grafik (bu sezon + geçen sezon aynı gün), sağda büyük özet rakam. */
-export function SeriesChartCard({ title, summary, days, pick, color, unit, format, range, bands, bandNote, hoverDate, onHoverDate, emptyText, note, testId }: SeriesChartCardProps) {
+export function SeriesChartCard({ title, summary, days, pick, color, unit, format, range, bands, seasonMarks, bandNote, hoverDate, onHoverDate, emptyText, note, testId }: SeriesChartCardProps) {
   const lines = useMemo<ChartLine[]>(() => {
     const current = days.flatMap((d) => (pick(d).current === null ? [] : [{ date: d.tarih, value: pick(d).current as number }]))
     const previous = days.flatMap((d) => (pick(d).previous === null ? [] : [{ date: d.tarih, value: pick(d).previous as number }]))
     return [
-      { id: 'onceki', label: 'Geçen sezon', color, points: previous, dashed: true, opacity: 0.7, secondary: true, originalDate: (d) => shiftYears(d, -1) },
-      { id: 'bu', label: 'Bu sezon', color, points: current },
+      { id: 'onceki', label: 'Geçen sezon', color, points: previous, dashed: true, opacity: 0.7, secondary: true, cumulative: true, originalDate: (d) => shiftYears(d, -1) },
+      { id: 'bu', label: 'Bu sezon', color, points: current, cumulative: true },
     ]
   }, [days, pick, color])
 
@@ -43,6 +44,7 @@ export function SeriesChartCard({ title, summary, days, pick, color, unit, forma
             range={range}
             lines={lines}
             bands={bands}
+            seasonMarks={seasonMarks}
             bandNote={bandNote}
             leftFormat={format}
             leftDefault={{ min: 0, max: 1 }}

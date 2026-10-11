@@ -6,7 +6,10 @@ export interface DateRange {
   to: string
 }
 
-export type PeriodKind = 'bu' | 'gecen' | 'ozel'
+export type PeriodKind = 'bu' | 'gecen' | 'son12' | 'ozel'
+
+/** Sezonun ilk bu kadar günü içindeyken varsayılan dönem "son 12 ay" olur (yeni sezonda grafik boş kalmasın). */
+export const EARLY_SEASON_DAYS = 90
 
 export const SEASON_START_MONTH = 10 // su yılı 1 Ekim (sunucu `katalog.yaml: sezon_baslangici` ile aynı)
 
@@ -28,10 +31,30 @@ export function shiftYears(iso: string, years: number): string {
   return `${year + years}-${pad(month)}-${pad(d)}`
 }
 
+/** Varsayılan dönem: sezonun ilk 90 günü içindeysek son 12 ay, sonra bu sezon. */
+export function defaultPeriod(today: string): PeriodKind {
+  const sinceStart = daysBetween(seasonRange(seasonStartYear(today)).from, today)
+  return sinceStart < EARLY_SEASON_DAYS ? 'son12' : 'bu'
+}
+
+/** Son 12 ay: bir yıl önceki günün ertesinden bugüne (366 gün değil, tam 12 ay). */
+export const last12Months = (today: string): DateRange => ({ from: shiftDays(shiftYears(today, -1), 1), to: today })
+
+/** Aralık içindeki sezon başlangıçları (1 Ekim) — grafikte "yeni sezon" ayırıcı çizgisi; aralığın ilk günü sayılmaz. */
+export function seasonBoundaries(range: DateRange): string[] {
+  const out: string[] = []
+  for (let year = parseIso(range.from).year; year <= parseIso(range.to).year; year++) {
+    const date = `${year}-10-01`
+    if (date > range.from && date <= range.to) out.push(date)
+  }
+  return out
+}
+
 /** Seçilen dönem türüne göre eksen aralığı. `custom` geçersizse (başlangıç > bitiş) bu sezona düşer. */
 export function periodRange(kind: PeriodKind, today: string, custom?: DateRange): DateRange {
   const year = seasonStartYear(today)
   if (kind === 'gecen') return seasonRange(year - 1)
+  if (kind === 'son12') return last12Months(today)
   if (kind === 'ozel' && custom && custom.from <= custom.to) return custom
   return seasonRange(year)
 }

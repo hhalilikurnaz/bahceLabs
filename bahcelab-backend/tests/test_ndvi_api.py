@@ -212,7 +212,9 @@ async def test_overview_and_downloads(user_client: AsyncClient, factory):
     assert ndvi["ortalama"] == pytest.approx(0.70) and ndvi["png_var"] and ndvi["veri_var"]
     assert (first["satir"], first["sutun"], len(first["koordinatlar"])) == (4, 5, 4)
     assert body["eksik_cikti"] is False
-    assert [u["indeks"] for u in body["uyarilar"]] == ["ndvi"]  # 0,70 → 0,60 (17 gün)
+    # 0,70 → 0,60 (17 gün) ham olarak %14 düşüş; ama mevsim normu (geçen yıl aynı dönem / kendi tabanı) için yeterli geçmiş yok:
+    # norm yoksa uyarı üretilmez (skor da "veri yetersiz" der)
+    assert body["uyarilar"] == []
 
     png = await user_client.get(f"/gardens/{gid}/indeks/ndre/2026-09-10.png")
     assert png.status_code == 200 and png.headers["content-type"] == "image/png"
