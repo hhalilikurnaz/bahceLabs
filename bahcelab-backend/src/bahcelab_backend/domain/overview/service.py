@@ -7,11 +7,12 @@ Ağa çıkılmaz; hava verisi yalnızca önbellekten okunur.
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
+from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts, index_series
 from bahcelab_backend.domain.overview.schemas import (
@@ -31,11 +32,6 @@ from bahcelab_backend.domain.weather.service import current_summary, snap, weath
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 VALID_INDICES = ("ndvi", "msavi", "ndre", "ndmi", "cigreen")
-
-
-def thumbnail_path(garden_id: uuid.UUID, indeks: str, tarih: date) -> str:
-    """İstemcinin API tabanına ekleyeceği göreli adres."""
-    return f"/gardens/{garden_id}/indeks/{indeks}/{tarih.isoformat()}/thumb.png"
 
 
 class GardenOverviewService:
@@ -104,7 +100,7 @@ class GardenOverviewService:
             None,
         )
         last_image = (
-            SonGoruntu(tarih=latest.scene.tarih, kucuk_resim_url=thumbnail_path(garden.id, indeks, latest.scene.tarih))
+            SonGoruntu(tarih=latest.scene.tarih, kucuk_resim_url=thumbnail_url_path(garden.id, indeks, latest.scene.tarih))
             if latest
             else None
         )

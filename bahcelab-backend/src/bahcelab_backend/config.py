@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     overview_weather_max_age_hours: int = 6  # önbellekteki tahmin bundan eskiyse "bayat" işaretlenir
     thumbnail_max_px: int = 160
 
+    # Görüntü arşivi: "net" görüntü = bulut oranı bu yüzdeyi aşmayan geçerli sahne; sayfa boyutları
+    archive_net_cloud_max_percent: float = 10.0
+    archive_default_page_size: int = 100
+    archive_max_page_size: int = 200
+
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
     access_token_minutes: int = 15

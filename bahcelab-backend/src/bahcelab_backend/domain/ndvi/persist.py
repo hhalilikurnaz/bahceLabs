@@ -24,6 +24,11 @@ def thumb_key(garden_id: uuid.UUID, tarih: date, indeks: str) -> str:
     return f"{storage_prefix(garden_id)}/{tarih.isoformat()}/{indeks}-kucuk.png"
 
 
+def thumbnail_url_path(garden_id: uuid.UUID, indeks: str, tarih: date) -> str:
+    """İstemcinin API tabanına ekleyeceği küçük resim adresi (`GET .../thumb.png`)."""
+    return f"/gardens/{garden_id}/indeks/{indeks}/{tarih.isoformat()}/thumb.png"
+
+
 def grid_key(garden_id: uuid.UUID, tarih: date, indeks: str) -> str:
     return f"{storage_prefix(garden_id)}/{tarih.isoformat()}/{indeks}.bin"
 

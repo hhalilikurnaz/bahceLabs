@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from bahcelab_backend.api.deps import get_current_user, get_ndvi_service
 from bahcelab_backend.domain.ndvi.indices import sample_index_definitions
 from bahcelab_backend.domain.ndvi.schemas import (
+    ArsivYanit,
     IndeksYanit,
     NdviIs,
     VerimlilikYanit,
@@ -36,6 +37,19 @@ async def index_definitions() -> list[dict[str, Any]]:
 async def get_indices(garden_id: UUID, service: Service) -> IndeksYanit:
     """Sahne zaman serisi (tüm indeksler), uyarılar ve işleme durumu. Son kontrolden 12 saat geçtiyse yeni sahne araması başlar."""
     return await service.overview(garden_id)
+
+
+@router.get("/indeks/arsiv", response_model=ArsivYanit)
+async def get_archive(
+    garden_id: UUID,
+    service: Service,
+    parametre: Annotated[str, Query(description="ndvi, msavi, ndre, ndmi, cigreen veya gercek-renk")] = "ndvi",
+    sezon: Annotated[int | None, Query(ge=2015, le=2100, description="Takvim yılı; verilmezse en son sezon")] = None,
+    sayfa: Annotated[int, Query(ge=1)] = 1,
+    boyut: Annotated[int | None, Query(ge=1)] = None,
+) -> ArsivYanit:
+    """Görüntü arşivi: seçili sezonun sahneleri (değer, bulut %, net / en net işareti, küçük resim adresi), sayfalı."""
+    return await service.archive(garden_id, parametre, sezon, sayfa, boyut)
 
 
 @router.post("/indeks/refresh", response_model=NdviIs, status_code=status.HTTP_202_ACCEPTED)

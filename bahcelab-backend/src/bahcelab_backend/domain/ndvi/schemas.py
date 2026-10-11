@@ -76,3 +76,28 @@ class VerimlilikYanit(BaseModel):
     son_tarih: date
     toplam_alan_m2: float
     bolgeler: dict[str, Any]  # GeoJSON FeatureCollection
+
+
+class ArsivSahne(BaseModel):
+    tarih: date
+    durum: Literal["tamam", "bulutlu"]
+    deger: float | None  # seçili parametrenin bahçe ortalaması (bulutlu / gerçek renk için yok)
+    bulut_orani: float | None
+    gecerli_piksel_orani: float
+    net: bool  # bulut oranı eşiğin altında
+    en_net: bool  # ayın en net görüntüsü
+    kucuk_resim_url: str | None
+    ham_veri_var: bool  # değişim haritası ve karşılaştırma için ızgara hazır
+
+
+class ArsivYanit(BaseModel):
+    parametre: str
+    sezon: int
+    sezonlar: list[int]
+    toplam: int
+    net_sayisi: int
+    bulutlu_sayisi: int
+    sayfa: int
+    boyut: int
+    sayfa_sayisi: int
+    sahneler: list[ArsivSahne]

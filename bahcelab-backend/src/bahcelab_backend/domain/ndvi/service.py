@@ -6,6 +6,7 @@ import numpy as np
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
+from bahcelab_backend.domain.ndvi.archive import build_archive
 from bahcelab_backend.domain.ndvi.indices import INDEX_IDS, INDICES, TRUE_COLOR
 from bahcelab_backend.domain.ndvi.models import NdviJobModel
 from bahcelab_backend.domain.ndvi.persist import missing_outputs, storage_prefix, thumb_key
@@ -13,6 +14,7 @@ from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithInd
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.ndvi.runner import start_job
 from bahcelab_backend.domain.ndvi.schemas import (
+    ArsivYanit,
     IndeksOzeti,
     IndeksYanit,
     NdviIs,
@@ -182,6 +184,25 @@ class NdviService:
             son_kontrol=last_attempt,
             uyarilar=build_alerts(scenes),
             eksik_cikti=incomplete,
+        )
+
+    async def archive(
+        self, garden_id: uuid.UUID, parametre: str, sezon: int | None, sayfa: int, boyut: int | None
+    ) -> ArsivYanit:
+        """Görüntü arşivi: seçili sezonun sahneleri (net / en net işaretli, sayfalı)."""
+        await self._garden(garden_id)
+        self._check_output(parametre)
+        settings = get_settings()
+        size = min(max(1, boyut or settings.archive_default_page_size), settings.archive_max_page_size)
+        scenes = await self.repo.list_scenes(garden_id)
+        return build_archive(
+            garden_id,
+            scenes,
+            parametre=parametre,
+            sezon=sezon,
+            sayfa=sayfa,
+            boyut=size,
+            net_max=settings.archive_net_cloud_max_percent,
         )
 
     async def refresh(self, garden_id: uuid.UUID) -> NdviIs:

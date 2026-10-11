@@ -61,6 +61,7 @@ async def add_scene(
     grid: np.ndarray | None = None,
     legacy: bool = False,
     true_color: bool = True,
+    cloud: float | None = None,
 ) -> None:
     """Sahne + indeks kayıtları ve dosyaları. `legacy`: eski yalnızca-NDVI kaydı (ham ızgara yok)."""
     storage = get_storage()
@@ -78,6 +79,7 @@ async def add_scene(
                 tarih=day,
                 scene_id=f"S2-{day}",
                 durum=durum,
+                bulut_orani=cloud,
                 gecerli_piksel_orani=1.0 if durum == "tamam" else 0.2,
                 satir=None if legacy else values.shape[0],
                 sutun=None if legacy else values.shape[1],
