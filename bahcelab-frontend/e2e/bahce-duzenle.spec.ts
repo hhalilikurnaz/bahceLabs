@@ -108,6 +108,8 @@ test('yalnız klavyeyle: bahçe aç, sekmelere geç, arşive git', async ({ page
   await tabUntil(page, (l) => l.includes('Klavye Bahçesi bahçesini aç'))
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
+  await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'true')
+  await expect(page.getByTestId('garden-page')).toBeVisible()
 
   // Sekme çubuğu tek durak (Tab); sekmeler arasında ok tuşlarıyla gezilir
   await tabUntil(page, (l) => l.startsWith('Durum'))

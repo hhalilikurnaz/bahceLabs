@@ -129,7 +129,9 @@ function DrawSession() {
     [gardens, editingId],
   )
   const verticesRef = useRef(otherVertices)
-  verticesRef.current = otherVertices
+  useEffect(() => {
+    verticesRef.current = otherVertices
+  }, [otherVertices])
 
   const cancel = useCallback(() => resetFlow(), [resetFlow])
 

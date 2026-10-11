@@ -1,18 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useId, useState, type InputHTMLAttributes } from 'react'
-import { ApiError } from '@/lib/apiClient'
 import { authFieldClass, authLabelClass } from './AuthShell'
-
-/** Hata nesnesini anlaşılır Türkçe metne çevirir; ağ hatası ayrı söylenir. */
-export function authErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ApiError) {
-    if (err.status === 429) return 'Çok fazla deneme yapıldı. Birkaç dakika sonra tekrar deneyin.'
-    if (err.status >= 500) return 'Sunucuda bir sorun oluştu. Biraz sonra tekrar deneyin.'
-    return err.message || fallback
-  }
-  if (err instanceof TypeError) return 'Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edip tekrar deneyin.'
-  return err instanceof Error && err.message ? err.message : fallback
-}
 
 type PasswordFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> & { label: string; hint?: string }
 

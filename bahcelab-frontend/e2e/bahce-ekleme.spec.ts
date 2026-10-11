@@ -38,14 +38,14 @@ test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve
   await expect(page.getByTestId('list-summary')).toContainText('1')
 
   // Ad değiştir
-  await page.getByRole('button', { name: 'İçe aktarılan işlemleri' }).click()
+  await page.getByTestId('garden-card').getByRole('button', { name: 'İçe aktarılan işlemleri' }).click()
   await page.getByRole('menuitem', { name: 'Adını düzenle' }).click()
   await page.getByLabel('Bahçe adı').fill('Yeni Ad')
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('garden-card').getByRole('heading', { name: 'Yeni Ad' })).toBeVisible()
 
   // Sil (onaylı)
-  await page.getByRole('button', { name: 'Yeni Ad işlemleri' }).click()
+  await page.getByTestId('garden-card').getByRole('button', { name: 'Yeni Ad işlemleri' }).click()
   await page.getByRole('menuitem', { name: 'Sil' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Sil' }).click()
   await expect(page.getByTestId('garden-card')).toHaveCount(0)

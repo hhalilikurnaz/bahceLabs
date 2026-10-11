@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { REGISTRATION_ENABLED } from '../authConfig'
-import { PasswordField, authErrorMessage } from '../components/authForm'
+import { authErrorMessage } from '../authErrors'
+import { PasswordField } from '../components/authForm'
 import {
   AuthShell,
   authFieldClass,

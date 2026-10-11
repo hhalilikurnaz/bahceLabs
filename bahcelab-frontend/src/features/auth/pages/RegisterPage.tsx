@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { REGISTRATION_ENABLED } from '../authConfig'
-import { PasswordField, authErrorMessage } from '../components/authForm'
+import { authErrorMessage } from '../authErrors'
+import { PasswordField } from '../components/authForm'
 import { registrationsSoonOnLightClass } from '@/features/marketing/components/registrationsSoonStyles'
 import {
   AuthShell,
