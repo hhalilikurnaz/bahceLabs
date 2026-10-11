@@ -10,14 +10,10 @@ import {
   CloudSnow,
   CloudSun,
   Moon,
-  Snowflake,
   Sun,
-  TrendingDown,
   type LucideIcon,
 } from 'lucide-react'
-import type { GardenSatelliteAlerts } from '../api/indeksApi'
-import type { SprayStatus, WeatherAlert, WeatherSummary } from '../api/weatherApi'
-import { INDEX_DEFS } from './indices'
+import type { SprayStatus } from '../api/weatherApi'
 
 /** Sunucunun ikon anahtarı → ikon bileşeni */
 export const WEATHER_ICONS: Record<string, LucideIcon> = {
@@ -83,49 +79,4 @@ export function whenText(moment: string, today: string): string {
   const diff = Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000)
   const label = diff === 0 ? 'Bugün' : diff === 1 ? 'Yarın' : `${Number(day.slice(8, 10))}.${day.slice(5, 7)}`
   return `${label} ${moment.slice(11, 16)}`
-}
-
-// --- bahçe listesi uyarı simgeleri
-export interface ListAlert {
-  kaynak: 'hava' | 'uydu'
-  tur: 'don' | 'sicak' | 'indeks'
-  seviye: 'sari' | 'kirmizi'
-  baslik: string
-  Icon: LucideIcon
-}
-
-const SEVERITY_ORDER = { kirmizi: 0, sari: 1 } as const
-
-function weatherListAlert(alert: WeatherAlert): ListAlert {
-  return {
-    kaynak: 'hava',
-    tur: alert.tur,
-    seviye: alert.seviye,
-    baslik: alert.baslik,
-    Icon: alert.tur === 'don' ? Snowflake : Sun,
-  }
-}
-
-/** Her bahçe için aktif hava ve uydu uyarıları; kırmızılar önce. */
-export function mergeAlerts(
-  weather: WeatherSummary[] | undefined,
-  satellite: GardenSatelliteAlerts[] | undefined,
-): Map<string, ListAlert[]> {
-  const result = new Map<string, ListAlert[]>()
-  const push = (id: string, alert: ListAlert) => result.set(id, [...(result.get(id) ?? []), alert])
-  for (const item of weather ?? []) item.uyarilar.forEach((a) => push(item.gardenId, weatherListAlert(a)))
-  for (const item of satellite ?? []) {
-    for (const a of item.uyarilar) {
-      const name = a.indeks ? INDEX_DEFS[a.indeks].ad : 'Çoklu indeks'
-      push(item.gardenId, {
-        kaynak: 'uydu',
-        tur: 'indeks',
-        seviye: a.oncelik === 'yuksek' ? 'kirmizi' : 'sari',
-        baslik: a.baslik || `${name} düşüşü`,
-        Icon: TrendingDown,
-      })
-    }
-  }
-  for (const [id, list] of result) result.set(id, list.sort((a, b) => SEVERITY_ORDER[a.seviye] - SEVERITY_ORDER[b.seviye]))
-  return result
 }

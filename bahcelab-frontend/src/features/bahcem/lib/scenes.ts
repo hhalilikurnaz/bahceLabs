@@ -45,3 +45,35 @@ export function latestIndexValue(scenes: Scene[] | undefined, indeks: IndexId): 
   }
   return null
 }
+
+export interface ValueChange {
+  /** Karşılaştırılan önceki değer ve tarihi */
+  previous: { tarih: string; ortalama: number }
+  latest: { tarih: string; ortalama: number }
+  /** Yüzde değişim (önceki sıfıra yakınsa null) */
+  percent: number | null
+}
+
+/**
+ * Son değerin, yaklaşık `days` gün önceki en yakın geçerli görüntüye göre değişimi.
+ * `toleranceDays` içinde görüntü yoksa null (uydurma karşılaştırma yapılmaz).
+ */
+export function changeOverDays(
+  scenes: Scene[] | undefined,
+  indeks: IndexId,
+  days: number,
+  toleranceDays: number,
+): ValueChange | null {
+  const latest = latestIndexValue(scenes, indeks)
+  if (!latest) return null
+  const candidates = (scenes ?? []).flatMap((scene) => {
+    const summary = scene.durum === 'tamam' ? scene.indeksler[indeks] : undefined
+    return summary && scene.tarih < latest.tarih ? [{ tarih: scene.tarih, ortalama: summary.ortalama }] : []
+  })
+  const target = shiftDays(latest.tarih, -days)
+  const nearest = nearestDate(target, candidates.map((c) => c.tarih), toleranceDays)
+  const previous = candidates.find((c) => c.tarih === nearest)
+  if (!previous) return null
+  const percent = Math.abs(previous.ortalama) < 1e-6 ? null : ((latest.ortalama - previous.ortalama) / Math.abs(previous.ortalama)) * 100
+  return { previous, latest, percent }
+}

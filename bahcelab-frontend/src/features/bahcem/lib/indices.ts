@@ -46,9 +46,15 @@ export const COLORMAPS: Record<ColormapId, Stops> = {
 
 export interface IndexDef {
   id: IndexId
+  /** Çiftçi dilinde ad (birincil) */
   ad: string
+  /** Teknik kısaltma (ikincil etiket), ör. NDVI */
+  teknik: string
   kisa: string
+  /** "Bu ne demek?" — tek cümle */
   aciklama: string
+  /** Sorunlu bölge eşiği: bahçe medyanının bu kadar altı (backend `indices.py` ile aynı) */
+  sorunEsigi: number
   min: number
   max: number
   renk: ColormapId
@@ -61,10 +67,11 @@ export interface IndexDef {
 export const INDEX_DEFS: Record<IndexId, IndexDef> = {
   ndvi: {
     id: 'ndvi',
-    ad: 'NDVI',
+    ad: 'Canlılık',
+    teknik: 'NDVI',
+    sorunEsigi: 0.1,
     kisa: 'Genel canlılık / biyokütle',
-    aciklama:
-      'Bitkinin yeşil yaprak yoğunluğunu gösterir. Yüksek değer sağlıklı ve yoğun yaprak örtüsü, düşük değer zayıf bitki, çıplak toprak veya stres demektir.',
+    aciklama: 'Yaprak örtüsünün yoğunluğunu gösterir; yüksek değer sağlıklı ve gür, düşük değer zayıf bitki veya stres demektir.',
     min: 0,
     max: 0.9,
     renk: 'rdylgn',
@@ -73,10 +80,11 @@ export const INDEX_DEFS: Record<IndexId, IndexDef> = {
   },
   msavi: {
     id: 'msavi',
-    ad: 'MSAVI',
+    ad: 'Toprak düzeltilmiş canlılık',
+    teknik: 'MSAVI',
+    sorunEsigi: 0.1,
     kisa: 'Toprak etkisi düzeltilmiş canlılık',
-    aciklama:
-      "NDVI'nin toprak parlaklığına duyarlılığını azaltır. Sıra arası çıplak toprak olan ya da genç bahçelerde bitki örtüsünü NDVI'dan daha güvenilir gösterir.",
+    aciklama: 'Canlılığı, ağaçlar arasındaki çıplak toprağın etkisini azaltarak gösterir; seyrek veya genç bahçelerde daha güvenilirdir.',
     min: 0,
     max: 0.8,
     renk: 'rdylgn',
@@ -85,10 +93,11 @@ export const INDEX_DEFS: Record<IndexId, IndexDef> = {
   },
   ndre: {
     id: 'ndre',
-    ad: 'NDRE',
+    ad: 'Klorofil / besin',
+    teknik: 'NDRE',
+    sorunEsigi: 0.05,
     kisa: 'Klorofil / azot durumu',
-    aciklama:
-      "Kırmızı kenar bandını kullanır; yaprak klorofil içeriğine ve azot durumuna duyarlıdır. Sararmayı NDVI'dan önce yakalayabilir.",
+    aciklama: 'Yaprağın yeşillik ve azot durumunu gösterir; sararmayı gözle görülmeden önce yakalayabilir.',
     min: 0,
     max: 0.6,
     renk: 'rdylgn',
@@ -97,10 +106,11 @@ export const INDEX_DEFS: Record<IndexId, IndexDef> = {
   },
   ndmi: {
     id: 'ndmi',
-    ad: 'NDMI',
+    ad: 'Yaprak suyu',
+    teknik: 'NDMI',
+    sorunEsigi: 0.08,
     kisa: 'Yaprak su içeriği / su stresi',
-    aciklama:
-      'Yakın kızılötesi ve kısa dalga kızılötesi (SWIR) farkıyla yaprağın su içeriğini gösterir. Koyu mavi nemli, açık ton kuru yaprak demektir; düşüşler su stresini işaret edebilir.',
+    aciklama: 'Yaprağın su içeriğini gösterir; koyu mavi nemli, açık ton kuru demektir; düşüş su stresine işaret edebilir.',
     min: -0.2,
     max: 0.6,
     renk: 'mavi',
@@ -109,10 +119,11 @@ export const INDEX_DEFS: Record<IndexId, IndexDef> = {
   },
   cigreen: {
     id: 'cigreen',
-    ad: 'CIgreen',
+    ad: 'Klorofil yoğunluğu',
+    teknik: 'CIgreen',
+    sorunEsigi: 0.35,
     kisa: 'Klorofil yoğunluğu',
-    aciklama:
-      'Yeşil banda göre yakın kızılötesi oranıdır; yaprak klorofil yoğunluğuyla doğrusala yakın ilişkilidir ve yoğun yaprak örtüsünde doymaz.',
+    aciklama: 'Yaprakta klorofil miktarını gösterir; yoğun yaprak örtüsünde de ayrıntı verir.',
     min: 0,
     max: 3,
     renk: 'yesil',
@@ -123,6 +134,7 @@ export const INDEX_DEFS: Record<IndexId, IndexDef> = {
 
 export const TRUE_COLOR_LABEL = {
   ad: 'Gerçek renk',
+  teknik: 'RGB',
   kisa: 'Uydudan gerçek görünüm',
   aciklama:
     'Kırmızı, yeşil ve mavi bantlardan (B04, B03, B02) oluşan, skalasız doğal renkli görüntü: bahçenin o tarihte uydudan gerçek hâli.',

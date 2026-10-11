@@ -1,7 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/apiClient'
+import type {
+  ApiSprayStatus,
+  ApiWeather,
+  ApiWeatherAlert,
+  ApiWeatherHistory,
+  ApiWeatherNow,
+  ApiWeatherSummary,
+} from './dto/weather'
 
-export type SprayStatus = 'uygun' | 'sinirda' | 'uygun_degil'
+export type SprayStatus = ApiSprayStatus
 export type AlertLevel = 'sari' | 'kirmizi'
 
 export interface WeatherNow {
@@ -114,8 +122,7 @@ export interface WeatherSummary {
   sonrakiIlaclama: { baslangic: string; bitis: string } | null
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- API yanıtı eşlenirken */
-const mapAlert = (a: any): WeatherAlert => ({
+const mapAlert = (a: ApiWeatherAlert): WeatherAlert => ({
   tur: a.tur,
   seviye: a.seviye,
   baslik: a.baslik,
@@ -126,7 +133,7 @@ const mapAlert = (a: any): WeatherAlert => ({
   deger: a.deger,
 })
 
-const mapNow = (n: any): WeatherNow => ({
+const mapNow = (n: ApiWeatherNow): WeatherNow => ({
   zaman: n.zaman,
   sicaklik: n.sicaklik,
   hissedilen: n.hissedilen,
@@ -140,14 +147,14 @@ const mapNow = (n: any): WeatherNow => ({
   ikon: n.ikon,
 })
 
-function mapWeather(d: any): Weather {
+function mapWeather(d: ApiWeather): Weather {
   return {
     guncelleme: d.guncelleme,
     onbellekten: d.onbellekten,
     atif: d.atif,
     simdi: mapNow(d.simdi),
     gunler: d.gunler.map(
-      (g: any): WeatherDay => ({
+      (g): WeatherDay => ({
         tarih: g.tarih,
         min: g.min,
         max: g.max,
@@ -167,7 +174,7 @@ function mapWeather(d: any): Weather {
       }),
     ),
     saatlik: d.saatlik.map(
-      (h: any): WeatherHour => ({
+      (h): WeatherHour => ({
         zaman: h.zaman,
         sicaklik: h.sicaklik,
         nem: h.nem,
@@ -182,7 +189,7 @@ function mapWeather(d: any): Weather {
     ),
     uyarilar: d.uyarilar.map(mapAlert),
     suDengesi: d.su_dengesi.map(
-      (b: any): WaterBalance => ({
+      (b): WaterBalance => ({
         gun: b.gun,
         yagisMm: b.yagis_mm,
         et0Mm: b.et0_mm,
@@ -192,12 +199,12 @@ function mapWeather(d: any): Weather {
       }),
     ),
     yagisToplamlari: d.yagis_toplamlari.map(
-      (t: any): RainTotal => ({ etiket: t.etiket, gun: t.gun, mm: t.mm, gecenYilMm: t.gecen_yil_mm }),
+      (t): RainTotal => ({ etiket: t.etiket, gun: t.gun, mm: t.mm, gecenYilMm: t.gecen_yil_mm }),
     ),
   }
 }
 
-function mapSummary(s: any): WeatherSummary {
+function mapSummary(s: ApiWeatherSummary): WeatherSummary {
   return {
     gardenId: s.garden_id,
     ad: s.ad,
@@ -213,20 +220,19 @@ function mapSummary(s: any): WeatherSummary {
     sonrakiIlaclama: s.sonraki_ilaclama,
   }
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const weatherApi = {
   async get(gardenId: string): Promise<Weather> {
-    return mapWeather(await apiRequest(`/gardens/${gardenId}/weather`))
+    return mapWeather(await apiRequest<ApiWeather>(`/gardens/${gardenId}/weather`))
   },
   async history(gardenId: string, from: string, to: string): Promise<HistoryDay[]> {
-    const data = await apiRequest<{ gunler: { tarih: string; min: number | null; max: number | null; yagis_mm: number | null; et0_mm: number | null }[] }>(
+    const data = await apiRequest<ApiWeatherHistory>(
       `/gardens/${gardenId}/weather/history?from=${from}&to=${to}`,
     )
     return data.gunler.map((g) => ({ tarih: g.tarih, min: g.min, max: g.max, yagisMm: g.yagis_mm, et0Mm: g.et0_mm }))
   },
   async overview(): Promise<WeatherSummary[]> {
-    return (await apiRequest<unknown[]>('/weather/ozet')).map(mapSummary)
+    return (await apiRequest<ApiWeatherSummary[]>('/weather/ozet')).map(mapSummary)
   },
 }
 

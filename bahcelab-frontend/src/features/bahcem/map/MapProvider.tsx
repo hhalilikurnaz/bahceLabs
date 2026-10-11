@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AttributionControl, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl'
-// Worker dosyası paketlenirken otomatik bulunamaz; Vite'a varlık olarak yayımlatıp adresini veriyoruz
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import '../bahcem.css'
 import { MapContext } from './MapContext'
 import { getApiBaseUrl } from '@/lib/apiClient'
+import { loadMapLibre } from './maplibre'
 import {
   availableProviders,
   buildStyle,
@@ -16,8 +14,6 @@ import {
 } from './mapStyles'
 import { loadView, saveView } from './viewStorage'
 
-setWorkerUrl(workerUrl)
-
 interface MapProviderProps {
   /** Konum ve altlık seçimi kullanıcı bazında saklanır */
   userId: string
@@ -25,8 +21,8 @@ interface MapProviderProps {
 }
 
 /**
- * Tek harita örneğini yönetir: tam ekran kapsayıcıyı çizer, çocuklar üstüne yüzer.
- * Sonraki adımlar `useMap()` ile haritaya katman ve çizim ekler.
+ * Tek harita örneğini yönetir: kapsayıcıyı hemen çizer, MapLibre tembel yüklenir (panel haritayı beklemez).
+ * Çocuklar `useMap()` ile haritaya katman ekler; harita hazır olana kadar `map` null'dır.
  */
 export function MapProvider({ userId, children }: MapProviderProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -44,62 +40,72 @@ export function MapProvider({ userId, children }: MapProviderProps) {
     n: 0,
   })
   const styleVersion = styleLoads.map !== null && styleLoads.map === map ? styleLoads.n : 0
+  const [unauthorized, setUnauthorized] = useState(false)
   const providers = useMemo(() => availableProviders(), [])
-  const usingFallback = effectiveProvider(provider) === 'osm'
+  const preferred = effectiveProvider(provider)
+  // Fiilen kullanılan altlık: 401 alındıysa Mapbox yerine MapTiler
+  const activeProvider = preferred === 'mapbox' && unauthorized ? 'maptiler' : preferred
+  const usingFallback = activeProvider === 'osm'
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-
-    const view = initialView
-    const instance = new MapLibreMap({
-      container,
-      style: buildStyle(view.basemap, view.provider ?? 'mapbox'),
-      center: view.center,
-      zoom: view.zoom,
-      attributionControl: false,
-      // NDVI PNG'leri yetkili uç noktadan gelir: çerez (httpOnly oturum) her koşulda gönderilsin
-      transformRequest: (url) =>
-        url.includes(`${getApiBaseUrl()}/gardens/`) ? { url, credentials: 'include' } : undefined,
-      dragRotate: false,
-      pitchWithRotate: false,
-    })
-    instance.touchZoomRotate.disableRotation()
-    // Sol alt köşe ikon şeridi ve panelle çakışmaması için sağ altta
-    instance.addControl(new AttributionControl({ compact: true }), 'bottom-right')
-
+    let disposed = false
+    let instance: MapLibreMap | null = null
     let saveTimer: number | undefined
-    const persist = () => {
-      window.clearTimeout(saveTimer)
-      saveTimer = window.setTimeout(() => {
-        const { lng, lat } = instance.getCenter()
-        saveView(userId, {
-          center: [lng, lat],
-          zoom: instance.getZoom(),
-          basemap: basemapRef.current,
-          provider: providerRef.current,
-        })
-      }, 400)
-    }
-    instance.on('moveend', persist)
-    // Mapbox token'ı geçersiz/yetkisizse (401/403) oturum boyunca MapTiler'a düşülür; tercih kaydı değişmez
-    instance.on('error', (event) => {
-      const status = (event.error as { status?: number } | undefined)?.status
-      if ((status === 401 || status === 403) && providerRef.current === 'mapbox' && availableProviders().includes('maptiler')) {
-        warnOnce('mapbox-401', 'Mapbox yetkilendirme hatası (401); MapTiler altlığına geçildi.')
-        instance.setStyle(buildStyle(basemapRef.current, 'maptiler'))
-      }
-    })
-    instance.on('style.load', () =>
-      setStyleLoads((prev) => ({ map: instance, n: prev.map === instance ? prev.n + 1 : 1 })),
-    )
 
-    mapRef.current = instance
-    setMap(instance)
+    void loadMapLibre().then((lib) => {
+      if (disposed) return
+      const view = initialView
+      const created = new lib.Map({
+        container,
+        style: buildStyle(view.basemap, view.provider ?? 'mapbox'),
+        center: view.center,
+        zoom: view.zoom,
+        attributionControl: false, // atıflar `MapAttribution` bileşeninde (logo + metin, mobilde de okunur)
+        // İndeks PNG'leri yetkili uç noktadan gelir: çerez (httpOnly oturum) her koşulda gönderilsin
+        transformRequest: (url) =>
+          url.includes(`${getApiBaseUrl()}/gardens/`) ? { url, credentials: 'include' } : undefined,
+        dragRotate: false,
+        pitchWithRotate: false,
+      })
+      created.touchZoomRotate.disableRotation()
+
+      const persist = () => {
+        window.clearTimeout(saveTimer)
+        saveTimer = window.setTimeout(() => {
+          const { lng, lat } = created.getCenter()
+          saveView(userId, {
+            center: [lng, lat],
+            zoom: created.getZoom(),
+            basemap: basemapRef.current,
+            provider: providerRef.current,
+          })
+        }, 400)
+      }
+      created.on('moveend', persist)
+      // Mapbox token'ı geçersiz/yetkisizse (401/403) oturum boyunca MapTiler'a düşülür; tercih kaydı değişmez
+      created.on('error', (event) => {
+        const status = (event.error as { status?: number } | undefined)?.status
+        if ((status === 401 || status === 403) && providerRef.current === 'mapbox' && availableProviders().includes('maptiler')) {
+          warnOnce('mapbox-401', 'Mapbox yetkilendirme hatası (401); MapTiler altlığına geçildi.')
+          created.setStyle(buildStyle(basemapRef.current, 'maptiler'))
+          setUnauthorized(true)
+        }
+      })
+      created.on('style.load', () =>
+        setStyleLoads((prev) => ({ map: created, n: prev.map === created ? prev.n + 1 : 1 })),
+      )
+
+      instance = created
+      mapRef.current = created
+      setMap(created)
+    })
 
     return () => {
+      disposed = true
       window.clearTimeout(saveTimer)
-      instance.remove()
+      instance?.remove()
       mapRef.current = null
       setMap(null)
     }
@@ -122,6 +128,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
     (next: BasemapProviderId) => {
       providerRef.current = next
       setProviderState(next)
+      setUnauthorized(false)
       const instance = mapRef.current
       if (!instance) return
       instance.setStyle(buildStyle(basemapRef.current, next))
@@ -132,8 +139,8 @@ export function MapProvider({ userId, children }: MapProviderProps) {
   )
 
   const value = useMemo(
-    () => ({ map, basemap, setBasemap, provider, setProvider, providers, styleVersion, usingFallback }),
-    [map, basemap, setBasemap, provider, setProvider, providers, styleVersion, usingFallback],
+    () => ({ map, basemap, setBasemap, provider, setProvider, providers, activeProvider, styleVersion, usingFallback }),
+    [map, basemap, setBasemap, provider, setProvider, providers, activeProvider, styleVersion, usingFallback],
   )
 
   return (

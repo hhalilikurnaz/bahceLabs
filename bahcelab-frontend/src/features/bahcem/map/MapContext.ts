@@ -12,6 +12,8 @@ export interface MapContextValue {
   setProvider: (provider: BasemapProviderId) => void
   /** Anahtarı tanımlı sağlayıcılar */
   providers: BasemapProviderId[]
+  /** Fiilen kullanılan altlık (anahtar yoksa/401 ise seçilenden farklı olabilir) */
+  activeProvider: BasemapProviderId | 'osm'
   /**
    * Stil yüklenince artar (0 = henüz yüklenmedi). Altlık değişince (setStyle) eklenen katmanlar
    * silinir; katman/çizim ekleyen kod `styleVersion > 0` iken ekler ve bunu efekt bağımlılığı yapar.

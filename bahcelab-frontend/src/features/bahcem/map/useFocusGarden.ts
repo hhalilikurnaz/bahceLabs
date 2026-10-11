@@ -1,21 +1,17 @@
 import { useCallback } from 'react'
 import type { Garden } from '../api/types'
 import { geometryBounds, unionBounds } from '../lib/geo'
-import { useBahcemStore } from '../stores/bahcemStore'
+import { usePanelLayout } from '../hooks/usePanelLayout'
+import { FOCUS_PAD, MAP } from '../lib/config'
 import { useMap } from './useMap'
 
-/** Sol panel (ve açıksa Copilot) haritayı kapladığı için odaklarken o payı bırakır. */
+/** Sol panel (ve açıksa Copilot) haritayı kapladığı için odaklarken görünen alanı (yerleşim sınırları) korur. */
 export function useFocusPadding() {
-  return useCallback(() => {
-    const { leftPanelOpen, copilotOpen } = useBahcemStore.getState()
-    const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
-    return {
-      top: 90,
-      bottom: 70,
-      left: wide && leftPanelOpen ? 460 : 90,
-      right: wide && copilotOpen ? 410 : 80,
-    }
-  }, [])
+  const { insets } = usePanelLayout()
+  return useCallback(
+    () => ({ top: FOCUS_PAD.top, bottom: FOCUS_PAD.bottom, left: insets.left + FOCUS_PAD.side, right: insets.right + FOCUS_PAD.side }),
+    [insets.left, insets.right],
+  )
 }
 
 export function useFocusGarden() {
@@ -27,7 +23,7 @@ export function useFocusGarden() {
       if (!map) return
       map.fitBounds(geometryBounds(garden.geometry), {
         padding: padding(),
-        maxZoom: 18,
+        maxZoom: MAP.focusMaxZoom,
         duration: options.animate === false ? 0 : 1200,
       })
     },
@@ -40,7 +36,7 @@ export function useFocusGarden() {
       if (!map || !bounds) return
       map.fitBounds(bounds, {
         padding: padding(),
-        maxZoom: 17,
+        maxZoom: MAP.focusMaxZoom - 1,
         duration: options.animate === false ? 0 : 1200,
       })
     },

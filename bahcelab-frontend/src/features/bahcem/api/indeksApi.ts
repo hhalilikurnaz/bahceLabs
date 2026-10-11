@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest, apiRequestRaw, getApiBaseUrl } from '@/lib/apiClient'
 import { INDEX_IDS, type IndexId, type LayerId } from '../lib/indices'
 import { parseGrid, type Corners, type Grid } from '../lib/render'
+import type { ApiIndexOverview, ApiScene } from './dto/ndvi'
 import { GARDENS_KEY } from './useGardens'
 
 export type JobStatus = 'bekliyor' | 'isleniyor' | 'tamam' | 'hata'
@@ -88,8 +89,7 @@ export interface YieldZones {
   >
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- API yanıtı eşlenirken */
-function mapScene(o: any): Scene {
+function mapScene(o: ApiScene): Scene {
   const summaries: Scene['indeksler'] = {}
   for (const id of INDEX_IDS) {
     const s = o.indeksler?.[id]
@@ -123,7 +123,7 @@ function mapScene(o: any): Scene {
   }
 }
 
-function fromApi(data: any): IndexData {
+function fromApi(data: ApiIndexOverview): IndexData {
   return {
     gozlemler: data.gozlemler.map(mapScene),
     isleme: data.isleme && {
@@ -136,7 +136,7 @@ function fromApi(data: any): IndexData {
     },
     sonKontrol: data.son_kontrol,
     uyarilar: data.uyarilar.map(
-      (u: any): Alert => ({
+      (u): Alert => ({
         tur: u.tur,
         indeks: u.indeks,
         indeksler: u.indeksler,
@@ -151,11 +151,10 @@ function fromApi(data: any): IndexData {
     eksikCikti: data.eksik_cikti,
   }
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const indeksApi = {
   async get(gardenId: string): Promise<IndexData> {
-    return fromApi(await apiRequest(`/gardens/${gardenId}/indeks`))
+    return fromApi(await apiRequest<ApiIndexOverview>(`/gardens/${gardenId}/indeks`))
   },
   async refresh(gardenId: string): Promise<Job | null> {
     const job = await apiRequest<{
@@ -174,7 +173,7 @@ export const indeksApi = {
   async grid(gardenId: string, scene: Scene, indeks: IndexId): Promise<Grid> {
     if (!scene.satir || !scene.sutun || !scene.koordinatlar) throw new Error('Izgara bilgisi yok')
     const response = await apiRequestRaw(`/gardens/${gardenId}/indeks/${indeks}/${scene.tarih}.bin`)
-    return parseGrid(await response.arrayBuffer(), scene.satir, scene.sutun, scene.koordinatlar as unknown as Corners)
+    return parseGrid(await response.arrayBuffer(), scene.satir, scene.sutun, scene.koordinatlar as Corners)
   },
   async yieldZones(gardenId: string, indeks: 'ndvi' | 'msavi'): Promise<YieldZones> {
     const raw = await apiRequest<{
@@ -202,28 +201,6 @@ export function layerImageUrl(gardenId: string, scene: Scene, layer: LayerId): s
   return typeof window === 'undefined' ? path : new URL(path, window.location.origin).toString()
 }
 
-export interface GardenSatelliteAlerts {
-  gardenId: string
-  uyarilar: { tur: Alert['tur']; indeks: IndexId | null; oncelik: Alert['oncelik']; baslik: string }[]
-}
-
-export const SATELLITE_ALERTS_KEY = ['indeks', 'uyari-ozeti'] as const
-
-/** Bahçe listesindeki uyarı simgeleri için tüm bahçelerin aktif uydu uyarıları (iş başlatmaz). */
-export function useSatelliteAlertOverview() {
-  return useQuery({
-    queryKey: SATELLITE_ALERTS_KEY,
-    queryFn: async (): Promise<GardenSatelliteAlerts[]> => {
-      const raw = await apiRequest<{ garden_id: string; uyarilar: { tur: Alert['tur']; indeks: IndexId | null; oncelik: Alert['oncelik']; baslik: string }[] }[]>(
-        '/indeks/uyari-ozeti',
-      )
-      return raw.map((r) => ({ gardenId: r.garden_id, uyarilar: r.uyarilar }))
-    },
-    staleTime: 60_000,
-    retry: 1,
-  })
-}
-
 export const indeksKey = (gardenId: string) => ['indeks', gardenId] as const
 
 const isActive = (job: Job | null | undefined) => job?.durum === 'bekliyor' || job?.durum === 'isleniyor'
@@ -244,7 +221,6 @@ export function useIndices(gardenId: string | null) {
   useEffect(() => {
     if (wasActive.current && !active) {
       void client.invalidateQueries({ queryKey: GARDENS_KEY })
-      void client.invalidateQueries({ queryKey: SATELLITE_ALERTS_KEY })
       // Ham ızgaralar yeni üretilmiş olabilir
       void client.invalidateQueries({ queryKey: ['grid'] })
     }

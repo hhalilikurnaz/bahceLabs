@@ -52,7 +52,7 @@ describe('indeks tanımları', () => {
   it('beş indeks ve gerçek renk (6 katman)', () => {
     expect(INDEX_IDS).toEqual(['ndvi', 'msavi', 'ndre', 'ndmi', 'cigreen'])
     expect(LAYER_OPTIONS.map((o) => o.id)).toEqual([...INDEX_IDS, TRUE_COLOR])
-    expect(layerName('ndre')).toBe('NDRE')
+    expect(layerName('ndre')).toBe('Klorofil / besin')
     expect(layerName(TRUE_COLOR)).toBe('Gerçek renk')
     expect(isIndexId('ndmi')).toBe(true)
     expect(isIndexId(TRUE_COLOR)).toBe(false)

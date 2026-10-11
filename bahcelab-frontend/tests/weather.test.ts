@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { WeatherSummary } from '../src/features/bahcem/api/weatherApi'
 import { formatHour, shiftDays, todayIstanbul, weekdayName } from '../src/features/bahcem/lib/dates'
 import {
   compareToLastYear,
@@ -7,7 +6,6 @@ import {
   formatPercent,
   formatTemp,
   formatWind,
-  mergeAlerts,
   whenText,
   windDirection,
 } from '../src/features/bahcem/lib/weather'
@@ -67,33 +65,5 @@ describe('uyarı zamanı', () => {
     expect(whenText('2026-10-10T23:00', '2026-10-10')).toBe('Bugün 23:00')
     expect(whenText('2026-10-11T03:00', '2026-10-10')).toBe('Yarın 03:00')
     expect(whenText('2026-10-14T05:00', '2026-10-10')).toBe('14.10 05:00')
-  })
-})
-
-describe('bahçe listesi uyarıları', () => {
-  const weather = [
-    {
-      gardenId: 'g1',
-      uyarilar: [
-        { tur: 'sicak', seviye: 'sari', baslik: 'Sıcak stresi' },
-        { tur: 'don', seviye: 'kirmizi', baslik: 'Don tehlikesi' },
-      ],
-    },
-    { gardenId: 'g2', uyarilar: [] },
-  ] as unknown as WeatherSummary[]
-  const satellite = [
-    { gardenId: 'g1', uyarilar: [{ tur: 'indeks_dusus', indeks: 'ndvi', oncelik: 'normal', baslik: 'NDVI düşüşü' }] },
-    { gardenId: 'g2', uyarilar: [{ tur: 'coklu_indeks', indeks: null, oncelik: 'yuksek', baslik: 'Çoklu indeks düşüşü' }] },
-  ]
-
-  it('hava ve uydu uyarılarını birleştirir, kırmızılar önce gelir', () => {
-    const merged = mergeAlerts(weather, satellite as never)
-    expect(merged.get('g1')?.map((a) => a.baslik)).toEqual(['Don tehlikesi', 'Sıcak stresi', 'NDVI düşüşü'])
-    expect(merged.get('g1')?.map((a) => a.kaynak)).toEqual(['hava', 'hava', 'uydu'])
-    expect(merged.get('g2')?.[0]).toMatchObject({ seviye: 'kirmizi', tur: 'indeks' })
-  })
-
-  it('veri yokken boş harita döner', () => {
-    expect(mergeAlerts(undefined, undefined).size).toBe(0)
   })
 })

@@ -10,6 +10,8 @@ interface DrawerProps {
   onClose: () => void
   /** `right`: yan çekmece · `bottom`: mobil alt sayfa */
   side?: 'right' | 'bottom'
+  /** Yan çekmece genişliği, px (ekranı aşmaz) */
+  widthPx?: number
   icon?: ReactNode
   children: ReactNode
   footer?: ReactNode
@@ -17,7 +19,7 @@ interface DrawerProps {
 }
 
 /** Harita üstü çekmece / alt sayfa. ESC ile kapanır; kapalıyken `inert`. */
-export function Drawer({ id, title, open, onClose, side = 'right', icon, children, footer, className }: DrawerProps) {
+export function Drawer({ id, title, open, onClose, side = 'right', widthPx = 380, icon, children, footer, className }: DrawerProps) {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
@@ -31,10 +33,11 @@ export function Drawer({ id, title, open, onClose, side = 'right', icon, childre
       aria-label={title}
       aria-hidden={!open}
       inert={!open}
+      style={side === 'right' ? { width: `min(${widthPx}px, 100vw)` } : undefined}
       className={cx(
         'absolute z-30 flex flex-col border-app-border bg-app-panel text-app-text shadow-e3 transition-transform duration-[var(--duration-panel)] ease-[var(--ease-out-soft)]',
         side === 'right'
-          ? cx('inset-y-0 right-0 w-[min(380px,100vw)] border-l', open ? 'translate-x-0' : 'translate-x-full')
+          ? cx('inset-y-0 right-0 border-l', open ? 'translate-x-0' : 'translate-x-full')
           : cx('inset-x-0 bottom-0 max-h-[85dvh] rounded-t-lg border-t', open ? 'translate-y-0' : 'translate-y-full'),
         className,
       )}

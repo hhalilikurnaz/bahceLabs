@@ -48,6 +48,8 @@ export interface RenderInfo {
 
 interface BahcemState {
   leftPanelOpen: boolean
+  /** "Tam harita": bahçe sayfası paneli daraltılır, seçili bahçe dışı karartılır */
+  fullMap: boolean
   copilotOpen: boolean
   season: number
 
@@ -79,6 +81,7 @@ interface BahcemState {
   renderInfo: RenderInfo | null
 
   toggleLeftPanel: () => void
+  setFullMap: (fullMap: boolean) => void
   setLeftPanelOpen: (open: boolean) => void
   setCopilotOpen: (open: boolean) => void
   setSeason: (season: number) => void
@@ -123,6 +126,7 @@ const flowReset = {
 
 /** Bahçe değişince görselleştirme tercihleri (katman hariç) sıfırlanır: her bahçe en son görüntüyle açılır */
 const viewReset = {
+  fullMap: false,
   selectedDate: null,
   degisim: null,
   karsilastirma: null,
@@ -152,6 +156,7 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   ...viewReset,
 
   toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
+  setFullMap: (fullMap) => set({ fullMap }),
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
   setSeason: (season) => set({ season }),

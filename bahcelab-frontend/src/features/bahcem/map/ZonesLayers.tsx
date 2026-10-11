@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Popup, type ExpressionSpecification, type GeoJSONSource, type MapLayerMouseEvent } from 'maplibre-gl'
+import type { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Popup } from 'maplibre-gl'
+import { loadMapLibre } from './maplibre'
 import { useYieldZones, useZones } from '../api/indeksApi'
 import { useIndexView } from '../hooks/useIndexView'
 import { formatDecare } from '../lib/geo'
@@ -84,8 +85,14 @@ export function ZonesLayers() {
       note.className = 'ndvi-popup-hint'
       note.textContent = hint
       card.append(note)
-      popup?.remove()
-      popup = new Popup({ closeButton: true, maxWidth: '240px', className: 'bahcem-popup surface-dark' }).setLngLat(e.lngLat).setDOMContent(card).addTo(map)
+      const lngLat = e.lngLat
+      void loadMapLibre().then(({ Popup: PopupClass }) => {
+        popup?.remove()
+        popup = new PopupClass({ closeButton: true, maxWidth: '240px', className: 'bahcem-popup surface-dark' })
+          .setLngLat(lngLat)
+          .setDOMContent(card)
+          .addTo(map)
+      })
     }
 
     const onProblem = (e: MapLayerMouseEvent) => {
