@@ -7,12 +7,16 @@ export const LAYOUT = {
   gapPx: 12,
   /** Bahçe listesi paneli, px */
   listPanelPx: 360,
-  /** Bahçe sayfası (geniş panel): görünüm genişliğinin oranı ve sınırları, px */
-  detailPanelRatio: 0.62,
-  detailPanelMinPx: 520,
-  detailPanelMaxPx: 1100,
-  /** Geniş panel açıkken haritaya bırakılacak en az genişlik, px */
-  mapMinPx: 240,
+  /** Sağ bahçe paneli: varsayılan genişlik (görünüm oranı) ve sürükleyerek ayarlanabilir sınırlar, px */
+  detailPanelRatio: 0.4,
+  detailPanelMinPx: 440,
+  detailPanelMaxPx: 920,
+  /** Dar masaüstü ekranda sağ panelin inebileceği en küçük genişlik (harita payı korunur), px */
+  detailPanelFloorPx: 360,
+  /** Klavyeyle (← →) yeniden boyutlandırma adımı, px */
+  detailResizeStepPx: 24,
+  /** Sağ panel açıkken haritaya bırakılacak en az genişlik, px */
+  mapMinPx: 320,
   /** Copilot çekmecesi genişliği, px */
   copilotPx: 380,
   /** Üstteki Copilot düğmesinin kapladığı yatay alan (düğme + boşluk), px */
@@ -39,6 +43,8 @@ export const LIST = {
   /** Sparkline boyutu, px */
   sparkWidthPx: 72,
   sparkHeightPx: 28,
+  /** Arama, durum filtresi ve sıralama yalnızca bu kadar ya da daha çok bahçe varsa gösterilir */
+  controlsMinGardens: 5,
 } as const
 
 export const TREND = {

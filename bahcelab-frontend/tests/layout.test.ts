@@ -1,44 +1,55 @@
 import { describe, expect, it } from 'vitest'
 import { LAYOUT } from '@/features/bahcem/lib/config'
-import { mapInsets, panelWidthPx } from '@/features/bahcem/lib/layout'
+import { detailBounds, detailWidthPx, listWidthPx, mapInsets } from '@/features/bahcem/lib/layout'
 
-describe('panel yerleşimi', () => {
-  it('liste paneli sabit genişlikte', () => {
-    expect(panelWidthPx(1440, 'list')).toBe(LAYOUT.listPanelPx)
+describe('üç bölgeli yerleşim', () => {
+  it('liste paneli sabit genişlikte, kapalıyken 0', () => {
+    expect(listWidthPx(1440, true)).toBe(LAYOUT.listPanelPx)
+    expect(listWidthPx(1440, false)).toBe(0)
   })
 
-  it('bahçe sayfası görünümün ~%62\'si, sınırlar içinde', () => {
-    expect(panelWidthPx(1440, 'detail')).toBe(Math.round(1440 * LAYOUT.detailPanelRatio))
-    expect(panelWidthPx(1000, 'detail')).toBe(620)
-    expect(panelWidthPx(2560, 'detail')).toBeLessThanOrEqual(LAYOUT.detailPanelMaxPx)
+  it('sağ panel varsayılanı görünüm oranıdır ve sınırlar içinde kalır', () => {
+    expect(detailWidthPx(1440, LAYOUT.listPanelPx, true, null)).toBe(Math.round(1440 * LAYOUT.detailPanelRatio))
+    expect(detailWidthPx(2560, LAYOUT.listPanelPx, true, null)).toBeLessThanOrEqual(LAYOUT.detailPanelMaxPx)
   })
 
-  it('geniş panel haritaya en az mapMinPx bırakır', () => {
-    const viewport = 800
-    const panel = panelWidthPx(viewport, 'detail')
-    expect(viewport - LAYOUT.railPx - panel - LAYOUT.gapPx * 2).toBeGreaterThanOrEqual(LAYOUT.mapMinPx)
+  it('kullanıcının seçtiği genişlik aralığa sıkıştırılır', () => {
+    const { min, max } = detailBounds(1440, LAYOUT.listPanelPx)
+    expect(detailWidthPx(1440, LAYOUT.listPanelPx, true, 10)).toBe(min)
+    expect(detailWidthPx(1440, LAYOUT.listPanelPx, true, 5000)).toBe(max)
+    expect(detailWidthPx(1440, LAYOUT.listPanelPx, true, 600)).toBe(600)
   })
 
-  it('kapalı panel 0 px', () => {
-    expect(panelWidthPx(1440, 'collapsed')).toBe(0)
+  it('sağ panel haritaya en az mapMinPx bırakır', () => {
+    const viewport = 1280
+    const list = listWidthPx(viewport, true)
+    const detail = detailWidthPx(viewport, list, true, 5000)
+    const map = viewport - LAYOUT.railPx - list - detail - LAYOUT.gapPx * 3
+    expect(map).toBeGreaterThanOrEqual(LAYOUT.mapMinPx)
   })
 
-  it('dar ekranda panel menü dışındaki alanı kaplar, liste üst sınırı korunur', () => {
-    const viewport = 375
-    const free = viewport - LAYOUT.railPx - LAYOUT.gapPx * 2
-    expect(panelWidthPx(viewport, 'detail')).toBe(free)
-    expect(panelWidthPx(viewport, 'list')).toBe(free)
+  it('kapalı sağ panel 0 px', () => {
+    expect(detailWidthPx(1440, LAYOUT.listPanelPx, false, 600)).toBe(0)
   })
 
-  it('harita sınırları: panel açıkken sol, Copilot açıkken sağ genişler', () => {
-    const closed = mapInsets(1440, 0, false)
-    expect(closed).toEqual({ left: LAYOUT.railPx + LAYOUT.gapPx, right: LAYOUT.gapPx })
-    const open = mapInsets(1440, 360, true)
-    expect(open.left).toBe(LAYOUT.railPx + LAYOUT.gapPx + 360 + LAYOUT.gapPx)
-    expect(open.right).toBe(LAYOUT.gapPx + LAYOUT.copilotPx)
+  it('dar ekranda paneller menü dışındaki alanı kaplar', () => {
+    const free = 375 - LAYOUT.railPx - LAYOUT.gapPx * 2
+    expect(listWidthPx(375, true)).toBe(free)
+    expect(detailWidthPx(375, free, true, 600)).toBe(free)
   })
 
-  it('dar ekranda panel haritayı daraltmaz (üstüne biner), Copilot da sayılmaz', () => {
-    expect(mapInsets(375, 300, true)).toEqual({ left: LAYOUT.railPx + LAYOUT.gapPx, right: LAYOUT.gapPx })
+  it('harita sınırları: sol liste, sağ panel ve Copilot hesaba katılır', () => {
+    expect(mapInsets(1440, 0, 0, false)).toEqual({ left: LAYOUT.railPx + LAYOUT.gapPx, right: LAYOUT.gapPx })
+    const both = mapInsets(1440, 360, 560, false)
+    expect(both.left).toBe(LAYOUT.railPx + LAYOUT.gapPx + 360 + LAYOUT.gapPx)
+    expect(both.right).toBe(LAYOUT.gapPx + 560 + LAYOUT.gapPx)
+    // Copilot sağ panelden dar olduğu için panelin üstüne biner; harita alanı değişmez
+    expect(mapInsets(1440, 360, 560, true).right).toBe(both.right)
+    // Panel yokken Copilot kendi genişliği kadar yer ayırır
+    expect(mapInsets(1440, 360, 0, true).right).toBe(LAYOUT.gapPx + LAYOUT.copilotPx)
+  })
+
+  it('dar ekranda paneller haritayı daraltmaz (üstüne biner)', () => {
+    expect(mapInsets(375, 300, 300, true)).toEqual({ left: LAYOUT.railPx + LAYOUT.gapPx, right: LAYOUT.gapPx })
   })
 })

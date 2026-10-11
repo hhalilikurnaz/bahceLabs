@@ -51,6 +51,8 @@ interface BahcemState {
   /** "Tam harita": bahçe sayfası paneli daraltılır, seçili bahçe dışı karartılır */
   fullMap: boolean
   copilotOpen: boolean
+  /** Kullanıcının sürükleyerek seçtiği sağ panel genişliği (px); null = varsayılan oran */
+  detailWidthPx: number | null
   season: number
 
   selectedGardenId: string | null
@@ -84,6 +86,7 @@ interface BahcemState {
   setFullMap: (fullMap: boolean) => void
   setLeftPanelOpen: (open: boolean) => void
   setCopilotOpen: (open: boolean) => void
+  setDetailWidth: (px: number | null) => void
   setSeason: (season: number) => void
   selectGarden: (id: string | null) => void
   setMapZoom: (zoom: number) => void
@@ -114,6 +117,28 @@ interface BahcemState {
   resetFlow: () => void
 }
 
+const DETAIL_WIDTH_KEY = 'bahcelab.detailWidthPx'
+
+/** Sağ panel genişliği tarayıcıda saklanır (yalnızca kullanıcı kolaylığı; erişilemezse sessizce varsayılan). */
+function readDetailWidth(): number | null {
+  try {
+    const raw = window.localStorage.getItem(DETAIL_WIDTH_KEY)
+    const value = raw === null ? NaN : Number(raw)
+    return Number.isFinite(value) && value > 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
+function writeDetailWidth(value: number | null): void {
+  try {
+    if (value === null) window.localStorage.removeItem(DETAIL_WIDTH_KEY)
+    else window.localStorage.setItem(DETAIL_WIDTH_KEY, String(Math.round(value)))
+  } catch {
+    /* saklama yoksa genişlik yalnızca oturum boyunca geçerli olur */
+  }
+}
+
 const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
 
 const flowReset = {
@@ -139,6 +164,7 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   // Dar ekranda panel kapalı başlar; harita görünür kalır
   leftPanelOpen: isDesktop(),
   copilotOpen: false,
+  detailWidthPx: readDetailWidth(),
   season: new Date().getFullYear(),
 
   selectedGardenId: null,
@@ -159,6 +185,10 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   setFullMap: (fullMap) => set({ fullMap }),
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
+  setDetailWidth: (detailWidthPx) => {
+    writeDetailWidth(detailWidthPx)
+    set({ detailWidthPx })
+  },
   setSeason: (season) => set({ season }),
   selectGarden: (id) => set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, ...viewReset })),
   setMapZoom: (mapZoom) => set({ mapZoom }),

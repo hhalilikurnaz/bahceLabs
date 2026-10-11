@@ -19,6 +19,7 @@ import { SwipeHandle } from '../indeks/SwipeHandle'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { FullMapBar } from './FullMapBar'
 import { IconRail } from './IconRail'
+import { DetailPanel } from './DetailPanel'
 import { LeftPanel } from './LeftPanel'
 import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
@@ -51,10 +52,11 @@ function FallbackNotice() {
 }
 
 /** Yerleşim değişkenleri: menü, panel ve haritanın görünen alanı (overlay'ler bunlara göre konumlanır). */
-function layoutVars(panelPx: number, left: number, right: number, copilotOpen: boolean): CSSProperties {
+function layoutVars(listPx: number, detailPx: number, left: number, right: number, copilotOpen: boolean): CSSProperties {
   return {
     '--rail-w': `${LAYOUT.railPx}px`,
-    '--panel-w': `${panelPx}px`,
+    '--list-w': `${listPx}px`,
+    '--detail-w': `${detailPx}px`,
     '--map-left': `${left}px`,
     '--map-right': `${right}px`,
     // Üst arama alanının sağ sınırı: Copilot düğmesi görünürken onun payı da bırakılır
@@ -68,7 +70,7 @@ function layoutVars(panelPx: number, left: number, right: number, copilotOpen: b
  */
 export function BahcemLayout() {
   const { user } = useAuth()
-  const { panelPx, insets } = usePanelLayout()
+  const { listPx, detailPx, insets } = usePanelLayout()
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   // Çizim aracı ilk kez gerektiğinde yüklenir ve sonra açık kalır
   const flowActive = useBahcemStore((s) => s.mode !== 'idle')
@@ -79,7 +81,7 @@ export function BahcemLayout() {
   return (
     <div
       className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text"
-      style={layoutVars(panelPx, insets.left, insets.right, copilotOpen)}
+      style={layoutVars(listPx, detailPx, insets.left, insets.right, copilotOpen)}
     >
       <ToastProvider>
         <MapProvider userId={user.id}>
@@ -92,6 +94,7 @@ export function BahcemLayout() {
           <MapEffects />
           <IconRail />
           <LeftPanel />
+          <DetailPanel />
           <PlaceSearch />
           <FallbackNotice />
           {(flowActive || drawNeeded) && (

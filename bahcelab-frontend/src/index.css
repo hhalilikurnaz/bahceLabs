@@ -77,6 +77,8 @@
   --color-app-warn: #9a4f08;
   --color-app-danger: #b3382a;
   --color-app-water: #1f6fa8;
+  /* Uydu görüntüsü küçük resimlerinin zemini (görüntü kutuya sığdırılır, kenarlarda koyu boşluk kalır) */
+  --color-thumb: #1d2a21;
 
   /* Planlama modülü (eski palet) — yeni palete eşlenmiş koyu değerler */
   --color-planning-bg: #0c1710;

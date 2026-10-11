@@ -1,4 +1,4 @@
-import { ArrowLeft, Maximize2 } from 'lucide-react'
+import { ArrowLeft, Maximize2, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button, IconButton, Tabs, TextField } from '@/components/ui'
 import { useGardensOverview } from '../../api/overviewApi'
@@ -49,10 +49,12 @@ export function GardenPage({ garden }: { garden: Garden }) {
   return (
     <div className="@container flex min-h-0 flex-1 flex-col" data-testid="garden-page">
       <header className="border-b border-app-border">
-        <div className="flex items-start gap-2 px-3 pt-3">
-          <IconButton label="Bahçe listesine dön" onClick={close}>
-            <ArrowLeft className="h-5 w-5" aria-hidden />
-          </IconButton>
+        <div className="flex items-start gap-2 px-3 pt-3 md:pl-4">
+          <div className="md:hidden">
+            <IconButton label="Bahçe listesine dön" onClick={close}>
+              <ArrowLeft className="h-5 w-5" aria-hidden />
+            </IconButton>
+          </div>
           <div className="min-w-0 flex-1 pt-0.5">
             {renaming ? (
               <TextField
@@ -93,6 +95,11 @@ export function GardenPage({ garden }: { garden: Garden }) {
             onEditBoundary={() => actions.editBoundary(garden)}
             onDelete={() => actions.requestDelete(garden)}
           />
+          <div className="hidden md:block">
+            <IconButton label="Bahçe panelini kapat" onClick={close}>
+              <X className="h-5 w-5" aria-hidden />
+            </IconButton>
+          </div>
         </div>
         <Tabs
           label="Bahçe bilgileri"

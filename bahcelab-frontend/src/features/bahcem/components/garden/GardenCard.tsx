@@ -39,15 +39,15 @@ function Thumb({ overview, garden }: { overview: GardenOverview; garden: Garden 
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className="ndvi-pixelated shrink-0 rounded-sm bg-app-bg object-contain"
+        className="ndvi-pixelated shrink-0 rounded-sm bg-thumb p-1 object-contain"
         style={{ width: size, height: size }}
       />
     )
   }
   const path = silhouettePath(largestOuterRing(garden.geometry))
   return (
-    <svg viewBox="0 0 40 40" className="shrink-0 rounded-sm bg-app-bg" style={{ width: size, height: size }} aria-hidden>
-      {path && <path d={path} className="fill-app-text-dim/20 stroke-app-text-dim" strokeWidth={1.5} strokeLinejoin="round" />}
+    <svg viewBox="0 0 40 40" className="shrink-0 rounded-sm bg-thumb" style={{ width: size, height: size }} aria-hidden>
+      {path && <path d={path} className="fill-white/15 stroke-white/70" strokeWidth={1.5} strokeLinejoin="round" />}
     </svg>
   )
 }
@@ -112,9 +112,9 @@ export function GardenCard({ overview, garden, selected, onRename, onEditBoundar
               />
             </div>
           ) : (
-            <h3 className="truncate pr-11 font-display text-lead text-app-text">{garden.ad}</h3>
+            <h3 className="line-clamp-2 pr-11 font-display text-lead text-app-text">{garden.ad}</h3>
           )}
-          <p className="truncate text-caption text-app-text-muted">
+          <p className="line-clamp-2 text-caption text-app-text-muted">
             {productLabel(garden.urun)} · {formatDecare(overview.dekar)}
             {where && ` · ${where}`}
           </p>
@@ -128,7 +128,9 @@ export function GardenCard({ overview, garden, selected, onRename, onEditBoundar
               </span>
             )}
           </div>
-          <p className="mt-1 truncate text-caption text-app-text-dim">{overview.durumNedeni ?? meta.hint}</p>
+          {overview.durum !== 'iyi' && (
+            <p className="mt-1 line-clamp-2 text-caption text-app-text-dim">{overview.durumNedeni ?? meta.hint}</p>
+          )}
         </div>
         {overview.seri.length > 1 && (
           <Sparkline

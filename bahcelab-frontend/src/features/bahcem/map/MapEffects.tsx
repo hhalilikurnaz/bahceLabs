@@ -16,7 +16,7 @@ export function MapEffects() {
   const { data: gardens } = useGardens()
   const { focusAll, focusGarden } = useFocusGarden()
   const { gardenId } = useBahcemRoute()
-  const { kind, insets } = usePanelLayout()
+  const { listOpen, detailOpen, insets } = usePanelLayout()
   const fitted = useRef(false)
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function MapEffects() {
     if (!map || !fitted.current || !selectedId) return
     const garden = gardens?.find((g) => g.id === selectedId)
     if (garden) focusGarden(garden)
-  }, [map, selectedId, kind, insets.left, insets.right, gardens, focusGarden])
+  }, [map, selectedId, listOpen, detailOpen, insets.left, insets.right, gardens, focusGarden])
 
   return null
 }

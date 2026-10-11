@@ -1,27 +1,35 @@
 import { useEffect, useState } from 'react'
-import { mapInsets, panelWidthPx, type MapInsets, type PanelKind } from '../lib/layout'
+import { detailBounds, detailWidthPx, listWidthPx, mapInsets, type DetailBounds, type MapInsets } from '../lib/layout'
+import { LAYOUT } from '../lib/config'
 import { useBahcemStore } from '../stores/bahcemStore'
 import { useBahcemRoute } from './useBahcemRoute'
 
 export interface PanelLayout {
-  kind: PanelKind
-  panelPx: number
+  /** Sol liste (ya da bölüm/form) paneli açık mı */
+  listOpen: boolean
+  /** Sağ bahçe paneli açık mı */
+  detailOpen: boolean
+  listPx: number
+  detailPx: number
+  detailBounds: DetailBounds
   insets: MapInsets
   viewportPx: number
+  desktop: boolean
 }
 
 const viewport = (): number => (typeof window === 'undefined' ? 1280 : window.innerWidth)
 
 /**
- * Panelin türü (liste / bahçe sayfası / kapalı) ve haritaya bırakılan alan.
- * Bahçe seçiliyken panel geniş açılır; "Tam harita" veya menüden kapatma paneli daraltır.
+ * Üç bölgeli yerleşim: sol liste | orta harita | sağ bahçe paneli.
+ * Bahçe seçiliyken ikisi de görünür; "Tam harita" ikisini de kapatır. Dar ekranda bahçe paneli listenin yerine geçer.
  */
 export function usePanelLayout(): PanelLayout {
   const { section, gardenId } = useBahcemRoute()
-  const open = useBahcemStore((s) => s.leftPanelOpen)
+  const leftOpen = useBahcemStore((s) => s.leftPanelOpen)
   const fullMap = useBahcemStore((s) => s.fullMap)
   const mode = useBahcemStore((s) => s.mode)
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
+  const preferred = useBahcemStore((s) => s.detailWidthPx)
   const [viewportPx, setViewportPx] = useState(viewport)
 
   useEffect(() => {
@@ -30,10 +38,20 @@ export function usePanelLayout(): PanelLayout {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  let kind: PanelKind = 'list'
-  if (!open || fullMap) kind = 'collapsed'
-  else if (section === 'bahceler' && gardenId && mode === 'idle') kind = 'detail'
+  const desktop = viewportPx >= LAYOUT.desktopMinPx
+  const detailOpen = section === 'bahceler' && gardenId !== null && mode === 'idle' && !fullMap
+  const listOpen = leftOpen && !fullMap && (desktop || !detailOpen)
 
-  const panelPx = panelWidthPx(viewportPx, kind)
-  return { kind, panelPx, insets: mapInsets(viewportPx, panelPx, copilotOpen), viewportPx }
+  const listPx = listWidthPx(viewportPx, listOpen)
+  const detailPx = detailWidthPx(viewportPx, listPx, detailOpen, preferred)
+  return {
+    listOpen,
+    detailOpen,
+    listPx,
+    detailPx,
+    detailBounds: detailBounds(viewportPx, listPx),
+    insets: mapInsets(viewportPx, listPx, detailPx, copilotOpen),
+    viewportPx,
+    desktop,
+  }
 }

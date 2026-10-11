@@ -6,6 +6,7 @@ import { BASEMAPS, BASEMAP_PROVIDERS } from '../../map/mapStyles'
 import { useIndexView } from '../../hooks/useIndexView'
 import { LAYER_OPTIONS } from '../../lib/indices'
 import { useMap } from '../../map/useMap'
+import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from './toastContext'
 
@@ -151,7 +152,8 @@ function LayerSwitcher() {
 
 export function MapControls() {
   const { map } = useMap()
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
+  const { listOpen, detailOpen } = usePanelLayout()
+  const panelOpen = listOpen || detailOpen
   const toast = useToast()
   const [locating, setLocating] = useState(false)
   const markerRef = useRef<Marker | null>(null)

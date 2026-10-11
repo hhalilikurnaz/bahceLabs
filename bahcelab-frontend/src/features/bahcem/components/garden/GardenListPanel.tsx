@@ -5,6 +5,7 @@ import { useGardensOverview } from '../../api/overviewApi'
 import { useGardens } from '../../api/useGardens'
 import type { Garden } from '../../api/types'
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { LIST } from '../../lib/config'
 import { formatDecare } from '../../lib/geo'
 import { countByStatus, filterGardens, sortGardens, SORT_OPTIONS, type SortKey, type StatusFilter } from '../../lib/gardenList'
 import { STATUS_META } from '../../lib/status'
@@ -102,6 +103,7 @@ export function GardenListPanel() {
           <OnboardingSteps />
         ) : (
           <>
+            {all.length >= LIST.controlsMinGardens && (
             <div className="space-y-3">
               <TextField
                 label="Bahçe ara"
@@ -126,6 +128,7 @@ export function GardenListPanel() {
                 ))}
               </SelectField>
             </div>
+            )}
 
             {visible.length === 0 ? (
               <EmptyState
