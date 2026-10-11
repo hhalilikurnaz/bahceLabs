@@ -2,7 +2,7 @@ import { ArrowLeft, CalendarDays } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Drawer, EmptyState, IconButton, Skeleton } from '@/components/ui'
+import { Button, Drawer, EmptyState, ErrorState, IconButton, Skeleton } from '@/components/ui'
 import { gridKey, indeksApi, useIndices } from '../../api/indeksApi'
 import { useGardens } from '../../api/useGardens'
 import type { GardenGeometry } from '../../api/types'
@@ -89,7 +89,14 @@ export function ArchivePage() {
         </div>
       </header>
 
-      {gardensLoading || indices.isLoading ? (
+      {indices.isError && !indices.data ? (
+        <ErrorState
+          title="Görüntüler alınamadı"
+          description="İnternet bağlantınızı kontrol edip tekrar deneyin."
+          retrying={indices.isFetching}
+          onRetry={() => void indices.refetch()}
+        />
+      ) : gardensLoading || indices.isLoading ? (
         <div className="space-y-3 p-4" aria-busy>
           <Skeleton className="h-24" />
           <Skeleton className="h-80" />

@@ -58,7 +58,7 @@ export function ResizeHandle({ valuePx, minPx, maxPx, onChange, onDragChange }: 
       onPointerUp={end}
       onPointerCancel={end}
       onKeyDown={onKeyDown}
-      className="group absolute inset-y-0 -left-2.5 z-10 hidden w-5 cursor-col-resize touch-none items-center justify-center outline-none md:flex"
+      className="group absolute inset-y-0 -left-2.5 z-10 hidden w-5 cursor-col-resize touch-none items-center justify-center outline-none min-[1180px]:flex"
     >
       <span
         className={`h-12 w-1 rounded-full transition-colors group-hover:bg-app-accent group-focus-visible:bg-app-accent ${

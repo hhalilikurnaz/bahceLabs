@@ -139,7 +139,7 @@ export function PlaceSearch() {
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent text-body text-app-text outline-none placeholder:text-app-text-dim"
+          className="h-11 min-w-0 flex-1 bg-transparent text-body text-app-text outline-none placeholder:text-app-text-dim"
         />
         {query && (
           <IconButton

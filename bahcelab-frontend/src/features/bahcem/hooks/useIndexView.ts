@@ -18,6 +18,9 @@ export function useIndexView() {
     data: query.data,
     scenes,
     isLoading: query.isLoading,
+    isError: query.isError,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
     active,
     /** Haritada gösterilebilecek görüntü var mı (aç/kapat anahtarından bağımsız) */
     available: active !== null,

@@ -24,6 +24,7 @@ import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
 import { MapToolbar } from './MapToolbar'
 import { PlaceSearch } from './PlaceSearch'
+import { OfflineBanner } from './OfflineBanner'
 import { ProcessingWatcher } from './ProcessingWatcher'
 import { RouteSync } from './RouteSync'
 import { ToastProvider } from './ToastProvider'
@@ -86,10 +87,12 @@ export function BahcemLayout() {
       className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text"
       style={layoutVars(listPx, detailPx, sheetPx, insets.left, insets.right, copilotOpen)}
     >
+      <h1 className="sr-only">BahçeLab – Bahçelerim</h1>
       <ToastProvider>
         <MapProvider userId={user.id}>
           <RouteSync />
           <ProcessingWatcher />
+          <OfflineBanner />
           <Outlet />
           <GardenLayers />
           <GardenMapLabels />

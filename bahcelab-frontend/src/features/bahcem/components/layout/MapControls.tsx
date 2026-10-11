@@ -174,7 +174,7 @@ export function MapControls() {
 
   return (
     <div
-      className={`surface-dark absolute bottom-[calc(var(--sheet-h)+3.5rem)] right-[var(--map-right)] md:bottom-14 z-20 flex-col items-end gap-2 transition-[right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
+      className={`surface-dark absolute bottom-[calc(var(--sheet-h)+3.5rem)] right-[var(--map-right)] min-[1180px]:bottom-14 z-20 flex-col items-end gap-2 transition-[right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
         hiddenOnMobile ? 'hidden' : 'flex'
       }`}
     >

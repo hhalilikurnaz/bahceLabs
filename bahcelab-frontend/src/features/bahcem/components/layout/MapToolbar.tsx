@@ -34,7 +34,7 @@ export function MapToolbar() {
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
   if (!hasImages) {
     return (
-      <div className="surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] md:bottom-10 right-[calc(var(--map-right)+3.75rem)] z-20 flex justify-center" data-testid="map-capsule">
+      <div className="surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] min-[1180px]:bottom-10 right-[calc(var(--map-right)+3.75rem)] z-20 flex justify-center" data-testid="map-capsule">
         <p className="pointer-events-auto rounded-full border border-app-border bg-app-panel px-4 py-2 text-small text-app-text-muted shadow-e2">
           {processing ? 'Uydu görüntüleri hazırlanıyor…' : 'Bu bahçe için henüz kullanılabilir uydu görüntüsü yok.'}
         </p>
@@ -44,7 +44,7 @@ export function MapToolbar() {
 
   return (
     <div
-      className={`surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] md:bottom-9 right-[calc(var(--map-right)+3.75rem)] z-20 flex-col items-center gap-2 ${
+      className={`surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] min-[1180px]:bottom-9 right-[calc(var(--map-right)+3.75rem)] z-20 @container flex-col items-center gap-2 ${
         !desktop && (listOpen || (detailOpen && sheet !== 'peek')) && !fullMap ? 'hidden' : 'flex'
       }`}
       data-testid="map-toolbar-wrap"
@@ -72,7 +72,7 @@ export function MapToolbar() {
         data-testid="map-toolbar"
       >
         {shown && active && (
-          <p className="px-2 text-small text-app-text" data-testid="map-capsule">
+          <p className="hidden px-2 text-small text-app-text @3xl:block" data-testid="map-capsule">
             En güncel: <strong>{formatDate(active.tarih)}</strong>
             {active.bulutOrani != null && <span className="text-app-text-muted"> · bulut %{Math.round(active.bulutOrani)}</span>}
           </p>

@@ -49,8 +49,8 @@ export function GardenPage({ garden }: { garden: Garden }) {
   return (
     <div className="@container flex min-h-0 flex-1 flex-col" data-testid="garden-page">
       <header className="border-b border-app-border">
-        <div className="flex items-start gap-2 px-3 pt-3 md:pl-4">
-          <div className="md:hidden">
+        <div className="flex items-start gap-2 px-3 pt-3 min-[1180px]:pl-4">
+          <div className="min-[1180px]:hidden">
             <IconButton label="Bahçe listesine dön" onClick={close}>
               <ArrowLeft className="h-5 w-5" aria-hidden />
             </IconButton>
@@ -95,7 +95,7 @@ export function GardenPage({ garden }: { garden: Garden }) {
             onEditBoundary={() => actions.editBoundary(garden)}
             onDelete={() => actions.requestDelete(garden)}
           />
-          <div className="hidden md:block">
+          <div className="hidden min-[1180px]:block">
             <IconButton label="Bahçe panelini kapat" onClick={close}>
               <X className="h-5 w-5" aria-hidden />
             </IconButton>

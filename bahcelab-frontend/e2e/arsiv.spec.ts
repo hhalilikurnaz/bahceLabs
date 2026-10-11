@@ -7,9 +7,9 @@ test('kapsül → Tüm görüntüler → parametre değiştir → tarih seç →
   seedScenes(garden.id)
   await page.goto(`/bahcem/${garden.id}/durum`)
 
-  const capsule = page.getByTestId('map-capsule')
-  await expect(capsule).toContainText('En güncel')
-  const latestText = await capsule.innerText()
+  const dateLabel = page.getByTestId('map-date-label')
+  await expect(dateLabel).toContainText('Canlılık')
+  const latestText = (await dateLabel.innerText()).trim()
 
   await page.getByRole('link', { name: 'Tüm görüntüler' }).click()
   await expect(page).toHaveURL(/\/arsiv\?parametre=ndvi/)
@@ -45,7 +45,7 @@ test('kapsül → Tüm görüntüler → parametre değiştir → tarih seç →
   // Geri dön: ana ekran hâlâ en güncel görüntüyü gösterir
   await page.getByRole('button', { name: 'Bahçeye dön' }).click()
   await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
-  await expect(page.getByTestId('map-capsule')).toHaveText(latestText)
+  await expect(page.getByTestId('map-date-label')).toHaveText(latestText)
 })
 
 test('bulutlu dönemde boş durum ve «bulutlu tarihleri göster»', async ({ page }) => {

@@ -1,7 +1,7 @@
 import { Cloud } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Chip, SelectField, Skeleton } from '@/components/ui'
+import { Card, Chip, ErrorState, SelectField, Skeleton } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
 import { useRefreshIndices } from '../../api/indeksApi'
 import type { Garden } from '../../api/types'
@@ -29,7 +29,7 @@ const SEASONS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2]
 export function StatusTab({ garden }: { garden: Garden }) {
   const gardenId = garden.id
   const navigate = useNavigate()
-  const { data, scenes, isLoading, active, katman } = useIndexView()
+  const { data, scenes, isLoading, isError, isFetching, refetch, active, katman } = useIndexView()
   const season = useBahcemStore((s) => s.season)
   const setSeason = useBahcemStore((s) => s.setSeason)
   const havaKatmani = useBahcemStore((s) => s.havaKatmani)
@@ -48,6 +48,18 @@ export function StatusTab({ garden }: { garden: Garden }) {
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
   const hasImages = scenes?.some((s) => s.durum === 'tamam') ?? false
 
+  if (isError && !data) {
+    return (
+      <Card>
+        <ErrorState
+          title="Uydu verisi alınamadı"
+          description="İnternet bağlantınızı kontrol edip tekrar deneyin."
+          retrying={isFetching}
+          onRetry={() => void refetch()}
+        />
+      </Card>
+    )
+  }
   if (isLoading || !data) {
     return (
       <div className="space-y-3" aria-label="Uydu verisi yükleniyor" aria-busy>

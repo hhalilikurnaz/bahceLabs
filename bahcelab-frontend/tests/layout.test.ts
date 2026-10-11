@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LAYOUT } from '@/features/bahcem/lib/config'
-import { detailBounds, detailWidthPx, listWidthPx, mapInsets } from '@/features/bahcem/lib/layout'
+import { detailBounds, detailWidthPx, listWidthPx, mapInsets, nearestSheetState, sheetHeightPx, stepSheet } from '@/features/bahcem/lib/layout'
 
 describe('üç bölgeli yerleşim', () => {
   it('liste paneli sabit genişlikte, kapalıyken 0', () => {
@@ -36,6 +36,27 @@ describe('üç bölgeli yerleşim', () => {
     const free = 375 - LAYOUT.railPx - LAYOUT.gapPx * 2
     expect(listWidthPx(375, true)).toBe(free)
     expect(detailWidthPx(375, free, true, 600)).toBe(free)
+  })
+
+  it('tablet (768 px) ve telefon: paneller menü dışındaki alanı kaplar, harita üstte kalır', () => {
+    for (const viewport of [375, 768, 1179]) {
+      expect(listWidthPx(viewport, true)).toBe(viewport - LAYOUT.railPx - LAYOUT.gapPx * 2)
+      expect(mapInsets(viewport, 300, 300, true)).toEqual({ left: LAYOUT.railPx + LAYOUT.gapPx, right: LAYOUT.gapPx })
+    }
+    expect(listWidthPx(1180, true)).toBe(LAYOUT.listPanelPx) // üç bölgeli yerleşim 1180 px'den başlar
+  })
+
+  it('alt sayfa yükseklikleri: kapalı < yarım < tam; sürükleme en yakına oturur; ok tuşu uçlarda taşmaz', () => {
+    const h = 812
+    const [peek, half, full] = (['peek', 'half', 'full'] as const).map((s) => sheetHeightPx(s, h))
+    expect(peek).toBeLessThan(half)
+    expect(half).toBeLessThan(full)
+    expect(nearestSheetState(peek + 10, h)).toBe('peek')
+    expect(nearestSheetState(half - 20, h)).toBe('half')
+    expect(nearestSheetState(full + 200, h)).toBe('full')
+    expect(stepSheet('full', 1)).toBe('full')
+    expect(stepSheet('peek', -1)).toBe('peek')
+    expect(stepSheet('peek', 1)).toBe('half')
   })
 
   it('harita sınırları: sol liste, sağ panel ve Copilot hesaba katılır', () => {

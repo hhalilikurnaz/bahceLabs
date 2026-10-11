@@ -24,7 +24,7 @@ export function LeftPanel() {
       data-testid="left-panel"
       data-open={listOpen}
       style={{ width: 'var(--list-w)' }}
-      className={`absolute bottom-16 left-[calc(var(--rail-w)+0.75rem)] top-[4.25rem] z-20 flex flex-col overflow-hidden rounded-lg border border-app-border bg-app-panel shadow-e3 transition-[width,opacity,transform] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] md:bottom-3 md:top-3 ${
+      className={`absolute bottom-16 left-[calc(var(--rail-w)+0.75rem)] top-[4.25rem] z-20 flex flex-col overflow-hidden rounded-lg border border-app-border bg-app-panel shadow-e3 transition-[width,opacity,transform] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] min-[1180px]:bottom-3 min-[1180px]:top-3 ${
         listOpen ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-6 opacity-0'
       }`}
     >

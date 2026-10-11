@@ -35,7 +35,7 @@ export function Toast({ message, tone = 'info', actionLabel, onAction, onClose, 
         </button>
       )}
       {onClose && (
-        <button type="button" onClick={onClose} aria-label="Bildirimi kapat" className="flex h-9 w-9 items-center justify-center rounded-full text-app-text-muted hover:bg-app-card-hover">
+        <button type="button" onClick={onClose} aria-label="Bildirimi kapat" className="flex h-11 w-11 items-center justify-center rounded-full text-app-text-muted hover:bg-app-card-hover">
           <X className="h-4 w-4" aria-hidden />
         </button>
       )}

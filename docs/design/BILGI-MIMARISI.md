@@ -11,7 +11,10 @@ Ayarlar         /bahcem/ayarlar            hesap, çıkış · Bildirim tercihle
 ```
 
 ## Yerleşim (7B-2, ADR 0006)
-Masaüstünde üç bölge: **sol liste | orta harita | sağ bahçe paneli** (sürüklenerek ya da ← → ile boyutlanır, genişlik tarayıcıda saklanır). Bahçe seçilince ikisi birlikte görünür; «Tam harita» ikisini de kapatır (Esc geri açar). Copilot çekmecesi sağ panelin üstünde açılır. Dar ekranda bahçe paneli listenin yerine geçer.
+Masaüstünde (≥ 1180 px) üç bölge: **sol liste | orta harita | sağ bahçe paneli** (sürüklenerek ya da ← → ile boyutlanır, genişlik tarayıcıda saklanır). Bahçe seçilince ikisi birlikte görünür; «Tam harita» ikisini de kapatır (Esc geri açar). Copilot çekmecesi sağ panelin üstünde açılır. Daha dar ekranlarda (telefon, tablet) harita üsttedir; bahçe paneli alttan açılan sayfadır (kapalı/yarım/tam, sürüklenebilir), liste ayrı görünümdür.
+
+## Bahçe ekleme akışı (7C)
+`Bahçe ekle` → **Haritada çiz** (çokgen/daire; kenar uzunlukları, canlı alan, yapışma, geri al/yinele, köşe düzenleme) | **Dosya yükle** (KML/KMZ/GeoJSON). Sağ panelde canlı form: ad, ürün, çeşit, dikim yılı, ağaç sayısı, il/ilçe + önizleme. Kayıttan sonra "Uydu verisi hazırlanıyor" durumu ve bitince bildirim. Mevcut bahçenin sınırı aynı araçla düzenlenir; değişince yeniden işleme uyarısı. Eksik bilgi: Durum sekmesinde "Bilgileri tamamla".
 
 ## Bahçe sayfası (`/bahcem/:id/…`)
 ```

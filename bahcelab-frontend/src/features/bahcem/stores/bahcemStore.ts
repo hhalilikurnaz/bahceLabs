@@ -123,8 +123,6 @@ function writeDetailWidth(value: number | null): void {
   }
 }
 
-const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
-
 const flowReset = {
   mode: 'idle' as FlowMode,
   draft: null,
@@ -172,8 +170,8 @@ function writeViewPrefs(prefs: ViewPrefs): void {
 }
 
 export const useBahcemStore = create<BahcemState>((set) => ({
-  // Dar ekranda panel kapalı başlar; harita görünür kalır
-  leftPanelOpen: isDesktop(),
+  // Liste her ekranda açık başlar (dar ekranda ayrı görünümdür; bahçe açılınca alt sayfaya yer açar)
+  leftPanelOpen: true,
   copilotOpen: false,
   detailWidthPx: readDetailWidth(),
   season: new Date().getFullYear(),

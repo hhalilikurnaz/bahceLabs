@@ -69,7 +69,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
         />
 
         <div className="relative z-10">
-          <Link to="/" className="inline-flex no-underline">
+          <Link to="/" aria-label="BahçeLab ana sayfa" className="inline-flex no-underline">
             <BrandLogo surface="dark" height={34} />
           </Link>
         </div>
@@ -107,7 +107,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
       <section className="relative flex min-h-dvh flex-col bg-app-bg">
         <header className="relative px-5 py-5 sm:px-8 lg:px-12 lg:pt-10">
           <div className="mx-auto flex w-full max-w-[28rem] items-center justify-between gap-4 lg:max-w-[30rem]">
-            <Link to="/" className="inline-flex no-underline lg:hidden">
+            <Link to="/" aria-label="BahçeLab ana sayfa" className="inline-flex no-underline lg:hidden">
               <BrandLogo surface="light" height={30} />
             </Link>
             <Link

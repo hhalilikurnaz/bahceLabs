@@ -63,7 +63,7 @@
   --color-app-card: #ffffff;
   --color-app-card-hover: #f3f0e6;
   --color-app-border: #e3ded0;
-  --color-app-border-strong: #b9b3a2;
+  --color-app-border-strong: #8a8473; /* kontrol kenarlığı: panel ve kartta ≥ 3:1 (WCAG 1.4.11) */
   --color-app-text: #13241a;
   --color-app-text-muted: #46574b;
   --color-app-text-dim: #5c6b60;
@@ -104,7 +104,7 @@
   --color-app-card: #1a2c22;
   --color-app-card-hover: #21362a;
   --color-app-border: #2b4235;
-  --color-app-border-strong: #4a6656;
+  --color-app-border-strong: #678573;
   --color-app-text: #f3f1e7;
   --color-app-text-muted: #b9c4b6;
   --color-app-text-dim: #93a294;

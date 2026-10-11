@@ -56,7 +56,7 @@ export function DetailPanel() {
       data-open={detailOpen}
       data-sheet={desktop ? undefined : sheet}
       style={desktop ? { width: detailOpen ? 'var(--detail-w)' : undefined } : { height: detailOpen ? sheetPx : 0 }}
-      className={`absolute z-30 flex flex-col border border-app-border bg-app-panel shadow-e3 md:z-20 md:rounded-lg ${
+      className={`absolute z-30 flex flex-col border border-app-border bg-app-panel shadow-e3 min-[1180px]:z-20 min-[1180px]:rounded-lg ${
         desktop
           ? 'bottom-3 right-3 top-[3.75rem]'
           : 'inset-x-0 bottom-0 left-[var(--rail-w)] rounded-t-xl'

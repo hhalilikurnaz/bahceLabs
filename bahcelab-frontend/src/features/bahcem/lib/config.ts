@@ -22,7 +22,7 @@ export const LAYOUT = {
   /** Üstteki Copilot düğmesinin kapladığı yatay alan (düğme + boşluk), px */
   copilotButtonPx: 124,
   /** Bu genişliğin altı "dar ekran" (mobil) sayılır, px */
-  desktopMinPx: 768,
+  desktopMinPx: 1180,
 } as const
 
 /** Mobil alt sayfa yükseklikleri: kapalı (yalnız başlık), yarım, tam */

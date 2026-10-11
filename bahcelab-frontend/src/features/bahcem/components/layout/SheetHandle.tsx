@@ -66,7 +66,7 @@ export function SheetHandle({ state, onState, onDragHeight }: SheetHandleProps) 
         onDragHeight(null)
       }}
       onKeyDown={onKeyDown}
-      className="flex h-11 w-full shrink-0 touch-none items-center justify-center rounded-t-lg md:hidden"
+      className="flex h-11 w-full shrink-0 touch-none items-center justify-center rounded-t-lg min-[1180px]:hidden"
     >
       <span className="h-1.5 w-12 rounded-full bg-app-border-strong" aria-hidden />
     </button>
