@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { detailBounds, detailWidthPx, listWidthPx, mapInsets, type DetailBounds, type MapInsets } from '../lib/layout'
+import { detailBounds, detailWidthPx, listWidthPx, mapInsets, sheetHeightPx, type DetailBounds, type MapInsets } from '../lib/layout'
 import { LAYOUT } from '../lib/config'
 import { useBahcemStore } from '../stores/bahcemStore'
 import { useBahcemRoute } from './useBahcemRoute'
@@ -15,6 +15,8 @@ export interface PanelLayout {
   insets: MapInsets
   viewportPx: number
   desktop: boolean
+  /** Mobilde açık alt sayfanın yüksekliği, px (yoksa 0) */
+  sheetPx: number
 }
 
 const viewport = (): number => (typeof window === 'undefined' ? 1280 : window.innerWidth)
@@ -30,6 +32,7 @@ export function usePanelLayout(): PanelLayout {
   const mode = useBahcemStore((s) => s.mode)
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   const preferred = useBahcemStore((s) => s.detailWidthPx)
+  const sheet = useBahcemStore((s) => s.sheet)
   const [viewportPx, setViewportPx] = useState(viewport)
 
   useEffect(() => {
@@ -39,7 +42,8 @@ export function usePanelLayout(): PanelLayout {
   }, [])
 
   const desktop = viewportPx >= LAYOUT.desktopMinPx
-  const detailOpen = section === 'bahceler' && gardenId !== null && mode === 'idle' && !fullMap && !archive
+  const formOpen = section === 'bahceler' && (mode === 'drawing' || mode === 'form') && !archive
+  const detailOpen = formOpen || (section === 'bahceler' && gardenId !== null && mode === 'idle' && !fullMap && !archive)
   const listOpen = leftOpen && !fullMap && !archive && (desktop || !detailOpen)
 
   const listPx = listWidthPx(viewportPx, listOpen)
@@ -53,5 +57,6 @@ export function usePanelLayout(): PanelLayout {
     insets: mapInsets(viewportPx, listPx, detailPx, copilotOpen),
     viewportPx,
     desktop,
+    sheetPx: !desktop && detailOpen ? sheetHeightPx(sheet, typeof window === 'undefined' ? 800 : window.innerHeight) : 0,
   }
 }

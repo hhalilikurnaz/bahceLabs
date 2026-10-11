@@ -1,4 +1,4 @@
-import { LAYOUT } from './config'
+import { LAYOUT, SHEET } from './config'
 
 const isDesktop = (viewportPx: number): boolean => viewportPx >= LAYOUT.desktopMinPx
 
@@ -49,4 +49,27 @@ export function mapInsets(viewportPx: number, listPx: number, detailPx: number, 
   const left = LAYOUT.railPx + gap + (listPx > 0 ? listPx + gap : 0)
   const rightPanel = detailPx > 0 ? detailPx + gap : 0
   return { left, right: gap + Math.max(rightPanel, copilotOpen ? LAYOUT.copilotPx : 0) }
+}
+
+export type SheetState = 'peek' | 'half' | 'full'
+export const SHEET_ORDER: readonly SheetState[] = ['peek', 'half', 'full']
+
+/** Alt sayfanın piksel yüksekliği (görünüm yüksekliğine göre). */
+export function sheetHeightPx(state: SheetState, viewportH: number): number {
+  if (state === 'peek') return SHEET.peekPx
+  if (state === 'half') return Math.round(viewportH * SHEET.halfRatio)
+  return Math.max(SHEET.peekPx, viewportH - SHEET.fullTopGapPx)
+}
+
+/** Sürükleme sonunda en yakın yükseklik durumu. */
+export function nearestSheetState(heightPx: number, viewportH: number): SheetState {
+  return SHEET_ORDER.reduce((best, state) =>
+    Math.abs(sheetHeightPx(state, viewportH) - heightPx) < Math.abs(sheetHeightPx(best, viewportH) - heightPx) ? state : best,
+  )
+}
+
+/** Klavye/tıklama ile bir üst (+1) ya da alt (−1) duruma geçiş; uçlarda yerinde kalır. */
+export function stepSheet(state: SheetState, direction: 1 | -1): SheetState {
+  const index = SHEET_ORDER.indexOf(state) + direction
+  return SHEET_ORDER[Math.min(SHEET_ORDER.length - 1, Math.max(0, index))]
 }

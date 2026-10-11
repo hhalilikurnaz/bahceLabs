@@ -46,3 +46,26 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
     { cwd: '../bahcelab-backend', env: { ...process.env, PYTHONPATH: 'src' }, stdio: 'pipe' },
   )
 }
+
+/** Haritayı verilen konuma (yakın zoom) açacak başlangıç görünümünü yazar: çizim için yakınlaşmak gerekir. */
+export async function startAt(page: Page, lng: number, lat: number, zoom = 17): Promise<void> {
+  const me = await page.request.get('/api/auth/me')
+  expect(me.ok()).toBe(true)
+  const user = (await me.json()) as { id?: string; user?: { id: string } }
+  const id = user.id ?? user.user?.id
+  await page.addInitScript(
+    ([key, view]) => localStorage.setItem(key as string, JSON.stringify(view)),
+    [`bahcelab_map_view_v1:${id}`, { center: [lng, lat], zoom, basemap: 'satellite', provider: 'mapbox' }],
+  )
+}
+
+/** Haritanın görünen (paneller arası) alanında, merkeze göre ofsetli ekran noktası. */
+export async function mapPoint(page: Page, dx: number, dy: number): Promise<{ x: number; y: number }> {
+  const box = await page.locator('.maplibregl-canvas').first().boundingBox()
+  if (!box) throw new Error('Harita tuvali bulunamadı')
+  const free = await page.evaluate(() => {
+    const css = getComputedStyle(document.querySelector('[data-testid="left-panel"]')?.parentElement as HTMLElement)
+    return { left: parseFloat(css.getPropertyValue('--map-left')) || 0, right: parseFloat(css.getPropertyValue('--map-right')) || 0 }
+  })
+  return { x: (free.left + (box.width - free.right)) / 2 + dx, y: box.height / 2 + dy }
+}

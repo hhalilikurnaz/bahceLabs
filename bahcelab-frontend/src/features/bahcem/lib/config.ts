@@ -25,6 +25,14 @@ export const LAYOUT = {
   desktopMinPx: 768,
 } as const
 
+/** Mobil alt sayfa yükseklikleri: kapalı (yalnız başlık), yarım, tam */
+export const SHEET = {
+  peekPx: 108,
+  halfRatio: 0.5,
+  /** Tam açıkken üstte bırakılan boşluk, px */
+  fullTopGapPx: 56,
+} as const
+
 export const MAP = {
   /** Bahçe etiketleri bu yakınlaştırmanın altında gizlenir */
   labelMinZoom: 11,
@@ -120,6 +128,18 @@ export const GARDEN_LIMITS = {
   treesMin: 1,
   treesMax: 1_000_000,
   minDekar: 0.5,
+} as const
+
+export const DRAW = {
+  /** Çizimde köşe tutamacı çapı, px: iğne ucu (fare) ve dokunmatik (büyük) */
+  handlePx: 10,
+  handleCoarsePx: 16,
+  /** Başka bahçelerin köşelerine yapışma mesafesi, px */
+  snapPx: 14,
+  /** Daire çizimi düzenlenebilir çokgene çevrilirken en fazla köşe sayısı */
+  circleMaxVertices: 24,
+  /** Bu yakınlaştırma düzeyinin altında çizim başlatılamaz (köşeler yeterince hassas olsun) */
+  minZoom: 14,
 } as const
 
 export const TREND = {

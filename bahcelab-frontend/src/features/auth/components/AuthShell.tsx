@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import heroImage from '@/assets/marketing/hero-orchard-drones.jpg'
 import { BrandLogo } from '@/components/ui'
+import { AbstractParcels } from './AbstractParcels'
 
 export const authFieldClass =
-  'mt-1.5 w-full rounded-lg border border-ink/12 bg-white px-3.5 py-3 text-body text-ink outline-none transition-[border-color,box-shadow] placeholder:text-app-text-dim/50 focus:border-leaf-deep/40 focus:ring-2 focus:ring-leaf-deep/15'
+  'mt-1.5 w-full rounded-lg border border-ink/12 bg-white px-3.5 py-3 text-body text-ink outline-none transition-[border-color,box-shadow] placeholder:text-app-text-dim focus:border-leaf-deep focus:ring-2 focus:ring-leaf-deep/30'
 
 export const authLabelClass = 'text-caption font-medium tracking-wide text-app-text-muted'
 
 export const authPrimaryButtonClass =
-  'w-full rounded-lg border border-ink/15 bg-ink px-4 py-3.5 text-body font-medium text-cream transition-opacity hover:opacity-90 disabled:opacity-55'
+  'min-h-12 w-full rounded-lg border border-ink/15 bg-ink px-4 py-3.5 text-body font-semibold text-cream transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf-deep disabled:opacity-60'
 
 type AuthVariant = 'login' | 'register'
 
@@ -57,12 +57,8 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
         className="relative hidden flex-col justify-between overflow-hidden bg-forest p-10 text-cream xl:p-14 lg:flex"
         aria-hidden={false}
       >
-        <img
-          src={heroImage}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-forest/55" />
+        <AbstractParcels className="absolute inset-0 h-full w-full" />
+        <div className="absolute inset-0 bg-forest/35" />
         <div
           className="absolute inset-0 bg-gradient-to-br from-forest/90 via-forest/40 to-forest/75"
           aria-hidden
@@ -82,7 +78,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
           <p className="text-caption font-medium uppercase tracking-[0.22em] text-lemon">
             {copy.eyebrow}
           </p>
-          <h2 className="mt-4 text-balance text-3xl font-semibold leading-tight tracking-[-0.03em] text-app-card xl:text-4xl">
+          <h2 className="mt-4 text-balance font-display text-4xl leading-tight text-app-card xl:text-5xl">
             {copy.headline}
           </h2>
           {copy.lead ? (
@@ -132,7 +128,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
                 <p className="text-caption font-medium uppercase tracking-[0.24em] text-leaf-deep/80">
                   {cardEyebrow[variant]}
                 </p>
-                <h1 className="mt-2 text-balance text-[clamp(1.5rem,4vw,1.75rem)] font-semibold tracking-[-0.03em] text-ink">
+                <h1 className="mt-2 text-balance font-display text-[clamp(1.75rem,4vw,2.25rem)] leading-tight text-ink">
                   {title}
                 </h1>
                 <p className="mt-2 text-body leading-relaxed text-app-text-muted">{subtitle}</p>

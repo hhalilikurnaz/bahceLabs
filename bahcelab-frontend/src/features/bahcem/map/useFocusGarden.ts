@@ -7,15 +7,15 @@ import { useMap } from './useMap'
 
 /** Sol panel (ve açıksa Copilot) haritayı kapladığı için odaklarken görünen alanı (yerleşim sınırları) korur. */
 export function useFocusPadding(selected = false) {
-  const { insets, desktop } = usePanelLayout()
+  const { insets, desktop, sheetPx } = usePanelLayout()
   return useCallback(
     () => ({
       top: FOCUS_PAD.top,
-      bottom: selected && desktop ? FOCUS_PAD.bottomSelected : FOCUS_PAD.bottom,
+      bottom: desktop ? (selected ? FOCUS_PAD.bottomSelected : FOCUS_PAD.bottom) : Math.max(FOCUS_PAD.bottom, sheetPx + FOCUS_PAD.side),
       left: insets.left + FOCUS_PAD.side,
       right: insets.right + FOCUS_PAD.side,
     }),
-    [insets.left, insets.right, selected, desktop],
+    [insets.left, insets.right, selected, desktop, sheetPx],
   )
 }
 

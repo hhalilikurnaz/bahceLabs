@@ -13,7 +13,7 @@ export function MapAttribution() {
 
   return (
     <div
-      className="surface-dark absolute bottom-2 left-[var(--map-left)] z-20 flex max-w-[calc(100vw-var(--map-left)-0.75rem)] flex-wrap items-center gap-x-2 gap-y-0.5 rounded-sm bg-app-panel/85 px-2 py-1 text-caption text-app-text-muted backdrop-blur-sm"
+      className="surface-dark absolute bottom-[calc(var(--sheet-h)+0.5rem)] left-[var(--map-left)] md:bottom-2 z-20 flex max-w-[calc(100vw-var(--map-left)-0.75rem)] flex-wrap items-center gap-x-2 gap-y-0.5 rounded-sm bg-app-panel/85 px-2 py-1 text-caption text-app-text-muted backdrop-blur-sm"
       data-testid="map-attribution"
     >
       {activeProvider === 'mapbox' && (

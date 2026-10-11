@@ -133,8 +133,9 @@ function LayerSwitcher() {
 
 export function MapControls() {
   const { map } = useMap()
-  const { listOpen, detailOpen } = usePanelLayout()
-  const panelOpen = listOpen || detailOpen
+  const { listOpen, detailOpen, desktop } = usePanelLayout()
+  const sheet = useBahcemStore((s) => s.sheet)
+  const hiddenOnMobile = !desktop && (listOpen || (detailOpen && sheet !== 'peek'))
   const toast = useToast()
   const [locating, setLocating] = useState(false)
   const markerRef = useRef<Marker | null>(null)
@@ -173,8 +174,8 @@ export function MapControls() {
 
   return (
     <div
-      className={`surface-dark absolute bottom-14 right-[var(--map-right)] z-20 flex-col items-end gap-2 transition-[right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
-        panelOpen ? 'hidden md:flex' : 'flex'
+      className={`surface-dark absolute bottom-[calc(var(--sheet-h)+3.5rem)] right-[var(--map-right)] md:bottom-14 z-20 flex-col items-end gap-2 transition-[right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
+        hiddenOnMobile ? 'hidden' : 'flex'
       }`}
     >
       <LayerSwitcher />

@@ -16,7 +16,8 @@ import { useBahcemStore } from '../../stores/bahcemStore'
  */
 export function MapToolbar() {
   const { gardenId, katman, active, scenes, data, shown } = useIndexView()
-  const { listOpen, detailOpen } = usePanelLayout()
+  const { listOpen, detailOpen, desktop } = usePanelLayout()
+  const sheet = useBahcemStore((s) => s.sheet)
   const mode = useBahcemStore((s) => s.mode)
   const skala = useBahcemStore((s) => s.skala)
   const cizim = useBahcemStore((s) => s.cizim)
@@ -33,7 +34,7 @@ export function MapToolbar() {
   const processing = data?.isleme?.durum === 'bekliyor' || data?.isleme?.durum === 'isleniyor'
   if (!hasImages) {
     return (
-      <div className="surface-dark pointer-events-none absolute bottom-10 left-[var(--map-left)] right-[calc(var(--map-right)+3.75rem)] z-20 flex justify-center" data-testid="map-capsule">
+      <div className="surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] md:bottom-10 right-[calc(var(--map-right)+3.75rem)] z-20 flex justify-center" data-testid="map-capsule">
         <p className="pointer-events-auto rounded-full border border-app-border bg-app-panel px-4 py-2 text-small text-app-text-muted shadow-e2">
           {processing ? 'Uydu görüntüleri hazırlanıyor…' : 'Bu bahçe için henüz kullanılabilir uydu görüntüsü yok.'}
         </p>
@@ -43,8 +44,8 @@ export function MapToolbar() {
 
   return (
     <div
-      className={`surface-dark pointer-events-none absolute bottom-9 left-[var(--map-left)] right-[calc(var(--map-right)+3.75rem)] z-20 flex-col items-center gap-2 ${
-        (listOpen || detailOpen) && !fullMap ? 'hidden md:flex' : 'flex'
+      className={`surface-dark pointer-events-none absolute bottom-[calc(var(--sheet-h)+0.75rem)] left-[var(--map-left)] md:bottom-9 right-[calc(var(--map-right)+3.75rem)] z-20 flex-col items-center gap-2 ${
+        !desktop && (listOpen || (detailOpen && sheet !== 'peek')) && !fullMap ? 'hidden' : 'flex'
       }`}
       data-testid="map-toolbar-wrap"
     >

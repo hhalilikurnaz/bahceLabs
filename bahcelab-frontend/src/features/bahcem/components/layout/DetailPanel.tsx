@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui'
 import { useGardens } from '../../api/useGardens'
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
 import { usePanelLayout } from '../../hooks/usePanelLayout'
+import { sheetHeightPx } from '../../lib/layout'
 import { useBahcemStore } from '../../stores/bahcemStore'
+import { GardenForm } from '../garden/GardenForm'
 import { GardenPage } from '../garden-page/GardenPage'
 import { ResizeHandle } from './ResizeHandle'
+import { SheetHandle } from './SheetHandle'
 
 /** Bahçe verisi gelene kadar panel iskeletle hemen görünür. */
 function PanelSkeleton() {
@@ -19,14 +22,30 @@ function PanelSkeleton() {
   )
 }
 
-/** Sağ bahçe paneli: seçili bahçenin Durum · Analiz · Hava · Günlük · Rapor sayfası. Genişliği sürüklenerek ayarlanır. */
+/**
+ * Sağ bahçe paneli. Masaüstünde sürüklenerek genişliği ayarlanır; mobilde alttan açılan sayfadır
+ * (kapalı / yarım / tam, sürüklenebilir).
+ */
 export function DetailPanel() {
   const { gardenId } = useBahcemRoute()
-  const { detailOpen, detailPx, detailBounds } = usePanelLayout()
+  const { detailOpen, detailPx, detailBounds, desktop } = usePanelLayout()
   const setWidth = useBahcemStore((s) => s.setDetailWidth)
+  const mode = useBahcemStore((s) => s.mode)
+  const sheet = useBahcemStore((s) => s.sheet)
+  const setSheet = useBahcemStore((s) => s.setSheet)
   const { data: gardens, isLoading } = useGardens()
   const [dragging, setDragging] = useState(false)
+  const [dragHeight, setDragHeight] = useState<number | null>(null)
   const selected = gardenId ? gardens?.find((g) => g.id === gardenId) : undefined
+  const drawing = mode === 'drawing'
+
+  // Mobilde panel her açılışta yarım yükseklikte başlar; çizim sırasında harita görünsün diye kapalı (başlık) kalır
+  useEffect(() => {
+    if (detailOpen) setSheet(drawing ? 'peek' : 'half')
+  }, [detailOpen, drawing, gardenId, setSheet])
+
+  const sheetPx = dragHeight ?? sheetHeightPx(sheet, typeof window === 'undefined' ? 800 : window.innerHeight)
+  const animated = !(dragging || dragHeight !== null)
 
   return (
     <aside
@@ -35,22 +54,28 @@ export function DetailPanel() {
       inert={!detailOpen}
       data-testid="detail-column"
       data-open={detailOpen}
-      style={{ width: detailOpen ? 'var(--detail-w)' : undefined }}
-      className={`absolute bottom-16 left-[calc(var(--rail-w)+0.75rem)] right-3 top-[4.25rem] z-20 flex flex-col rounded-lg border border-app-border bg-app-panel shadow-e3 md:bottom-3 md:left-auto md:top-[3.75rem] ${
-        dragging ? '' : 'transition-[width,opacity,transform] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)]'
-      } ${detailOpen ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-6 opacity-0'}`}
+      data-sheet={desktop ? undefined : sheet}
+      style={desktop ? { width: detailOpen ? 'var(--detail-w)' : undefined } : { height: detailOpen ? sheetPx : 0 }}
+      className={`absolute z-30 flex flex-col border border-app-border bg-app-panel shadow-e3 md:z-20 md:rounded-lg ${
+        desktop
+          ? 'bottom-3 right-3 top-[3.75rem]'
+          : 'inset-x-0 bottom-0 left-[var(--rail-w)] rounded-t-xl'
+      } ${animated ? 'transition-[width,height,opacity,transform] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)]' : ''} ${
+        detailOpen ? 'translate-x-0 opacity-100' : desktop ? 'pointer-events-none translate-x-6 opacity-0' : 'pointer-events-none translate-y-full opacity-0'
+      }`}
     >
-      {detailOpen && (
-        <ResizeHandle
-          valuePx={detailPx}
-          minPx={detailBounds.min}
-          maxPx={detailBounds.max}
-          onChange={setWidth}
-          onDragChange={setDragging}
-        />
+      {detailOpen && desktop && (
+        <ResizeHandle valuePx={detailPx} minPx={detailBounds.min} maxPx={detailBounds.max} onChange={setWidth} onDragChange={setDragging} />
       )}
+      {detailOpen && !desktop && <SheetHandle state={sheet} onState={setSheet} onDragHeight={setDragHeight} />}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg">
-        {selected ? <GardenPage key={selected.id} garden={selected} /> : isLoading ? <PanelSkeleton /> : null}
+        {mode === 'drawing' || mode === 'form' ? (
+          <GardenForm />
+        ) : selected ? (
+          <GardenPage key={selected.id} garden={selected} />
+        ) : isLoading ? (
+          <PanelSkeleton />
+        ) : null}
       </div>
     </aside>
   )

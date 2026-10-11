@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { REGISTRATION_ENABLED } from '../authConfig'
+import { PasswordField, authErrorMessage } from '../components/authForm'
 import {
   AuthShell,
   authFieldClass,
@@ -35,7 +36,7 @@ export function LoginPage() {
       await login({ email, password })
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Giriş yapılamadı.')
+      setError(authErrorMessage(err, 'Giriş yapılamadı.'))
     } finally {
       setPending(false)
     }
@@ -81,18 +82,14 @@ export function LoginPage() {
           />
         </label>
 
-        <label className="block">
-          <span className={authLabelClass}>Şifre</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={authFieldClass}
-            placeholder="••••••••"
-          />
-        </label>
+        <PasswordField
+          label="Şifre"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Şifreniz"
+        />
 
         <button type="submit" disabled={pending} className={`${authPrimaryButtonClass} mt-2`}>
           {pending ? 'Giriş yapılıyor…' : 'Giriş yap'}

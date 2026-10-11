@@ -7,7 +7,7 @@ test('giriş yapınca /bahcem açılır; bahçesi olmayan kullanıcı 3 adımlı
 
   await page.goto('/login')
   await page.getByLabel('E-posta').fill(email)
-  await page.getByLabel('Şifre').fill(PASSWORD)
+  await page.getByLabel('Şifre', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Giriş yap' }).click()
 
   await expect(page).toHaveURL(/\/bahcem$/)
@@ -26,8 +26,24 @@ test('yanlış şifre anlaşılır hata gösterir', async ({ page }) => {
   await page.context().clearCookies()
   await page.goto('/login')
   await page.getByLabel('E-posta').fill(email)
-  await page.getByLabel('Şifre').fill('yanlis-sifre-123')
+  await page.getByLabel('Şifre', { exact: true }).fill('yanlis-sifre-123')
   await page.getByRole('button', { name: 'Giriş yap' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page).toHaveURL(/\/login/)
+})
+
+test('şifre göster/gizle çalışır; ağ kesilince anlaşılır uyarı verilir', async ({ page }) => {
+  await page.goto('/login')
+  const password = page.getByLabel('Şifre', { exact: true })
+  await password.fill('gizli-sifre')
+  await expect(password).toHaveAttribute('type', 'password')
+  await page.getByRole('button', { name: 'Şifreyi göster' }).click()
+  await expect(password).toHaveAttribute('type', 'text')
+  await page.getByRole('button', { name: 'Şifreyi gizle' }).click()
+  await expect(password).toHaveAttribute('type', 'password')
+
+  await page.route('**/api/auth/login', (route) => route.abort())
+  await page.getByLabel('E-posta').fill('ag@example.test')
+  await page.getByRole('button', { name: 'Giriş yap' }).click()
+  await expect(page.getByRole('alert')).toContainText('Bağlantınızı kontrol edin')
 })

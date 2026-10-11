@@ -24,6 +24,7 @@ import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
 import { MapToolbar } from './MapToolbar'
 import { PlaceSearch } from './PlaceSearch'
+import { ProcessingWatcher } from './ProcessingWatcher'
 import { RouteSync } from './RouteSync'
 import { ToastProvider } from './ToastProvider'
 
@@ -52,8 +53,9 @@ function FallbackNotice() {
 }
 
 /** Yerleşim değişkenleri: menü, panel ve haritanın görünen alanı (overlay'ler bunlara göre konumlanır). */
-function layoutVars(listPx: number, detailPx: number, left: number, right: number, copilotOpen: boolean): CSSProperties {
+function layoutVars(listPx: number, detailPx: number, sheetPx: number, left: number, right: number, copilotOpen: boolean): CSSProperties {
   return {
+    '--sheet-h': `${sheetPx}px`,
     '--rail-w': `${LAYOUT.railPx}px`,
     '--list-w': `${listPx}px`,
     '--detail-w': `${detailPx}px`,
@@ -70,7 +72,7 @@ function layoutVars(listPx: number, detailPx: number, left: number, right: numbe
  */
 export function BahcemLayout() {
   const { user } = useAuth()
-  const { listPx, detailPx, insets } = usePanelLayout()
+  const { listPx, detailPx, sheetPx, insets } = usePanelLayout()
   const { archive } = useBahcemRoute()
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   // Çizim aracı ilk kez gerektiğinde yüklenir ve sonra açık kalır
@@ -82,11 +84,12 @@ export function BahcemLayout() {
   return (
     <div
       className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text"
-      style={layoutVars(listPx, detailPx, insets.left, insets.right, copilotOpen)}
+      style={layoutVars(listPx, detailPx, sheetPx, insets.left, insets.right, copilotOpen)}
     >
       <ToastProvider>
         <MapProvider userId={user.id}>
           <RouteSync />
+          <ProcessingWatcher />
           <Outlet />
           <GardenLayers />
           <GardenMapLabels />

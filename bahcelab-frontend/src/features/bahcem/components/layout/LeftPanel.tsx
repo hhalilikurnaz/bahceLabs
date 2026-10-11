@@ -1,7 +1,6 @@
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
 import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { useBahcemStore } from '../../stores/bahcemStore'
-import { GardenForm } from '../garden/GardenForm'
 import { GardenListPanel } from '../garden/GardenListPanel'
 import { ImportPicker } from '../garden/ImportPicker'
 import { SectionPanel } from './SectionPanel'
@@ -13,8 +12,7 @@ export function LeftPanel() {
   const { listOpen } = usePanelLayout()
 
   let content
-  if (mode === 'form') content = <GardenForm />
-  else if (mode === 'import-pick') content = <ImportPicker />
+  if (mode === 'import-pick') content = <ImportPicker />
   else if (section !== 'bahceler') content = <SectionPanel section={section} />
   else content = <GardenListPanel />
 

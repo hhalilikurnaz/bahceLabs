@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import type { GardenGeometry } from '../api/types'
 import type { LayerId } from '../lib/indices'
+import type { SheetState } from '../lib/layout'
 import { DEFAULT_VIEW, type RenderInfo, type Scale, type Smoothing } from '../lib/raster'
+
+/** Çizim şekli: serbest çokgen ya da daire (daire düzenlenebilir çokgene çevrilir) */
+export type DrawShape = 'polygon' | 'circle'
 
 /** Bahçe ekleme/düzenleme akışının aşaması */
 export type FlowMode =
@@ -40,6 +44,12 @@ interface BahcemState {
   editingGardenId: string | null
   /** Çizim/düzenleme sırasındaki canlı alan (dekar); null = henüz hesaplanamıyor */
   liveAreaDekar: number | null
+  /** Çizim sırasındaki canlı sınır (form önizlemesi için); yoksa null */
+  liveGeometry: GardenGeometry | null
+  drawShape: DrawShape
+  /** Mobil bahçe paneli (alt sayfa) yüksekliği */
+  sheet: SheetState
+  setSheet: (sheet: SheetState) => void
   mapZoom: number
 
   /** Uydu grafiğinin altında günlük yağış ve sıcaklık gösterilsin mi */
@@ -64,6 +74,13 @@ interface BahcemState {
   selectGarden: (id: string | null) => void
   setMapZoom: (zoom: number) => void
   setLiveArea: (dekar: number | null) => void
+  setLiveGeometry: (geometry: GardenGeometry | null) => void
+  setDrawShape: (shape: DrawShape) => void
+  /** Kayıttan sonra uydu verisi işlenirken izlenen bahçe (bitince bildirim gösterilir) */
+  watched: { id: string; ad: string; ignoreJobId: string | null } | null
+  /** `ignoreJobId`: sınır düzenlemesinde eski (bitmiş) işin kimliği; yalnızca yeni iş bitince bildirilir */
+  watchProcessing: (id: string, ad: string, ignoreJobId?: string | null) => void
+  clearWatched: () => void
 
   setHavaKatmani: (acik: boolean) => void
 
@@ -114,6 +131,7 @@ const flowReset = {
   imported: [] as ImportedPolygon[],
   editingGardenId: null,
   liveAreaDekar: null,
+  liveGeometry: null,
 }
 
 /** Bahçe değişince geçici görünüm durumları sıfırlanır (parametre ve görünüm tercihleri korunur) */
@@ -163,6 +181,9 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   selectedGardenId: null,
   ...flowReset,
   mapZoom: 0,
+  drawShape: 'polygon',
+  sheet: 'half',
+  watched: null,
   havaKatmani: false,
 
   katman: 'ndvi',
@@ -183,6 +204,11 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   selectGarden: (id) => set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, ...viewReset })),
   setMapZoom: (mapZoom) => set({ mapZoom }),
   setLiveArea: (liveAreaDekar) => set({ liveAreaDekar }),
+  setLiveGeometry: (liveGeometry) => set({ liveGeometry }),
+  setDrawShape: (drawShape) => set({ drawShape }),
+  setSheet: (sheet) => set({ sheet }),
+  watchProcessing: (id, ad, ignoreJobId = null) => set({ watched: { id, ad, ignoreJobId } }),
+  clearWatched: () => set({ watched: null }),
 
   setHavaKatmani: (havaKatmani) => set({ havaKatmani }),
 

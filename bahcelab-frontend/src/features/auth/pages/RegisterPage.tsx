@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { REGISTRATION_ENABLED } from '../authConfig'
+import { PasswordField, authErrorMessage } from '../components/authForm'
 import { registrationsSoonOnLightClass } from '@/features/marketing/components/registrationsSoonStyles'
 import {
   AuthShell,
@@ -35,7 +36,7 @@ export function RegisterPage() {
       await register({ name, email, password })
       navigate('/bahcem', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kayıt olunamadı.')
+      setError(authErrorMessage(err, 'Kayıt olunamadı.'))
     } finally {
       setPending(false)
     }
@@ -94,19 +95,16 @@ export function RegisterPage() {
             />
           </label>
 
-          <label className="block">
-            <span className={authLabelClass}>Şifre</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={authFieldClass}
-              placeholder="En az 8 karakter"
-            />
-          </label>
+          <PasswordField
+            label="Şifre"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="En az 8 karakter"
+            hint="En az 8 karakter olmalı."
+          />
 
           <button type="submit" disabled={pending} className={`${authPrimaryButtonClass} mt-2`}>
             {pending ? 'Hesap oluşturuluyor…' : 'Kayıt ol'}
