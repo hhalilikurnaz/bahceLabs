@@ -13,7 +13,6 @@ from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithInd
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.ndvi.runner import start_job
 from bahcelab_backend.domain.ndvi.schemas import (
-    BahceUyariOzeti,
     IndeksOzeti,
     IndeksYanit,
     NdviIs,
@@ -184,14 +183,6 @@ class NdviService:
             uyarilar=build_alerts(scenes),
             eksik_cikti=incomplete,
         )
-
-    async def alert_overview(self) -> list[BahceUyariOzeti]:
-        """Tüm bahçelerin aktif uydu uyarıları (yalnızca okur; sahne araması/iş başlatmaz)."""
-        result = []
-        for row in await self.gardens.list_gardens():
-            alerts = build_alerts(await self.repo.list_scenes(row.garden.id))
-            result.append(BahceUyariOzeti(garden_id=row.garden.id, uyarilar=alerts))
-        return result
 
     async def refresh(self, garden_id: uuid.UUID) -> NdviIs:
         await self._garden(garden_id)

@@ -19,21 +19,36 @@ WINDOW_MIN_DAYS = 10
 WINDOW_MAX_DAYS = 25
 OVERLAP_MIN_M2 = 300.0  # aynı bölge sayılması için en az 3 piksel
 
+# Çiftçi dilinde parametre adları (teknik ad ikincil, parantez içinde)
+FARMER_NAMES: dict[str, str] = {
+    "ndvi": "Canlılık",
+    "msavi": "Toprak düzeltilmiş canlılık",
+    "ndre": "Klorofil / besin",
+    "ndmi": "Yaprak suyu",
+    "cigreen": "Klorofil yoğunluğu",
+}
+
+
+def display_name(indeks: str) -> str:
+    """"Canlılık (NDVI)" biçimi."""
+    return f"{FARMER_NAMES.get(indeks, indeks.upper())} ({indeks.upper()})"
+
+
 # İndeks bazlı düşüş eşikleri (yüzde) ve açıklayıcı Türkçe metinler
 DROP_RULES: dict[str, dict[str, Any]] = {
     "ndvi": {
         "esik": 10.0,
-        "baslik": "NDVI düşüşü",
+        "baslik": "Canlılık düşüşü",
         "ek": "Genel canlılık azalıyor; sulama, hastalık veya stres belirtilerini kontrol edin.",
     },
     "msavi": {
         "esik": 10.0,
-        "baslik": "MSAVI düşüşü",
+        "baslik": "Toprak düzeltilmiş canlılık düşüşü",
         "ek": "Toprak etkisinden arındırılmış bitki örtüsü azalıyor; yaprak örtüsü ve sıra arası durumunu kontrol edin.",
     },
     "ndre": {
         "esik": 12.0,
-        "baslik": "NDRE düşüşü",
+        "baslik": "Klorofil / besin düşüşü",
         "ek": "Olası besin eksikliği / sararma; yaprak kontrolü önerilir.",
     },
 }
@@ -96,7 +111,7 @@ def _drop_alert(indeks: str, series: list[tuple[date, float]]) -> Uyari | None:
         oncelik="normal",
         baslik=rule["baslik"],
         mesaj=(
-            f"Ortalama {indeks.upper()} {_tr_num(prev)} → {_tr_num(last)} "
+            f"Ortalama {display_name(indeks)} {_tr_num(prev)} → {_tr_num(last)} "
             f"({_tr_pct(change)} azalma, {days} günde). {rule['ek']}"
         ),
         onceki_tarih=prev_date,
@@ -125,7 +140,7 @@ def _ndmi_alert(series: list[tuple[date, float]]) -> Uyari | None:
             if change < -NDMI_DROP_PCT:
                 days = (last_date - prev_date).days
                 reasons.append(
-                    f"ortalama NDMI {_tr_num(prev)} → {_tr_num(last)} ({_tr_pct(change)} azalma, {days} günde)"
+                    f"ortalama {display_name('ndmi')} {_tr_num(prev)} → {_tr_num(last)} ({_tr_pct(change)} azalma, {days} günde)"
                 )
 
     history = [value for _, value in series[:-1]]
@@ -145,7 +160,7 @@ def _ndmi_alert(series: list[tuple[date, float]]) -> Uyari | None:
         oncelik="normal",
         baslik="Olası su stresi",
         mesaj=(
-            f"NDMI: {'; '.join(reasons)}. Yaprak su içeriği azalıyor olabilir; "
+            f"Yaprak suyu (NDMI): {'; '.join(reasons)}. Yaprak su içeriği azalıyor olabilir; "
             "sulama programını ve toprak nemini kontrol edin."
         ),
         onceki_tarih=prev_date,
@@ -209,7 +224,7 @@ def build_alerts(scenes: list[SceneWithIndices]) -> list[Uyari]:
                     alert.oncelik = "yuksek"
             members = [a for a in alerts if a.indeks is not None and a.indeks in overlapping]
             area = max(overlapping.values())
-            labels = " + ".join((a.indeks or "").upper() for a in members)
+            labels = " + ".join(display_name(a.indeks) for a in members if a.indeks)
             alerts.append(
                 Uyari(
                     tur="coklu_indeks",

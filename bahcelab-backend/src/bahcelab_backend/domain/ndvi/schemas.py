@@ -76,10 +76,3 @@ class VerimlilikYanit(BaseModel):
     son_tarih: date
     toplam_alan_m2: float
     bolgeler: dict[str, Any]  # GeoJSON FeatureCollection
-
-
-class BahceUyariOzeti(BaseModel):
-    """Bahçe listesindeki uyarı simgesi için: bahçenin aktif uydu uyarıları (kısa)."""
-
-    garden_id: uuid.UUID
-    uyarilar: list[Uyari]

@@ -453,7 +453,7 @@ def test_ndvi_alert_needs_more_than_ten_percent_in_window():
     assert [a.indeks for a in alerts] == ["ndvi"] and alerts[0].degisim_yuzde == pytest.approx(
         -14.29, abs=0.01
     )
-    assert alerts[0].baslik == "NDVI düşüşü" and "%14,3" in alerts[0].mesaj
+    assert alerts[0].baslik == "Canlılık düşüşü" and "%14,3" in alerts[0].mesaj
     assert build_alerts(_series(ndvi=[(17, 0.70), (0, 0.64)])) == []  # −%8,6
     assert build_alerts(_series(ndvi=[(17, 0.70), (0, 0.63)])) == []  # tam %10 eşik aşılmadı
     assert build_alerts(_series(ndvi=[(5, 0.70), (0, 0.40)])) == []  # < 10 gün
@@ -472,7 +472,7 @@ def test_ndre_threshold_is_twelve_percent_and_mentions_nutrition():
 
 def test_ndmi_alert_on_sharp_drop_or_below_historic_median():
     (alert,) = build_alerts(_series(ndmi=[(17, 0.30), (0, 0.22)]))  # −%26,7
-    assert alert.baslik == "Olası su stresi" and "NDMI" in alert.mesaj
+    assert alert.baslik == "Olası su stresi" and "NDMI" in alert.mesaj and "Yaprak suyu" in alert.mesaj
 
     history = [(d, 0.30) for d in (90, 80, 70, 60, 50, 40, 30)]
     (below,) = build_alerts(
