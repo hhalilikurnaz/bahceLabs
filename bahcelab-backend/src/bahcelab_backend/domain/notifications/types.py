@@ -12,6 +12,7 @@ TYPES: dict[str, dict[str, str]] = {
     "hava_sicak": {"ad": "Aşırı sıcak uyarısı", "aciklama": "Aşırı sıcak bekleniyorsa."},
     "zararli_riski": {"ad": "Zararlı / hastalık riski", "aciklama": "Meyve sineği, kırmızı örümcek veya kuruma hastalığı riski yüksekse (tahmin)."},
     "indeks_dususu": {"ad": "Uydu uyarısı", "aciklama": "Bahçenin kendi normunun belirgin altına düşüş."},
+    "cok_yillik": {"ad": "Çok yıllık analiz", "aciklama": "Çok yıllık ağaç gücü bölgeleri hazır olduğunda."},
     "sulama": {"ad": "Sulama", "aciklama": "Önümüzdeki günlerde belirgin su ihtiyacı görünüyorsa."},
 }
 

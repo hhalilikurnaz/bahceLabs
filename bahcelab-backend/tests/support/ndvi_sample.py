@@ -19,6 +19,7 @@ from rasterio.transform import Affine
 from rasterio.warp import transform_geom
 from shapely.geometry import shape
 
+from bahcelab_backend.domain.imagery.masks import scl_valid_mask
 from bahcelab_backend.domain.ndvi.models import IndexObservationModel, SceneObservationModel
 from bahcelab_backend.domain.ndvi.persist import persist_analysis
 from bahcelab_backend.domain.ndvi.processing import SceneBands, analyze_scene
@@ -98,21 +99,21 @@ def make_scene(
     nir = np.full_like(n, NIR)  # B08
     b8a = np.full_like(n, NIR + 0.02)
     bands = {
-        "B08": nir,
-        "B04": nir * (1 - n) / (1 + n),
-        "B8A": b8a,
-        "B05": b8a * (1 - r) / (1 + r),
-        "B11": b8a * (1 - m) / (1 + m),
-        "B03": nir / (1 + c),
+        "nir": nir,
+        "red": nir * (1 - n) / (1 + n),
+        "nir_narrow": b8a,
+        "rededge": b8a * (1 - r) / (1 + r),
+        "swir1": b8a * (1 - m) / (1 + m),
+        "green": nir / (1 + c),
     }
-    bands["B02"] = bands["B03"] * 0.55
+    bands["blue"] = bands["green"] * 0.55
 
     scl = np.full((height, width), SCL_VEGETATION, dtype=np.uint8)
     if cloud_fraction > 0:
         scl[:, : int(round(cloud_fraction * width))] = SCL_CLOUD_HIGH
     return SceneBands(
         bands={k: v.astype(np.float32) for k, v in bands.items()},
-        scl=scl,
+        valid=scl_valid_mask(scl),
         transform=grid.transform,
         crs=grid.crs,
     )

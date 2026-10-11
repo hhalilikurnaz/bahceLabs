@@ -37,6 +37,14 @@ varsayilan_narenciye: &narenciye
       Narenciyede büyüme derece günü tabanı yayınlarda yaklaşık 10–13 °C arasında kullanılır; 12,5 °C ön değerdir
       (günlük: max(0, (Tmax+Tmin)/2 − taban)). Böcek gelişimi için ayrı taban 8B risk kurallarında tanımlanır.
     taban_c: 12.5
+  analiz_penceresi:
+    durum: dogrulanmadi
+    kaynak: >-
+      Çok yıllık ağaç gücü bölgeleri için yıllık kompozit penceresi (ön değer): Haziran–Eylül. Narenciye herdem yeşildir; yazın sıra arası
+      otlar kuruduğundan uydu sinyali ağaç tacını daha iyi yansıtır ve Akdeniz'de bulutlu sahne azdır. Ziraat mühendisiyle doğrulanmalıdır.
+    ay_baslangic: 6
+    ay_bitis: 9
+    indeks: ndvi
 
 urunler:
   limon:

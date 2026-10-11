@@ -21,7 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory
-from bahcelab_backend.domain.ndvi import stac
+from bahcelab_backend.domain.imagery.provider import ImageryError, SceneRef
+from bahcelab_backend.domain.imagery.registry import get_imagery_provider
 from bahcelab_backend.domain.ndvi.indices import bands_needed
 from bahcelab_backend.domain.ndvi.models import NdviJobModel
 from bahcelab_backend.domain.ndvi.persist import missing_outputs, persist_analysis
@@ -88,7 +89,7 @@ async def run_job(
     *,
     session_factory: async_sessionmaker[AsyncSession] | None = None,
     storage: StorageBackend | None = None,
-    search: Callable[..., list[stac.Scene]] | None = None,
+    search: Callable[..., list[SceneRef]] | None = None,
     read: Callable[..., Any] | None = None,
     today: date | None = None,
 ) -> None:
@@ -98,8 +99,8 @@ async def run_job(
             job_id,
             session_factory or async_session_factory,
             storage or get_storage(),
-            search or stac.search_scenes,
-            read or stac.read_scene,
+            search or get_imagery_provider().search_scenes,
+            read or get_imagery_provider().read_scene,
             today or datetime.now(UTC).date(),
         )
     except Exception:  # noqa: BLE001
@@ -120,7 +121,7 @@ async def _run(
     job_id: uuid.UUID,
     factory: async_sessionmaker[AsyncSession],
     storage: StorageBackend,
-    search: Callable[..., list[stac.Scene]],
+    search: Callable[..., list[SceneRef]],
     read: Callable[..., Any],
     today: date,
 ) -> None:
@@ -161,7 +162,7 @@ async def _run(
 
     try:
         scenes = await asyncio.to_thread(search, geometry, start, today)
-    except stac.NdviSourceError as exc:
+    except ImageryError as exc:
         await _set_job(factory, job_id, durum="hata", hata_mesaji=str(exc), bitis=datetime.now(UTC))
         return
 
@@ -173,7 +174,7 @@ async def _run(
     slots = _slots(settings.ndvi_max_parallel_scenes)
     state = {"failed": 0, "aborted": False}
 
-    async def handle(scene: stac.Scene, wanted: set[str]) -> None:
+    async def handle(scene: SceneRef, wanted: set[str]) -> None:
         async with slots:
             if state["aborted"]:
                 return

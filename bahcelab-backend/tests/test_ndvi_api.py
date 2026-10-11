@@ -10,6 +10,8 @@ from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from bahcelab_backend.domain.imagery.provider import ImageryError as NdviSourceError
+from bahcelab_backend.domain.imagery.provider import SceneRef as Scene
 from bahcelab_backend.domain.ndvi import runner
 from bahcelab_backend.domain.ndvi import service as ndvi_service
 from bahcelab_backend.domain.ndvi.indices import ALL_OUTPUTS, INDEX_IDS, TRUE_COLOR, bands_needed
@@ -21,7 +23,6 @@ from bahcelab_backend.domain.ndvi.models import (
 from bahcelab_backend.domain.ndvi.persist import missing_outputs
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import build_alerts
-from bahcelab_backend.domain.ndvi.stac import NdviSourceError, Scene
 from bahcelab_backend.domain.ndvi.zones import GridObservation, compute_yield_zones, kmeans_1d
 from bahcelab_backend.shared.storage import LocalStorage, get_storage
 
@@ -509,7 +510,7 @@ class Harness:
         def search(geometry, start, end):
             if error:
                 raise error
-            return [Scene(tarih=d, scene_id=f"S2-{d}", bulut_orani=10.0, item=None) for d in days]
+            return [Scene(tarih=d, scene_id=f"S2-{d}", bulut_orani=10.0, handle=None) for d in days]
 
         return search
 
@@ -645,7 +646,7 @@ async def test_legacy_ndvi_only_scenes_are_completed_reading_only_needed_bands(
         await s.commit()
     await harness.run([day], tur="guncelleme")
     assert harness.read_calls == [(day, frozenset(bands_needed({"ndre", "ndmi"})))]
-    assert "B02" not in harness.read_calls[0][1] and "B11" in harness.read_calls[0][1]
+    assert "blue" not in harness.read_calls[0][1] and "swir1" in harness.read_calls[0][1]
     assert missing_outputs((await harness.scenes())[0]) == set()
 
 

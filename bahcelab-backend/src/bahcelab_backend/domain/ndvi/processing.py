@@ -1,6 +1,6 @@
 """Sentinel-2 çoklu indeks işleme çekirdeği: maskeleme, indeksler, istatistik, PNG, ızgara ve sorunlu bölgeler.
 
-Bu modül ağ kullanmaz; girdisi hazır dizilerdir (`SceneBands`). Ağdan okuma `stac.py`'dadır.
+Bu modül ağ kullanmaz; girdisi hazır dizilerdir (`SceneBands`). Ağdan okuma sağlayıcıdadır (`domain/imagery`).
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from rasterio.transform import Affine, array_bounds
 from rasterio.warp import transform_geom
 from shapely.geometry import shape
 
+from bahcelab_backend.domain.imagery.roles import Band
 from bahcelab_backend.domain.ndvi.indices import (
     COLORMAPS,
     INDICES,
@@ -26,8 +27,6 @@ from bahcelab_backend.domain.ndvi.indices import (
     compute_index,
 )
 
-# SCL sınıfları: 3 bulut gölgesi, 8 orta olasılıklı bulut, 9 yüksek olasılıklı bulut, 10 ince bulut
-MASKED_SCL = (3, 8, 9, 10)
 MIN_VALID_RATIO = 0.70  # bahçe içindeki geçerli piksel oranı bunun altındaysa tarih "bulutlu"
 MIN_ZONE_PIXELS = 3  # 3 piksel × 100 m² = 300 m²
 MAX_PNG_SIDE = 1024  # keskin (nearest) büyütmeyle PNG'nin en uzun kenarı bu değeri aşmaz
@@ -38,20 +37,20 @@ TRUE_COLOR_GAMMA = 1.3
 
 @dataclass
 class SceneBands:
-    """Bahçe penceresi için okunmuş bantlar (yansıtım, 0–1, veri yoksa NaN) ve sahne ızgarası.
+    """Bahçe penceresi için okunmuş bantlar (rol → yansıtım, 0–1, veri yoksa NaN) ve sahne ızgarası.
 
-    20 m bantlar (B05, B8A, B11) okuma sırasında 10 m ızgarasına bilinear örneklenmiş olmalıdır;
-    SCL nearest ile örneklenir.
+    Daha düşük çözünürlüklü bantlar sağlayıcıda ortak ızgaraya örneklenmiş olmalıdır. `valid`: sağlayıcının kendi
+    bulut/gölge maskesinden türetilmiş, sağlayıcıdan bağımsız geçerlilik maskesi (True = bulutsuz/gölgesiz).
     """
 
     bands: dict[str, np.ndarray]
-    scl: np.ndarray  # uint8
+    valid: np.ndarray  # bool
     transform: Affine
     crs: CRS
 
     @property
     def shape(self) -> tuple[int, int]:
-        return self.scl.shape
+        return self.valid.shape
 
 
 @dataclass
@@ -88,11 +87,6 @@ def to_reflectance(
     out = dn.astype(np.float32) * np.float32(scale) + np.float32(offset)
     out[dn == nodata] = np.nan
     return out
-
-
-def scl_valid_mask(scl: np.ndarray) -> np.ndarray:
-    """Bulut/bulut gölgesi sınıfları (3, 8, 9, 10) dışındaki pikseller geçerlidir."""
-    return ~np.isin(scl, MASKED_SCL)
 
 
 def garden_pixel_mask(
@@ -179,7 +173,7 @@ def render_clipped_png(rgba: np.ndarray, geometry_utm: dict[str, Any], transform
 def render_true_color_png(bands: dict[str, np.ndarray], in_garden_touched: np.ndarray) -> bytes:
     """Gerçek renk (B04, B03, B02): skalasız; bahçe penceresi 10 m çözünürlükte, poligonla ayrıca kırpılmaz
     (arayüz kırpar; böylece yumuşak/keskin çizim seçilebilir)."""
-    rgb = np.stack([bands["B04"], bands["B03"], bands["B02"]], axis=-1)
+    rgb = np.stack([bands[Band.RED], bands[Band.GREEN], bands[Band.BLUE]], axis=-1)
     finite = np.isfinite(rgb).all(axis=-1)
     scaled = np.clip(np.nan_to_num(rgb, nan=0.0) / TRUE_COLOR_REFLECTANCE_MAX, 0, 1) ** (
         1 / TRUE_COLOR_GAMMA
@@ -295,15 +289,15 @@ def analyze_scene(
     shape_hw = scene.shape
 
     in_garden = garden_pixel_mask(geometry_utm, shape_hw, scene.transform)
-    scl_ok = scl_valid_mask(scene.scl)
+    scl_ok = scene.valid
     garden_pixels = int(in_garden.sum())
     # Önce yalnızca SCL ile eleme: bulutlu sahnede ek bantlar hiç okunmaz (`scene.bands` boştur)
     ratio = float((in_garden & scl_ok).sum()) / garden_pixels if garden_pixels else 0.0
-    if ratio < MIN_VALID_RATIO or "B04" not in scene.bands:
+    if ratio < MIN_VALID_RATIO or Band.RED not in scene.bands:
         return SceneAnalysis(gecerli_piksel_orani=round(ratio, 4), bulutlu=True)
 
     # Veri yok (NaN) pikseller de geçersiz sayılır
-    finite = np.isfinite(scene.bands["B04"]) & np.isfinite(scene.bands["B08"])
+    finite = np.isfinite(scene.bands[Band.RED]) & np.isfinite(scene.bands[Band.NIR])
     valid_core = in_garden & scl_ok & finite
     ratio = float(valid_core.sum()) / garden_pixels
     if ratio < MIN_VALID_RATIO:

@@ -1,4 +1,5 @@
-"""Microsoft Planetary Computer STAC: sahne arama ve COG'dan yalnızca bahçe penceresini okuma."""
+"""Sentinel-2 L2A (Microsoft Planetary Computer STAC) sağlayıcısı: sahne arama ve COG'dan yalnızca bahçe penceresini okuma.
+Bant adları (B04…) yalnızca bu modülde bilinir; dışarıya bant ROLLERİ (`roles.Band`) verilir."""
 
 from __future__ import annotations
 
@@ -21,12 +22,18 @@ from rasterio.windows import Window, from_bounds
 from rasterio.windows import bounds as window_bounds
 from shapely.geometry import shape
 
-from bahcelab_backend.domain.ndvi.indices import ALL_BANDS, BAND_SCL, BANDS_10M
+from bahcelab_backend.domain.imagery.masks import scl_valid_mask
+from bahcelab_backend.domain.imagery.provider import (
+    Capabilities,
+    ImageryError,
+    SceneRef,
+    compute_capabilities_indices,
+)
+from bahcelab_backend.domain.imagery.roles import ALL_ROLES, Band
 from bahcelab_backend.domain.ndvi.processing import (
     MIN_VALID_RATIO,
     SceneBands,
     garden_pixel_mask,
-    scl_valid_mask,
     to_reflectance,
 )
 
@@ -35,17 +42,18 @@ logger = logging.getLogger(__name__)
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 COLLECTION = "sentinel-2-l2a"
 
-
-class NdviSourceError(Exception):
-    """Uydu verisi kaynağına ulaşılamadı veya okunamadı (kullanıcıya gösterilebilir mesaj taşır)."""
-
-
-@dataclass(frozen=True)
-class Scene:
-    tarih: date
-    scene_id: str
-    bulut_orani: float | None
-    item: Item
+# Rol → Sentinel-2 bandı. 10 m: B02 B03 B04 B08 · 20 m (bilinear ile 10 m'ye): B05 B8A B11
+ROLE_TO_BAND: dict[str, str] = {
+    Band.BLUE: "B02",
+    Band.GREEN: "B03",
+    Band.RED: "B04",
+    Band.REDEDGE: "B05",
+    Band.NIR: "B08",
+    Band.NIR_NARROW: "B8A",
+    Band.SWIR1: "B11",
+}
+BANDS_10M = ("B02", "B03", "B04", "B08")
+BAND_SCL = "SCL"
 
 
 def with_retry[T](fn: Callable[[], T], attempts: int = 3, delay: float = 1.5) -> T:
@@ -59,22 +67,24 @@ def with_retry[T](fn: Callable[[], T], attempts: int = 3, delay: float = 1.5) ->
             logger.warning("NDVI kaynağı hatası (deneme %s/%s): %s", attempt + 1, attempts, exc)
             if attempt < attempts - 1:
                 time.sleep(delay * (attempt + 1))
-    raise NdviSourceError(
+    raise ImageryError(
         "Uydu verisi kaynağına (Planetary Computer) ulaşılamadı. "
         "Bağlantınızı kontrol edip biraz sonra tekrar deneyin."
     ) from last
 
 
-def search_scenes(geometry: dict[str, Any], start: date, end: date) -> list[Scene]:
+def search_scenes(geometry: dict[str, Any], start: date, end: date, max_cloud: float | None = None) -> list[SceneRef]:
     """Bahçeyi kapsayan Sentinel-2 L2A sahneleri; aynı tarihte birden fazla ise en çok örten seçilir."""
 
     def _search() -> list[Item]:
         client = Client.open(STAC_URL)
+        extra: dict[str, Any] = {"query": {"eo:cloud_cover": {"lte": max_cloud}}} if max_cloud is not None else {}
         search = client.search(
             collections=[COLLECTION],
             intersects=geometry,
             datetime=f"{start.isoformat()}/{end.isoformat()}",
             max_items=600,
+            **extra,
         )
         return list(search.items())
 
@@ -95,13 +105,13 @@ def search_scenes(geometry: dict[str, Any], start: date, end: date) -> list[Scen
             best[day] = (overlap, -cloud, item)
 
     scenes = [
-        Scene(
+        SceneRef(
             tarih=day,
             scene_id=item.id,
             bulut_orani=float(item.properties["eo:cloud_cover"])
             if "eo:cloud_cover" in item.properties
             else None,
-            item=item,
+            handle=item,
         )
         for day, (_, _, item) in best.items()
     ]
@@ -160,9 +170,22 @@ def _read_one(href: str, ref: _Window, band: str) -> np.ndarray:
         return src.read(1, window=window, out_shape=ref.shape, resampling=resampling)
 
 
-def _read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str]) -> SceneBands:
-    item = scene.item
-    wanted = sorted(set(bands) | {"B04", "B08"})
+def first_scene_date(geometry: dict[str, Any]) -> date | None:
+    """Konum için arşivdeki en eski Sentinel-2 L2A sahnesinin tarihi."""
+
+    def _search() -> date | None:
+        client = Client.open(STAC_URL)
+        search = client.search(collections=[COLLECTION], intersects=geometry, sortby=[{"field": "datetime", "direction": "asc"}], max_items=1)
+        for item in search.items():
+            return item.datetime.date() if item.datetime else None
+        return None
+
+    return with_retry(_search)
+
+
+def _read_scene(scene: SceneRef, geometry: dict[str, Any], roles: set[str]) -> SceneBands:
+    item = scene.handle
+    wanted = sorted({ROLE_TO_BAND[r] for r in roles} | {"B04", "B08"})
     hrefs = {key: planetary_computer.sign(item.assets[key].href) for key in [*wanted, BAND_SCL]}
 
     with rasterio.Env(**_GDAL_ENV):
@@ -173,29 +196,60 @@ def _read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str]) -> Scen
     geometry_utm = transform_geom("EPSG:4326", ref.crs, geometry)
     in_garden = garden_pixel_mask(geometry_utm, scl.shape, ref.transform)
     if in_garden.any() and (in_garden & scl_valid_mask(scl)).sum() / in_garden.sum() < MIN_VALID_RATIO:
-        return SceneBands(bands={}, scl=scl, transform=ref.transform, crs=ref.crs)
+        return SceneBands(bands={}, valid=scl_valid_mask(scl), transform=ref.transform, crs=ref.crs)
 
     # Tüm bantlar aynı anda okunur (ağ beklemesi baskın): sahne başına tek okuma turu
     with ThreadPoolExecutor(max_workers=_READ_THREADS) as pool:
         futures = {key: pool.submit(_read_one, hrefs[key], ref, key) for key in wanted}
         arrays = {key: future.result() for key, future in futures.items()}
 
+    band_to_role = {v: k for k, v in ROLE_TO_BAND.items()}
     reflectance: dict[str, np.ndarray] = {}
     for key in wanted:
         scale, offset = _band_scale_offset(item, key)
-        reflectance[key] = to_reflectance(arrays[key], scale, offset)
+        reflectance[str(band_to_role[key])] = to_reflectance(arrays[key], scale, offset)
     return SceneBands(
         bands=reflectance,
-        scl=scl,
+        valid=scl_valid_mask(scl),
         transform=ref.transform,
         crs=ref.crs,
     )
 
 
-def read_scene(scene: Scene, geometry: dict[str, Any], bands: set[str] | None = None) -> SceneBands:
+def read_scene(scene: SceneRef, geometry: dict[str, Any], roles: set[str] | None = None) -> SceneBands:
     """COG'lardan yalnızca bahçe penceresini okur (rasterio windowed read); geçici hatalarda tekrar dener.
 
-    `bands`: okunacak bantlar (varsayılan: tüm indeksler ve gerçek renk için gerekenler).
+    `roles`: okunacak bant rolleri (varsayılan: tüm indeksler ve gerçek renk için gerekenler).
     """
-    needed = set(bands) if bands is not None else set(ALL_BANDS)
+    needed = set(roles) if roles is not None else set(ALL_ROLES)
     return with_retry(lambda: _read_scene(scene, geometry, needed))
+
+
+class Sentinel2L2AProvider:
+    """Sentinel-2 L2A, 10 m, Planetary Computer (anahtarsız). Bulut maskesi: SCL."""
+
+    _CAPS = Capabilities(
+        ad="sentinel2-l2a",
+        etiket="Sentinel-2 L2A (10 m)",
+        cozunurluk_m=10.0,
+        roller=frozenset(str(r) for r in ROLE_TO_BAND),
+        rol_haritasi={str(r): b for r, b in ROLE_TO_BAND.items()},
+        bulut_maskesi="scl",
+        yapilandirildi=True,
+        ucretli=False,
+        notlar="Açık veri; 5 günlük (iki uydu) yeniden ziyaret, bulut maskesi SCL.",
+        desteklenen_indeksler=compute_capabilities_indices(frozenset(str(r) for r in ROLE_TO_BAND)),
+    )
+
+    @property
+    def capabilities(self) -> Capabilities:
+        return self._CAPS
+
+    def search_scenes(self, geometry: dict[str, Any], start: date, end: date, max_cloud: float | None = None) -> list[SceneRef]:
+        return search_scenes(geometry, start, end, max_cloud)
+
+    def first_scene_date(self, geometry: dict[str, Any]) -> date | None:
+        return first_scene_date(geometry)
+
+    def read_scene(self, scene: SceneRef, geometry: dict[str, Any], roles: set[str] | None = None) -> SceneBands:
+        return read_scene(scene, geometry, roles)

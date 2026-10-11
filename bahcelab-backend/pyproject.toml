@@ -28,6 +28,7 @@ dependencies = [
     "PyJWT>=2.9.0",
     "pyyaml>=6.0",
     "arq>=0.26.0",
+    "scipy>=1.13",
 ]
 
 [project.optional-dependencies]

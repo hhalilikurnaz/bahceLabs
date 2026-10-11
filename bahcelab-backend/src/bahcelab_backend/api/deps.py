@@ -5,7 +5,8 @@ from fastapi import Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.api.auth.cookies import ACCESS_COOKIE
-from bahcelab_backend.database import get_db_session
+from bahcelab_backend.config import get_settings
+from bahcelab_backend.database import async_session_factory, get_db_session
 from bahcelab_backend.domain.agro.repository import AgroRepository
 from bahcelab_backend.domain.agro.service import AgroService
 from bahcelab_backend.domain.auth.repository import AuthRepository
@@ -14,6 +15,10 @@ from bahcelab_backend.domain.auth.security import decode_access_token
 from bahcelab_backend.domain.auth.service import AuthService
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
+from bahcelab_backend.domain.imagery.provider import ImageryProvider
+from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+from bahcelab_backend.domain.multiyear.runner import YearRunner, year_queue_for
+from bahcelab_backend.domain.multiyear.service import MultiyearService, YearQueue
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
 from bahcelab_backend.domain.notifications.repository import (
@@ -137,3 +142,35 @@ async def get_notification_service(
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
 ) -> NotificationService:
     return NotificationService(NotificationRepository(session, workspace_id))
+
+
+def get_imagery() -> ImageryProvider:
+    """Uydu kaynağı (ADR 0011); testlerde sahte sağlayıcıyla değiştirilir."""
+    return get_imagery_provider()
+
+
+_ARQ_POOL: object | None = None
+
+
+async def get_year_queue(provider: Annotated[ImageryProvider, Depends(get_imagery)]) -> YearQueue:
+    """Yıl görevi kuyruğu: `JOB_BACKEND=arq` ise Redis, değilse süreç içi (Redis'siz geliştirme)."""
+    global _ARQ_POOL
+    settings = get_settings()
+    runner = YearRunner(async_session_factory, provider, get_storage(), settings)
+    if settings.job_backend == "arq":
+        if _ARQ_POOL is None:
+            from arq import create_pool
+            from arq.connections import RedisSettings
+
+            _ARQ_POOL = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+        return year_queue_for(runner, _ARQ_POOL)
+    return year_queue_for(runner)
+
+
+async def get_multiyear_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    provider: Annotated[ImageryProvider, Depends(get_imagery)],
+    queue: Annotated[YearQueue, Depends(get_year_queue)],
+) -> MultiyearService:
+    return MultiyearService(session, workspace_id, provider, get_storage(), queue)

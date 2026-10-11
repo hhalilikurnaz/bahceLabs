@@ -24,6 +24,30 @@ class Settings(BaseSettings):
     ndvi_months: int = 13
     ndvi_max_parallel_scenes: int = 2
     ndvi_refresh_hours: int = 12
+    # Takılıp çıkarılabilir uydu kaynağı (ADR 0011): domain/imagery/registry.py'deki ad
+    imagery_provider: str = "sentinel2-l2a"
+
+    # Çok yıllık bölgeler (Adım 9, ADR 0011): yıllık kompozit işleri ve bölgeleme eşikleri. Tarımsal pencere (aylar) kural dosyasındadır.
+    multiyear_parallel_years: int = 2  # aynı anda işlenen bahçe×yıl görevi sayısı (tüm bahçeler için ortak)
+    multiyear_scene_parallel: int = 4  # bir yıl içinde aynı anda okunan sahne
+    multiyear_scene_interval_seconds: float = 0.0  # sahne okumaları arası en az süre (hız sınırı; 0 = sınırsız)
+    multiyear_max_scenes_per_year: int = 12  # kompozite en çok bu kadar net sahne girer (okuma bütçesi)
+    multiyear_max_candidates: int = 40  # bir yılda en çok bu kadar aday sahne (en az bulutludan) denenir
+    multiyear_search_max_cloud: float = 60.0  # sahne bulut oranı (%) bunun üstündeyse aranmaz
+    multiyear_min_net_scenes: int = 3  # yıl bölgelemeye girmek için gereken net sahne
+    multiyear_min_years: int = 3  # bölgeleme için gereken en az yıl
+    multiyear_year_min_correlation: float = 0.5  # yıl, diğer yıllarla bu korelasyonun altındaysa «uyumsuz» işaretlenir
+    multiyear_min_year_coverage: float = 0.6
+    multiyear_min_pixel_year_share: float = 0.5
+    multiyear_smoothing_sigma_px: float = 1.5
+    multiyear_min_zone_area_m2: float = 500.0
+    multiyear_homogeneous_diff_percent: float = 8.0
+    multiyear_stability_high: float = 0.75
+    multiyear_stability_mid: float = 0.5
+    multiyear_weak_zone_diff_percent: float = 8.0
+    multiyear_simplify_m: float = 3.0
+    multiyear_smooth_m: float = 4.0
+    multiyear_zone_counts: tuple[int, ...] = (3, 5)
 
     # Hava durumu (Open-Meteo). Ticari kullanımda ücretli plan anahtarı buraya; sağlayıcı değişimi domain/weather/provider.py
     open_meteo_api_key: str | None = None

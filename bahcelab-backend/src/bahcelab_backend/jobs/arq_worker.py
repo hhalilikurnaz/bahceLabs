@@ -35,8 +35,20 @@ def build_settings(settings: Settings) -> dict[str, Any]:
     return {"functions": functions, "cron_jobs": cron_jobs, "redis_settings": RedisSettings.from_dsn(settings.redis_url)}
 
 
+async def process_garden_year(ctx: dict[str, Any], garden_id: str, year: int) -> str:
+    """Çok yıllık analiz: bir bahçe × yıl görevi (ADR 0011). Aynı görev iki kez çalışmaz (`_job_id` + idempotent `claim_year`)."""
+    import uuid
+
+    from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+    from bahcelab_backend.domain.multiyear.runner import YearRunner
+    from bahcelab_backend.shared.storage import get_storage
+
+    runner = YearRunner(async_session_factory, get_imagery_provider(), get_storage())
+    return await runner.run_year(uuid.UUID(garden_id), year)
+
+
 class WorkerSettings:
     _built = build_settings(get_settings())
-    functions = _built["functions"]
+    functions = [*_built["functions"], process_garden_year]
     cron_jobs = _built["cron_jobs"]
     redis_settings = _built["redis_settings"]

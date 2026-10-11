@@ -9,13 +9,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from bahcelab_backend.domain.imagery.roles import ALL_ROLES, CORE_ROLES, TRUE_COLOR_ROLES, Band
+
 TRUE_COLOR = "gercek-renk"
 
-# Sahne başına bir kez okunan tüm bantlar. 10 m: B02 B03 B04 B08 · 20 m (bilinear ile 10 m'ye): B05 B8A B11
-BANDS_10M = ("B02", "B03", "B04", "B08")
-BANDS_20M_BILINEAR = ("B05", "B8A", "B11")
-BAND_SCL = "SCL"
-ALL_BANDS = (*BANDS_10M, *BANDS_20M_BILINEAR)
+# İndeksler sağlayıcıdan bağımsızdır: bant ROLLERİYLE tanımlanır (domain/imagery/roles.py).
+# Sentinel-2 karşılıkları: blue=B02 green=B03 red=B04 rededge=B05 nir=B08 nir_narrow=B8A swir1=B11
 
 # Renk skalaları: (konum 0–1, RGB). Konum, indeksin (min, max) aralığına göre normalize edilir.
 COLORMAPS: dict[str, list[tuple[float, tuple[int, int, int]]]] = {
@@ -59,7 +58,7 @@ class IndexDef:
     ad: str
     kisa_aciklama: str
     aciklama: str
-    bantlar: tuple[str, ...]
+    bantlar: tuple[Band, ...]  # gereken bant rolleri
     min: float  # mutlak skala alt sınırı
     max: float  # mutlak skala üst sınırı
     renk: str  # COLORMAPS anahtarı
@@ -77,7 +76,7 @@ INDICES: dict[str, IndexDef] = {
             "Bitkinin yeşil yaprak yoğunluğunu gösterir. Yüksek değer sağlıklı ve yoğun yaprak örtüsü, "
             "düşük değer zayıf bitki, çıplak toprak veya stres demektir."
         ),
-        bantlar=("B04", "B08"),
+        bantlar=(Band.RED, Band.NIR),
         min=0.0,
         max=0.9,
         renk="rdylgn",
@@ -92,7 +91,7 @@ INDICES: dict[str, IndexDef] = {
             "NDVI'nin toprak parlaklığına duyarlılığını azaltır. Sıra arası çıplak toprak olan ya da "
             "genç bahçelerde bitki örtüsünü NDVI'dan daha güvenilir gösterir."
         ),
-        bantlar=("B04", "B08"),
+        bantlar=(Band.RED, Band.NIR),
         min=0.0,
         max=0.8,
         renk="rdylgn",
@@ -107,7 +106,7 @@ INDICES: dict[str, IndexDef] = {
             "Kırmızı kenar bandını kullanır; yaprak klorofil içeriğine ve azot durumuna duyarlıdır. "
             "Sararmayı NDVI'dan önce yakalayabilir."
         ),
-        bantlar=("B05", "B8A"),
+        bantlar=(Band.REDEDGE, Band.NIR_NARROW),
         min=0.0,
         max=0.6,
         renk="rdylgn",
@@ -122,7 +121,7 @@ INDICES: dict[str, IndexDef] = {
             "Yakın kızılötesi ve kısa dalga kızılötesi (SWIR) farkıyla yaprağın su içeriğini gösterir. "
             "Koyu mavi nemli, açık ton kuru yaprak demektir; düşüşler su stresini işaret edebilir."
         ),
-        bantlar=("B8A", "B11"),
+        bantlar=(Band.NIR_NARROW, Band.SWIR1),
         min=-0.2,
         max=0.6,
         renk="mavi",
@@ -137,7 +136,7 @@ INDICES: dict[str, IndexDef] = {
             "Yeşil banda göre yakın kızılötesi oranıdır; yaprak klorofil yoğunluğuyla doğrusala yakın "
             "ilişkilidir ve yoğun yaprak örtüsünde doymaz."
         ),
-        bantlar=("B03", "B08"),
+        bantlar=(Band.GREEN, Band.NIR),
         min=0.0,
         max=3.0,
         renk="yesil",
@@ -149,8 +148,9 @@ INDICES: dict[str, IndexDef] = {
 INDEX_IDS: tuple[str, ...] = tuple(INDICES)
 ALL_OUTPUTS: tuple[str, ...] = (*INDEX_IDS, TRUE_COLOR)
 
-# Sahne "bulutlu mu" kararı bu iki bantla (SCL + NDVI bantları) verilir
-CORE_BANDS = ("B04", "B08")
+# Sahne "bulutlu mu" kararı bu iki rolle (+ sağlayıcının bulut maskesi) verilir
+CORE_BANDS = CORE_ROLES
+ALL_BANDS = ALL_ROLES
 
 
 def _safe_ratio(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
@@ -201,27 +201,28 @@ def compute_cigreen(nir: np.ndarray, green: np.ndarray) -> np.ndarray:
 
 
 def compute_index(index_id: str, bands: dict[str, np.ndarray]) -> np.ndarray:
+    """`bands`: rol → yansıtım (sağlayıcıdan bağımsız)."""
     if index_id == "ndvi":
-        return compute_ndvi(bands["B04"], bands["B08"])
+        return compute_ndvi(bands[Band.RED], bands[Band.NIR])
     if index_id == "msavi":
-        return compute_msavi2(bands["B04"], bands["B08"])
+        return compute_msavi2(bands[Band.RED], bands[Band.NIR])
     if index_id == "ndre":
-        return compute_ndre(bands["B8A"], bands["B05"])
+        return compute_ndre(bands[Band.NIR_NARROW], bands[Band.REDEDGE])
     if index_id == "ndmi":
-        return compute_ndmi(bands["B8A"], bands["B11"])
+        return compute_ndmi(bands[Band.NIR_NARROW], bands[Band.SWIR1])
     if index_id == "cigreen":
-        return compute_cigreen(bands["B08"], bands["B03"])
+        return compute_cigreen(bands[Band.NIR], bands[Band.GREEN])
     raise KeyError(index_id)
 
 
 def bands_needed(outputs: set[str]) -> set[str]:
-    """İstenen çıktılar için okunması gereken bantlar (her zaman B04/B08 çekirdeği dahil)."""
+    """İstenen çıktılar için okunması gereken bant rolleri (her zaman red/nir çekirdeği dahil)."""
     needed: set[str] = set(CORE_BANDS)
     for output in outputs:
         if output == TRUE_COLOR:
-            needed |= {"B02", "B03", "B04"}
+            needed |= set(TRUE_COLOR_ROLES)
         else:
-            needed |= set(INDICES[output].bantlar)
+            needed |= {str(b) for b in INDICES[output].bantlar}
     return needed
 
 

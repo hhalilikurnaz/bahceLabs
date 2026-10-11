@@ -64,6 +64,20 @@ class GddKurali(KuralBlok):
     taban_c: float
 
 
+class AnalizPenceresi(KuralBlok):
+    """Yıllık kompozit penceresi: bu aylardaki net sahnelerin piksel medyanı alınır."""
+
+    ay_baslangic: int = Field(ge=1, le=12)
+    ay_bitis: int = Field(ge=1, le=12)
+    indeks: str = "ndvi"
+
+    @model_validator(mode="after")
+    def _ordered(self) -> AnalizPenceresi:
+        if self.ay_baslangic > self.ay_bitis:
+            raise ValueError("Analiz penceresi yıl sonunu aşamaz (başlangıç ayı ≤ bitiş ayı).")
+        return self
+
+
 class Cesit(BaseModel):
     kod: str
     ad: str
@@ -80,6 +94,7 @@ class Urun(BaseModel):
     fenoloji: FenolojiKurali | None = None
     kc: KcKurali | None = None
     gdd: GddKurali | None = None
+    analiz_penceresi: AnalizPenceresi | None = None
     cesitler: list[Cesit]
 
 

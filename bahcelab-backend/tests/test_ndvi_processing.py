@@ -8,6 +8,7 @@ from rasterio.crs import CRS
 from rasterio.transform import Affine
 from rasterio.warp import transform_geom
 
+from bahcelab_backend.domain.imagery.masks import scl_valid_mask
 from bahcelab_backend.domain.ndvi import indices as ix
 from bahcelab_backend.domain.ndvi.models import IndexObservationModel, SceneObservationModel
 from bahcelab_backend.domain.ndvi.persist import missing_outputs
@@ -18,7 +19,6 @@ from bahcelab_backend.domain.ndvi.processing import (
     colorize,
     image_corners,
     png_scale,
-    scl_valid_mask,
     to_reflectance,
 )
 from bahcelab_backend.domain.ndvi.repository import SceneWithIndices
@@ -61,20 +61,20 @@ def bands_for(ndvi=0.7, ndre=0.35, ndmi=0.2, cigreen=1.5) -> dict[str, np.ndarra
     b8a = np.full_like(n, 0.42)
     b03 = nir / (1 + c)
     return {
-        "B08": nir,
-        "B04": nir * (1 - n) / (1 + n),
-        "B8A": b8a,
-        "B05": b8a * (1 - r) / (1 + r),
-        "B11": b8a * (1 - m) / (1 + m),
-        "B03": b03,
-        "B02": b03 * 0.5,
+        "nir": nir,
+        "red": nir * (1 - n) / (1 + n),
+        "nir_narrow": b8a,
+        "rededge": b8a * (1 - r) / (1 + r),
+        "swir1": b8a * (1 - m) / (1 + m),
+        "green": b03,
+        "blue": b03 * 0.5,
     }
 
 
 def scene(bands=None, scl=None) -> SceneBands:
     return SceneBands(
         bands=bands or bands_for(),
-        scl=scl if scl is not None else np.full((SIZE, SIZE), 4, dtype=np.uint8),
+        valid=scl_valid_mask(scl if scl is not None else np.full((SIZE, SIZE), 4, dtype=np.uint8)),
         transform=TRANSFORM,
         crs=CRS_UTM,
     )
@@ -131,14 +131,14 @@ def test_compute_index_dispatch_uses_the_right_bands():
 
 def test_bands_needed_per_output():
     assert ix.bands_needed({"ndre"}) == {
-        "B04",
-        "B08",
-        "B05",
-        "B8A",
+        "red",
+        "nir",
+        "rededge",
+        "nir_narrow",
     }  # çekirdek (bulut kararı) her zaman
-    assert ix.bands_needed({"ndmi"}) == {"B04", "B08", "B8A", "B11"}
-    assert ix.bands_needed({ix.TRUE_COLOR}) == {"B04", "B08", "B03", "B02"}
-    assert ix.bands_needed(set(ix.ALL_OUTPUTS)) == set(ix.ALL_BANDS)
+    assert ix.bands_needed({"ndmi"}) == {"red", "nir", "nir_narrow", "swir1"}
+    assert ix.bands_needed({ix.TRUE_COLOR}) == {"red", "nir", "green", "blue"}
+    assert ix.bands_needed(set(ix.ALL_OUTPUTS)) == set(ix.ALL_ROLES)
 
 
 def test_reflectance_applies_offset_and_nodata():
@@ -247,13 +247,13 @@ def test_below_threshold_is_marked_cloudy_and_skipped(cls: int):
 
 def test_nodata_pixels_count_as_invalid():
     bands = bands_for()
-    bands["B04"][2:6, 2:12] = np.nan  # 40 piksel veri yok → oran 0,60
+    bands["red"][2:6, 2:12] = np.nan  # 40 piksel veri yok → oran 0,60
     assert analyze_scene(scene(bands), GARDEN).bulutlu
 
 
 def test_index_specific_nodata_leaves_other_indices_intact():
     bands = bands_for()
-    bands["B11"][:, :] = np.nan  # SWIR yok: NDMI hesaplanamaz, diğerleri sağlam
+    bands["swir1"][:, :] = np.nan  # SWIR yok: NDMI hesaplanamaz, diğerleri sağlam
     result = analyze_scene(scene(bands), GARDEN)
     assert "ndmi" not in result.indeksler and {"ndvi", "msavi", "ndre", "cigreen"} <= set(
         result.indeksler
@@ -311,9 +311,9 @@ def test_true_color_has_no_scale_and_is_rgb_from_b04_b03_b02():
 
     assert a == 255
     assert (r, g, b) == (
-        expected(bands["B04"][5, 5]),
-        expected(bands["B03"][5, 5]),
-        expected(bands["B02"][5, 5]),
+        expected(bands["red"][5, 5]),
+        expected(bands["green"][5, 5]),
+        expected(bands["blue"][5, 5]),
     )
     assert g > r  # bitki yeşil bantta daha parlak
     assert pixels[0, 0][3] == 0  # bahçeden uzak pikseller saydam
@@ -543,6 +543,6 @@ def test_months_back():
 
 def test_cloudy_scene_is_decided_by_scl_alone():
     scl = np.full((SIZE, SIZE), 9, dtype=np.uint8)  # tamamı bulut
-    empty = SceneBands(bands={}, scl=scl, transform=scene().transform, crs=scene().crs)
+    empty = SceneBands(bands={}, valid=scl_valid_mask(scl), transform=scene().transform, crs=scene().crs)
     result = analyze_scene(empty, GARDEN)
     assert result.bulutlu and not result.indeksler

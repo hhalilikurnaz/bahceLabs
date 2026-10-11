@@ -36,3 +36,10 @@ Bu çıktılar teşhis ya da ilaçlama/sulama reçetesi değildir; arayüzde "ri
 
 ## Yıl boyu simülasyon (8B düzeltmesi)
 `scripts/simulate_risks.py` ve `tests/test_agro_risks.py::test_year_simulation…`: Open-Meteo arşivinden alınmış gerçek 2025 günlük verisiyle (`tests/fixtures/weather_2025_mersin.json`) her gün «o gün bugün olsaydı» çalıştırılır; hiçbir kural yılın %30'undan fazlasında «yüksek» olamaz (testle zorunlu).
+
+## Adım 9A — çok yıllık analiz penceresi (doğrulanmadı)
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| Yıllık kompozit penceresi (narenciye) | Haziran–Eylül, NDVI, net sahnelerin piksel medyanı | Herdem yeşil narenciyede yazın sıra arası otlar kuruduğundan ağaç tacı sinyali baskın; Akdeniz'de bulutlu sahne az. Dosya: `rules/katalog.yaml` → `analiz_penceresi` | doğrulanmadı |
+
+Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük bölge 500 m²; yumuşatma 1,5 piksel; istikrar yüksek ≥ %75 / orta ≥ %50) tarımsal kural değil istatistiksel ayardır (`config.py`, `multiyear_*`).

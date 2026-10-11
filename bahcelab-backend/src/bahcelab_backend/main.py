@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
+from bahcelab_backend.api.multiyear.router import router as multiyear_router
 from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.notifications.router import router as notifications_router
@@ -36,6 +37,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             logging.getLogger(__name__).warning(
                 "Yarım kalan NDVI işleri temizlenemedi", exc_info=True
             )
+    if get_settings().ndvi_enabled:
+        try:
+            from bahcelab_backend.database import async_session_factory
+            from bahcelab_backend.domain.multiyear.runner import fail_stale_years
+
+            await fail_stale_years(async_session_factory)  # yarım kalan yıl görevleri «Yeniden dene» ile sürdürülebilir
+        except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).warning("Yarım kalan yıl görevleri temizlenemedi", exc_info=True)
     scheduler = None
     settings = get_settings()
     if settings.jobs_enabled and settings.job_backend == "inline":
@@ -86,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(weather_router)
     app.include_router(agro_router)
     app.include_router(notifications_router)
+    app.include_router(multiyear_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

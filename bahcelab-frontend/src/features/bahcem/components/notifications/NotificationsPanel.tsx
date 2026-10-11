@@ -12,6 +12,7 @@ const TYPES = [
   { value: 'zararli_riski', label: 'Zararlı / hastalık riski' },
   { value: 'indeks_dususu', label: 'Uydu uyarısı' },
   { value: 'sulama', label: 'Sulama' },
+  { value: 'cok_yillik', label: 'Çok yıllık analiz' },
 ] as const
 
 const ICON = { kritik: CircleAlert, uyari: TriangleAlert, bilgi: Info } as const
