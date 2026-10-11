@@ -1,0 +1,79 @@
+# Ürün / çeşit kataloğu: fenoloji evreleri, Kc ve GDD tabanı.
+# TÜM DEĞERLER "doğrulanmadı" (ön değer): uygulamada "ön değer – ziraat mühendisi onayı bekleniyor" rozetiyle gösterilir.
+# Bir değer mühendis tarafından onaylanınca ilgili bloğun `durum` alanı `muhendis_onayli` yapılır ve `onaylayan`/`onay_tarihi` eklenir.
+# Kod içinde tarım sabiti yoktur; bu dosya sürümlüdür (`surum`). Tarihler "AA-GG" biçimindedir; evre yıl sonunu aşabilir (12-15 → 02-15).
+surum: 1
+sezon_baslangici: "10-01"   # su yılı (DSİ/MGM ile uyumlu); weather/rules.py ile aynı kural
+
+# Narenciye için ortak ön değerler (ürün blokları bunu `miras` ile kullanır)
+varsayilan_narenciye: &narenciye
+  fenoloji:
+    durum: dogrulanmadi
+    kaynak: >-
+      Akdeniz kuşağı narenciye fenolojisinin genel kabul gören yaklaşık takvimi (ön değer).
+      Yerel ilçe tarım müdürlüğü / Ziraat Odası takvimiyle doğrulanmalıdır; bölge, yıl ve çeşide göre ±3 hafta oynar.
+    evreler:
+      - {kod: kis_dinlenme, ad: "Kış dinlenmesi", baslangic: "12-15", bitis: "02-15"}
+      - {kod: tomurcuklanma, ad: "Tomurcuklanma ve sürgün", baslangic: "02-16", bitis: "03-14"}
+      - {kod: ciceklenme, ad: "Çiçeklenme", baslangic: "03-15", bitis: "04-30"}
+      - {kod: meyve_tutumu, ad: "Meyve tutumu", baslangic: "05-01", bitis: "06-15"}
+      - {kod: meyve_gelisimi, ad: "Meyve büyümesi", baslangic: "06-16", bitis: "09-30"}
+      - {kod: olgunlasma, ad: "Olgunlaşma ve hasat", baslangic: "10-01", bitis: "12-14"}
+  kc:
+    durum: dogrulanmadi
+    kaynak: >-
+      FAO Sulama ve Drenaj Makalesi 56, Tablo 12 (narenciye, örtü bitkisiz: başlangıç 0,70 · orta 0,65 · son 0,70) değerlerinden
+      evrelere dağıtılmış ön değer; yerel ölçümle uyarlanmamıştır.
+    degerler:
+      kis_dinlenme: 0.65
+      tomurcuklanma: 0.65
+      ciceklenme: 0.70
+      meyve_tutumu: 0.70
+      meyve_gelisimi: 0.65
+      olgunlasma: 0.65
+  gdd:
+    durum: dogrulanmadi
+    kaynak: >-
+      Narenciyede büyüme derece günü tabanı yayınlarda yaklaşık 10–13 °C arasında kullanılır; 12,5 °C ön değerdir
+      (günlük: max(0, (Tmax+Tmin)/2 − taban)). Böcek gelişimi için ayrı taban 8B risk kurallarında tanımlanır.
+    taban_c: 12.5
+
+urunler:
+  limon:
+    ad: Limon
+    <<: *narenciye
+    cesitler:
+      - {kod: enterdonat, ad: Enterdonat, aliaslar: [enterdonat, interdonato, enterdonato, interdonat]}
+      - {kod: kutdiken, ad: Kütdiken, aliaslar: [kutdiken, kütdiken]}
+      - {kod: lamas, ad: Lamas, aliaslar: [lamas]}
+      - {kod: meyer, ad: Meyer, aliaslar: [meyer]}
+      - {kod: yediveren, ad: Yediveren, aliaslar: [yediveren, yedi veren], not: "Yıl boyu çiçek ve meyve verebilir; evre sınırları yaklaşıktır, bahçe düzeyinde düzeltin."}
+      - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}
+  portakal:
+    ad: Portakal
+    <<: *narenciye
+    cesitler:
+      - {kod: washington_navel, ad: "Washington Navel", aliaslar: [washington, "washington navel", navel]}
+      - {kod: valencia, ad: Valencia, aliaslar: [valencia]}
+      - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}
+  mandalina:
+    ad: Mandalina
+    <<: *narenciye
+    cesitler:
+      - {kod: satsuma, ad: "Satsuma (Owari)", aliaslar: [satsuma, owari]}
+      - {kod: klemantin, ad: Klemantin, aliaslar: [klemantin, clementine, klementin]}
+      - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}
+  greyfurt:
+    ad: Greyfurt
+    <<: *narenciye
+    cesitler:
+      - {kod: star_ruby, ad: "Star Ruby", aliaslar: ["star ruby", starruby]}
+      - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}
+  diger:
+    ad: Diğer
+    # Narenciye dışı ürün: fenoloji / Kc / GDD kuralı tanımlı değildir (arayüz "veri yetersiz" der)
+    fenoloji: null
+    kc: null
+    gdd: null
+    cesitler:
+      - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}

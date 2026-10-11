@@ -42,6 +42,7 @@ class BahceOzeti(BaseModel):
     il: str | None
     ilce: str | None
     durum: Durum
+    skor: int | None = None
     durum_nedeni: str | None
     indeks: str
     son_goruntu: SonGoruntu | None

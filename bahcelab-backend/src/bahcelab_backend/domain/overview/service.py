@@ -11,6 +11,8 @@ from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.agro.score import ScoreConfig, assess
+from bahcelab_backend.domain.agro.service import satellite_severities, scene_values, score_spans
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
@@ -24,7 +26,7 @@ from bahcelab_backend.domain.overview.schemas import (
     Toplamlar,
     UyariOzeti,
 )
-from bahcelab_backend.domain.overview.status import Seviye, derive_status
+from bahcelab_backend.domain.overview.status import Seviye
 from bahcelab_backend.domain.weather.models import WeatherCellModel
 from bahcelab_backend.domain.weather.provider import TIMEZONE, Forecast
 from bahcelab_backend.domain.weather.repository import WeatherRepository
@@ -40,6 +42,7 @@ class GardenOverviewService:
         self.ndvi = ndvi
         self.weather = weather
         self.settings = get_settings()
+        self.score_cfg = ScoreConfig.from_settings(self.settings)
 
     async def overview(self, indeks: str = "ndvi") -> BahceOzetiYanit:
         if indeks not in VALID_INDICES:
@@ -126,7 +129,15 @@ class GardenOverviewService:
                 alerts.append(UyariOzeti(kaynak="hava", tur=item.tur, seviye=item.seviye, baslik=item.baslik))
 
         alerts.sort(key=lambda a: 0 if a.seviye == "kirmizi" else 1)
-        status = derive_status(has_data=last_image is not None, severities=[a.seviye for a in alerts])
+        sat_levels, _ = satellite_severities(scenes)
+        weather_levels: list[Seviye] | None = None
+        if weather is not None:
+            weather_levels = [a.seviye for a in weather_alerts(weather[0], local.date(), local.strftime("%Y-%m-%dT%H:%M"))]
+        result = assess(
+            scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
+            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg,
+        )
+        status = result.durum if last_image is not None or result.durum == "dikkat" else "veri_yok"
         return BahceOzeti(
             id=garden.id,
             ad=garden.ad,
@@ -136,6 +147,7 @@ class GardenOverviewService:
             il=garden.il,
             ilce=garden.ilce,
             durum=status,
+            skor=result.skor,
             durum_nedeni=alerts[0].baslik if alerts else None,
             indeks=indeks,
             son_goruntu=last_image,

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.ndvi.router import definitions_router
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(definitions_router)
     app.include_router(planning_router)
     app.include_router(weather_router)
+    app.include_router(agro_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

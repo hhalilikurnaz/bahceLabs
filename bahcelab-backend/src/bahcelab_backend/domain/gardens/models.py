@@ -24,6 +24,8 @@ class GardenModel(Base):
     ad: Mapped[str] = mapped_column(String(120), nullable=False)
     urun: Mapped[str] = mapped_column(String(20), nullable=False, default="limon")
     cesit: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Katalog çeşit kodu (domain/agro/rules/katalog.yaml); 'diger' ise `cesit` serbest metindir
+    cesit_kodu: Mapped[str | None] = mapped_column(String(40), nullable=True)
     dikim_yili: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     agac_sayisi: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Polygon veya MultiPolygon, EPSG:4326. GiST indeksi migration'da oluşturulur.

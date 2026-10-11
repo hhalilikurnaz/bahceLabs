@@ -48,7 +48,7 @@ class FakeProvider:
         if self.offline:
             raise WeatherSourceError("ağ yok")
         today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
-        return [p for p in build_sample_history(today, 430) if start <= p.tarih <= end]
+        return [p for p in build_sample_history(today, 830) if start <= p.tarih <= end]
 
 
 @pytest.fixture

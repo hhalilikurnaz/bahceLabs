@@ -54,11 +54,18 @@ def real_png(size: tuple[int, int] = (400, 300)) -> bytes:
 
 # --- durum etiketi (tek fonksiyon)
 def test_status_rules():
-    assert derive_status(has_data=True, severities=[]) == "iyi"
-    assert derive_status(has_data=True, severities=["sari"]) == "izle"
-    assert derive_status(has_data=True, severities=["sari", "kirmizi"]) == "dikkat"
-    assert derive_status(has_data=False, severities=[]) == "veri_yok"
-    assert derive_status(has_data=False, severities=["kirmizi"]) == "dikkat"  # kırmızı hava uyarısı veri yokken de görünür
+    """Tek durum fonksiyonu: skor etiketi + uyarılar (kırmızı en fazla «dikkat», sarı en fazla «izle» bırakır)."""
+    assert derive_status(has_data=True, severities=[], score=90) == "iyi"
+    assert derive_status(has_data=True, severities=[], score=75) == "iyi"  # sınır dahil
+    assert derive_status(has_data=True, severities=[], score=74) == "izle"
+    assert derive_status(has_data=True, severities=[], score=50) == "izle"
+    assert derive_status(has_data=True, severities=[], score=49) == "dikkat"
+    assert derive_status(has_data=True, severities=["sari"], score=95) == "izle"  # sarı uyarı «iyi»yi engeller
+    assert derive_status(has_data=True, severities=["sari", "kirmizi"], score=95) == "dikkat"
+    assert derive_status(has_data=True, severities=[], score=None) == "iyi"  # skor yok (geçmiş yetersiz), uyarı da yok
+    assert derive_status(has_data=True, severities=["sari"], score=None) == "izle"
+    assert derive_status(has_data=False, severities=[], score=None) == "veri_yok"
+    assert derive_status(has_data=False, severities=["kirmizi"], score=None) == "dikkat"  # kırmızı hava uyarısı veri yokken de görünür
 
 
 def test_thumbnail_crops_transparent_margin_and_limits_size():

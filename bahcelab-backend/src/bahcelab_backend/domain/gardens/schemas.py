@@ -112,6 +112,7 @@ class GardenCreate(_GardenFields):
     ad: str
     urun: Urun = "limon"
     cesit: str | None = None
+    cesit_kodu: str | None = None
     dikim_yili: int | None = None
     agac_sayisi: int | None = None
     geometry: GeoJsonGeometry
@@ -125,6 +126,7 @@ class GardenUpdate(_GardenFields):
     ad: str | None = None
     urun: Urun | None = None
     cesit: str | None = None
+    cesit_kodu: str | None = None
     dikim_yili: int | None = None
     agac_sayisi: int | None = None
     geometry: GeoJsonGeometry | None = None
@@ -154,6 +156,7 @@ class GardenResponse(BaseModel):
     ad: str
     urun: Urun
     cesit: str | None
+    cesit_kodu: str | None
     dikim_yili: int | None
     agac_sayisi: int | None
     geometry: dict[str, Any]

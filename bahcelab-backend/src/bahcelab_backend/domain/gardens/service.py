@@ -1,6 +1,7 @@
 import uuid
 from typing import Any, cast
 
+from bahcelab_backend.domain.agro.catalog import load_catalog, match_variety
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow, Measurement
 from bahcelab_backend.domain.gardens.schemas import (
@@ -36,6 +37,7 @@ def to_response(row: GardenRow) -> GardenResponse:
         ad=g.ad,
         urun=cast(Urun, g.urun),
         cesit=g.cesit,
+        cesit_kodu=g.cesit_kodu,
         dikim_yili=g.dikim_yili,
         agac_sayisi=g.agac_sayisi,
         geometry=row.geojson,
@@ -76,6 +78,31 @@ def _check_measurement(m: Measurement) -> None:
         )
 
 
+def apply_variety(values: dict[str, Any], urun: str, current: GardenModel | None, *, creating: bool = False) -> dict[str, Any]:
+    """Çeşit alanlarını katalogla uyumlu hâle getirir (`cesit_kodu` ↔ `cesit` metni).
+
+    - `cesit_kodu` verilirse katalogda o ürüne ait olmalıdır; 'diger' dışında ad katalogdan yazılır.
+    - Yalnızca eski biçim `cesit` metni gelirse kod, metinden eşlenir (bilinmiyorsa 'diger').
+    - Ürün değişir ve eski kod yeni ürüne uymazsa kod, mevcut metinden yeniden eşlenir.
+    """
+    catalog = load_catalog()
+    out = dict(values)
+    if out.get("cesit_kodu"):
+        found = catalog.cesit(urun, out["cesit_kodu"])
+        if found is None:
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Seçilen çeşit bu ürüne ait değil. Listeden bir çeşit seçin.")
+        if found.kod != "diger":
+            out["cesit"] = found.ad
+        return out
+    if "cesit_kodu" in out and not creating:  # açıkça temizlendi
+        return out
+    if "cesit" in out:
+        out["cesit_kodu"] = match_variety(catalog, urun, out["cesit"])
+    elif current is not None and "urun" in out and current.cesit_kodu and catalog.cesit(urun, current.cesit_kodu) is None:
+        out["cesit_kodu"] = match_variety(catalog, urun, current.cesit)
+    return out
+
+
 class GardenService:
     def __init__(self, repo: GardenRepository, ndvi: NdviCoordinator | None = None) -> None:
         self.repo = repo
@@ -105,9 +132,8 @@ class GardenService:
 
     async def create(self, request: GardenCreate) -> GardenResponse:
         geojson, area = await self._validated_area(request.geometry)
-        garden_id = await self.repo.create(
-            values=request.model_dump(exclude={"geometry"}), geojson=geojson, area_dekar=area
-        )
+        values = apply_variety(request.model_dump(exclude={"geometry"}), request.urun, None, creating=True)
+        garden_id = await self.repo.create(values=values, geojson=geojson, area_dekar=area)
         if self.ndvi:
             await self.ndvi.start_initial(garden_id)  # son 13 ay arka planda işlenir
         return await self.get(garden_id)
@@ -121,6 +147,7 @@ class GardenService:
             geojson, area = await self._validated_area(request.geometry)
 
         values = request.model_dump(exclude={"geometry"}, exclude_unset=True)
+        values = apply_variety(values, values.get("urun", garden.urun), garden)
         await self.repo.update(garden, values=values, geojson=geojson, area_dekar=area)
         if geojson is not None and self.ndvi:
             await self.ndvi.restart_after_boundary_change(garden_id)  # eski NDVI kayıtları geçersiz

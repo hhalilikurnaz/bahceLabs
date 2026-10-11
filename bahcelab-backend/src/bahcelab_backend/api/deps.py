@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.api.auth.cookies import ACCESS_COOKIE
 from bahcelab_backend.database import get_db_session
+from bahcelab_backend.domain.agro.repository import AgroRepository
+from bahcelab_backend.domain.agro.service import AgroService
 from bahcelab_backend.domain.auth.repository import AuthRepository
 from bahcelab_backend.domain.auth.schemas import AuthUser
 from bahcelab_backend.domain.auth.security import decode_access_token
@@ -109,4 +111,17 @@ async def get_overview_service(
 ) -> GardenOverviewService:
     return GardenOverviewService(
         GardenRepository(session, workspace_id), NdviRepository(session), WeatherRepository(session, workspace_id)
+    )
+
+
+async def get_agro_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    provider: Annotated[WeatherProvider, Depends(get_weather_provider)],
+) -> AgroService:
+    return AgroService(
+        GardenRepository(session, workspace_id),
+        NdviRepository(session),
+        WeatherService(WeatherRepository(session, workspace_id), provider),
+        AgroRepository(session),
     )
