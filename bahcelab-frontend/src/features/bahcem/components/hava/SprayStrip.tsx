@@ -2,7 +2,7 @@ import { useMemo, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Card } from '@/components/ui'
 import type { WeatherHour } from '../../api/weatherApi'
 import { formatHour, todayIstanbul, weekdayName } from '../../lib/dates'
-import { SPRAY_CLASS, SPRAY_LABEL } from '../../lib/weather'
+import { SPRAY_CLASS, SPRAY_LABEL, SPRAY_MARK } from '../../lib/weather'
 
 const LEGEND = ['uygun', 'sinirda', 'uygun_degil'] as const
 
@@ -29,7 +29,15 @@ function DayRow({ day, label, cells, selected, onSelect }: { day: string; label:
     onSelect(cells[next].hour)
   }
 
-  const good = cells.filter((c) => c.hour.ilaclama === 'uygun').length
+  const good = cells.filter((c) => c.hour.ilaclama === 'uygun' && c.hour.gunduz).length
+  // Gece saatleri soluk; her gece bloğunun başına «gece» etiketi konur (blok yeterince genişse)
+  const nightRuns: { start: number; length: number }[] = []
+  cells.forEach((c, i) => {
+    if (c.hour.gunduz) return
+    const last = nightRuns[nightRuns.length - 1]
+    if (last && last.start + last.length === i) last.length += 1
+    else nightRuns.push({ start: i, length: 1 })
+  })
   return (
     <div className="flex items-center gap-2" data-testid="spray-row">
       <span className="w-12 shrink-0 text-small font-semibold text-app-text-muted">{label}</span>
@@ -40,16 +48,30 @@ function DayRow({ day, label, cells, selected, onSelect }: { day: string; label:
         onPointerDown={fromPointer}
         onPointerMove={(event) => event.pointerType === 'mouse' && fromPointer(event)}
         onKeyDown={onKeyDown}
-        className="flex h-11 flex-1 cursor-pointer touch-pan-y gap-px overflow-hidden rounded-sm"
+        className="relative flex h-11 flex-1 cursor-pointer touch-pan-y gap-px overflow-hidden rounded-sm"
       >
         {cells.map(({ hour, past }) => (
           <span
             key={hour.zaman}
             data-status={hour.ilaclama}
             aria-hidden
-            className={`h-full min-w-0 flex-1 ${SPRAY_CLASS[hour.ilaclama]} ${past ? 'opacity-35' : ''} ${hour.zaman === selected ? 'ring-2 ring-inset ring-app-text' : ''}`}
+            data-night={!hour.gunduz}
+            className={`h-full min-w-0 flex-1 ${SPRAY_CLASS[hour.ilaclama]} ${past || !hour.gunduz ? 'opacity-35' : ''} ${hour.zaman === selected ? 'ring-2 ring-inset ring-app-text' : ''}`}
           />
         ))}
+        {nightRuns
+          .filter((run) => run.length >= 3)
+          .map((run) => (
+            <span
+              key={run.start}
+              aria-hidden
+              data-testid="night-label"
+              className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-center text-caption font-semibold text-app-text"
+              style={{ left: `${(run.start / cells.length) * 100}%`, width: `${(run.length / cells.length) * 100}%` }}
+            >
+              gece
+            </span>
+          ))}
       </div>
     </div>
   )
@@ -75,7 +97,7 @@ export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal
     <Card aria-label="Saat saat ilaçlama penceresi" data-testid="spray-strip">
       <h3 className="font-display text-h2 text-app-text">Saat saat ilaçlama</h3>
       <p className="text-small text-app-text-muted">
-        Uygun: rüzgâr 15 km/s ve hamle 25 km/s altı, yağış yok, sonraki 6 saatte yağış olasılığı %30 altı, sıcaklık 10–28 °C.
+        Yalnızca gün doğumu ile batımı arası önerilir. Uygun: rüzgâr 15 km/s ve hamle 25 km/s altı, yağış yok, sonraki 6 saatte yağış olasılığı %30 altı, sıcaklık 10–28 °C.
       </p>
 
       <div className="mt-3 space-y-1.5">
@@ -101,9 +123,10 @@ export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal
           <>
             <p className="flex items-center gap-2 font-semibold text-app-text">
               <i className={`h-3 w-3 rounded-sm ${SPRAY_CLASS[shown.ilaclama]}`} aria-hidden />
-              {weekdayName(shown.zaman.slice(0, 10))} {formatHour(shown.zaman)} · {SPRAY_LABEL[shown.ilaclama]}
+              {weekdayName(shown.zaman.slice(0, 10))} {formatHour(shown.zaman)} · {SPRAY_MARK[shown.ilaclama]} {SPRAY_LABEL[shown.ilaclama]}
+              {!shown.gunduz && ' · gece'}
             </p>
-            <p className="mt-0.5 text-app-text-muted">{shown.nedenler.join(' ')}</p>
+            <p className="mt-0.5 text-app-text-muted">{shown.gunduz ? shown.nedenler.join(' ') : `Gece saati: ilaçlama önerilmez. ${shown.nedenler.join(' ')}`}</p>
           </>
         )}
       </div>
@@ -111,11 +134,12 @@ export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-app-text-muted">
         {LEGEND.map((status) => (
           <li key={status} className="flex items-center gap-1.5">
-            <i className={`h-3 w-3 rounded-sm ${SPRAY_CLASS[status]}`} aria-hidden />
+            <i className={`h-3.5 w-3.5 rounded-sm ${SPRAY_CLASS[status]}`} aria-hidden />
+            <span aria-hidden className="font-bold">{SPRAY_MARK[status]}</span>
             {SPRAY_LABEL[status]}
           </li>
         ))}
-        <li className="text-app-text-dim">Soluk: geçmiş saat</li>
+        <li className="text-app-text-dim">Soluk: gece ve geçmiş saatler</li>
       </ul>
     </Card>
   )

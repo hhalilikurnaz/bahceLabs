@@ -6,6 +6,8 @@ describe('bahçe sayfası rotaları', () => {
   it('liste ve bölümler', () => {
     expect(parseBahcemPath('/bahcem')).toMatchObject({ section: 'bahceler', gardenId: null })
     expect(parseBahcemPath('/bahcem/pazar')).toMatchObject({ section: 'pazar', gardenId: null })
+    expect(parseBahcemPath('/bahcem/islerim')).toMatchObject({ section: 'islerim', gardenId: null })
+    expect(parseBahcemPath('/bahcem/hizmetler')).toMatchObject({ section: 'hizmetler', gardenId: null })
     expect(parseBahcemPath('/bahcem/bildirimler').section).toBe('bildirimler')
     expect(parseBahcemPath('/bahcem/ayarlar').section).toBe('ayarlar')
   })

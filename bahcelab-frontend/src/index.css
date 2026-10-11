@@ -79,6 +79,10 @@
   --color-app-warn: #9a4f08;
   --color-app-danger: #b3382a;
   --color-app-water: #1f6fa8;
+  /* İlaçlama uygunluğu: renk körü dostu (koyu mavi-yeşil / amber / gri); renge ek olarak desen ve simge ayırır */
+  --color-spray-ok: #0b6b73;
+  --color-spray-edge: #d99a00;
+  --color-spray-no: #8d9893;
   /* Uydu görüntüsü küçük resimlerinin zemini (görüntü kutuya sığdırılır, kenarlarda koyu boşluk kalır) */
   --color-thumb: #1d2a21;
 
@@ -117,6 +121,9 @@
   --color-app-warn: #f2a04a;
   --color-app-danger: #f0705c;
   --color-app-water: #6cb4ee;
+  --color-spray-ok: #3fb3bd;
+  --color-spray-edge: #f2b43a;
+  --color-spray-no: #66726d;
   color: var(--color-app-text);
 }
 
@@ -255,4 +262,17 @@ h6 {
   .marketing-scroll-cue {
     animation: none;
   }
+}
+
+/* İlaçlama uygunluğu desenleri: uygun = düz, sınırda = çapraz çizgi, uygun değil = nokta */
+.spray-ok {
+  background: var(--color-spray-ok);
+}
+.spray-edge {
+  background: repeating-linear-gradient(135deg, var(--color-spray-edge) 0 3px, color-mix(in srgb, var(--color-spray-edge) 45%, #fff) 3px 6px);
+}
+.spray-no {
+  background-color: var(--color-spray-no);
+  background-image: radial-gradient(circle, rgb(255 255 255 / 0.6) 1.1px, transparent 1.3px);
+  background-size: 5px 5px;
 }

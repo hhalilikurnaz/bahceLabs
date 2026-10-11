@@ -98,8 +98,19 @@ def classify_spray_hours(hourly: list[HourlyPoint]) -> list[SprayHour]:
     return result
 
 
-def is_daytime(moment: str) -> bool:
-    return DAY_START_HOUR <= int(moment[11:13]) < DAY_END_HOUR
+SunTimes = tuple[str, str]  # (gün doğumu, gün batımı) yerel SS:DD
+
+
+def _minutes(clock: str) -> int:
+    return int(clock[:2]) * 60 + int(clock[3:5])
+
+
+def is_daytime(moment: str, sun: SunTimes | None = None) -> bool:
+    """Saat dilimi gün doğumu–batımı ile kesişiyorsa gündüzdür; güneş saati yoksa sabit gündüz saatleri kullanılır."""
+    hour = int(moment[11:13])
+    if sun is None:
+        return DAY_START_HOUR <= hour < DAY_END_HOUR
+    return hour * 60 < _minutes(sun[1]) and (hour + 1) * 60 > _minutes(sun[0])
 
 
 @dataclass
@@ -110,14 +121,14 @@ class SpraySummary:
     en_iyi_aralik: tuple[str, str] | None  # en uzun kesintisiz uygun aralık (başlangıç, bitiş saati)
 
 
-def summarize_spray_day(hours: list[tuple[str, SprayHour]]) -> SpraySummary:
-    """Bir günün saatleri (zaman, durum) için sayılar ve en uzun uygun aralık."""
+def summarize_spray_day(hours: list[tuple[str, SprayHour]], sun: SunTimes | None = None) -> SpraySummary:
+    """Bir günün saatleri (zaman, durum) için sayılar ve en uzun uygun aralık; aralık gün doğumu–batımı ile sınırlanır."""
     counts = {"uygun": 0, "sinirda": 0, "uygun_degil": 0}
     best: tuple[int, int] | None = None
     start: int | None = None
     for i, (moment, hour) in enumerate(hours):
         counts[hour.durum] += 1
-        if hour.durum == "uygun" and is_daytime(moment):
+        if hour.durum == "uygun" and is_daytime(moment, sun):
             start = i if start is None else start
             if best is None or (i - start) > (best[1] - best[0]):
                 best = (start, i)
@@ -126,7 +137,11 @@ def summarize_spray_day(hours: list[tuple[str, SprayHour]]) -> SpraySummary:
     window = None
     if best is not None:
         first, last = best
-        window = (hours[first][0][11:16], f"{int(hours[last][0][11:13]) + 1:02d}:00")
+        begin, finish = hours[first][0][11:16], f"{int(hours[last][0][11:13]) + 1:02d}:00"
+        if sun is not None:  # güneş doğmadan / battıktan sonrası önerilmez
+            begin = max(begin, sun[0])
+            finish = min(finish, sun[1])
+        window = (begin, finish)
     return SpraySummary(counts["uygun"], counts["sinirda"], counts["uygun_degil"], window)
 
 

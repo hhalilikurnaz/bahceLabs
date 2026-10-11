@@ -3,6 +3,7 @@ import { useElementWidth } from '../../hooks/useElementWidth'
 import { monthLabelStep, niceTicks, paddedDomain, type Domain } from '../../lib/chartScale'
 import { CHART } from '../../lib/config'
 import { daysBetween, formatDate, shiftDays } from '../../lib/dates'
+import { bandLabel } from '../../lib/phenology'
 import { clipBand, dateAtFraction, monthTicks, stageAt, xFraction, type Band, type DateRange } from '../../lib/seasonAxis'
 
 export interface ChartPoint {
@@ -173,9 +174,9 @@ export function LineChartPanel({
               <rect x={x1} y={m.top} width={Math.max(1, x2 - x1)} height={plotH} style={{ fill: 'var(--color-app-text)' }} opacity={i % 2 === 0 ? 0.045 : 0.085} data-testid="phenology-band" data-stage={b.kod}>
                 <title>{`${b.ad}${b.ozel ? ' (bahçe düzeltmesi)' : ''}`}</title>
               </rect>
-              {!compact && x2 - x1 > 54 && (
-                <text x={x1 + 4} y={m.top + 11} style={{ ...FONT, fill: 'var(--color-app-text-dim)', fontSize: 11 }} pointerEvents="none">
-                  {b.ad.length * 5.6 > x2 - x1 - 8 ? `${b.ad.slice(0, Math.max(3, Math.floor((x2 - x1 - 8) / 5.6) - 1))}…` : b.ad}
+              {!compact && bandLabel(b.kod, b.ad, x2 - x1) && (
+                <text x={x1 + 4} y={m.top + 11} style={{ ...FONT, fill: 'var(--color-app-text-dim)', fontSize: 11 }} pointerEvents="none" data-testid="phenology-label">
+                  {bandLabel(b.kod, b.ad, x2 - x1)}
                 </text>
               )}
             </g>

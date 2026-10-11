@@ -84,6 +84,8 @@ export interface TodayItem {
   baslik: string
   metin: string
   sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'
+  /** Teknik ayrıntı (GDD, eşikler): «Ayrıntı» açılırında */
+  ayrinti: string | null
 }
 
 const meta = (m: ApiKuralMeta | null): RuleMeta | null => (m ? { durum: m.durum, kaynak: m.kaynak, onaylayan: m.onaylayan } : null)
@@ -151,7 +153,7 @@ export const agroApi = {
     }
   },
   async today(gardenId: string): Promise<TodayItem[]> {
-    return (await apiRequest<ApiBugun>(`/gardens/${gardenId}/bugun`)).maddeler
+    return (await apiRequest<ApiBugun>(`/gardens/${gardenId}/bugun`)).maddeler.map((m) => ({ ...m, ayrinti: m.ayrinti ?? null }))
   },
 }
 

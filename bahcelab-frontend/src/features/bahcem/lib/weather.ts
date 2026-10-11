@@ -57,12 +57,15 @@ export const SPRAY_LABEL: Record<SprayStatus, string> = {
   uygun_degil: 'Uygun değil',
 }
 
-/** İlaçlama şeridi renkleri: yeşil / sarı / kırmızı */
+/** İlaçlama göstergeleri (renk körü dostu): koyu mavi-yeşil düz / amber çizgili / gri noktalı — her yerde aynı palet */
 export const SPRAY_CLASS: Record<SprayStatus, string> = {
-  uygun: 'bg-emerald-500',
-  sinirda: 'bg-amber-400',
-  uygun_degil: 'bg-red-500',
+  uygun: 'spray-ok',
+  sinirda: 'spray-edge',
+  uygun_degil: 'spray-no',
 }
+
+/** Renge ek simge işareti: ✓ / ! / × (renk ayırt edilemese de okunur) */
+export const SPRAY_MARK: Record<SprayStatus, string> = { uygun: '✓', sinirda: '!', uygun_degil: '×' }
 
 /** Geçen yılla farkı kısa cümleyle anlatır: "geçen yıldan %35 az" */
 export function compareToLastYear(mm: number | null, last: number | null): string | null {

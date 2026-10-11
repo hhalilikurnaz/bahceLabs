@@ -2,13 +2,18 @@
 
 Her yeni özelliğin yeri baştan belli olsun diye iskelet. Henüz olmayan uçlar "Yakında – Adım N" boş durumu gösterir; ölü/işlevsiz menü ucu bırakılmaz.
 
-## Sol menü
+## Sol menü (ADR 0010)
 ```
 Bahçelerim      /bahcem                    (liste + harita)
-Pazar & Depo    /bahcem/pazar              Yakında – Adım 17
-Bildirimler     /bahcem/bildirimler        Yakında – Adım 8 (bildirim merkezi) · Destek ve son tarih takvimi (Adım 18)
-Ayarlar         /bahcem/ayarlar            hesap, çıkış · Bildirim tercihleri ve telefon/WhatsApp onayı (Adım 18–19)
+İşlerim         /bahcem/islerim            Yakında – Faz 1.5: hibe/destek · kalıntı ve ihracat uyumu · sertifika · sigorta ve hasar · kredi dosyası · satış · sürdürülebilirlik raporu ajanları
+Hizmetler       /bahcem/hizmetler          Yakında – Faz 1.5: saha ekipleri (drone ilaçlama/gübreleme, budama, hasat ekibi, nakliye) · laboratuvar (toprak/yaprak/su/kalıntı) · uzman (ziraat mühendisi)
+Pazar           /bahcem/pazar              Satış ve depo (Adım 17) · girdi ve finansman (Faz 1.5) — Yakında
+Bildirimler     /bahcem/bildirimler        bildirim merkezi (Adım 8) · Destek ve son tarih takvimi (Adım 18)
+Ayarlar         /bahcem/ayarlar            hesap, çıkış, bildirim tercihleri · telefon/WhatsApp onayı (Adım 18–19)
 ```
+
+## Faz 1.5 – Ajanlar ve Hizmetler
+Bahçe izleme (Faz 1) üzerine iki katman gelir: **İşlerim** (çiftçinin adına evrak/başvuru hazırlayan ajanlar) ve **Hizmetler** (sahaya gelen ekip, laboratuvar ve uzman). Hepsi «Yakında» olarak menüde görünür; kayıtlar Faz 1'in günlük, ilaç defteri ve maliyet verilerinden beslenecektir.
 
 ## Yerleşim (7B-2, ADR 0006)
 Masaüstünde (≥ 1180 px) üç bölge: **sol liste | orta harita | sağ bahçe paneli** (sürüklenerek ya da ← → ile boyutlanır, genişlik tarayıcıda saklanır). Bahçe seçilince ikisi birlikte görünür; «Tam harita» ikisini de kapatır (Esc geri açar). Copilot çekmecesi sağ panelin üstünde açılır. Daha dar ekranlarda (telefon, tablet) harita üsttedir; bahçe paneli alttan açılan sayfadır (kapalı/yarım/tam, sürüklenebilir), liste ayrı görünümdür.

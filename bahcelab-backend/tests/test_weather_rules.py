@@ -221,3 +221,25 @@ def test_best_window_is_chosen_from_daytime_only():
     summary = rules.summarize_spray_day([(h.zaman, s) for h, s in zip(data, spray, strict=True)])
     assert summary.uygun_saat == 24
     assert summary.en_iyi_aralik == ("05:00", "21:00")
+
+
+# ----------------------------------------------------------------------------- gün doğumu / batımı
+def _day_hours(first: int, last: int, status: str = "uygun"):
+    return [(f"2026-10-12T{h:02d}:00", rules.SprayHour(status)) for h in range(first, last + 1)]  # type: ignore[arg-type]
+
+
+def test_spray_window_is_clipped_to_sunrise_and_sunset():
+    hours = _day_hours(0, 23)
+    summary = rules.summarize_spray_day(hours, ("07:23", "18:41"))
+    assert summary.en_iyi_aralik == ("07:23", "18:41")  # gece saatleri uygun olsa da önerilmez, sınırlar güneşe göre kırpılır
+
+
+def test_hours_outside_daylight_never_form_a_window():
+    night = [(f"2026-10-12T{h:02d}:00", rules.SprayHour("uygun")) for h in (1, 2, 3, 22, 23)]
+    assert rules.summarize_spray_day(night, ("07:00", "18:00")).en_iyi_aralik is None
+    assert rules.is_daytime("2026-10-12T07:00", ("07:23", "18:41")) and not rules.is_daytime("2026-10-12T06:00", ("07:23", "18:41"))
+    assert rules.is_daytime("2026-10-12T18:00", ("07:23", "18:41")) and not rules.is_daytime("2026-10-12T19:00", ("07:23", "18:41"))
+
+
+def test_without_sun_times_fixed_daylight_hours_are_used():
+    assert rules.summarize_spray_day(_day_hours(0, 23)).en_iyi_aralik == ("05:00", "21:00")

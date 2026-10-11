@@ -1,4 +1,4 @@
-import { Bell, Settings, Store, Trees, type LucideIcon } from 'lucide-react'
+import { Bell, Briefcase, Settings, Store, Trees, Wrench, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { BrandMark, Tooltip, cx } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -10,7 +10,9 @@ import { useBahcemStore } from '../../stores/bahcemStore'
 
 const ITEMS: { section: Section; label: string; icon: LucideIcon }[] = [
   { section: 'bahceler', label: 'Bahçelerim', icon: Trees },
-  { section: 'pazar', label: 'Pazar & Depo', icon: Store },
+  { section: 'islerim', label: 'İşlerim', icon: Briefcase },
+  { section: 'hizmetler', label: 'Hizmetler', icon: Wrench },
+  { section: 'pazar', label: 'Pazar', icon: Store },
   { section: 'bildirimler', label: 'Bildirimler', icon: Bell },
 ]
 
@@ -22,7 +24,7 @@ function initials(name: string): string {
   return (parts[0]?.[0] ?? '?').concat(parts.length > 1 ? parts[parts.length - 1][0] : '').toLocaleUpperCase('tr-TR')
 }
 
-/** Sol menü: Bahçelerim · Pazar & Depo · Bildirimler · Ayarlar. Koyu orman zemini (harita denetimleriyle aynı yüzey). */
+/** Sol menü: Bahçelerim · İşlerim · Hizmetler · Pazar · Bildirimler · Ayarlar. Koyu orman zemini (harita denetimleriyle aynı yüzey). */
 export function IconRail() {
   const { section, gardenId } = useBahcemRoute()
   const unread = useUnreadPoll().data?.okunmamis ?? 0

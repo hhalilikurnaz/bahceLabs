@@ -44,6 +44,8 @@ export interface WeatherDay {
   et0Mm: number | null
   aciklama: string
   ikon: string
+  gunDogumu: string | null
+  gunBatimi: string | null
   ilaclama: SpraySummary
 }
 
@@ -58,6 +60,8 @@ export interface WeatherHour {
   et0: number | null
   ilaclama: SprayStatus
   nedenler: string[]
+  /** Gün doğumu–batımı arasında mı (gece saatlerinde ilaçlama önerilmez) */
+  gunduz: boolean
 }
 
 export interface WeatherAlert {
@@ -165,6 +169,8 @@ function mapWeather(d: ApiWeather): Weather {
         et0Mm: g.et0_mm,
         aciklama: g.aciklama,
         ikon: g.ikon,
+        gunDogumu: g.gun_dogumu ?? null,
+        gunBatimi: g.gun_batimi ?? null,
         ilaclama: {
           uygunSaat: g.ilaclama.uygun_saat,
           sinirdaSaat: g.ilaclama.sinirda_saat,
@@ -185,6 +191,7 @@ function mapWeather(d: ApiWeather): Weather {
         et0: h.et0,
         ilaclama: h.ilaclama,
         nedenler: h.ilaclama_nedenleri,
+        gunduz: h.gunduz ?? true,
       }),
     ),
     uyarilar: d.uyarilar.map(mapAlert),

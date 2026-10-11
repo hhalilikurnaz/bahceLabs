@@ -435,7 +435,7 @@ class AgroService:
                     spray.append((day.tarih, *day.ilaclama.en_iyi_aralik))
         data = Girdi(
             hava_uyarilari=[(a.seviye, a.baslik, a.mesaj) for a in (weather.uyarilar if weather else [])],
-            zararli_riskleri=[(r.seviye, r.ad, r.gerekce) for r, _, _ in risks],
+            zararli_riskleri=[(r.seviye, r.ad, r.sade, r.gerekce) for r, _, _ in risks if r.veri_yeterli],
             ilaclama=spray,
             uydu_uyarilari=sat,
             sulama=(irrigation.ihtiyac_mm or 0.0, irrigation.cumle) if irrigation is not None and irrigation.gerekli else None,

@@ -39,6 +39,8 @@ export interface ApiWeatherDay {
   kod: number | null
   aciklama: string
   ikon: string
+  gun_dogumu?: string | null
+  gun_batimi?: string | null
   ilaclama: {
     uygun_saat: number
     sinirda_saat: number
@@ -59,6 +61,7 @@ export interface ApiWeatherHour {
   kod: number
   ilaclama: ApiSprayStatus
   ilaclama_nedenleri: string[]
+  gunduz?: boolean
 }
 
 export interface ApiWaterBalance {

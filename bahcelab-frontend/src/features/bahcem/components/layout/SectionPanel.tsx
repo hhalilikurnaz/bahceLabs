@@ -1,20 +1,39 @@
-import { LogOut, Store } from 'lucide-react'
+import { Briefcase, LogOut, Store, Wrench } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, EmptyState } from '@/components/ui'
 import { ComingSoonList } from '../garden-page/ComingSoonList'
 import { NotificationPreferences } from '../notifications/NotificationPreferences'
 import { NotificationsPanel } from '../notifications/NotificationsPanel'
-import { NOTIFICATION_ITEMS, SETTINGS_ITEMS } from '../garden-page/comingSoonItems'
+import { JOBS_ITEMS, MARKET_ITEMS, NOTIFICATION_ITEMS, SERVICES_ITEMS, SETTINGS_ITEMS, type ComingSoonItem } from '../garden-page/comingSoonItems'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { Section } from '../../lib/routes'
 
-const COPY: Record<'pazar', { title: string; intro: string; step: string; icon: typeof Store; text: string }> = {
+type PlaceholderSection = 'islerim' | 'hizmetler' | 'pazar'
+
+const COPY: Record<PlaceholderSection, { title: string; intro: string; step: string; icon: typeof Store; text: string; items: ComingSoonItem[] }> = {
+  islerim: {
+    title: 'İşlerim',
+    intro: 'Sizin adınıza çalışan yardımcılar.',
+    step: 'Faz 1.5',
+    icon: Briefcase,
+    text: 'Hibe, sertifika, sigorta gibi evrak işlerini sizin için hazırlayan yardımcılar burada olacak.',
+    items: JOBS_ITEMS,
+  },
+  hizmetler: {
+    title: 'Hizmetler',
+    intro: 'Sahaya gelen ekipler, laboratuvar ve uzman.',
+    step: 'Faz 1.5',
+    icon: Wrench,
+    text: 'İlaçlama, budama, hasat ekibi, analiz ve danışmanlık hizmetlerini buradan isteyeceksiniz.',
+    items: SERVICES_ITEMS,
+  },
   pazar: {
-    title: 'Pazar & Depo',
-    intro: 'Hasat, stok ve satış kayıtlarınız burada olacak.',
+    title: 'Pazar',
+    intro: 'Satış, depo, girdi ve finansman.',
     step: 'Adım 17',
     icon: Store,
     text: 'Hasat sonrası ürününüzü kaydedip depo ve satış durumunu izleyebileceksiniz.',
+    items: MARKET_ITEMS,
   },
 }
 
@@ -74,12 +93,12 @@ export function SectionPanel({ section }: { section: Exclude<Section, 'bahceler'
         <h2 className="font-display text-h1 text-app-text">{copy.title}</h2>
         <p className="mt-1 text-body text-app-text-muted">{copy.intro}</p>
       </header>
-      <EmptyState
-        className="flex-1 justify-center"
-        icon={<Icon className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
-        title={`Yakında – ${copy.step}`}
-        description={copy.text}
-      />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <EmptyState icon={<Icon className="h-7 w-7" strokeWidth={1.5} aria-hidden />} title={`Yakında – ${copy.step}`} description={copy.text} />
+        <div className="px-4 pb-4">
+          <ComingSoonList heading="Neler gelecek" items={copy.items} />
+        </div>
+      </div>
     </div>
   )
 }

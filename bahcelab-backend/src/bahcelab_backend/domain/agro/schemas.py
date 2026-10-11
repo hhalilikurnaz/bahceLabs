@@ -147,6 +147,7 @@ class BugunMaddesiYanit(BaseModel):
     baslik: str
     metin: str
     sekme: Literal["durum", "analiz", "hava", "gunluk", "rapor"]
+    ayrinti: str | None = None
 
 
 class BugunYanit(BaseModel):

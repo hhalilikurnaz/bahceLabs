@@ -32,6 +32,12 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
               <div className="min-w-0">
                 <p className="text-body font-semibold text-app-text">{item.baslik}</p>
                 <p className="text-small text-app-text-muted">{item.metin}</p>
+                {item.ayrinti && (
+                  <details className="group text-small" data-testid="today-detail">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-app-text-muted underline-offset-2 hover:underline">Ayrıntı</summary>
+                    <p className="pb-1 text-app-text-muted">{item.ayrinti}</p>
+                  </details>
+                )}
                 {item.tur !== 'her_sey_yolunda' && (
                   <Link
                     to={gardenPath(gardenId, item.sekme)}

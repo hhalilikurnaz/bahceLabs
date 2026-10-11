@@ -38,8 +38,8 @@ def build_candidates(
     for risk in risks:
         if risk.seviye == "yuksek" and risk.veri_yeterli:
             out.append(
-                Candidate(garden_id, "zararli_riski", "uyari", f"{garden_name}: {risk.ad} – yüksek risk", f"{risk.gerekce} (Risk tahminidir, teşhis değildir.)", "hava",
-                          f"risk:{garden_id}:{risk.kod}:{risk.gecerlilik_baslangic}")
+                Candidate(garden_id, "zararli_riski", "uyari", f"{garden_name}: {risk.ad}", risk.sade, "hava",
+                          f"risk:{garden_id}:{risk.kod}:{today.isocalendar().year}-W{today.isocalendar().week:02d}")
             )
     if irrigation is not None and irrigation.gerekli:
         iso = today.isocalendar()

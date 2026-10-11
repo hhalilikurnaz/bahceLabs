@@ -14,14 +14,16 @@ kurallar:
       yayınlarda farklı verilir; buradaki değerler ön değerdir ve ilçe tarım müdürlüğü uyarılarıyla doğrulanmalıdır.
     parametreler:
       gdd_taban_c: 10.0
-      birikim_baslangic: "03-01"      # AA-GG: bu tarihten bugüne günlük GDD toplanır
-      orta_gdd: 350.0                  # birikim bu değeri aşınca "orta"
-      yuksek_gdd: 600.0                # birikim bu değeri aşınca "yüksek"
-      aktif_sicaklik_min_c: 16.0       # son 7 günün ortalaması bu aralık dışındaysa seviye bir kademe düşer
+      birikim_baslangic: "03-01"      # AA-GG: bu tarihten itibaren günlük GDD toplanır
+      nesil_gdd: 400.0                 # bir kuşak (döngü) için gereken GDD; dolunca sayaç SIFIRLANIR, sonraki kuşak sayılır
+      yeni_kusak_yakin_orani: 0.8      # döngünün bu oranından sonra "yeni kuşak çıkışı yaklaşıyor" notu
+      aktivite_pencere_gun: 10         # seviye son 10 günün aktivite koşullarına bağlıdır
+      aktif_sicaklik_min_c: 16.0       # günlük ortalama bu aralıktaysa gün "aktif" sayılır
       aktif_sicaklik_max_c: 32.0
-      sicaklik_pencere_gun: 7
-      duyarli_evreler: [meyve_gelisimi, olgunlasma]   # "yüksek" yalnızca meyvenin duyarlı olduğu evrelerde verilir
-      tuzak_esikleri: null             # Adım 12: tuzak başına yakalanan sayıya göre eşikler
+      aktif_gun_orani: 0.7             # pencerenin en az bu oranı aktif olmalı
+      duyarli_evreler: [meyve_gelisimi, olgunlasma]   # seviye yalnızca meyvenin duyarlı olduğu evrelerde "orta" olur
+      # Tuzak sayımı yoksa en fazla "orta – tuzak kontrolü önerilir". "yüksek" YALNIZCA tuzak verisi eşiği aşınca (Adım 12 bağlar).
+      tuzak_esikleri: {orta: 2.0, yuksek: 5.0}   # tuzak başına haftalık yakalanan adet (ön değer)
   kirmizi_orumcek:
     ad: "Kırmızı örümcek"
     kisa: "Kırmızı örümcek riski"

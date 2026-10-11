@@ -32,13 +32,22 @@ _HOURLY = (
 )
 _DAILY = (
     "temperature_2m_max,temperature_2m_min,precipitation_sum,et0_fao_evapotranspiration,weather_code,"
-    "precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max"
+    "precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset"
 )
 _ARCHIVE_DAILY = "temperature_2m_max,temperature_2m_min,precipitation_sum,et0_fao_evapotranspiration"
 
 
 def _num(value: Any, default: float | None = None) -> float | None:
     return float(value) if isinstance(value, int | float) else default
+
+
+def _clock(values: Any, index: int) -> str | None:
+    """Open-Meteo 'YYYY-MM-DDTHH:MM' → 'HH:MM' (yoksa None: sabit gündüz saatlerine dönülür)."""
+    try:
+        text = values[index]
+    except (TypeError, IndexError):
+        return None
+    return text[11:16] if isinstance(text, str) and len(text) >= 16 else None
 
 
 class OpenMeteoProvider:
@@ -117,6 +126,8 @@ class OpenMeteoProvider:
                 yagis_olasiligi=_num(daily_raw["precipitation_probability_max"][i]),
                 ruzgar_max=_num(daily_raw["wind_speed_10m_max"][i]),
                 hamle_max=_num(daily_raw["wind_gusts_10m_max"][i]),
+                gun_dogumu=_clock(daily_raw.get("sunrise"), i),
+                gun_batimi=_clock(daily_raw.get("sunset"), i),
             )
             for i, day in enumerate(daily_raw["time"])
         ]

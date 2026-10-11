@@ -35,7 +35,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       {/* Bahçelerim, bölümler ve bahçe sayfası. Üst rota sabit kalır: harita sayfalar arasında yeniden kurulmaz.
-          /bahcem · /bahcem/pazar|bildirimler|ayarlar · /bahcem/:id → /durum · /bahcem/:id/:sekme */}
+          /bahcem · /bahcem/islerim|hizmetler|pazar|bildirimler|ayarlar · /bahcem/:id → /durum · /bahcem/:id/:sekme */}
       <Route
         path="/bahcem"
         element={
@@ -45,6 +45,8 @@ export default function App() {
         }
       >
         <Route index element={null} />
+        <Route path="islerim" element={null} />
+        <Route path="hizmetler" element={null} />
         <Route path="pazar" element={null} />
         <Route path="bildirimler" element={null} />
         <Route path="ayarlar" element={null} />

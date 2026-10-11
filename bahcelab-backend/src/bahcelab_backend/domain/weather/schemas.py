@@ -45,6 +45,8 @@ class GunTahmini(BaseModel):
     aciklama: str
     ikon: str
     ilaclama: IlaclamaGunu
+    gun_dogumu: str | None = None
+    gun_batimi: str | None = None
 
 
 class SaatTahmini(BaseModel):
@@ -59,6 +61,7 @@ class SaatTahmini(BaseModel):
     kod: int
     ilaclama: SprayStatus
     ilaclama_nedenleri: list[str]
+    gunduz: bool = True
 
 
 class HavaUyarisi(BaseModel):

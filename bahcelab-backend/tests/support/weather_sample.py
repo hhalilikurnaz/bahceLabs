@@ -58,6 +58,8 @@ def build_sample_forecast(now: datetime) -> Forecast:
                 kod=63 if rainy else (2 if offset % 3 == 0 else 0),
                 yagis_olasiligi=80.0 if rainy else 10.0,
                 ruzgar_max=18.0 if rainy else 12.0,
+                gun_dogumu="07:00",
+                gun_batimi="18:30",
                 hamle_max=30.0 if rainy else 21.0,
             )
         )

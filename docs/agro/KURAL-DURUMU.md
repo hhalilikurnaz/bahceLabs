@@ -26,9 +26,13 @@ Dosyalar: `rules/sulama.yaml`, `rules/riskler.yaml`.
 | Etkili yağış | günlük yağış < 2 mm sayılmaz; eşiği aşanın %80'i etkili; günlük üst sınır 40 mm | Genel yaklaşım; toprak tipi/eğime göre uyarlanmadı | doğrulanmadı |
 | Sulama sistemi verimliliği | damla 0,90 · yağmurlama 0,75 · salma 0,60 · sistem yok: verimlilik uygulanmaz | Yaygın literatür aralıkları | doğrulanmadı |
 | Sulama hesabı | ETc = ET₀ × Kc − etkili yağış; son 7 gün açığı; önümüzdeki 7 gün ihtiyacı; 1 mm = 1 ton/dekar; ihtiyaç eşiği 5 mm | Kc: katalog (FAO-56 tabanlı ön değer) | doğrulanmadı |
-| Akdeniz meyve sineği | GDD tabanı 10 °C, birikim 1 Mart'tan; orta ≥ 350, yüksek ≥ 600 GDD; son 7 gün ortalaması 16–32 °C dışındaysa bir kademe düşer; "yüksek" yalnızca meyve büyümesi/olgunlaşma evresinde | GDD'ye dayalı genel bölgesel uyarı yaklaşımı; eşikler ön değer | doğrulanmadı |
+| Akdeniz meyve sineği | Kuşak/döngü bazlı GDD (taban 10 °C, 1 Mart'tan; 400 GDD'de sayaç sıfırlanır, sonraki kuşak sayılır); seviye = son 10 günün aktivitesi (günlerin ≥ %70'i 16–32 °C) × meyvenin duyarlı evresi (büyüme/olgunlaşma) → «orta – tuzak kontrolü önerilir»; «yüksek» YALNIZ tuzak verisi eşiği aşınca (orta ≥ 2, yüksek ≥ 5 adet/tuzak/hafta; Adım 12 bağlar) | GDD'ye dayalı genel bölgesel yaklaşım; eşikler ön değer | doğrulanmadı |
 | Kırmızı örümcek | sıcak gün: Tmax ≥ 30 °C; kuru gün: yağış < 1 mm (ve bilinen tahmin günlerinde nem ≤ %50); art arda ≥ 4 gün orta, ≥ 7 gün yüksek | Sıcak-kuru gün serisinin popülasyonu hızlandırdığı yönünde genel gözlem | doğrulanmadı |
 | Kuruma hastalığı (mal secco) — yalnız limon | orta: yağış ≥ 5 mm ve rüzgâr ≥ 20 km/s; yüksek: ≥ 10 mm ve ≥ 30 km/s; ortalama sıcaklık 14–28 °C; risk penceresi koşuldan sonra 3 gün | Yağmur + rüzgâr + ılık sıcaklıkta enfeksiyon olasılığı artar (genel bilgi) | doğrulanmadı |
 | Tuzak sayımı | arayüz hazır, değer yok (Adım 12) | — | — |
 
 Bu çıktılar teşhis ya da ilaçlama/sulama reçetesi değildir; arayüzde "risk tahmini" / "yaklaşık öneri" dilindedir.
+
+
+## Yıl boyu simülasyon (8B düzeltmesi)
+`scripts/simulate_risks.py` ve `tests/test_agro_risks.py::test_year_simulation…`: Open-Meteo arşivinden alınmış gerçek 2025 günlük verisiyle (`tests/fixtures/weather_2025_mersin.json`) her gün «o gün bugün olsaydı» çalıştırılır; hiçbir kural yılın %30'undan fazlasında «yüksek» olamaz (testle zorunlu).

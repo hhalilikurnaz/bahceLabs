@@ -19,6 +19,23 @@ def _down(level: Seviye) -> Seviye:
     return _DOWN[level]
 
 
+# (kural, seviye) → sade cümle. «Orta/yüksek» dışındakiler Bugün listesinde gösterilmez.
+_PLAIN: dict[tuple[str, Seviye], str] = {
+    ("akdeniz_meyve_sinegi", "orta"): "Meyve sineği için koşullar uygun – tuzakları kontrol edin.",
+    ("akdeniz_meyve_sinegi", "yuksek"): "Tuzaklarda meyve sineği çok yakalandı – ilçe tarım müdürlüğüne danışın.",
+    ("kirmizi_orumcek", "orta"): "Sıcak ve kuru günler sürüyor – yaprakların altında kırmızı örümceği kontrol edin.",
+    ("kirmizi_orumcek", "yuksek"): "Uzun süredir sıcak ve kuru – kırmızı örümcek riski yüksek, bahçeyi gezin.",
+    ("kuruma_hastaligi", "orta"): "Yağmur ve rüzgâr bekleniyor – yaralı dallarda kuruma hastalığı bulaşma riski var.",
+    ("kuruma_hastaligi", "yuksek"): "Kuvvetli yağmur ve rüzgâr bekleniyor – kuruma hastalığı bulaşma riski yüksek.",
+}
+
+
+def plain_sentence(code: str, level: Seviye, data_ok: bool = True) -> str:
+    if not data_ok:
+        return "Bu risk için yeterli veri yok."
+    return _PLAIN.get((code, level), "Şu an belirgin bir risk görünmüyor.")
+
+
 @dataclass(frozen=True)
 class RiskSonucu:
     kod: str
@@ -28,6 +45,11 @@ class RiskSonucu:
     gecerlilik_baslangic: date
     gecerlilik_bitis: date
     veri_yeterli: bool
+
+    @property
+    def sade(self) -> str:
+        """Çiftçi dilinde tek cümle (teknik ayrıntı `gerekce`'de)."""
+        return plain_sentence(self.kod, self.seviye, self.veri_yeterli)
 
 
 @dataclass(frozen=True)
@@ -49,45 +71,75 @@ def _n(value: float) -> str:
 
 
 # ----------------------------------------------------------------------------- Akdeniz meyve sineği
-def fruit_fly(rule: RiskKurali, history: dict[date, GunVerisi], today: date, stage_code: str | None, stage_name: str | None) -> RiskSonucu:
+def fly_cycles(history: dict[date, GunVerisi], start: date, today: date, base_c: float, per_cycle_gdd: float) -> tuple[int, float, float, int, int]:
+    """Kuşak (döngü) bazlı birikim: GDD `per_cycle_gdd`'ye ulaşınca sayaç SIFIRLANIR, sonraki kuşak sayılır.
+    Dönüş: (tamamlanan kuşak, mevcut kuşakta biriken GDD, toplam GDD, verisi olan gün, toplam gün)."""
+    gdd_cycle = 0.0
+    total = 0.0
+    completed = 0
+    have = 0
+    span = (today - start).days
+    for i in range(span):
+        d = history.get(start + timedelta(days=i))
+        if d is None or d.tmean is None:
+            continue
+        have += 1
+        step = max(0.0, d.tmean - base_c)
+        gdd_cycle += step
+        total += step
+        while gdd_cycle >= per_cycle_gdd:
+            gdd_cycle -= per_cycle_gdd
+            completed += 1
+    return completed, gdd_cycle, total, have, span
+
+
+def fruit_fly(
+    rule: RiskKurali,
+    history: dict[date, GunVerisi],
+    today: date,
+    stage_code: str | None,
+    stage_name: str | None,
+    trap_per_week: float | None = None,
+) -> RiskSonucu:
+    """Seviye = (son günlerin aktivite koşulları) × (meyvenin duyarlı evresi). Tuzak sayımı yoksa en fazla «orta» (tuzak
+    kontrolü önerilir); «yüksek» yalnızca tuzak verisi eşiği aştığında verilir (`trap_per_week`: tuzak başına haftalık yakalama)."""
     p = rule.parametreler
     month, day = (int(x) for x in str(p["birikim_baslangic"]).split("-"))
     start = date(today.year, month, day)
     valid_end = today + timedelta(days=7)
+    code = "akdeniz_meyve_sinegi"
     if today < start:
-        return RiskSonucu("akdeniz_meyve_sinegi", rule.ad, "dusuk", f"Birikim {day}.{month:02d} tarihinde başlar; henüz etkili sıcaklık toplanmadı.", today, valid_end, True)
+        return RiskSonucu(code, rule.ad, "dusuk", f"Birikim {day}.{month:02d} tarihinde başlar; henüz etkili sıcaklık toplanmadı.", today, valid_end, True)
 
-    total_days = (today - start).days
-    gdd = 0.0
-    have = 0
-    for i in range(total_days):
-        d = history.get(start + timedelta(days=i))
-        if d and d.tmean is not None:
-            gdd += max(0.0, d.tmean - float(p["gdd_taban_c"]))
-            have += 1
-    if total_days > 0 and have / total_days < 0.7:
-        return RiskSonucu("akdeniz_meyve_sinegi", rule.ad, "dusuk", "Sıcaklık verisi eksik olduğundan gün-derece birikimi güvenilir hesaplanamadı (veri yetersiz).", today, valid_end, False)
+    completed, in_cycle, _, have, span = fly_cycles(history, start, today, float(p["gdd_taban_c"]), float(p["nesil_gdd"]))
+    if span > 0 and have / span < 0.7:
+        return RiskSonucu(code, rule.ad, "dusuk", "Sıcaklık verisi eksik olduğundan gün-derece birikimi güvenilir hesaplanamadı (veri yetersiz).", today, valid_end, False)
 
-    level: Seviye = "yuksek" if gdd >= float(p["yuksek_gdd"]) else "orta" if gdd >= float(p["orta_gdd"]) else "dusuk"
-    window = int(p["sicaklik_pencere_gun"])
-    recent = [d.tmean for d in (history.get(today - timedelta(days=i)) for i in range(1, window + 1)) if d and d.tmean is not None]
-    notes: list[str] = []
-    if recent:
-        avg = sum(recent) / len(recent)
-        lo, hi = float(p["aktif_sicaklik_min_c"]), float(p["aktif_sicaklik_max_c"])
-        if not lo <= avg <= hi:
-            level = _down(level)
-            notes.append(f"son {len(recent)} gün ortalaması {_n(avg)} °C aktif aralığın ({_n(lo)}–{_n(hi)} °C) dışında olduğundan seviye düşürüldü")
-        else:
-            notes.append(f"son {len(recent)} gün ortalaması {_n(avg)} °C (aktif aralık {_n(lo)}–{_n(hi)} °C)")
+    window = int(p["aktivite_pencere_gun"])
+    means = [d.tmean for d in (history.get(today - timedelta(days=i)) for i in range(1, window + 1)) if d and d.tmean is not None]
+    lo, hi = float(p["aktif_sicaklik_min_c"]), float(p["aktif_sicaklik_max_c"])
+    active_share = sum(1 for m in means if lo <= m <= hi) / len(means) if means else 0.0
+    active = bool(means) and active_share >= float(p["aktif_gun_orani"])
     sensitive = stage_code in list(p["duyarli_evreler"])
-    if level == "yuksek" and not sensitive:
-        level = "orta"
-        notes.append("meyve henüz duyarlı evrede olmadığından en çok “orta” verildi")
-    elif stage_name:
-        notes.append(f"evre: {stage_name}{' (duyarlı)' if sensitive else ''}")
-    reason = f"{day}.{month:02d}'dan beri biriken etkili sıcaklık {_n(gdd)} GDD (orta eşik {_n(float(p['orta_gdd']))}, yüksek eşik {_n(float(p['yuksek_gdd']))}); " + "; ".join(notes) + "."
-    return RiskSonucu("akdeniz_meyve_sinegi", rule.ad, level, reason, today, valid_end, True)
+    cycle_pct = in_cycle / float(p["nesil_gdd"])
+    cycle_note = f"{completed + 1}. kuşak, döngünün %{_n(cycle_pct * 100)}'i"
+    if cycle_pct >= float(p["yeni_kusak_yakin_orani"]):
+        cycle_note += " (yeni kuşak çıkışı yaklaşıyor)"
+
+    traps = p.get("tuzak_esikleri") or {}
+    if trap_per_week is not None and traps:
+        level: Seviye = "yuksek" if trap_per_week >= float(traps["yuksek"]) else "orta" if trap_per_week >= float(traps["orta"]) else "dusuk"
+        reason = f"Tuzaklarda haftalık ortalama {_n(trap_per_week)} adet yakalandı (orta eşik {_n(float(traps['orta']))}, yüksek eşik {_n(float(traps['yuksek']))}); {cycle_note}."
+        return RiskSonucu(code, rule.ad, level, reason, today, valid_end, True)
+
+    parts = [f"son {len(means)} günün %{_n(active_share * 100)}'inde sıcaklık aktif aralıkta ({_n(lo)}–{_n(hi)} °C)"]
+    if stage_name:
+        parts.append(f"evre: {stage_name}{' (meyve duyarlı)' if sensitive else ' (meyve henüz duyarlı değil)'}")
+    parts.append(cycle_note)
+    if active and sensitive:
+        return RiskSonucu(code, rule.ad, "orta", "Koşullar uygun – tuzak kontrolü önerilir; " + "; ".join(parts) + ". Tuzak sayımı olmadan «yüksek» verilmez.", today, valid_end, True)
+    why = "sıcaklık koşulları etkinliğe uygun değil" if not active else "meyve henüz duyarlı evrede değil"
+    return RiskSonucu(code, rule.ad, "dusuk", f"Şu an etkinlik beklenmiyor ({why}); " + "; ".join(parts) + ".", today, valid_end, True)
 
 
 # ----------------------------------------------------------------------------- kırmızı örümcek

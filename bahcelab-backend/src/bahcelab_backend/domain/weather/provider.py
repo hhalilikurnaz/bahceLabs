@@ -53,6 +53,8 @@ class DailyPoint(BaseModel):
     yagis_olasiligi: float | None = None
     ruzgar_max: float | None = None
     hamle_max: float | None = None
+    gun_dogumu: str | None = None  # yerel saat, SS:DD
+    gun_batimi: str | None = None
 
 
 class Forecast(BaseModel):

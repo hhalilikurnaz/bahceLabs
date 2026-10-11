@@ -11,11 +11,13 @@ export const GARDEN_TAB_LABELS: Record<GardenTab, string> = {
 }
 
 /** Sol menü bölümleri */
-export const SECTIONS = ['bahceler', 'pazar', 'bildirimler', 'ayarlar'] as const
+export const SECTIONS = ['bahceler', 'islerim', 'hizmetler', 'pazar', 'bildirimler', 'ayarlar'] as const
 export type Section = (typeof SECTIONS)[number]
 
 export const SECTION_PATHS: Record<Section, string> = {
   bahceler: '/bahcem',
+  islerim: '/bahcem/islerim',
+  hizmetler: '/bahcem/hizmetler',
   pazar: '/bahcem/pazar',
   bildirimler: '/bahcem/bildirimler',
   ayarlar: '/bahcem/ayarlar',

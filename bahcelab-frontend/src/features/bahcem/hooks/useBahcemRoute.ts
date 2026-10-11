@@ -12,7 +12,7 @@ export interface BahcemRoute {
   rawTab: string | undefined
 }
 
-const OTHER_SECTIONS = ['pazar', 'bildirimler', 'ayarlar'] as const
+const OTHER_SECTIONS = ['islerim', 'hizmetler', 'pazar', 'bildirimler', 'ayarlar'] as const
 
 /** `/bahcem/[bölüm | :id/:sekme]` yolunu çözer (saf fonksiyon; testlenir). */
 export function parseBahcemPath(pathname: string): BahcemRoute {

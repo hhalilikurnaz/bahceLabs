@@ -209,6 +209,11 @@ Bu belgenin 0. bölümü.
 | 19 | Çoklu kullanıcı |
 | 20 | Yayına hazırlık |
 
+**Faz 1.5 – Ajanlar ve Hizmetler (Faz 1'den sonra, ADR 0010).** Sol menüde «Yakında» olarak yer alır; bu fazda yapılacaklar:
+- **İşlerim (ajanlar):** hibe/destek, kalıntı ve ihracat uyumu, sertifika, sigorta ve hasar, kredi dosyası, satış, sürdürülebilirlik raporu.
+- **Hizmetler:** saha ekipleri (drone ilaçlama/gübreleme, budama, hasat ekibi, nakliye), laboratuvar (toprak/yaprak/su/kalıntı analizi), uzman (ziraat mühendisi danışmanlığı).
+- **Pazar:** girdi ve finansman (satış ve depo Adım 17'de).
+
 **Tasarım dokümanı (docs/design/TASARIM-IYILESTIRME.md) §8 kararları**
 - **Altlık:** Esri kullanılmaz (ücretsiz kullanımı ticari değil). Ana altlık **Mapbox Satellite** (raster karolar, MapLibre'de), yedek **MapTiler**. Adres arama MapTiler geocoding ile kalır.
 - **Logo:** bahcelabs.com landing'indeki logo; uygulamada tek logo, koyu ve açık zemin varyantı.

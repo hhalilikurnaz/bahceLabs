@@ -197,7 +197,7 @@ def test_today_defaults_to_all_clear():
 def test_today_orders_by_priority_and_limits_to_three():
     data = Girdi(
         hava_uyarilari=[("sari", "Sıcak dalgası", "…"), ("kirmizi", "Don riski", "…")],
-        zararli_riskleri=[("yuksek", "Meyve sineği", "…"), ("dusuk", "Kırmızı örümcek", "…")],
+        zararli_riskleri=[("yuksek", "Meyve sineği", "Sade cümle.", "GDD …"), ("dusuk", "Kırmızı örümcek", "—", "…")],
         ilaclama=[(TODAY, "06:00", "10:00")],
         uydu_uyarilari=[("kirmizi", "Canlılık düşüşü", "…")],
         sulama=(12.0, "Önümüzdeki hafta yaklaşık 12 mm su ihtiyacı var."),
@@ -211,8 +211,23 @@ def test_today_orders_by_priority_and_limits_to_three():
 def test_today_spray_window_wording_and_lower_priorities():
     data = Girdi([], [], [(TODAY + timedelta(days=1), "05:00", "09:00")], [("sari", "Klorofil düşüşü", "…")], None)
     items = build_today(data, TODAY, PRIORITY, 3)
-    assert items[0].tur == "ilaclama" and "Yarın" in items[0].baslik and "05:00–09:00" in items[0].metin
+    assert items[0].tur == "ilaclama" and items[0].baslik == "İlaçlama: yarın 05:00–09:00"
     assert items[1].tur == "indeks_dususu" and items[1].sekme == "durum"
+
+
+def test_today_spray_items_are_merged_into_a_single_line():
+    data = Girdi([], [], [(TODAY, "07:30", "10:00"), (TODAY + timedelta(days=1), "07:15", "09:00")], [], None)
+    items = [i for i in build_today(data, TODAY, PRIORITY, 3) if i.tur == "ilaclama"]
+    assert [i.baslik for i in items] == ["İlaçlama: bugün 07:30–10:00, yarın 07:15–09:00"]
+
+
+def test_today_risk_item_is_plain_with_technical_detail_kept_separately():
+    data = Girdi([], [("orta", "Akdeniz meyve sineği", "Meyve sineği için koşullar uygun – tuzakları kontrol edin.", "400 GDD, eşik …")], [], [], None)
+    item = build_today(data, TODAY, PRIORITY, 3)[0]
+    assert item.baslik == "Akdeniz meyve sineği" and item.metin.startswith("Meyve sineği için koşullar uygun")
+    assert "GDD" not in item.metin and item.ayrinti and "GDD" in item.ayrinti and "teşhis değildir" in item.ayrinti
+    low = Girdi([], [("dusuk", "X", "—", "…")], [], [], None)
+    assert build_today(low, TODAY, PRIORITY, 3)[0].tur == "her_sey_yolunda"
 
 
 def test_high_pest_risk_lowers_points_but_does_not_cap_the_label_by_itself():

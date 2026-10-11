@@ -13,7 +13,8 @@ function fakeWeather(today: string) {
     hamle: 10,
     et0: 0.1,
     kod: 0,
-    ilaclama: h === 10 ? 'uygun_degil' : 'uygun',
+    ilaclama: h === 10 ? 'uygun_degil' : h === 12 ? 'sinirda' : 'uygun',
+    gunduz: h >= 7 && h < 19,
     ilaclama_nedenleri: h === 10 ? ['Rüzgâr çok kuvvetli (30 km/s); ilaç sürüklenir.'] : ['Rüzgâr, yağış ve sıcaklık koşulları uygun.'],
   }))
   return {
@@ -36,7 +37,9 @@ function fakeWeather(today: string) {
         kod: 0,
         aciklama: 'Açık',
         ikon: 'gunes',
-        ilaclama: { uygun_saat: 23, sinirda_saat: 0, uygun_degil_saat: 1, en_iyi_aralik: ['11:00', '21:00'] },
+        gun_dogumu: '07:00',
+        gun_batimi: '19:00',
+        ilaclama: { uygun_saat: 23, sinirda_saat: 0, uygun_degil_saat: 1, en_iyi_aralik: ['13:00', '19:00'] },
       },
     ],
     saatlik: hours,
@@ -54,16 +57,25 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
 
   await page.goto(`/bahcem/${garden.id}/hava`)
   await expect(page.getByTestId('best-spray')).toContainText('Bu hafta ilaçlama için en iyi zaman')
-  await expect(page.getByTestId('best-spray-time')).toContainText('11:00–21:00')
+  await expect(page.getByTestId('best-spray-time')).toContainText('13:00–19:00')
   await expect(page.getByTestId('current-temp')).toContainText('20')
   await expect(page.getByTestId('daily-forecast')).toContainText('Olasılık %')
-  await expect(page.getByTestId('daily-forecast')).toContainText('11:00–21:00')
+  await expect(page.getByTestId('daily-forecast')).toContainText('13:00–19:00')
 
   // Saatlik şerit: satıra odaklanıp ok tuşuyla saat seç
   const row = page.getByTestId('spray-row').first().getByRole('group')
   await row.focus()
   for (let i = 0; i < 11; i++) await row.press('ArrowRight')
   await expect(page.getByTestId('spray-info')).toContainText('Rüzgâr çok kuvvetli')
+
+  // Gece saatleri soluk ve «gece» etiketli; üç durum desenle de ayrışır (renk körü dostu palet)
+  const strip = page.getByTestId('spray-strip')
+  await expect(strip.getByTestId('night-label').first()).toHaveText('gece')
+  await expect(strip.locator('[data-night="true"]').first()).toHaveClass(/opacity-35/)
+  await expect(strip.locator('[data-status="uygun"].spray-ok').first()).toBeVisible()
+  await expect(strip.locator('[data-status="sinirda"].spray-edge').first()).toBeVisible()
+  await expect(strip.locator('[data-status="uygun_degil"].spray-no').first()).toBeVisible()
+  await expect(strip.getByRole('list').getByText('✓')).toBeVisible()
 
   await expect(page.getByTestId('water-balance')).toContainText('−28 mm')
   await expect(page.getByTestId('weather-attribution').getByRole('link', { name: 'Open-Meteo.com' })).toHaveAttribute('href', 'https://open-meteo.com/')

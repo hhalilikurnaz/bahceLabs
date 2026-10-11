@@ -35,8 +35,18 @@ test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', asy
 
 test('sol menü bölümleri "Yakında" gösterir; planlama rotası kapalı; Copilot çekmecesi açılır', async ({ page }) => {
   await page.goto('/bahcem')
-  await page.getByRole('link', { name: 'Pazar & Depo', exact: true }).click()
-  await expect(page.getByText('Yakında – Adım 17').first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Ayarlar' })).toBeVisible()
+  const rail = await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
+  expect(rail).toEqual(['Bahçelerim', 'İşlerim', 'Hizmetler', 'Pazar', 'Bildirimler', 'Ayarlar'])
+  for (const [name, soon, sample] of [
+    ['İşlerim', 'Yakında – Faz 1.5', 'Hibe ve destek'],
+    ['Hizmetler', 'Yakında – Faz 1.5', 'Saha ekipleri'],
+    ['Pazar', 'Yakında – Adım 17', 'Girdi ve finansman'],
+  ] as const) {
+    await page.getByRole('link', { name, exact: true }).click()
+    await expect(page.getByText(soon).first()).toBeVisible()
+    await expect(page.getByTestId('coming-soon').filter({ hasText: sample })).toBeVisible()
+  }
   await page.getByRole('link', { name: 'Bildirimler', exact: true }).click()
   await expect(page.getByTestId('notifications-panel')).toBeVisible()
   await expect(page.getByText('Henüz bildirim yok')).toBeVisible()

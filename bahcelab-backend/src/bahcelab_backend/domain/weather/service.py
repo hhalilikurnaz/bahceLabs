@@ -216,6 +216,7 @@ class WeatherService:
         forecast = data.forecast
         spray = rules.classify_spray_hours(forecast.hourly)
         paired = list(zip(forecast.hourly, spray, strict=True))
+        sun_by_day = _sun_by_day(forecast)
         hours = [
             SaatTahmini(
                 zaman=h.zaman,
@@ -229,6 +230,7 @@ class WeatherService:
                 kod=h.kod,
                 ilaclama=s.durum,
                 ilaclama_nedenleri=s.nedenler,
+                gunduz=rules.is_daytime(h.zaman, sun_by_day.get(h.zaman[:10])),
             )
             for h, s in paired
         ]
@@ -238,7 +240,7 @@ class WeatherService:
             if d.tarih < today:
                 continue
             key = d.tarih.isoformat()
-            summary = rules.summarize_spray_day([(h.zaman, s) for h, s in paired if h.zaman[:10] == key])
+            summary = rules.summarize_spray_day([(h.zaman, s) for h, s in paired if h.zaman[:10] == key], sun_by_day.get(key))
             label, icon = describe(d.kod)
             days.append(
                 GunTahmini(
@@ -253,6 +255,8 @@ class WeatherService:
                     kod=d.kod,
                     aciklama=label,
                     ikon=icon,
+                    gun_dogumu=d.gun_dogumu,
+                    gun_batimi=d.gun_batimi,
                     ilaclama=IlaclamaGunu(
                         uygun_saat=summary.uygun_saat,
                         sinirda_saat=summary.sinirda_saat,
@@ -368,11 +372,16 @@ class WeatherService:
         return items
 
 
+def _sun_by_day(forecast: Forecast) -> dict[str, rules.SunTimes]:
+    return {d.tarih.isoformat(): (d.gun_dogumu, d.gun_batimi) for d in forecast.daily if d.gun_dogumu and d.gun_batimi}
+
+
 def _next_spray(forecast: Forecast, now: str) -> IlaclamaAraligi | None:
     """Şimdiden sonraki ilk kesintisiz (en az 2 saat) gündüz ilaçlama aralığı."""
     spray = rules.classify_spray_hours(forecast.hourly)
+    sun = _sun_by_day(forecast)
     ok = [
-        s.durum == "uygun" and h.zaman[:13] >= now[:13] and rules.is_daytime(h.zaman)
+        s.durum == "uygun" and h.zaman[:13] >= now[:13] and rules.is_daytime(h.zaman, sun.get(h.zaman[:10]))
         for h, s in zip(forecast.hourly, spray, strict=True)
     ]
     i = 0

@@ -99,6 +99,11 @@ async def test_weather_response_shape(user_client: AsyncClient, provider):
     assert {"uygun_saat", "sinirda_saat", "uygun_degil_saat"} <= set(day["ilaclama"])
     assert day["ilaclama"]["uygun_saat"] + day["ilaclama"]["sinirda_saat"] + day["ilaclama"]["uygun_degil_saat"] == 24
     assert {"uygun", "sinirda", "uygun_degil"} >= {h["ilaclama"] for h in data["saatlik"]}
+    assert day["gun_dogumu"] == "07:00" and day["gun_batimi"] == "18:30"
+    assert {h["gunduz"] for h in data["saatlik"] if h["zaman"][:10] == day["tarih"] and h["zaman"][11:13] in ("03", "23")} == {False}
+    assert all(h["gunduz"] for h in data["saatlik"] if h["zaman"][:10] == day["tarih"] and h["zaman"][11:13] == "12")
+    window = day["ilaclama"]["en_iyi_aralik"]
+    assert window is None or ("07:00" <= window[0] and window[1] <= "18:30")
     assert data["su_dengesi"][0]["aciklama"]
     assert [t["etiket"] for t in data["yagis_toplamlari"]] == ["Son 7 gün", "Son 30 gün", "Sezon başından beri"]
     assert data["yagis_toplamlari"][0]["mm"] is not None

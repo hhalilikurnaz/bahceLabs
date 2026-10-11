@@ -19,11 +19,11 @@ export function BestSprayBanner({ weather }: { weather: Weather }) {
           <>
             <p className="font-display text-h1 text-app-text">
               Bu hafta ilaçlama için en iyi zaman:{' '}
-              <span className="text-app-accent" data-testid="best-spray-time">
+              <span className="text-[color:var(--color-spray-ok)]" data-testid="best-spray-time">
                 {best.gun} {best.aralik[0]}–{best.aralik[1]}
               </span>
             </p>
-            <p className="text-small text-app-text-muted">Rüzgâr, yağış ve sıcaklık koşullarına göre en uzun uygun gündüz aralığı; yaklaşık bir değerlendirmedir, ürün etiketindeki koşullar esastır.</p>
+            <p className="text-small text-app-text-muted">Rüzgâr, yağış ve sıcaklık koşullarına göre en uzun uygun gündüz aralığı yalnızca gün doğumu–batımı arası; yaklaşık bir değerlendirmedir, ürün etiketindeki koşullar esastır.</p>
           </>
         ) : (
           <>

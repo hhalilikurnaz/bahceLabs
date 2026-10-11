@@ -50,7 +50,8 @@ export function DailyForecast({ days }: { days: WeatherDay[] }) {
                       <>
                         <span className="hidden @sm:inline">İlaçlama:</span>
                         <span className="sr-only @sm:hidden">İlaçlama:</span>
-                        <strong className="text-app-success">{window[0]}–{window[1]}</strong>
+                        <i className="spray-ok h-2.5 w-2.5 rounded-sm" aria-hidden />
+                        <strong className="text-app-text">{window[0]}–{window[1]}</strong>
                       </>
                     ) : (
                       <>
