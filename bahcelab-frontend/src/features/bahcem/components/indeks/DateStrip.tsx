@@ -14,9 +14,10 @@ const SPEEDS = [0.5, 1, 2] as const
 
 /** Haritanın altında yatay tarih şeridi: küçük önizlemeler, oynat/durdur (zaman atlaması), ok tuşlarıyla gezinme. */
 export function DateStrip() {
+  // Dar ekranda panel açıkken şerit panelin üstüne binmesin
+  const panelOpen = useBahcemStore((s) => s.leftPanelOpen && !s.fullMap)
   const { gardenId, katman, data, active } = useIndexView()
   const mode = useBahcemStore((s) => s.mode)
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
   const oynat = useBahcemStore((s) => s.oynat)
   const hiz = useBahcemStore((s) => s.hiz)
   const setSelectedDate = useBahcemStore((s) => s.setSelectedDate)
@@ -100,9 +101,7 @@ export function DateStrip() {
 
   return (
     <div
-      className={`surface-dark absolute bottom-3 left-[4.25rem] right-[4.5rem] z-20 flex items-stretch gap-2 rounded-2xl border border-app-border bg-app-panel p-2 shadow-2xl transition-[left] duration-300 ease-out ${
-        panelOpen ? 'md:left-[27.5rem]' : 'md:left-[4.25rem]'
-      }`}
+      className={`surface-dark absolute bottom-9 left-[var(--map-left)] right-[calc(var(--map-right)+3.75rem)] z-20 flex items-stretch gap-2 rounded-lg border border-app-border bg-app-panel p-2 shadow-e2 transition-[left,right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${panelOpen ? 'hidden md:flex' : ''}`}
     >
       <div className="flex shrink-0 flex-col items-center justify-center gap-1 border-r border-app-border pr-2">
         <button
@@ -111,7 +110,7 @@ export function DateStrip() {
           disabled={selectable.length < 2}
           aria-label={oynat ? 'Zaman atlamasını durdur' : 'Zaman atlamasını oynat'}
           aria-pressed={oynat}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-app-primary text-app-on-primary transition-colors hover:bg-app-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-11 items-center justify-center rounded-md bg-app-primary text-app-on-primary transition-colors hover:bg-app-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {oynat ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
         </button>
@@ -119,7 +118,7 @@ export function DateStrip() {
           value={hiz}
           onChange={(e) => setHiz(Number(e.target.value) as (typeof SPEEDS)[number])}
           aria-label="Oynatma hızı"
-          className="h-6 w-14 cursor-pointer rounded-md border border-app-border bg-app-card px-1 text-caption text-app-text-muted outline-none"
+          className="h-11 w-16 cursor-pointer rounded-md border border-app-border bg-app-card px-1 text-small text-app-text-muted"
         >
           {SPEEDS.map((s) => (
             <option key={s} value={s}>
@@ -191,7 +190,7 @@ function DateCard({ gardenId, scene, layer, selected, onSelect }: DateCardProps)
       data-date={scene.tarih}
       tabIndex={-1}
       onClick={() => usable && onSelect(scene.tarih)}
-      className={`flex w-[62px] shrink-0 flex-col items-center gap-1 rounded-xl border p-1.5 transition-colors ${
+      className={`flex w-[62px] shrink-0 flex-col items-center gap-1 rounded-md border p-1.5 transition-colors ${
         !usable
           ? 'cursor-not-allowed border-transparent opacity-40'
           : selected
@@ -199,7 +198,7 @@ function DateCard({ gardenId, scene, layer, selected, onSelect }: DateCardProps)
             : 'border-transparent hover:bg-app-card'
       }`}
     >
-      <span className="flex h-11 w-full items-center justify-center overflow-hidden rounded-lg bg-app-bg/80">
+      <span className="flex h-11 w-full items-center justify-center overflow-hidden rounded-sm bg-app-bg/80">
         {!usable ? (
           <Cloud className="h-5 w-5 text-app-text-muted" aria-hidden />
         ) : (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGardenNav } from '../../hooks/useGardenNav'
 import { ArrowLeft, Loader2, TriangleAlert } from 'lucide-react'
+import { Button, IconButton, SelectField, TextField } from '@/components/ui'
 import { describeError, gardensApi } from '../../api/gardensApi'
 import { PRODUCTS, type Urun } from '../../api/types'
 import { useCreateGarden } from '../../api/useGardens'
@@ -14,10 +15,6 @@ type Measure =
   | { status: 'loading' }
   | { status: 'ok'; dekar: number }
   | { status: 'error'; message: string }
-
-const field =
-  'h-10 w-full rounded-xl border border-app-border bg-app-bg/60 px-3 text-body text-app-text outline-none transition-colors placeholder:text-app-text-dim focus:border-app-accent'
-const label = 'mb-1.5 block text-caption font-medium text-app-text-muted'
 
 /** Sınır hazır olduktan sonra bahçe bilgilerini toplayıp kaydeder (sol panelde açılır). */
 export function GardenForm() {
@@ -71,7 +68,10 @@ export function GardenForm() {
         setIl(area.il ?? '')
         setIlce(area.ilce ?? '')
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        // İptal normaldir; diğer hatalarda il/ilçe elle girilebilir ama nedeni konsola yazılır
+        if (!(error instanceof DOMException && error.name === 'AbortError')) console.warn('[BahçeLab] İl/ilçe bulunamadı', error)
+      })
     return () => controller.abort()
   }, [geometry])
 
@@ -111,163 +111,102 @@ export function GardenForm() {
   return (
     <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-app-border px-3 py-3">
-        <button
-          type="button"
-          onClick={resetFlow}
-          aria-label="Vazgeç ve listeye dön"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition-colors hover:bg-app-card hover:text-app-text"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-        </button>
-        <h2 className="text-body font-semibold text-app-text">Yeni bahçe</h2>
+        <IconButton label="Vazgeç ve listeye dön" onClick={resetFlow}>
+          <ArrowLeft className="h-5 w-5" aria-hidden />
+        </IconButton>
+        <h2 className="font-display text-h2 text-app-text">Yeni bahçe</h2>
       </div>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <div>
-          <label htmlFor="garden-ad" className={label}>
-            Bahçe adı
-          </label>
-          <input
-            id="garden-ad"
-            autoFocus
-            required
-            maxLength={120}
-            value={ad}
-            onChange={(e) => setAd(e.target.value)}
-            placeholder="Örn. Yeni parsel limonları"
-            className={field}
-          />
-        </div>
+        <TextField
+          label="Bahçe adı"
+          autoFocus
+          required
+          maxLength={120}
+          value={ad}
+          onChange={(e) => setAd(e.target.value)}
+          placeholder="Örn. Yeni parsel limonları"
+        />
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="garden-urun" className={label}>
-              Ürün
-            </label>
-            <select
-              id="garden-urun"
-              value={urun}
-              onChange={(e) => setUrun(e.target.value as Urun)}
-              className={field}
-            >
-              {PRODUCTS.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="garden-yil" className={label}>
-              Dikim yılı <span className="text-app-text-dim">(isteğe bağlı)</span>
-            </label>
-            <input
-              id="garden-yil"
-              inputMode="numeric"
-              value={dikimYili}
-              onChange={(e) => setDikimYili(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              placeholder="2015"
-              className={field}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="garden-cesit" className={label}>
-            Çeşit <span className="text-app-text-dim">(isteğe bağlı)</span>
-          </label>
-          <input
-            id="garden-cesit"
-            maxLength={100}
-            value={cesit}
-            onChange={(e) => setCesit(e.target.value)}
-            placeholder="Örn. Interdonato"
-            className={field}
+          <SelectField label="Ürün" value={urun} onChange={(e) => setUrun(e.target.value as Urun)}>
+            {PRODUCTS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </SelectField>
+          <TextField
+            label="Dikim yılı (isteğe bağlı)"
+            inputMode="numeric"
+            value={dikimYili}
+            onChange={(e) => setDikimYili(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="2015"
+            error={yearInvalid ? 'Dikim yılı geçerli bir yıl olmalı.' : null}
           />
         </div>
 
+        <TextField
+          label="Çeşit (isteğe bağlı)"
+          maxLength={100}
+          value={cesit}
+          onChange={(e) => setCesit(e.target.value)}
+          placeholder="Örn. Interdonato"
+        />
+
         <div>
-          <span className={label}>Alan</span>
+          <span className="mb-1.5 block text-small font-semibold text-app-text">Alan</span>
           <div
             aria-live="polite"
-            className="flex h-10 items-center rounded-xl border border-app-border bg-app-card px-3 text-body text-app-text"
+            className="flex min-h-11 items-center rounded-md border border-app-border bg-app-card px-3 text-body text-app-text"
           >
             {measure.status === 'loading' && (
               <span className="flex items-center gap-2 text-app-text-muted">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Hesaplanıyor…
               </span>
             )}
-            {measure.status === 'ok' && <span className="font-medium">{formatDecare(measure.dekar)}</span>}
+            {measure.status === 'ok' && <span className="tabular font-semibold">{formatDecare(measure.dekar)}</span>}
             {measure.status === 'error' && <span className="text-app-text-dim">—</span>}
           </div>
           <p className="mt-1 text-caption text-app-text-dim">Alan sunucuda sınırdan otomatik hesaplanır.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="garden-il" className={label}>
-              İl
-            </label>
-            <input
-              id="garden-il"
-              maxLength={100}
-              value={il}
-              onChange={(e) => {
-                adminTouched.current = true
-                setIl(e.target.value)
-              }}
-              className={field}
-            />
-          </div>
-          <div>
-            <label htmlFor="garden-ilce" className={label}>
-              İlçe
-            </label>
-            <input
-              id="garden-ilce"
-              maxLength={100}
-              value={ilce}
-              onChange={(e) => {
-                adminTouched.current = true
-                setIlce(e.target.value)
-              }}
-              className={field}
-            />
-          </div>
+          <TextField
+            label="İl"
+            maxLength={100}
+            value={il}
+            onChange={(e) => {
+              adminTouched.current = true
+              setIl(e.target.value)
+            }}
+          />
+          <TextField
+            label="İlçe"
+            maxLength={100}
+            value={ilce}
+            onChange={(e) => {
+              adminTouched.current = true
+              setIlce(e.target.value)
+            }}
+          />
         </div>
 
         {(measure.status === 'error' || serverError) && (
-          <p
-            role="alert"
-            className="flex items-start gap-2 rounded-xl bg-app-danger/10 px-3 py-2.5 text-small leading-snug text-app-danger"
-          >
+          <p role="alert" className="flex items-start gap-2 rounded-md bg-app-danger/10 px-3 py-2.5 text-small text-app-danger">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {serverError ?? (measure.status === 'error' ? measure.message : '')}
-          </p>
-        )}
-        {yearInvalid && (
-          <p role="alert" className="text-caption text-app-danger">
-            Dikim yılı geçerli bir yıl olmalı.
           </p>
         )}
       </div>
 
       <div className="flex gap-2 border-t border-app-border p-3">
-        <button
-          type="button"
-          onClick={resetFlow}
-          disabled={create.isPending}
-          className="h-10 flex-1 rounded-xl border border-app-border text-body font-medium text-app-text transition-colors hover:bg-app-card"
-        >
+        <Button onClick={resetFlow} disabled={create.isPending} className="flex-1">
           İptal
-        </button>
-        <button
-          type="submit"
-          disabled={!canSave}
-          className="h-10 flex-1 rounded-xl bg-app-primary text-body font-semibold text-app-on-primary transition-colors hover:bg-app-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" variant="primary" disabled={!canSave} loading={create.isPending} className="flex-1">
           {create.isPending ? 'Kaydediliyor…' : 'Kaydet'}
-        </button>
+        </Button>
       </div>
     </form>
   )

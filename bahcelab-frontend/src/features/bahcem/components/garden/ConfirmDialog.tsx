@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui'
 
 interface ConfirmDialogProps {
   title: string
@@ -11,65 +12,47 @@ interface ConfirmDialogProps {
 }
 
 /** Yıkıcı işlemler için onay penceresi (Esc veya dışarı tıklama = vazgeç). */
-export function ConfirmDialog({
-  title,
-  message,
-  confirmLabel,
-  pending = false,
-  error,
-  onConfirm,
-  onCancel,
-}: ConfirmDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null)
+export function ConfirmDialog({ title, message, confirmLabel, pending = false, error, onConfirm, onCancel }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    cancelRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel()
+    dialogRef.current?.querySelector<HTMLElement>('[data-cancel]')?.focus()
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onCancel()
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onCancel])
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
-      onPointerDown={(e) => e.target === e.currentTarget && onCancel()}
+      className="absolute inset-0 z-50 flex items-center justify-center bg-forest/60 p-4"
+      onPointerDown={(event) => event.target === event.currentTarget && onCancel()}
     >
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-message"
-        className="w-full max-w-sm rounded-2xl border border-app-border bg-app-panel p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-lg border border-app-border bg-app-panel p-5 shadow-e3"
       >
-        <h2 id="confirm-title" className="text-lead font-semibold text-app-text">
+        <h2 id="confirm-title" className="font-display text-h2 text-app-text">
           {title}
         </h2>
-        <p id="confirm-message" className="mt-2 text-small leading-relaxed text-app-text-muted">
+        <p id="confirm-message" className="mt-2 text-body text-app-text-muted">
           {message}
         </p>
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-app-danger/10 px-3 py-2 text-caption text-app-danger">
+          <p role="alert" className="mt-3 rounded-md bg-app-danger/10 px-3 py-2 text-small text-app-danger">
             {error}
           </p>
         )}
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            disabled={pending}
-            className="h-10 rounded-xl border border-app-border px-4 text-body text-app-text transition-colors hover:bg-app-card"
-          >
+          <Button onClick={onCancel} disabled={pending} data-cancel>
             Vazgeç
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={pending}
-            className="h-10 rounded-xl bg-app-danger px-4 text-body font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm} loading={pending}>
             {pending ? 'Siliniyor…' : confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

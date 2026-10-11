@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { IconButton } from '@/components/ui'
 import { Crosshair, Loader2, MapPin, Search, X } from 'lucide-react'
 import { parseCoordinates, searchPlaces, type PlaceResult } from '../../map/geocoding'
 import { getMaptilerKey } from '../../map/mapStyles'
 import { useMap } from '../../map/useMap'
-import { useBahcemStore } from '../../stores/bahcemStore'
-import { topAreaClass } from './topArea'
+import { TOP_AREA_CLASS } from './topArea'
 
 const DEBOUNCE_MS = 300
 
 export function PlaceSearch() {
   const { map } = useMap()
   const hasKey = Boolean(getMaptilerKey())
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
-  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlaceResult[]>([])
@@ -118,9 +116,9 @@ export function PlaceSearch() {
     : 'Koordinat ara (yer araması için MapTiler anahtarı gerekli)'
 
   return (
-    <div className={`${topAreaClass(panelOpen, copilotOpen)} top-3`}>
+    <div className={`${TOP_AREA_CLASS} top-3`}>
       <div ref={rootRef} className="w-full max-w-[480px]">
-      <div className="flex h-11 items-center gap-2 rounded-full border border-app-border bg-app-panel pl-4 pr-2 shadow-xl transition-colors focus-within:border-app-accent">
+      <div className="flex h-11 items-center gap-2 rounded-full border border-app-border bg-app-panel pl-4 pr-1 shadow-e2 transition-colors focus-within:border-app-accent">
         {isLoading ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-app-text-muted" aria-hidden />
         ) : (
@@ -144,17 +142,16 @@ export function PlaceSearch() {
           className="min-w-0 flex-1 bg-transparent text-body text-app-text outline-none placeholder:text-app-text-dim"
         />
         {query && (
-          <button
-            type="button"
-            aria-label="Aramayı temizle"
+          <IconButton
+            label="Aramayı temizle"
             onClick={() => {
               setQuery('')
               setResults([])
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-app-text-muted transition-colors hover:bg-app-card hover:text-app-text"
+            className="rounded-full"
           >
             <X className="h-4 w-4" aria-hidden />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -162,7 +159,7 @@ export function PlaceSearch() {
         <ul
           id="place-search-list"
           role="listbox"
-          className="mt-2 overflow-hidden rounded-2xl border border-app-border bg-app-panel py-1.5 shadow-2xl"
+          className="mt-2 overflow-hidden rounded-lg border border-app-border bg-app-panel py-1.5 shadow-e3"
         >
           {items.map((item, index) => (
             <li key={item.key} role="option" aria-selected={index === active}>
@@ -170,7 +167,7 @@ export function PlaceSearch() {
                 type="button"
                 onClick={() => choose(item)}
                 onMouseEnter={() => setActive(index)}
-                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-small text-app-text transition-colors ${
+                className={`flex min-h-11 w-full items-center gap-3 px-4 text-left text-body text-app-text transition-colors ${
                   index === active ? 'bg-app-card' : ''
                 }`}
               >

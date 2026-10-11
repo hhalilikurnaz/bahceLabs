@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileUp, PencilRuler, Plus } from 'lucide-react'
+import { Button } from '@/components/ui'
+import { useGardenNav } from '../../hooks/useGardenNav'
 import { geometryBounds, unionBounds } from '../../lib/geo'
 import { ImportError, parseGardenFile } from '../../lib/importFile'
 import { useFocusPadding } from '../../map/useFocusGarden'
@@ -8,7 +10,7 @@ import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from '../layout/toastContext'
 
 interface AddGardenMenuProps {
-  /** "primary": dolu yeşil düğme (boş durum); "compact": liste başlığındaki küçük düğme */
+  /** "primary": limon birincil düğme (boş durum); "compact": liste başlığındaki ikincil düğme */
   variant?: 'primary' | 'compact'
 }
 
@@ -20,6 +22,7 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
   const startImportPick = useBahcemStore((s) => s.startImportPick)
   const openForm = useBahcemStore((s) => s.openForm)
   const busy = useBahcemStore((s) => s.mode !== 'idle')
+  const nav = useGardenNav()
 
   const [open, setOpen] = useState(false)
   const [reading, setReading] = useState(false)
@@ -60,33 +63,27 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
     }
   }
 
-  const trigger =
-    variant === 'primary'
-      ? 'h-10 gap-2 bg-app-primary px-4 text-body font-semibold text-app-on-primary hover:bg-app-primary-hover'
-      : 'h-9 gap-1.5 border border-app-border bg-app-card px-3 text-small font-medium text-app-text hover:bg-app-card-hover'
-
   const item =
-    'flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-app-card disabled:opacity-50'
+    'flex min-h-11 w-full items-start gap-3 rounded-sm px-3 py-2 text-left transition-colors hover:bg-app-card-hover focus-visible:bg-app-card-hover disabled:opacity-50'
 
   return (
     <div ref={rootRef} className="relative inline-block">
-      <button
-        type="button"
+      <Button
+        variant={variant === 'primary' ? 'primary' : 'secondary'}
         onClick={() => setOpen((v) => !v)}
         disabled={busy || reading}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`inline-flex items-center justify-center rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-60 ${trigger}`}
+        icon={<Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
       >
-        <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
         {reading ? 'Dosya okunuyor…' : 'Bahçe ekle'}
-      </button>
+      </Button>
 
       {open && (
         <div
           role="menu"
-          className={`absolute z-30 mt-2 w-72 rounded-2xl border border-app-border bg-app-panel p-1.5 shadow-2xl ${
-            variant === 'primary' ? 'left-1/2 -translate-x-1/2' : 'right-0'
+          className={`absolute z-30 mt-2 w-72 rounded-md border border-app-border bg-app-panel p-1.5 shadow-e3 ${
+            variant === 'primary' ? 'left-0' : 'right-0'
           }`}
         >
           <button
@@ -95,12 +92,13 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
             className={item}
             onClick={() => {
               setOpen(false)
+              nav.close() // çizim, bahçe listesi görünümünde başlar
               startDrawing()
             }}
           >
             <PencilRuler className="mt-0.5 h-4 w-4 shrink-0 text-app-accent" aria-hidden />
             <span>
-              <span className="block text-body font-medium text-app-text">Haritada çiz</span>
+              <span className="block text-body font-semibold text-app-text">Haritada çiz</span>
               <span className="block text-caption text-app-text-muted">Sınırı uydu görüntüsü üzerinde çizin</span>
             </span>
           </button>
@@ -115,7 +113,7 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
           >
             <FileUp className="mt-0.5 h-4 w-4 shrink-0 text-app-accent" aria-hidden />
             <span>
-              <span className="block text-body font-medium text-app-text">Dosya yükle</span>
+              <span className="block text-body font-semibold text-app-text">Dosya yükle</span>
               <span className="block text-caption text-app-text-muted">KML, KMZ, GeoJSON</span>
             </span>
           </button>

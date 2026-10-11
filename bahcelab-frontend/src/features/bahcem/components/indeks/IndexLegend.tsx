@@ -8,7 +8,8 @@ const KIND_LABEL = { mutlak: 'Mutlak skala', kontrastli: 'Kontrastlı (p2–p98)
 export function IndexLegend() {
   const { shown, katman } = useIndexView()
   const info = useBahcemStore((s) => s.renderInfo)
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
+  // Dar ekranda panel açıkken lejant panelin üstüne binmesin
+  const panelOpen = useBahcemStore((s) => s.leftPanelOpen && !s.fullMap)
   if (!shown || !info) return null
 
   const def = info.indeks ? INDEX_DEFS[info.indeks] : null
@@ -21,9 +22,7 @@ export function IndexLegend() {
 
   return (
     <div
-      className={`surface-dark absolute bottom-[7.75rem] left-[4.25rem] z-20 w-72 rounded-xl border border-app-border bg-app-panel px-3 py-2.5 shadow-xl transition-[left] duration-300 ease-out ${
-        panelOpen ? 'md:left-[27.5rem]' : 'md:left-[4.25rem]'
-      }`}
+      className={`surface-dark absolute bottom-[10.75rem] left-[var(--map-left)] z-20 w-72 rounded-md border border-app-border bg-app-panel px-3 py-2.5 shadow-e2 transition-[left] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${panelOpen ? 'hidden md:block' : ''}`}
       role="group"
       aria-label="Harita lejantı"
     >

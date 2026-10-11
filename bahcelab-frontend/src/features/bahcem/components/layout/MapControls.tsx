@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Marker } from 'maplibre-gl'
+import type { Marker } from 'maplibre-gl'
+import { loadMapLibre } from '../../map/maplibre'
 import { Check, Layers, LocateFixed, Loader2, Minus, Plus } from 'lucide-react'
 import { BASEMAPS, BASEMAP_PROVIDERS } from '../../map/mapStyles'
 import { useIndexView } from '../../hooks/useIndexView'
@@ -9,7 +10,7 @@ import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from './toastContext'
 
 const controlButton =
-  'flex h-10 w-10 items-center justify-center text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-app-accent disabled:opacity-50'
+  'flex h-11 w-11 items-center justify-center text-app-text-muted transition-colors hover:bg-app-card-hover hover:text-app-text focus-visible:-outline-offset-2 disabled:opacity-50'
 
 function LayerSwitcher() {
   const { basemap, setBasemap, provider, setProvider, providers } = useMap()
@@ -50,7 +51,7 @@ function LayerSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-panel shadow-lg transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent ${
+        className={`flex h-11 w-11 items-center justify-center rounded-md border border-app-border bg-app-panel shadow-lg transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent ${
           open ? 'text-app-accent' : 'text-app-text-muted hover:text-app-text'
         }`}
       >
@@ -60,7 +61,7 @@ function LayerSwitcher() {
       {open && (
         <div
           role="menu"
-          className="absolute bottom-0 right-full mr-2 w-56 rounded-2xl border border-app-border bg-app-panel p-1.5 shadow-2xl"
+          className="absolute bottom-0 right-full mr-2 w-56 rounded-lg border border-app-border bg-app-panel p-1.5 shadow-e3"
         >
           <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase tracking-wider text-app-text-dim">
             Harita katmanı
@@ -75,7 +76,7 @@ function LayerSwitcher() {
                 setBasemap(option.id)
                 setOpen(false)
               }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-small text-app-text transition-colors hover:bg-app-card"
+              className="flex min-h-11 w-full items-center justify-between rounded-sm px-3 text-body text-app-text transition-colors hover:bg-app-card-hover"
             >
               {option.label}
               {basemap === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
@@ -94,7 +95,7 @@ function LayerSwitcher() {
                   role="menuitemradio"
                   aria-checked={provider === option.id}
                   onClick={() => setProvider(option.id)}
-                  className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-small text-app-text transition-colors hover:bg-app-card"
+                  className="flex min-h-11 w-full items-center justify-between rounded-sm px-3 text-left text-body text-app-text transition-colors hover:bg-app-card-hover"
                 >
                   <span>
                     {option.label}
@@ -115,7 +116,7 @@ function LayerSwitcher() {
             aria-checked={available && layerVisible}
             disabled={!available}
             onClick={() => setLayerVisible(!layerVisible)}
-            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-small transition-colors ${
+            className={`flex min-h-11 w-full items-center justify-between rounded-sm px-3 text-left text-body transition-colors ${
               available ? 'text-app-text hover:bg-app-card' : 'cursor-not-allowed text-app-text-dim'
             }`}
           >
@@ -136,7 +137,7 @@ function LayerSwitcher() {
                   setKatman(option.id)
                   setLayerVisible(true)
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-small text-app-text transition-colors hover:bg-app-card"
+                className="flex min-h-11 w-full items-center justify-between rounded-sm px-3 text-left text-body text-app-text transition-colors hover:bg-app-card-hover"
               >
                 {option.ad}
                 {katman === option.id && <Check className="h-4 w-4 text-app-accent" aria-hidden />}
@@ -150,7 +151,6 @@ function LayerSwitcher() {
 
 export function MapControls() {
   const { map } = useMap()
-  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
   const toast = useToast()
   const [locating, setLocating] = useState(false)
@@ -166,13 +166,14 @@ export function MapControls() {
     }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
+      async ({ coords }) => {
         setLocating(false)
         const center: [number, number] = [coords.longitude, coords.latitude]
         const dot = document.createElement('div')
         dot.className = 'h-4 w-4 rounded-full border-2 border-white bg-app-accent shadow-[0_0_0_6px_rgb(124_198_90/0.3)]'
         markerRef.current?.remove()
-        markerRef.current = new Marker({ element: dot }).setLngLat(center).addTo(map)
+        const { Marker: MarkerClass } = await loadMapLibre()
+        markerRef.current = new MarkerClass({ element: dot }).setLngLat(center).addTo(map)
         map.flyTo({ center, zoom: Math.max(map.getZoom(), 15), duration: 1600 })
       },
       (err) => {
@@ -189,9 +190,9 @@ export function MapControls() {
 
   return (
     <div
-      className={`surface-dark absolute bottom-12 z-20 flex-col items-end gap-2 transition-[right] duration-300 ease-out ${
+      className={`surface-dark absolute bottom-14 right-[var(--map-right)] z-20 flex-col items-end gap-2 transition-[right] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
         panelOpen ? 'hidden md:flex' : 'flex'
-      } ${copilotOpen ? 'right-3 md:right-[calc(380px+0.75rem)]' : 'right-3'}`}
+      }`}
     >
       <LayerSwitcher />
 
@@ -200,7 +201,7 @@ export function MapControls() {
         aria-label="Konumuma git"
         onClick={locate}
         disabled={!map || locating}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-panel text-app-text-muted shadow-lg transition-colors hover:bg-app-card-hover hover:text-app-text focus-visible:outline-2 focus-visible:outline-app-accent disabled:opacity-60"
+        className="flex h-11 w-11 items-center justify-center rounded-md border border-app-border bg-app-panel text-app-text-muted shadow-lg transition-colors hover:bg-app-card-hover hover:text-app-text focus-visible:outline-2 focus-visible:outline-app-accent disabled:opacity-60"
       >
         {locating ? (
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
@@ -209,7 +210,7 @@ export function MapControls() {
         )}
       </button>
 
-      <div className="flex flex-col divide-y divide-app-border overflow-hidden rounded-xl border border-app-border bg-app-panel shadow-lg">
+      <div className="flex flex-col divide-y divide-app-border overflow-hidden rounded-md border border-app-border bg-app-panel shadow-e2">
         <button type="button" aria-label="Yakınlaştır" onClick={() => map?.zoomIn()} className={controlButton}>
           <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
         </button>

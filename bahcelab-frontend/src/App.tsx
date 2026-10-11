@@ -10,12 +10,6 @@ const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) 
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const BlogPage = lazy(() => import('@/features/marketing/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
 const BlogPostPage = lazy(() => import('@/features/marketing/pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })))
-const PlanningListPage = lazy(() =>
-  import('@/features/planning-simulation/pages/PlanningListPage').then((m) => ({ default: m.PlanningListPage })),
-)
-const PlanningWorkspacePage = lazy(() =>
-  import('@/features/planning-simulation/pages/PlanningWorkspacePage').then((m) => ({ default: m.PlanningWorkspacePage })),
-)
 
 function PageFallback() {
   return (
@@ -57,22 +51,8 @@ export default function App() {
         <Route path=":id" element={<GardenIndexRedirect />} />
         <Route path=":id/:tab" element={null} />
       </Route>
-      <Route
-        path="/planning"
-        element={
-          <ProtectedRoute>
-            <PlanningListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/planning/:planId"
-        element={
-          <ProtectedRoute>
-            <PlanningWorkspacePage />
-          </ProtectedRoute>
-        }
-      />
+      {/* Planlama simülasyonu arayüzden kaldırıldı (kod duruyor): docs/mimari/karar/0004 */}
+      <Route path="/planning/*" element={<Navigate to="/bahcem" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>

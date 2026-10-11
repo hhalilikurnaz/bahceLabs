@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Cloud } from 'lucide-react'
+import { Chip } from '@/components/ui'
 import type { Scene } from '../../api/indeksApi'
 import type { HistoryDay } from '../../api/weatherApi'
 import { dayOfYear, daysInYear, formatDate, MONTHS_SHORT } from '../../lib/dates'
@@ -30,11 +31,13 @@ function weatherNote(day: HistoryDay | undefined): string {
 /** Bu sezon noktasına verilen avantaj (viewBox birimi): aynı konumdaki iki sezondan bu sezon kazanır */
 const SEASON_TIE_BREAK = 4
 const W = 320
+/** SVG içi yazı boyutu (viewBox birimi): ~300 px genişlikte bile ≥ 12 px */
+const CHART_FONT = 13
 const H = 176
 /** Hava katmanı açıkken indeks alanının altına eklenen şerit */
 const WEATHER_H = 78
 const WX = { tempTop: 6, tempBottom: 38, rainTop: 44, rainBottom: 74, rainCapMm: 30 }
-const M = { left: 32, right: 10, top: 12, bottom: 24 }
+const M = { left: 38, right: 10, top: 14, bottom: 26 }
 
 const x = (doy: number, year: number) => M.left + ((doy - 1) / (daysInYear(year) - 1)) * (W - M.left - M.right)
 /** Normalize değer (0–1) → y. Her indeks kendi mutlak skalasına göre normalize edilir. */
@@ -130,7 +133,7 @@ export function IndexChart({
   const empty = allPoints.length === 0
 
   /** Noktalar (5 günde bir) çok yakın olduğundan tıklama, imlece en yakın noktayı seçer. */
-  function nearest(event: React.PointerEvent<SVGRectElement>): Point | null {
+  function nearest(event: { clientX: number; clientY: number }): Point | null {
     const svg = svgRef.current
     if (!svg || allPoints.length === 0) return null
     const rect = svg.getBoundingClientRect()
@@ -152,35 +155,16 @@ export function IndexChart({
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Grafikte gösterilecek indeksler">
-        {INDEX_IDS.map((id) => {
-          const on = active.includes(id)
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onToggle(id)}
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
-                on ? 'border-app-border bg-app-card-hover text-app-text' : 'border-transparent text-app-text-dim hover:text-app-text-muted'
-              }`}
-            >
-              <i className="h-2 w-2 rounded-full" style={{ background: on ? INDEX_DEFS[id].cizgi : 'var(--color-app-border)' }} aria-hidden />
-              {INDEX_DEFS[id].ad}
-            </button>
-          )
-        })}
-        <button
-          type="button"
-          aria-pressed={weather !== null}
-          onClick={onWeatherToggle}
-          className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
-            weather !== null ? 'border-app-border bg-app-card-hover text-app-text' : 'border-transparent text-app-text-dim hover:text-app-text-muted'
-          }`}
-        >
-          <Cloud className="h-3 w-3" aria-hidden />
-          Hava katmanı
-        </button>
+      <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Grafikte gösterilecek parametreler">
+        {INDEX_IDS.map((id) => (
+          <Chip key={id} selected={active.includes(id)} onClick={() => onToggle(id)}>
+            <i className="h-2.5 w-2.5 rounded-full" style={{ background: INDEX_DEFS[id].cizgi }} aria-hidden />
+            {INDEX_DEFS[id].ad}
+          </Chip>
+        ))}
+        <Chip selected={weather !== null} onClick={onWeatherToggle} icon={<Cloud className="h-4 w-4" aria-hidden />} className="sm:ml-auto">
+          Yağış ve sıcaklık
+        </Chip>
       </div>
 
       <div className="mb-1 flex min-h-5 items-start justify-between gap-2 text-caption">
@@ -202,13 +186,13 @@ export function IndexChart({
         {ticks.map(({ t, label }) => (
           <g key={t}>
             <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} style={{ stroke: 'var(--color-app-border)' }} strokeWidth={1} />
-            <text x={M.left - 6} y={y(t) + 3} textAnchor="end" fontSize={9} style={{ fill: 'var(--color-app-text-dim)' }}>
+            <text x={M.left - 6} y={y(t) + 3} textAnchor="end" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
               {label}
             </text>
           </g>
         ))}
-        {monthStarts.map((m) => (
-          <text key={m.label} x={m.px + 1} y={H - 8} fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+        {monthStarts.filter((_, i) => i % 2 === 0).map((m) => (
+          <text key={m.label} x={m.px + 1} y={H - 8} fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
             {m.label}
           </text>
         ))}
@@ -271,17 +255,17 @@ export function IndexChart({
               ) : null,
             )}
             <path d={wx.line} fill="none" strokeWidth={1.4} strokeLinejoin="round" style={{ stroke: '#fb923c' }} />
-            <text x={M.left - 6} y={wx.tempY(wx.hi) + 3} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+            <text x={M.left - 6} y={wx.tempY(wx.hi) + 3} textAnchor="end" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
               {wx.hi}°
             </text>
-            <text x={M.left - 6} y={wx.tempY(wx.lo) + 3} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+            <text x={M.left - 6} y={wx.tempY(wx.lo) + 3} textAnchor="end" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
               {wx.lo}°
             </text>
-            <text x={M.left - 6} y={H + WX.rainBottom} textAnchor="end" fontSize={8.5} style={{ fill: 'var(--color-app-text-dim)' }}>
+            <text x={M.left - 6} y={H + WX.rainBottom} textAnchor="end" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
               mm
             </text>
             {wx.days.length === 0 && (
-              <text x={W / 2} y={H + WEATHER_H / 2} textAnchor="middle" fontSize={10} style={{ fill: 'var(--color-app-text-dim)' }}>
+              <text x={W / 2} y={H + WEATHER_H / 2} textAnchor="middle" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
                 {weatherLoading ? 'Hava verisi yükleniyor…' : 'Bu sezon için hava verisi yok'}
               </text>
             )}
@@ -310,13 +294,13 @@ export function IndexChart({
           onPointerMove={(e) => setHover(nearest(e))}
           onPointerLeave={() => setHover(null)}
           onClick={(e) => {
-            const point = nearest(e as unknown as React.PointerEvent<SVGRectElement>)
+            const point = nearest(e)
             if (point) onSelect(point.tarih)
           }}
         />
 
         {empty && (
-          <text x={W / 2} y={H / 2} textAnchor="middle" fontSize={11} style={{ fill: 'var(--color-app-text-dim)' }}>
+          <text x={W / 2} y={H / 2} textAnchor="middle" fontSize={CHART_FONT} style={{ fill: 'var(--color-app-text-dim)' }}>
             Bu sezon için görüntü yok
           </text>
         )}

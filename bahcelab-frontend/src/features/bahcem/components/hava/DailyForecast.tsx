@@ -1,63 +1,65 @@
 import { Droplets, SprayCan, Wind } from 'lucide-react'
+import { Card } from '@/components/ui'
 import type { WeatherDay } from '../../api/weatherApi'
-import { formatDayMonth, todayIstanbul, weekdayName } from '../../lib/dates'
+import { formatDayMonth, shiftDays, todayIstanbul, weekdayName } from '../../lib/dates'
 import { formatMm, formatPercent, formatTemp, formatWind } from '../../lib/weather'
 import { WeatherIcon } from './WeatherIcon'
 
 function dayLabel(iso: string, today: string): string {
   if (iso === today) return 'Bugün'
-  const tomorrow = new Date(Date.parse(`${today}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
-  return iso === tomorrow ? 'Yarın' : weekdayName(iso)
+  return iso === shiftDays(today, 1) ? 'Yarın' : weekdayName(iso)
 }
 
-/** 7 günlük tahmin: ikon, min/max, yağış (mm ve olasılık), rüzgâr ve o günün en iyi ilaçlama aralığı. */
+/** 7 günlük tahmin: ikon, en yüksek/en düşük sıcaklık, yağış (mm ve olasılık, etiketli), rüzgâr, en iyi ilaçlama aralığı. */
 export function DailyForecast({ days }: { days: WeatherDay[] }) {
   const today = todayIstanbul()
   return (
-    <section className="rounded-2xl bg-app-card p-3.5" aria-label="7 günlük tahmin">
-      <h3 className="mb-2 text-small font-semibold text-app-text">7 günlük tahmin</h3>
-      <ul className="divide-y divide-app-border/60">
+    <Card aria-label="7 günlük tahmin" data-testid="daily-forecast">
+      <h3 className="mb-1 font-display text-h2 text-app-text">7 günlük tahmin</h3>
+      <ul className="divide-y divide-app-border">
         {days.map((day) => {
           const window = day.ilaclama.enIyiAralik
           return (
-            <li key={day.tarih} className="py-2" data-testid="forecast-day">
-              <div className="grid grid-cols-[2.75rem_1.25rem_3.25rem_1fr_auto] items-center gap-x-1.5 text-caption">
-                <div>
-                  <p className="font-medium text-app-text">{dayLabel(day.tarih, today)}</p>
+            <li key={day.tarih} className="py-2.5" data-testid="forecast-day">
+              <div className="flex items-center gap-3">
+                <div className="w-14 shrink-0">
+                  <p className="text-body font-semibold text-app-text">{dayLabel(day.tarih, today)}</p>
                   <p className="text-caption text-app-text-dim">{formatDayMonth(day.tarih)}</p>
                 </div>
-                <WeatherIcon name={day.ikon} className="h-5 w-5 text-app-accent" strokeWidth={1.5} aria-label={day.aciklama} role="img" />
-                <p className="whitespace-nowrap text-app-text">
+                <WeatherIcon name={day.ikon} className="h-7 w-7 shrink-0 text-app-accent" strokeWidth={1.5} aria-label={day.aciklama} role="img" />
+                <p className="tabular w-20 shrink-0 text-body text-app-text">
                   <span className="font-semibold">{formatTemp(day.max)}</span>
                   <span className="text-app-text-dim"> / {formatTemp(day.min)}</span>
                 </p>
-                <p className="flex items-center gap-1 whitespace-nowrap text-app-text-muted">
-                  <Droplets className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {formatMm(day.yagisMm)}
-                  <span className="text-caption text-app-text-dim">{formatPercent(day.yagisOlasiligi)}</span>
+                <p className="tabular flex min-w-0 flex-1 items-start gap-1.5 text-small text-app-text-muted">
+                  <Droplets className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                  <span>
+                    {formatMm(day.yagisMm)}
+                    <span className="block text-caption text-app-text-dim">yağış olasılığı {formatPercent(day.yagisOlasiligi)}</span>
+                  </span>
                 </p>
-                <p className="flex items-center gap-1 whitespace-nowrap text-caption text-app-text-muted">
-                  <Wind className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <p className="tabular hidden shrink-0 items-center gap-1 text-small text-app-text-muted @xl:flex">
+                  <Wind className="h-4 w-4" aria-hidden />
                   {formatWind(day.ruzgarMax)}
                 </p>
               </div>
-              <p className="mt-1 flex items-center gap-1.5 pl-[2.75rem] text-caption text-app-text-dim">
-                <SprayCan className="h-3 w-3" aria-hidden />
+              <p className="mt-1 flex items-center gap-1.5 pl-[4.5rem] text-small text-app-text-muted">
+                <SprayCan className="h-4 w-4" aria-hidden />
                 {window ? (
                   <span>
-                    En iyi gündüz aralığı{' '}
-                    <span className="font-medium text-app-success">
+                    İlaçlama için en iyi gündüz aralığı{' '}
+                    <strong className="tabular text-app-success">
                       {window[0]}–{window[1]}
-                    </span>
+                    </strong>
                   </span>
                 ) : (
-                  <span>İlaçlamaya uygun saat yok</span>
+                  <span>İlaçlamaya uygun gündüz saati yok</span>
                 )}
               </p>
             </li>
           )
         })}
       </ul>
-    </section>
+    </Card>
   )
 }

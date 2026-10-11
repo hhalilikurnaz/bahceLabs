@@ -1,10 +1,13 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, type CSSProperties } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useBahcemStore } from '../../stores/bahcemStore'
-import { topAreaClass } from './topArea'
+import { usePanelLayout } from '../../hooks/usePanelLayout'
+import { LAYOUT } from '../../lib/config'
+import { TOP_AREA_CLASS } from './topArea'
 import { GardenLayers } from '../../map/GardenLayers'
+import { GardenMapLabels } from '../../map/GardenMapLabels'
 import { MapEffects } from '../../map/MapEffects'
 import { IndexLayer } from '../../map/IndexLayer'
 import { ZonesLayers } from '../../map/ZonesLayers'
@@ -14,8 +17,10 @@ import { DateStrip } from '../indeks/DateStrip'
 import { IndexLegend } from '../indeks/IndexLegend'
 import { SwipeHandle } from '../indeks/SwipeHandle'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
+import { FullMapBar } from './FullMapBar'
 import { IconRail } from './IconRail'
 import { LeftPanel } from './LeftPanel'
+import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
 import { PlaceSearch } from './PlaceSearch'
 import { RouteSync } from './RouteSync'
@@ -26,12 +31,10 @@ const DrawController = lazy(() => import('../draw/DrawController').then((m) => (
 
 function FallbackNotice() {
   const { usingFallback } = useMap()
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
-  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   if (!usingFallback) return null
 
   return (
-    <div className={`${topAreaClass(panelOpen, copilotOpen)} pointer-events-none top-[3.75rem]`}>
+    <div className={`${TOP_AREA_CLASS} pointer-events-none top-[3.75rem]`}>
       <div
         role="alert"
         className="surface-dark pointer-events-auto flex w-full max-w-[480px] items-start gap-2.5 rounded-md border border-app-warn/40 bg-app-panel px-3.5 py-2.5 text-caption text-app-text-muted shadow-e2"
@@ -47,12 +50,26 @@ function FallbackNotice() {
   )
 }
 
+/** Yerleşim değişkenleri: menü, panel ve haritanın görünen alanı (overlay'ler bunlara göre konumlanır). */
+function layoutVars(panelPx: number, left: number, right: number, copilotOpen: boolean): CSSProperties {
+  return {
+    '--rail-w': `${LAYOUT.railPx}px`,
+    '--panel-w': `${panelPx}px`,
+    '--map-left': `${left}px`,
+    '--map-right': `${right}px`,
+    // Üst arama alanının sağ sınırı: Copilot düğmesi görünürken onun payı da bırakılır
+    '--top-right': `${right + (copilotOpen ? 0 : LAYOUT.copilotButtonPx)}px`,
+  } as CSSProperties
+}
+
 /**
  * Uygulama ekranlarının ortak düzeni: tam ekran harita arkada, paneller üstünde yüzer.
  * Üst header yoktur. Sonraki ekranlar (bahçe sayfası vb.) aynı düzeni kullanır.
  */
 export function BahcemLayout() {
   const { user } = useAuth()
+  const { panelPx, insets } = usePanelLayout()
+  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   // Çizim aracı ilk kez gerektiğinde yüklenir ve sonra açık kalır
   const flowActive = useBahcemStore((s) => s.mode !== 'idle')
   const [drawNeeded, setDrawNeeded] = useState(false)
@@ -60,12 +77,16 @@ export function BahcemLayout() {
   if (!user) return null
 
   return (
-    <div className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text">
+    <div
+      className="relative h-dvh w-screen overflow-hidden bg-app-bg font-sans text-app-text"
+      style={layoutVars(panelPx, insets.left, insets.right, copilotOpen)}
+    >
       <ToastProvider>
         <MapProvider userId={user.id}>
           <RouteSync />
           <Outlet />
           <GardenLayers />
+          <GardenMapLabels />
           <IndexLayer />
           <ZonesLayers />
           <MapEffects />
@@ -83,6 +104,8 @@ export function BahcemLayout() {
           <IndexLegend />
           <DateStrip />
           <MapControls />
+          <MapAttribution />
+          <FullMapBar />
           <CopilotDrawer />
         </MapProvider>
       </ToastProvider>

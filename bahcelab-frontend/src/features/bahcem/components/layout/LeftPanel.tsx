@@ -1,180 +1,55 @@
-import { useMemo, useState } from 'react'
-import { ChevronDown, Search, Sprout, TriangleAlert } from 'lucide-react'
-import type { Garden } from '../../api/types'
-import { useSatelliteAlertOverview } from '../../api/indeksApi'
-import { useBahcemRoute } from '../../hooks/useBahcemRoute'
-import { useGardenNav } from '../../hooks/useGardenNav'
 import { useGardens } from '../../api/useGardens'
-import { useWeatherOverview } from '../../api/weatherApi'
-import { mergeAlerts } from '../../lib/weather'
-import { useFocusGarden } from '../../map/useFocusGarden'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { useBahcemStore } from '../../stores/bahcemStore'
-import { AddGardenMenu } from '../garden/AddGardenMenu'
-import { GardenDetail } from '../garden/GardenDetail'
 import { GardenForm } from '../garden/GardenForm'
-import { GardenListItem } from '../garden/GardenListItem'
+import { GardenListPanel } from '../garden/GardenListPanel'
 import { ImportPicker } from '../garden/ImportPicker'
-import { useGardenActions } from '../garden/useGardenActions'
+import { GardenPage } from '../garden-page/GardenPage'
 import { SectionPanel } from './SectionPanel'
+import { Skeleton } from '@/components/ui'
 
-const CURRENT_YEAR = new Date().getFullYear()
-const SEASONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2]
-
-function GardenList() {
-  const { data: gardens, isLoading, isError, refetch } = useGardens()
-  const { gardenId: selectedId } = useBahcemRoute()
-  const nav = useGardenNav()
-  const season = useBahcemStore((s) => s.season)
-  const setSeason = useBahcemStore((s) => s.setSeason)
-  const busy = useBahcemStore((s) => s.mode !== 'idle')
-  const { focusGarden } = useFocusGarden()
-  const actions = useGardenActions()
-  const weather = useWeatherOverview(Boolean(gardens?.length))
-  const satellite = useSatelliteAlertOverview()
-  const alerts = useMemo(() => mergeAlerts(weather.data, satellite.data), [weather.data, satellite.data])
-
-  const [query, setQuery] = useState('')
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase('tr-TR')
-    const all = gardens ?? []
-    return q ? all.filter((g) => g.ad.toLocaleLowerCase('tr-TR').includes(q)) : all
-  }, [gardens, query])
-
-  function select(garden: Garden) {
-    nav.open(garden.id)
-    focusGarden(garden)
-  }
-
-  const hasGardens = (gardens?.length ?? 0) > 0
-
+/** Bahçe sayfası açılırken (bahçe verisi gelene kadar) panel iskeletle hemen görünür. */
+function PanelSkeleton() {
   return (
-    <>
-      <div className="space-y-3 p-3 pb-2">
-        <label className="relative block">
-          <span className="sr-only">Sezon</span>
-          <select
-            value={season}
-            onChange={(e) => setSeason(Number(e.target.value))}
-            className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-app-border bg-app-card pl-3.5 pr-9 text-body font-medium text-app-text outline-none transition-colors hover:bg-app-card-hover focus-visible:border-app-accent"
-          >
-            {SEASONS.map((year) => (
-              <option key={year} value={year}>
-                {year} sezonu
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted"
-            aria-hidden
-          />
-        </label>
-
-        <div className="flex items-center gap-2">
-          <label className="relative block min-w-0 flex-1">
-            <span className="sr-only">Bahçe ara</span>
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-dim"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Bahçe ara"
-              className="h-10 w-full rounded-xl border border-app-border bg-app-bg/60 pl-9 pr-3 text-body text-app-text outline-none placeholder:text-app-text-dim focus:border-app-accent"
-            />
-          </label>
-          {hasGardens && <AddGardenMenu variant="compact" />}
-        </div>
-      </div>
-
-      <div data-scroll-box className={`relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-        {isLoading ? (
-          <ul className="space-y-2" aria-label="Bahçeler yükleniyor">
-            {[0, 1, 2].map((i) => (
-              <li key={i} className="h-[72px] animate-pulse rounded-xl bg-app-card" />
-            ))}
-          </ul>
-        ) : isError ? (
-          <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
-            <TriangleAlert className="h-6 w-6 text-app-danger" aria-hidden />
-            <p className="text-small text-app-text-muted">Bahçeler yüklenemedi.</p>
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="h-9 rounded-xl border border-app-border px-4 text-small text-app-text hover:bg-app-card"
-            >
-              Tekrar dene
-            </button>
-          </div>
-        ) : !hasGardens ? (
-          <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-app-card text-app-accent">
-              <Sprout className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-            </span>
-            <h2 className="mt-4 text-body font-semibold text-app-text">Henüz bahçe eklemediniz</h2>
-            <p className="mt-1.5 text-small leading-relaxed text-app-text-muted">
-              Haritada bahçenizin sınırını çizin; uydu görüntüsü ve hava durumuyla izlemeye başlayın.
-            </p>
-            <div className="mt-5">
-              <AddGardenMenu />
-            </div>
-          </div>
-        ) : visible.length === 0 ? (
-          <p className="px-2 py-6 text-center text-small text-app-text-muted">
-            “{query}” ile eşleşen bahçe yok.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {visible.map((garden) => (
-              <GardenListItem
-                key={garden.id}
-                garden={garden}
-                selected={garden.id === selectedId}
-                alerts={alerts.get(garden.id)}
-                onSelect={select}
-                onRename={actions.rename}
-                onEditBoundary={actions.editBoundary}
-                onDelete={actions.requestDelete}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {actions.dialog}
-    </>
+    <div className="space-y-3 p-4" aria-busy aria-label="Yükleniyor">
+      <Skeleton className="h-8 w-2/3" />
+      <Skeleton className="h-11" />
+      <Skeleton className="h-40" />
+      <Skeleton className="h-40" />
+    </div>
   )
 }
 
+/** Sol panel: liste, bahçe sayfası (geniş), bölümler ve bahçe ekleme/düzenleme formları. Genişliği `--panel-w`. */
 export function LeftPanel() {
-  const open = useBahcemStore((s) => s.leftPanelOpen)
   const mode = useBahcemStore((s) => s.mode)
-  const { section, gardenId: selectedId } = useBahcemRoute()
-  const { data: gardens } = useGardens()
-  const selected = selectedId ? gardens?.find((g) => g.id === selectedId) : undefined
+  const { section, gardenId } = useBahcemRoute()
+  const { kind } = usePanelLayout()
+  const { data: gardens, isLoading } = useGardens()
+  const selected = gardenId ? gardens?.find((g) => g.id === gardenId) : undefined
+  const open = kind !== 'collapsed'
+
+  let content
+  if (mode === 'form') content = <GardenForm />
+  else if (mode === 'import-pick') content = <ImportPicker />
+  else if (section !== 'bahceler') content = <SectionPanel section={section} />
+  else if (gardenId && mode === 'idle') content = selected ? <GardenPage key={selected.id} garden={selected} /> : isLoading ? <PanelSkeleton /> : <GardenListPanel />
+  else content = <GardenListPanel />
 
   return (
     <aside
       aria-label={section === 'bahceler' ? 'Bahçeler' : 'Bölüm paneli'}
       aria-hidden={!open}
       inert={!open}
-      className={`absolute bottom-3 left-[4.25rem] top-16 z-20 flex w-[min(360px,calc(100vw-5.25rem))] flex-col rounded-lg border border-app-border bg-app-panel shadow-e3 transition-all duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] md:top-3 ${
+      data-testid="left-panel"
+      data-kind={kind}
+      style={{ width: 'var(--panel-w)' }}
+      className={`absolute bottom-16 left-[calc(var(--rail-w)+0.75rem)] top-[4.25rem] z-20 md:bottom-3 md:top-3 flex flex-col overflow-hidden rounded-lg border border-app-border bg-app-panel shadow-e3 transition-[width,opacity,transform] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)] ${
         open ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-6 opacity-0'
       }`}
     >
-      {mode === 'form' ? (
-        <GardenForm />
-      ) : mode === 'import-pick' ? (
-        <ImportPicker />
-      ) : section !== 'bahceler' ? (
-        <SectionPanel section={section} />
-      ) : selected && mode === 'idle' ? (
-        <GardenDetail key={selected.id} garden={selected} />
-      ) : (
-        <GardenList />
-      )}
+      {content}
     </aside>
   )
 }

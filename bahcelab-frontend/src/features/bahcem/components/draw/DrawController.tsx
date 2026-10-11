@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Loader2, MousePointerClick, Play, Undo2, X } from 'lucide-react'
+import { Button } from '@/components/ui'
+import { Check, MousePointerClick, Play, Undo2, X } from 'lucide-react'
 import {
   TerraDraw,
   TerraDrawModeUndoRedo,
@@ -19,7 +20,7 @@ import { useFocusPadding } from '../../map/useFocusGarden'
 import { useMap } from '../../map/useMap'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import { useToast } from '../layout/toastContext'
-import { topAreaClass } from '../layout/topArea'
+import { TOP_AREA_CLASS } from '../layout/topArea'
 
 /** Bu yakınlaştırma düzeyinin altında çizim başlatılamaz (köşeler yeterince hassas olsun). */
 export const MIN_DRAW_ZOOM = 14
@@ -83,8 +84,6 @@ function DrawSession() {
   const setLiveArea = useBahcemStore((s) => s.setLiveArea)
   const openForm = useBahcemStore((s) => s.openForm)
   const resetFlow = useBahcemStore((s) => s.resetFlow)
-  const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
-  const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   const { data: gardens } = useGardens()
   const update = useUpdateGarden()
   const toast = useToast()
@@ -246,22 +245,19 @@ function DrawSession() {
 
   const editing = mode === 'editing-boundary'
   const garden = editing ? gardens?.find((g) => g.id === editingId) : undefined
-  const button =
-    'inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50'
-
   return (
-    <div className={`${topAreaClass(panelOpen, copilotOpen)} pointer-events-none top-[3.75rem]`}>
+    <div className={`${TOP_AREA_CLASS} pointer-events-none top-[3.75rem]`}>
       <div
         role="region"
         aria-label={editing ? 'Sınırı düzenle' : 'Bahçeyi çiz'}
-        className="surface-dark pointer-events-auto w-full max-w-[480px] rounded-2xl border border-app-border bg-app-panel p-3.5 shadow-2xl"
+        className="surface-dark pointer-events-auto w-full max-w-[480px] rounded-lg border border-app-border bg-app-panel p-4 shadow-e3"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-body font-semibold text-app-text">
+            <h2 className="font-display text-h2 text-app-text">
               {editing ? `Sınırı düzenle${garden ? `: ${garden.ad}` : ''}` : 'Bahçeyi haritada çizin'}
             </h2>
-            <p className="mt-1 text-caption leading-snug text-app-text-muted">
+            <p className="mt-1 text-small text-app-text-muted">
               {editing
                 ? 'Köşeleri sürükleyin, kenar ortasındaki noktalardan yeni köşe ekleyin. Köşeyi silmek için seçip Delete’e basın.'
                 : started
@@ -271,7 +267,7 @@ function DrawSession() {
           </div>
           <div
             aria-live="polite"
-            className="shrink-0 rounded-xl bg-app-card px-3 py-1.5 text-right"
+            className="shrink-0 rounded-md bg-app-card px-3 py-1.5 text-right"
             title="Anlık, yaklaşık alan"
           >
             <span className="block text-caption uppercase tracking-wide text-app-text-dim">Alan</span>
@@ -284,7 +280,7 @@ function DrawSession() {
         {!editing && !started && tooFar && (
           <p
             role="alert"
-            className="mt-3 flex items-center gap-2 rounded-xl bg-app-warn/10 px-3 py-2 text-caption text-app-warn"
+            className="mt-3 flex items-center gap-2 rounded-md bg-app-warn/10 px-3 py-2 text-small text-app-warn"
           >
             <MousePointerClick className="h-4 w-4 shrink-0" aria-hidden />
             Bahçeyi çizmek için yakınlaşın (şu an yakınlaştırma {mapZoom.toFixed(1)}, en az {MIN_DRAW_ZOOM}{' '}
@@ -293,60 +289,30 @@ function DrawSession() {
         )}
 
         {saveError && (
-          <p role="alert" className="mt-3 rounded-xl bg-app-danger/10 px-3 py-2 text-caption text-app-danger">
+          <p role="alert" className="mt-3 rounded-md bg-app-danger/10 px-3 py-2 text-small text-app-danger">
             {saveError}
           </p>
         )}
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={undo}
-            disabled={!canUndo}
-            className={`${button} border border-app-border text-app-text hover:bg-app-card`}
-            aria-label="Geri al"
-            title="Geri al (Ctrl/Cmd+Z)"
-          >
-            <Undo2 className="h-4 w-4" aria-hidden />
+          <Button onClick={undo} disabled={!canUndo} title="Geri al (Ctrl/Cmd+Z)" icon={<Undo2 className="h-4 w-4" aria-hidden />}>
             Geri al
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={cancel}
-              className={`${button} border border-app-border text-app-text hover:bg-app-card`}
-              title="Vazgeç (Esc)"
-            >
-              <X className="h-4 w-4" aria-hidden />
+            <Button onClick={cancel} title="Vazgeç (Esc)" icon={<X className="h-4 w-4" aria-hidden />}>
               İptal
-            </button>
+            </Button>
 
             {editing ? (
-              <button
-                type="button"
-                onClick={saveBoundary}
-                disabled={update.isPending}
-                className={`${button} bg-app-primary font-semibold text-app-on-primary hover:bg-app-primary-hover`}
-              >
-                {update.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <Check className="h-4 w-4" aria-hidden />
-                )}
+              <Button variant="primary" onClick={saveBoundary} loading={update.isPending} icon={<Check className="h-4 w-4" aria-hidden />}>
                 Kaydet
-              </button>
+              </Button>
             ) : (
               !started && (
-                <button
-                  type="button"
-                  onClick={startPolygon}
-                  disabled={tooFar}
-                  className={`${button} bg-app-primary font-semibold text-app-on-primary hover:bg-app-primary-hover`}
-                >
-                  <Play className="h-4 w-4" aria-hidden />
+                <Button variant="primary" onClick={startPolygon} disabled={tooFar} icon={<Play className="h-4 w-4" aria-hidden />}>
                   Çizime başla
-                </button>
+                </Button>
               )
             )}
           </div>

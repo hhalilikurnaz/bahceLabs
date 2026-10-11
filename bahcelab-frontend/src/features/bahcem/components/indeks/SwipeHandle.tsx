@@ -45,7 +45,7 @@ export function SwipeHandle() {
           if (e.key === 'ArrowLeft') patch({ bolme: Math.max(0.02, karsilastirma.bolme - step) })
           if (e.key === 'ArrowRight') patch({ bolme: Math.min(0.98, karsilastirma.bolme + step) })
         }}
-        className="pointer-events-auto absolute left-0 top-1/2 flex h-12 w-8 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none items-center justify-center rounded-full border border-white/80 bg-app-panel text-app-text shadow-xl focus-visible:outline-2 focus-visible:outline-app-accent"
+        className="pointer-events-auto absolute left-0 top-1/2 flex h-14 w-11 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none items-center justify-center rounded-full border border-white/80 bg-app-panel text-app-text shadow-e2"
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>

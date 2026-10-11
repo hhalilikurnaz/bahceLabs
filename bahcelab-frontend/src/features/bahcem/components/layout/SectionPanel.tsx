@@ -1,6 +1,8 @@
-import { Bell, LogOut, Ruler, Store } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Bell, LogOut, Store } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Button, EmptyState } from '@/components/ui'
+import { ComingSoonList } from '../garden-page/ComingSoonList'
+import { NOTIFICATION_ITEMS, SETTINGS_ITEMS } from '../garden-page/comingSoonItems'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { Section } from '../../lib/routes'
 
@@ -51,17 +53,7 @@ export function SectionPanel({ section }: { section: Exclude<Section, 'bahceler'
               </Button>
             </section>
           )}
-          <section className="rounded-md border border-app-border bg-app-card p-4" aria-label="Araçlar">
-            <p className="text-caption font-semibold uppercase tracking-wide text-app-text-dim">Araçlar</p>
-            <Link
-              to="/planning"
-              className="mt-2 flex min-h-11 items-center gap-3 rounded-md text-body font-medium text-app-text no-underline hover:text-app-accent"
-            >
-              <Ruler className="h-5 w-5 text-app-accent" aria-hidden />
-              Dikim planlama simülasyonu
-            </Link>
-          </section>
-          <p className="px-1 text-caption text-app-text-dim">Çoklu kullanıcı ve hesap ayarları Adım 19'da gelecek.</p>
+          <ComingSoonList heading="Yakında" items={SETTINGS_ITEMS} />
         </div>
       </div>
     )
@@ -81,6 +73,11 @@ export function SectionPanel({ section }: { section: Exclude<Section, 'bahceler'
         title={`Yakında – ${copy.step}`}
         description={copy.text}
       />
+      {section === 'bildirimler' && (
+        <div className="px-4 pb-4">
+          <ComingSoonList heading="Yakında" items={NOTIFICATION_ITEMS} />
+        </div>
+      )}
     </div>
   )
 }

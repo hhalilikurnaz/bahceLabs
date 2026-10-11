@@ -1,13 +1,15 @@
-import { TriangleAlert } from 'lucide-react'
+import { Card, ErrorState, Skeleton } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
 import { useWeather } from '../../api/weatherApi'
+import { ComingSoonList } from '../garden-page/ComingSoonList'
+import { WEATHER_ITEMS } from '../garden-page/comingSoonItems'
 import { CurrentCard } from './CurrentCard'
 import { DailyForecast } from './DailyForecast'
 import { SprayStrip } from './SprayStrip'
 import { WaterCard } from './WaterCard'
 import { WeatherAlertsCard } from './WeatherAlertsCard'
 
-/** "Hava verisi: Open-Meteo.com (CC BY 4.0)" — Open-Meteo adı kaynağa bağlanır (CC BY atıf koşulu) */
+/** "Open-Meteo.com" adı kaynağa bağlanır (CC BY atıf koşulu). */
 function Attribution({ text }: { text: string }) {
   const [before, after] = text.split('Open-Meteo.com')
   if (after === undefined) return <>{text}.</>
@@ -22,43 +24,48 @@ function Attribution({ text }: { text: string }) {
   )
 }
 
-/** Bahçe detayındaki «Hava» sekmesi. */
+/** Bahçe sayfasındaki «Hava» sekmesi. */
 export function WeatherTab({ gardenId }: { gardenId: string }) {
   const { data, isLoading, error, refetch, isFetching } = useWeather(gardenId)
 
   if (isLoading) {
     return (
-      <div className="space-y-3" aria-label="Hava durumu yükleniyor">
-        <div className="h-44 animate-pulse rounded-2xl bg-app-card" />
-        <div className="h-56 animate-pulse rounded-2xl bg-app-card" />
+      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2" aria-label="Hava durumu yükleniyor" aria-busy>
+        <Skeleton className="h-48" />
+        <Skeleton className="h-48" />
+        <Skeleton className="h-72" />
+        <Skeleton className="h-72" />
       </div>
     )
   }
   if (error || !data) {
     return (
-      <div role="alert" className="flex flex-col items-center gap-3 rounded-2xl bg-app-card px-4 py-8 text-center">
-        <TriangleAlert className="h-6 w-6 text-app-warn" aria-hidden />
-        <p className="text-small leading-snug text-app-text-muted">{error ? describeError(error) : 'Hava durumu alınamadı.'}</p>
-        <button
-          type="button"
-          disabled={isFetching}
-          onClick={() => void refetch()}
-          className="h-9 rounded-xl border border-app-border px-4 text-small text-app-text hover:bg-app-card-hover disabled:opacity-50"
-        >
-          Tekrar dene
-        </button>
-      </div>
+      <Card>
+        <ErrorState
+          title="Hava durumu alınamadı"
+          description={error ? describeError(error) : 'İnternet bağlantınızı kontrol edip tekrar deneyin.'}
+          retrying={isFetching}
+          onRetry={() => void refetch()}
+        />
+      </Card>
     )
   }
 
   return (
     <div className="space-y-3">
       <WeatherAlertsCard alerts={data.uyarilar} />
-      <CurrentCard weather={data} />
-      <DailyForecast days={data.gunler} />
-      <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
-      <WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} />
-      <p className="px-1 pb-1 text-caption leading-snug text-app-text-dim" data-testid="weather-attribution">
+      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
+        <div className="space-y-3">
+          <CurrentCard weather={data} />
+          <WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} />
+        </div>
+        <div className="space-y-3">
+          <DailyForecast days={data.gunler} />
+          <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
+        </div>
+      </div>
+      <ComingSoonList heading="Yakında" items={WEATHER_ITEMS} />
+      <p className="px-1 pb-1 text-caption text-app-text-dim" data-testid="weather-attribution">
         <Attribution text={data.atif} /> Saatler Europe/Istanbul. Tarımsal değerlendirmeler bilgi amaçlıdır.
       </p>
     </div>

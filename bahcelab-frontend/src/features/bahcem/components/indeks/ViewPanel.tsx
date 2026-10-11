@@ -1,63 +1,19 @@
 import { useMemo } from 'react'
 import { ArrowLeftRight, X } from 'lucide-react'
+import { Button, IconButton, SelectField, Segmented } from '@/components/ui'
 import { useIndexView } from '../../hooks/useIndexView'
 import { formatDate } from '../../lib/dates'
-import { INDEX_DEFS, LAYER_OPTIONS, TRUE_COLOR, TRUE_COLOR_LABEL, isIndexId, type LayerId } from '../../lib/indices'
+import { LAYER_OPTIONS, isIndexId, layerName, type LayerId } from '../../lib/indices'
 import { findScene, isUsable, referenceDate, usableDates } from '../../lib/scenes'
 import { useBahcemStore, type ChangePreset, type DrawStyle, type ViewMode } from '../../stores/bahcemStore'
 
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-  disabledReason,
-}: {
-  label: string
-  value: T
-  options: { value: T; label: string }[]
-  onChange: (value: T) => void
-  disabledReason?: string
-}) {
-  return (
-    <div title={disabledReason}>
-      <span className="mb-1 block text-caption font-medium text-app-text-muted">{label}</span>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        className={`flex rounded-xl bg-app-bg/70 p-0.5 ${disabledReason ? 'opacity-50' : ''}`}
-      >
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={value === option.value}
-            disabled={Boolean(disabledReason)}
-            onClick={() => onChange(option.value)}
-            className={`h-8 flex-1 rounded-[10px] text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
-              value === option.value ? 'bg-app-card-hover text-app-text shadow' : 'text-app-text-muted hover:text-app-text'
-            } disabled:cursor-not-allowed`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const selectClass =
-  'h-9 w-full cursor-pointer rounded-xl border border-app-border bg-app-card px-2.5 text-caption text-app-text outline-none focus:border-app-accent disabled:cursor-not-allowed disabled:opacity-50'
-
-/** Katman (indeks) seçici, görünüm modları, değişim haritası ve karşılaştırma ayarları. */
+/** Harita görünümü: skala, çizim, değişim haritası ve karşılaştırma (7B-2'de Görüntü Arşivi'ne taşınacak). */
 export function ViewPanel() {
   const { katman, scenes, active } = useIndexView()
   const gorunum = useBahcemStore((s) => s.gorunum)
   const cizim = useBahcemStore((s) => s.cizim)
   const degisim = useBahcemStore((s) => s.degisim)
   const karsilastirma = useBahcemStore((s) => s.karsilastirma)
-  const setKatman = useBahcemStore((s) => s.setKatman)
   const setGorunum = useBahcemStore((s) => s.setGorunum)
   const setCizim = useBahcemStore((s) => s.setCizim)
   const setDegisim = useBahcemStore((s) => s.setDegisim)
@@ -65,7 +21,6 @@ export function ViewPanel() {
   const patchKarsilastirma = useBahcemStore((s) => s.patchKarsilastirma)
 
   const isIndex = isIndexId(katman)
-  const description = katman === TRUE_COLOR ? TRUE_COLOR_LABEL : INDEX_DEFS[katman]
   const gridReady = isIndex && Boolean(active?.indeksler[katman]?.veriVar)
 
   const dates = useMemo(() => usableDates(scenes, katman), [scenes, katman])
@@ -87,74 +42,44 @@ export function ViewPanel() {
   const datesB = karsilastirma ? usableDates(scenes, karsilastirma.katmanB) : []
 
   return (
-    <section className="space-y-3 rounded-2xl bg-app-card p-3.5" aria-label="Görünüm">
-      <div>
-        <span className="mb-1.5 block text-caption font-medium text-app-text-muted">Katman</span>
-        <div role="radiogroup" aria-label="Harita katmanı" className="flex flex-wrap gap-1.5">
-          {LAYER_OPTIONS.map((option) => {
-            const on = option.id === katman
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => setKatman(option.id)}
-                title={option.kisa}
-                className={`h-8 rounded-full border px-3 text-caption font-medium transition-colors focus-visible:outline-2 focus-visible:outline-app-accent ${
-                  on
-                    ? 'border-app-accent bg-app-accent-soft text-app-accent'
-                    : 'border-app-border text-app-text-muted hover:bg-app-card-hover hover:text-app-text'
-                }`}
-              >
-                {option.ad}
-              </button>
-            )
-          })}
+    <section className="space-y-4" aria-label="Harita görünümü">
+      <div className="space-y-3">
+        <div title={contrastReason}>
+          <span className="mb-1 block text-small font-semibold text-app-text">Renk skalası</span>
+          <Segmented<ViewMode>
+            label="Renk skalası"
+            value={gorunum}
+            onChange={setGorunum}
+            className={`w-full ${contrastReason ? 'pointer-events-none opacity-50' : ''}`}
+            options={[
+              { value: 'mutlak', label: 'Genel skala' },
+              { value: 'kontrastli', label: 'Bahçenin kendi farkları' },
+            ]}
+          />
         </div>
-        <details className="mt-2 group">
-          <summary className="cursor-pointer list-none text-caption text-app-text-muted marker:hidden">
-            <span className="font-medium text-app-text">{description.kisa}</span>
-            <span className="ml-1 text-app-text-dim group-open:hidden">· ayrıntı</span>
-          </summary>
-          <p className="mt-1.5 text-caption leading-relaxed text-app-text-muted">{description.aciklama}</p>
-        </details>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2.5">
-        <Segmented<ViewMode>
-          label="Değer görünümü"
-          value={gorunum}
-          onChange={setGorunum}
-          disabledReason={contrastReason}
-          options={[
-            { value: 'mutlak', label: 'Mutlak' },
-            { value: 'kontrastli', label: 'Kontrastlı' },
-          ]}
-        />
-        <Segmented<DrawStyle>
-          label="Çizim"
-          value={cizim}
-          onChange={setCizim}
-          options={[
-            { value: 'piksel', label: 'Piksel' },
-            { value: 'yumusak', label: 'Yumuşak' },
-          ]}
-        />
+        <div>
+          <span className="mb-1 block text-small font-semibold text-app-text">Görüntü</span>
+          <Segmented<DrawStyle>
+            label="Görüntü çizimi"
+            value={cizim}
+            onChange={setCizim}
+            className="w-full"
+            options={[
+              { value: 'piksel', label: 'Ham' },
+              { value: 'yumusak', label: 'Yumuşatılmış' },
+            ]}
+          />
+        </div>
       </div>
       {gorunum === 'kontrastli' && isIndex && (
-        <p className="-mt-1 text-caption leading-snug text-app-text-dim">
-          Skala, seçili tarihte bahçe içindeki değerlerin p2–p98 aralığına gerilir; bahçe içi farklar belirginleşir.
+        <p className="text-small text-app-text-dim">
+          Renkler bu bahçenin o tarihteki değer aralığına göre gerilir; bahçe içindeki farklar belirginleşir.
         </p>
       )}
 
-      <div>
-        <label htmlFor="degisim" className="mb-1 block text-caption font-medium text-app-text-muted">
-          Değişim haritası
-        </label>
-        <select
-          id="degisim"
-          className={selectClass}
+      <div className="space-y-2">
+        <SelectField
+          label="Değişim haritası"
           disabled={Boolean(changeReason) || !active}
           title={changeReason}
           value={degisim?.preset ?? ''}
@@ -167,16 +92,16 @@ export function ViewPanel() {
           <option value="ikihafta">Son 2 hafta</option>
           <option value="gecenyil">Geçen yıl aynı dönem</option>
           <option value="ozel">Tarih seç…</option>
-        </select>
+        </SelectField>
         {degisim?.preset === 'ozel' && (
-          <select
-            aria-label="Karşılaştırılacak önceki tarih"
-            className={`${selectClass} mt-1.5`}
+          <SelectField
+            label="Karşılaştırılacak önceki tarih"
+            hideLabel
             value={degisim.tarih ?? ''}
             onChange={(e) => setDegisim({ preset: 'ozel', tarih: e.target.value || null })}
           >
             <option value="">Tarih seçin</option>
-            {gridDates
+            {[...gridDates]
               .filter((d) => d !== active?.tarih)
               .reverse()
               .map((d) => (
@@ -184,10 +109,10 @@ export function ViewPanel() {
                   {formatDate(d)}
                 </option>
               ))}
-          </select>
+          </SelectField>
         )}
         {degisim && active && (
-          <p className="mt-1.5 text-caption leading-snug text-app-text-muted" aria-live="polite">
+          <p className="text-small text-app-text-muted" aria-live="polite">
             {reference
               ? `${formatDate(active.tarih)} − ${formatDate(reference)} · kırmızı: düşüş, yeşil: artış`
               : degisim.preset === 'ozel'
@@ -199,25 +124,20 @@ export function ViewPanel() {
 
       <div>
         {karsilastirma ? (
-          <div className="space-y-2 rounded-xl border border-app-border p-2.5">
+          <div className="space-y-2 rounded-md border border-app-border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-caption font-medium text-app-text">Karşılaştırma</span>
-              <button
-                type="button"
-                onClick={() => setKarsilastirma(null)}
-                aria-label="Karşılaştırmayı kapat"
-                className="flex h-6 w-6 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-              >
-                <X className="h-3.5 w-3.5" aria-hidden />
-              </button>
+              <span className="text-small font-semibold text-app-text">Karşılaştırma</span>
+              <IconButton label="Karşılaştırmayı kapat" onClick={() => setKarsilastirma(null)}>
+                <X className="h-4 w-4" aria-hidden />
+              </IconButton>
             </div>
-            <p className="text-caption text-app-text-dim">
-              Sol: {active ? `${description.ad ?? 'Gerçek renk'} · ${formatDate(active.tarih)}` : '—'}. Sağ tarafı seçin; ortadaki sürgüyle kaydırın.
+            <p className="text-small text-app-text-muted">
+              Sol: {active ? `${layerName(katman)} · ${formatDate(active.tarih)}` : '—'}. Sağ tarafı seçin; ortadaki sürgüyle kaydırın.
             </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              <select
-                aria-label="Sağ görüntünün katmanı"
-                className={selectClass}
+            <div className="grid grid-cols-2 gap-2">
+              <SelectField
+                label="Sağ görüntünün parametresi"
+                hideLabel
                 value={karsilastirma.katmanB}
                 onChange={(e) => {
                   const katmanB = e.target.value as LayerId
@@ -230,10 +150,10 @@ export function ViewPanel() {
                     {o.ad}
                   </option>
                 ))}
-              </select>
-              <select
-                aria-label="Sağ görüntünün tarihi"
-                className={selectClass}
+              </SelectField>
+              <SelectField
+                label="Sağ görüntünün tarihi"
+                hideLabel
                 value={karsilastirma.tarihB ?? ''}
                 onChange={(e) => patchKarsilastirma({ tarihB: e.target.value || null })}
               >
@@ -243,22 +163,21 @@ export function ViewPanel() {
                     {formatDate(d)}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </div>
             {karsilastirma.tarihB && !findScene(scenes, karsilastirma.tarihB) && (
-              <p className="text-caption text-app-danger">Seçilen tarih bulunamadı.</p>
+              <p className="text-small text-app-danger">Seçilen tarih bulunamadı.</p>
             )}
           </div>
         ) : (
-          <button
-            type="button"
+          <Button
+            block
             onClick={startCompare}
             disabled={!active || dates.length < 2}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-app-border text-caption font-medium text-app-text transition-colors hover:bg-app-card-hover focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50"
+            icon={<ArrowLeftRight className="h-4 w-4" aria-hidden />}
           >
-            <ArrowLeftRight className="h-4 w-4" aria-hidden />
-            Karşılaştır (sürgü)
-          </button>
+            İki tarihi karşılaştır
+          </Button>
         )}
       </div>
     </section>

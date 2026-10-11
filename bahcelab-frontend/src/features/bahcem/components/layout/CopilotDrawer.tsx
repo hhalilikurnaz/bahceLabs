@@ -1,5 +1,8 @@
 import { Send, Sparkles } from 'lucide-react'
 import { Drawer } from '@/components/ui'
+import { ComingSoonList } from '../garden-page/ComingSoonList'
+import { COPILOT_ITEMS } from '../garden-page/comingSoonItems'
+import { LAYOUT } from '../../lib/config'
 import { useBahcemStore } from '../../stores/bahcemStore'
 
 /** Sağ üstteki Copilot düğmesi (koyu harita denetimi). */
@@ -33,6 +36,7 @@ export function CopilotDrawer() {
       id="copilot-drawer"
       title="Copilot"
       open={open}
+      widthPx={LAYOUT.copilotPx}
       onClose={() => setOpen(false)}
       icon={<Sparkles className="h-4 w-4" strokeWidth={1.9} aria-hidden />}
       footer={
@@ -66,6 +70,9 @@ export function CopilotDrawer() {
         <p className="mt-3 rounded-sm bg-app-bg px-3 py-2 text-caption text-app-text-dim">
           Copilot Adım 16'da açılacak; o zamana kadar soru alanı kapalıdır.
         </p>
+      </div>
+      <div className="mt-3">
+        <ComingSoonList items={COPILOT_ITEMS} />
       </div>
     </Drawer>
   )
