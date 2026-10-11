@@ -6,21 +6,22 @@ Her yeni özelliğin yeri baştan belli olsun diye iskelet. Henüz olmayan uçla
 ```
 Bahçelerim      /bahcem                    (liste + harita)
 Pazar & Depo    /bahcem/pazar              Yakında – Adım 17
-Bildirimler     /bahcem/bildirimler        Yakında – Adım 8 (uygulama içi bildirim merkezi)
-Ayarlar         /bahcem/ayarlar            hesap, çıkış, araçlar (çoklu kullanıcı: Adım 19)
+Bildirimler     /bahcem/bildirimler        Yakında – Adım 8 (bildirim merkezi) · Destek ve son tarih takvimi (Adım 18)
+Ayarlar         /bahcem/ayarlar            hesap, çıkış · Bildirim tercihleri ve telefon/WhatsApp onayı (Adım 18–19)
 ```
 
 ## Bahçe sayfası (`/bahcem/:id/…`)
 ```
 /bahcem/:id
-├── durum    Durum   skor, "Bugün" kartı, grafikler                       (Adım 8; şimdilik: indeks haritası + zaman grafiği)
-├── analiz   Analiz  bölgeler, değişim, karşılaştırma, sorunlu alanlar,    (Adım 9, 10, 14, 15; şimdilik: verimlilik bölgeleri,
-│                    topografya, toprak, uygulama haritası, denemeler       değişim, karşılaştır, sorunlu alanlar)
-├── hava     Hava    hava, ilaçlama penceresi, sulama, zararlı riski       (Adım 8; şimdilik: mevcut hava içeriği)
-├── gunluk   Günlük  gözlem, hasat, ilaç defteri, maliyet                  (Adım 11, 12, 13)   Yakında
-└── rapor    Rapor   PDF, paylaşım linki                                   (Adım 16)           Yakında
+├── durum    Durum   en güncel değer + açıklama, zaman grafiği, uyarılar (Adım 8: skor, "Bugün" kartı)
+├── analiz   Analiz  Bölgeler (şimdi: verimlilik bölgeleri; Adım 9: çok yıllık), Sorunlu alanlar (tıkla → haritada odak)
+│                    Yakında: Topografya & don (10) · Toprak örneklemesi (14) · Uygulama haritası & denemeler (15)
+├── hava     Hava    hava, 7 gün, ilaçlama penceresi, su durumu · Yakında: Sulama önerisi (8) · Zararlı/hastalık riski (8)
+├── gunluk   Günlük  Yakında: Gözlemler (11) · Hasat (11) · İlaç defteri (12) · Maliyet & işçi/yevmiye (13) · Kayıt dosyası İTU/GlobalG.A.P. (13B)
+└── rapor    Rapor   Yakında: Sezon raporu PDF (16) · Hasar raporu (10/16) · Paylaşım linki (16)
 ```
-`/bahcem/:id` → `/bahcem/:id/durum` yönlendirmesi. Bilinmeyen bahçe → liste + "bahçe bulunamadı" bildirimi.
+Copilot (sağ üst çekmece): Yakında – Adım 16 (Fotoğrafla teşhis dahil).
+`/bahcem/:id` → `/bahcem/:id/durum`. Bilinmeyen bahçe → liste + bildirim.
 
 ## Kurallar
 - Uzman harita denetimleri (indeks seçici, görünüm, değişim, karşılaştır, zaman atlaması) harita üstü araç çubuğundadır; panelde yer almaz.
