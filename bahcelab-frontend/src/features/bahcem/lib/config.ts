@@ -130,6 +130,14 @@ export const GARDEN_LIMITS = {
   minDekar: 0.5,
 } as const
 
+/** Harita araç çubuğu: dar haritada yalnızca simgeler (etiketler ipucunda), daha da genişse kapsül de aynı satırda */
+export const TOOLBAR = {
+  iconModeBelowPx: 640,
+  capsuleMinPx: 900,
+  /** Tek satır kuralı: araç çubuğu bu yüksekliği (px) aşmamalı (testle denetlenir) */
+  maxRowHeightPx: 72,
+} as const
+
 export const DRAW = {
   /** Çizimde köşe tutamacı çapı, px: iğne ucu (fare) ve dokunmatik (büyük) */
   handlePx: 10,

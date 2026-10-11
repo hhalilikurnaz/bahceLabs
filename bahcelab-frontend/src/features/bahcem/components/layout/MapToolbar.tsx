@@ -1,7 +1,10 @@
-import { Archive, Settings2 } from 'lucide-react'
-import { useState } from 'react'
+import { Archive, Contrast, Leaf, Settings2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Segmented, SelectField, Switch } from '@/components/ui'
+import { Segmented, SelectField, Switch, Tooltip, cx } from '@/components/ui'
+import { useElementWidth } from '../../hooks/useElementWidth'
+import { TOOLBAR } from '../../lib/config'
+import { viewLabel } from '../../lib/raster'
 import { useIndexView } from '../../hooks/useIndexView'
 import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { formatDate } from '../../lib/dates'
@@ -9,6 +12,59 @@ import { LAYER_OPTIONS, type LayerId } from '../../lib/indices'
 import { archivePath } from '../../lib/archive'
 import { IndexLegend } from '../indeks/IndexLegend'
 import { useBahcemStore } from '../../stores/bahcemStore'
+
+/** Simge modunda parametre seçici: düğme + menü (etiket ipucunda ve erişilebilir adda). */
+function ParameterMenu({ value, onChange }: { value: LayerId; onChange: (id: LayerId) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const current = LAYER_OPTIONS.find((o) => o.id === value)
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+  return (
+    <div ref={ref} className="relative">
+      <Tooltip label={`Parametre: ${current?.ad ?? ''}`} side="top">
+        <button
+          type="button"
+          aria-label={`Parametre: ${current?.ad ?? ''}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text hover:bg-app-card-hover"
+        >
+          <Leaf className="h-5 w-5" aria-hidden />
+        </button>
+      </Tooltip>
+      {open && (
+        <div role="menu" className="absolute bottom-full left-0 z-30 mb-2 w-56 rounded-lg border border-app-border bg-app-panel p-1.5 shadow-e3">
+          {LAYER_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={o.id === value}
+              onClick={() => {
+                onChange(o.id)
+                setOpen(false)
+              }}
+              className={cx('flex min-h-11 w-full items-center rounded-sm px-3 text-left text-body hover:bg-app-card-hover', o.id === value ? 'font-semibold text-app-accent' : 'text-app-text')}
+            >
+              {o.ad}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * Haritanın altındaki araç çubuğu: tek parametre seçici, görünüm (Bahçenin kendi farkları / Genel skala),
@@ -28,6 +84,8 @@ export function MapToolbar() {
   const setRenkKorlugu = useBahcemStore((s) => s.setRenkKorlugu)
   const fullMap = useBahcemStore((s) => s.fullMap)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [wrapRef, wrapWidth] = useElementWidth<HTMLDivElement>(TOOLBAR.iconModeBelowPx)
+  const iconMode = wrapWidth < TOOLBAR.iconModeBelowPx
 
   if (!gardenId || mode !== 'idle') return null
   const hasImages = (scenes ?? []).some((s) => s.durum === 'tamam')
@@ -48,6 +106,7 @@ export function MapToolbar() {
         !desktop && (listOpen || (detailOpen && sheet !== 'peek')) && !fullMap ? 'hidden' : 'flex'
       }`}
       data-testid="map-toolbar-wrap"
+      ref={wrapRef}
     >
       <IndexLegend />
       {settingsOpen && (
@@ -66,49 +125,77 @@ export function MapToolbar() {
         </div>
       )}
       <div
-        className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-lg border border-app-border bg-app-panel p-2 shadow-e2"
+        className="pointer-events-auto flex max-w-full flex-nowrap items-center justify-center gap-x-2 rounded-lg border border-app-border bg-app-panel p-2 shadow-e2"
         role="toolbar"
         aria-label="Harita görünümü"
         data-testid="map-toolbar"
+        data-mode={iconMode ? 'icons' : 'full'}
       >
-        {shown && active && (
-          <p className="hidden px-2 text-small text-app-text @3xl:block" data-testid="map-capsule">
+        {!iconMode && wrapWidth >= TOOLBAR.capsuleMinPx && shown && active && (
+          <p className="whitespace-nowrap px-2 text-small text-app-text" data-testid="map-capsule">
             En güncel: <strong>{formatDate(active.tarih)}</strong>
             {active.bulutOrani != null && <span className="text-app-text-muted"> · bulut %{Math.round(active.bulutOrani)}</span>}
           </p>
         )}
-        <SelectField label="Parametre" hideLabel value={katman} onChange={(e) => setKatman(e.target.value as LayerId)} className="w-40">
-          {LAYER_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.ad}
-            </option>
-          ))}
-        </SelectField>
-        <Segmented
-          label="Görünüm"
-          value={skala}
-          onChange={setSkala}
-          options={[
-            { value: 'kendi', label: 'Bahçenin kendi farkları' },
-            { value: 'genel', label: 'Genel skala' },
-          ]}
-        />
-        <button
-          type="button"
-          aria-label="Görünüm ayarları"
-          aria-expanded={settingsOpen}
-          onClick={() => setSettingsOpen((v) => !v)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
-        >
-          <Settings2 className="h-5 w-5" aria-hidden />
-        </button>
-        <Link
-          to={archivePath(gardenId, { parametre: katman, tarih: active?.tarih ?? null })}
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md bg-app-primary px-3 text-body font-semibold text-app-on-primary hover:bg-app-primary-hover"
-        >
-          <Archive className="h-4 w-4" aria-hidden />
-          Tüm görüntüler
-        </Link>
+        {iconMode ? (
+          <>
+            <ParameterMenu value={katman} onChange={setKatman} />
+            <Tooltip label={`Görünüm: ${viewLabel(skala)} (değiştirmek için basın)`} side="top">
+              <button
+                type="button"
+                aria-label={`Görünüm: ${viewLabel(skala)} (değiştirmek için basın)`}
+                onClick={() => setSkala(skala === 'kendi' ? 'genel' : 'kendi')}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text hover:bg-app-card-hover"
+              >
+                <Contrast className="h-5 w-5" aria-hidden />
+              </button>
+            </Tooltip>
+          </>
+        ) : (
+          <>
+            <SelectField label="Parametre" hideLabel value={katman} onChange={(e) => setKatman(e.target.value as LayerId)} className="w-36 shrink-0">
+              {LAYER_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.ad}
+                </option>
+              ))}
+            </SelectField>
+            <Segmented
+              label="Görünüm"
+              value={skala}
+              onChange={setSkala}
+              options={[
+                { value: 'kendi', label: 'Bahçenin kendi farkları' },
+                { value: 'genel', label: 'Genel skala' },
+              ]}
+              className="shrink-0 whitespace-nowrap"
+            />
+          </>
+        )}
+        <Tooltip label="Görünüm ayarları" side="top">
+          <button
+            type="button"
+            aria-label="Görünüm ayarları"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-app-text-muted hover:bg-app-card-hover hover:text-app-text"
+          >
+            <Settings2 className="h-5 w-5" aria-hidden />
+          </button>
+        </Tooltip>
+        <Tooltip label="Tüm görüntüler" side="top">
+          <Link
+            to={archivePath(gardenId, { parametre: katman, tarih: active?.tarih ?? null })}
+            aria-label="Tüm görüntüler"
+            className={cx(
+              'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-app-primary font-semibold text-app-on-primary hover:bg-app-primary-hover',
+              iconMode ? 'w-11' : 'px-3 text-body',
+            )}
+          >
+            <Archive className="h-4 w-4" aria-hidden />
+            {!iconMode && 'Tüm görüntüler'}
+          </Link>
+        </Tooltip>
       </div>
     </div>
   )

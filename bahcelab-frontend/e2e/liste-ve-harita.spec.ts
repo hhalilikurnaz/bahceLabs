@@ -31,7 +31,7 @@ test('liste özeti, filtre, sıralama; harita etiketi; Tam harita ve Esc', async
   // Bahçe sayfası geniş panel; Tam harita paneli daraltır, Esc geri açar
   await page.getByRole('link', { name: 'Büyük Bahçe bahçesini aç' }).click()
   await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'true')
-  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'true')
+  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'false') // bahçe seçilince liste daralır
   await page.getByRole('button', { name: 'Tam harita' }).click()
   await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'false')
   await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'false')

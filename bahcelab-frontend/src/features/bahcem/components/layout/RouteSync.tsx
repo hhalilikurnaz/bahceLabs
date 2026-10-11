@@ -21,6 +21,14 @@ export function RouteSync() {
     selectGarden(gardenId)
   }, [gardenId, selectGarden])
 
+  // Bahçe seçilince liste ikon şeridine daralır (tercihe göre); bahçe kapanınca liste geri açılır
+  const { section } = useBahcemRoute()
+  useEffect(() => {
+    if (section !== 'bahceler') return
+    const { listAutoCollapse, setLeftPanelOpen } = useBahcemStore.getState()
+    setLeftPanelOpen(gardenId ? !listAutoCollapse : true)
+  }, [gardenId, section])
+
   const missing = gardenId !== null && isSuccess && !isFetching && !gardens.some((g) => g.id === gardenId)
   useEffect(() => {
     if (!missing) return

@@ -22,7 +22,8 @@ function initials(name: string): string {
 
 /** Sol menü: Bahçelerim · Pazar & Depo · Bildirimler · Ayarlar. Koyu orman zemini (harita denetimleriyle aynı yüzey). */
 export function IconRail() {
-  const { section } = useBahcemRoute()
+  const { section, gardenId } = useBahcemRoute()
+  const setAutoCollapse = useBahcemStore((s) => s.setListAutoCollapse)
   const { user } = useAuth()
   const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
   const togglePanel = useBahcemStore((s) => s.toggleLeftPanel)
@@ -47,9 +48,13 @@ export function IconRail() {
                 end={target === 'bahceler' ? false : true}
                 aria-label={label}
                 aria-current={active ? 'page' : undefined}
-                onClick={() => {
-                  // Aynı bölüme tekrar basmak paneli kapatır/açar; başka bölüme geçerken panel açılır
-                  if (active && target === 'bahceler') togglePanel()
+                onClick={(event) => {
+                  if (target === 'bahceler' && active && gardenId) {
+                    // Bahçe açıkken listeye basmak yalnızca listeyi açar/kapatır (bahçeden çıkmaz); seçim hatırlanır
+                    event.preventDefault()
+                    setAutoCollapse(panelOpen) // açıksa kapatılıyor → bir dahaki bahçede daralsın; kapalıysa açılıyor → açık kalsın
+                    togglePanel()
+                  } else if (active && target === 'bahceler') togglePanel()
                   else setPanelOpen(true)
                 }}
                 className={cx(itemBase, active && 'bg-app-accent-soft text-app-accent hover:bg-app-accent-soft hover:text-app-accent')}

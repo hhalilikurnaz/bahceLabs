@@ -11,7 +11,7 @@ test('bahçe açılınca URL, sekmeler, geri tuşu ve derin bağlantı çalış�
   await page.getByRole('link', { name: 'Rota Bahçesi bahçesini aç' }).click()
   await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
   await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'true')
-  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'true')
+  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'false') // liste ikon şeridine daralır
 
   await page.getByRole('tab', { name: 'Analiz' }).click()
   await expect(page).toHaveURL(/\/analiz$/)

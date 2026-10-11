@@ -33,6 +33,9 @@ interface BahcemState {
   /** "Tam harita": bahçe sayfası paneli daraltılır, seçili bahçe dışı karartılır */
   fullMap: boolean
   copilotOpen: boolean
+  /** Bahçe seçilince liste ikon şeridine daralsın mı (kullanıcının son seçimi hatırlanır) */
+  listAutoCollapse: boolean
+  setListAutoCollapse: (collapse: boolean) => void
   /** Kullanıcının sürükleyerek seçtiği sağ panel genişliği (px); null = varsayılan oran */
   detailWidthPx: number | null
   season: number
@@ -123,6 +126,24 @@ function writeDetailWidth(value: number | null): void {
   }
 }
 
+const LIST_COLLAPSE_KEY = 'bahcelab.listAutoCollapse'
+
+function readListAutoCollapse(): boolean {
+  try {
+    return window.localStorage.getItem(LIST_COLLAPSE_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+function writeListAutoCollapse(value: boolean): void {
+  try {
+    window.localStorage.setItem(LIST_COLLAPSE_KEY, String(value))
+  } catch {
+    /* saklama yoksa tercih yalnızca oturum boyunca geçerli olur */
+  }
+}
+
 const flowReset = {
   mode: 'idle' as FlowMode,
   draft: null,
@@ -174,6 +195,7 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   leftPanelOpen: true,
   copilotOpen: false,
   detailWidthPx: readDetailWidth(),
+  listAutoCollapse: readListAutoCollapse(),
   season: new Date().getFullYear(),
 
   selectedGardenId: null,
@@ -194,6 +216,10 @@ export const useBahcemStore = create<BahcemState>((set) => ({
   setFullMap: (fullMap) => set({ fullMap }),
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
+  setListAutoCollapse: (listAutoCollapse) => {
+    writeListAutoCollapse(listAutoCollapse)
+    set({ listAutoCollapse })
+  },
   setDetailWidth: (detailWidthPx) => {
     writeDetailWidth(detailWidthPx)
     set({ detailWidthPx })

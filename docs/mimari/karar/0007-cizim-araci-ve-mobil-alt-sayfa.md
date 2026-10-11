@@ -11,6 +11,8 @@
 4. **Yerleşim eşiği 1180 px:** üç bölgeli yerleşim bunun üstünde; altında (telefon ve tablet 768 px) bahçe paneli alttan açılan sayfadır (kapalı/yarım/tam; sürüklenir, ↑ ↓ ile ayarlanır, `lib/layout.ts: sheetHeightPx`). Harita denetimleri sayfanın üstünde konumlanır (`--sheet-h`), yarım/tam açıkken gizlenir.
 5. **Erişilebilirlik:** kontrol kenarlıkları ≥ 3:1 (`--color-app-border-strong`), kontrast token testi (`tests/contrast.test.ts`), Playwright ile ad/odak/dokunma hedefi taraması.
 
+**Not (Adım 8, 0.2):** Kurulu terra-draw 1.37'de çizimi kodla bitiren doğrudan bir API yoktur (yalnızca `keyEvents.finish` ile Enter). Sentetik Enter tek bir modülde (`lib/drawAdapter.ts`) kapsüllenmiştir; birim testi (`tests/drawAdapter.test.ts`) ve e2e "küçük alan" senaryosu vardır. Sürüm yükseltmede önce doğrudan API aranır; varsa yalnızca bu dosya değişir.
+
 **Sonuçlar.** Çizim ve form tek akışta; mobilde harita her zaman üstte görünür. Çizim aracı ağır olduğundan ilk açılışta yüklenir (ADR 0005 ile uyumlu).
 
 **Geri dönüş.** Form yerleşimi `DetailPanel` içindedir; eski sol-panel formuna dönmek yalnızca bu yönlendirmeyi değiştirir.

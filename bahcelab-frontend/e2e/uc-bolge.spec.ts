@@ -8,14 +8,24 @@ test('bahçe → sağ panel → sekmeler → Tam harita → Esc; ana ekran en g�
   await page.goto('/bahcem')
 
   await page.getByRole('link', { name: 'Üç Bölge bahçesini aç' }).click()
-  // Üç bölge: sol liste, harita, sağ panel yan yana
+  // Bahçe seçilince liste ikon şeridine daralır; şeritteki Bahçelerim düğmesi listeyi açar (bahçeden çıkmadan)
   const list = page.getByTestId('left-panel')
   const detail = page.getByTestId('detail-column')
-  await expect(list).toHaveAttribute('data-open', 'true')
+  await expect(list).toHaveAttribute('data-open', 'false')
   await expect(detail).toHaveAttribute('data-open', 'true')
+  await page.getByRole('link', { name: 'Bahçelerim' }).click()
+  await expect(list).toHaveAttribute('data-open', 'true')
+  await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
+  // Üç bölge: sol liste, harita, sağ panel yan yana
   const listBox = await list.boundingBox()
   const detailBox = await detail.boundingBox()
   expect(listBox && detailBox && listBox.x + listBox.width < detailBox.x).toBe(true)
+  // Tercih hatırlanır: liste açık bırakıldı → bahçe kapatılıp tekrar açılınca açık kalır
+  await page.getByRole('button', { name: 'Bahçe panelini kapat' }).click()
+  await page.getByRole('link', { name: 'Üç Bölge bahçesini aç' }).click()
+  await expect(list).toHaveAttribute('data-open', 'true')
+  await page.getByRole('link', { name: 'Bahçelerim' }).click() // kapat → bir sonraki bahçede daralsın
+  await expect(list).toHaveAttribute('data-open', 'false')
 
   // Durum: 3 özet kart, grafik, kapsül (en güncel görüntü)
   await expect(page.getByTestId('summary-cards').getByRole('region')).toHaveCount(3)

@@ -19,6 +19,7 @@ import type { PolygonCoordinates } from '../../api/types'
 import { useGardens, useUpdateGarden } from '../../api/useGardens'
 import { DRAW } from '../../lib/config'
 import { formatDecare, geometryBounds, polygonsOf, ringAreaM2 } from '../../lib/geo'
+import { finishDrawing } from '../../lib/drawAdapter'
 import { circleStats, decimateRing, formatLength, nearestVertex, type LngLat } from '../../lib/measure'
 import { cssColor } from '../../map/cssColor'
 import { useFocusPadding } from '../../map/useFocusGarden'
@@ -276,11 +277,9 @@ function DrawSession() {
     setPhase('drawing')
   }
 
-  /** Çizimi bitir: terra-draw'ın Enter ile bitirme komutu, odak bir düğmedeyken de çalışsın diye haritaya gönderilir. */
-  function finishDrawing() {
-    const target = map?.getCanvas()
-    if (!target) return
-    for (const type of ['keydown', 'keyup']) target.dispatchEvent(new KeyboardEvent(type, { key: 'Enter', bubbles: true }))
+  /** Çizimi bitir (terra-draw sürümüne bağımlı kısım `lib/drawAdapter.ts` içindedir). */
+  function finishCurrentDrawing() {
+    finishDrawing(map?.getCanvas())
   }
 
   function undo() {
@@ -423,7 +422,7 @@ function DrawSession() {
                   Sınır tamam
                 </Button>
               ) : phase === 'drawing' ? (
-                <Button variant="primary" onClick={finishDrawing} disabled={!liveArea} icon={<Check className="h-4 w-4" aria-hidden />}>
+                <Button variant="primary" onClick={finishCurrentDrawing} disabled={!liveArea} icon={<Check className="h-4 w-4" aria-hidden />}>
                   Çizimi bitir
                 </Button>
               ) : (
