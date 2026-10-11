@@ -53,6 +53,8 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
 
   await page.goto(`/bahcem/${garden.id}/hava`)
+  await expect(page.getByTestId('best-spray')).toContainText('Bu hafta ilaçlama için en iyi zaman')
+  await expect(page.getByTestId('best-spray-time')).toContainText('11:00–21:00')
   await expect(page.getByTestId('current-temp')).toContainText('20')
   await expect(page.getByTestId('daily-forecast')).toContainText('Olasılık %')
   await expect(page.getByTestId('daily-forecast')).toContainText('11:00–21:00')
@@ -74,4 +76,22 @@ test('hava servisi hata verirse anlaşılır hata ve "Tekrar dene" gösterilir',
   await page.goto(`/bahcem/${garden.id}/hava`)
   await expect(page.getByRole('heading', { name: 'Hava durumu alınamadı' })).toBeVisible({ timeout: 30_000 })
   await expect(page.getByRole('button', { name: 'Tekrar dene' })).toBeVisible()
+})
+
+test('Hava sekmesi: sulama ve zararlı riski kartları ön değer uyarısı ile gelir', async ({ page }) => {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad: 'Risk Bahçesi', lng: 27.85, lat: 38.85 })
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
+
+  await page.goto(`/bahcem/${garden.id}/hava`)
+  const irrigation = page.getByTestId('irrigation-card')
+  await expect(irrigation).toBeVisible()
+  await expect(irrigation).toContainText('reçetesi değildir')
+  await expect(irrigation.getByTestId('rule-badge').first()).toContainText(/ön değer/i)
+
+  const risks = page.getByTestId('risks-card')
+  await expect(risks).toBeVisible()
+  await expect(risks.getByTestId('risk-row').first()).toHaveAttribute('data-level', /dusuk|orta|yuksek|yetersiz/)
+  await expect(risks.getByTestId('rule-badge').first()).toContainText(/ön değer/i)
 })

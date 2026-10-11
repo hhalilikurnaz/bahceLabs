@@ -1,6 +1,7 @@
 import { ArrowLeft, Maximize2, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button, IconButton, Tabs, TextField } from '@/components/ui'
+import { useGardenStatus } from '../../api/agroApi'
 import { useGardensOverview } from '../../api/overviewApi'
 import { PRODUCTS, type Garden } from '../../api/types'
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
@@ -27,7 +28,10 @@ export function GardenPage({ garden }: { garden: Garden }) {
   const actions = useGardenActions()
   const overview = useGardensOverview()
   const summary = overview.data?.bahceler.find((g) => g.id === garden.id)
-  const status = summary?.durum
+  const live = useGardenStatus(garden.id).data
+  // Canlı durum varsa başlık rozeti de onu gösterir: kart ile rozet farklı sayı göstermesin (liste anlık görüntüsü gecikebilir)
+  const status = live?.durum ?? summary?.durum
+  const score = live ? live.skor : summary?.skor
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(garden.ad)
 
@@ -77,7 +81,7 @@ export function GardenPage({ garden }: { garden: Garden }) {
             ) : (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h2 className="truncate font-display text-h1 text-app-text">{garden.ad}</h2>
-                {status && <StatusBadge status={status} score={summary?.skor} />}
+                {status && <StatusBadge status={status} score={score} />}
               </div>
             )}
             <p className="mt-0.5 truncate text-small text-app-text-muted">{subtitle}</p>
@@ -120,7 +124,7 @@ export function GardenPage({ garden }: { garden: Garden }) {
       >
         {tab === 'durum' && <StatusTab garden={garden} />}
         {tab === 'analiz' && <AnalysisTab gardenId={garden.id} />}
-        {tab === 'hava' && <WeatherTab gardenId={garden.id} />}
+        {tab === 'hava' && <WeatherTab garden={garden} />}
         {tab === 'gunluk' && <ComingSoonList heading="Günlük" items={JOURNAL_ITEMS} />}
         {tab === 'rapor' && <ComingSoonList heading="Rapor" items={REPORT_ITEMS} />}
       </div>

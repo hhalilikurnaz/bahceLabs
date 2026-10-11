@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from '@/lib/apiClient'
-import type { Garden, GardenGeometry, GardenInput, GardenPatch, Urun } from './types'
+import type { Garden, GardenGeometry, GardenInput, GardenPatch, SulamaSistemi, Urun } from './types'
 
 interface ApiGarden {
   id: string
@@ -9,6 +9,7 @@ interface ApiGarden {
   cesit_kodu: string | null
   dikim_yili: number | null
   agac_sayisi: number | null
+  sulama_sistemi: SulamaSistemi | null
   geometry: GardenGeometry
   alan_dekar: number
   il: string | null
@@ -27,6 +28,7 @@ function fromApi(garden: ApiGarden): Garden {
     cesitKodu: garden.cesit_kodu,
     dikimYili: garden.dikim_yili,
     agacSayisi: garden.agac_sayisi,
+    sulamaSistemi: garden.sulama_sistemi,
     geometry: garden.geometry,
     alanDekar: garden.alan_dekar,
     il: garden.il,
@@ -45,6 +47,7 @@ const toApi = (patch: GardenPatch) => {
   if ('cesitKodu' in patch) body.cesit_kodu = patch.cesitKodu
   if ('dikimYili' in patch) body.dikim_yili = patch.dikimYili
   if ('agacSayisi' in patch) body.agac_sayisi = patch.agacSayisi
+  if ('sulamaSistemi' in patch) body.sulama_sistemi = patch.sulamaSistemi
   if ('geometry' in patch) body.geometry = patch.geometry
   if ('il' in patch) body.il = patch.il
   if ('ilce' in patch) body.ilce = patch.ilce

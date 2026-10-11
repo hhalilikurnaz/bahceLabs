@@ -31,8 +31,9 @@ export function niceTicks(domain: Domain, count: number): number[] {
 }
 
 /** Alan genişliğine göre kaç ayın etiketleneceği: 12 etiket sığmıyorsa ikişer ay atlanır (kesilmez). */
-export function monthLabelStep(widthPx: number, labelPx: number): 1 | 2 | 3 {
+export function monthLabelStep(widthPx: number, labelPx: number): 1 | 2 | 3 | 4 {
   const per = widthPx / 12
   if (per >= labelPx) return 1
-  return per * 2 >= labelPx ? 2 : 3
+  if (per * 2 >= labelPx) return 2
+  return per * 3 >= labelPx ? 3 : 4
 }

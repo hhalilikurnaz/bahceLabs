@@ -214,3 +214,130 @@ export function useResetOverride(gardenId: string) {
     onSuccess: () => client.invalidateQueries({ queryKey: ['agro', 'fenoloji', gardenId] }),
   })
 }
+
+// ----------------------------------------------------------------------------- sulama ve riskler (8B)
+export interface IrrigationWindow {
+  gun: number
+  etcMm: number
+  etkiliYagisMm: number
+  netMm: number
+  eksikGun: number
+}
+
+export interface Irrigation {
+  veriYeterli: boolean
+  veriYetersizNedeni: string | null
+  sonGunler: IrrigationWindow | null
+  onumuzdekiGunler: IrrigationWindow | null
+  ihtiyacMm: number | null
+  brutIhtiyacMm: number | null
+  tonDekar: number | null
+  toplamTon: number | null
+  sistem: { kod: string | null; ad: string | null; verimlilik: number | null }
+  gerekli: boolean
+  cumle: string
+  not: string
+  kurallar: { etkiliYagis: RuleMeta; sistem: RuleMeta; kc: RuleMeta | null }
+}
+
+export interface Risk {
+  kod: string
+  ad: string
+  kisa: string
+  seviye: 'dusuk' | 'orta' | 'yuksek'
+  gerekce: string
+  gecerlilikBaslangic: string
+  gecerlilikBitis: string
+  veriYeterli: boolean
+  kural: RuleMeta
+}
+
+export interface Risks {
+  tarih: string
+  riskler: Risk[]
+  tuzak: { desteklenir: boolean; adim: string; aciklama: string }
+  not: string
+}
+
+interface ApiWindow {
+  gun: number
+  etc_mm: number
+  etkili_yagis_mm: number
+  net_mm: number
+  eksik_gun: number
+}
+
+const win = (w: ApiWindow | null): IrrigationWindow | null =>
+  w ? { gun: w.gun, etcMm: w.etc_mm, etkiliYagisMm: w.etkili_yagis_mm, netMm: w.net_mm, eksikGun: w.eksik_gun } : null
+
+export const sulamaRiskApi = {
+  async irrigation(gardenId: string): Promise<Irrigation> {
+    const raw = await apiRequest<{
+      veri_yeterli: boolean
+      veri_yetersiz_nedeni: string | null
+      son_gunler: ApiWindow | null
+      onumuzdeki_gunler: ApiWindow | null
+      ihtiyac_mm: number | null
+      brut_ihtiyac_mm: number | null
+      ton_dekar: number | null
+      toplam_ton: number | null
+      sistem: { kod: string | null; ad: string | null; verimlilik: number | null }
+      gerekli: boolean
+      cumle: string
+      not_: string
+      etkili_yagis_kural: ApiKuralMeta
+      sistem_kural: ApiKuralMeta
+      kc_kural: ApiKuralMeta | null
+    }>(`/gardens/${gardenId}/sulama`)
+    return {
+      veriYeterli: raw.veri_yeterli,
+      veriYetersizNedeni: raw.veri_yetersiz_nedeni,
+      sonGunler: win(raw.son_gunler),
+      onumuzdekiGunler: win(raw.onumuzdeki_gunler),
+      ihtiyacMm: raw.ihtiyac_mm,
+      brutIhtiyacMm: raw.brut_ihtiyac_mm,
+      tonDekar: raw.ton_dekar,
+      toplamTon: raw.toplam_ton,
+      sistem: raw.sistem,
+      gerekli: raw.gerekli,
+      cumle: raw.cumle,
+      not: raw.not_,
+      kurallar: { etkiliYagis: meta(raw.etkili_yagis_kural) as RuleMeta, sistem: meta(raw.sistem_kural) as RuleMeta, kc: meta(raw.kc_kural) },
+    }
+  },
+  async risks(gardenId: string): Promise<Risks> {
+    const raw = await apiRequest<{
+      tarih: string
+      riskler: {
+        kod: string
+        ad: string
+        kisa: string
+        seviye: Risk['seviye']
+        gerekce: string
+        gecerlilik_baslangic: string
+        gecerlilik_bitis: string
+        veri_yeterli: boolean
+        kural: ApiKuralMeta
+      }[]
+      tuzak: Risks['tuzak']
+      not_: string
+    }>(`/gardens/${gardenId}/riskler`)
+    return {
+      tarih: raw.tarih,
+      riskler: raw.riskler.map((r) => ({
+        kod: r.kod, ad: r.ad, kisa: r.kisa, seviye: r.seviye, gerekce: r.gerekce, gecerlilikBaslangic: r.gecerlilik_baslangic,
+        gecerlilikBitis: r.gecerlilik_bitis, veriYeterli: r.veri_yeterli, kural: meta(r.kural) as RuleMeta,
+      })),
+      tuzak: raw.tuzak,
+      not: raw.not_,
+    }
+  },
+}
+
+export function useIrrigation(gardenId: string | null) {
+  return useQuery({ queryKey: ['agro', 'sulama', gardenId], queryFn: () => sulamaRiskApi.irrigation(gardenId as string), enabled: gardenId !== null, staleTime: 5 * 60_000 })
+}
+
+export function useRisks(gardenId: string | null) {
+  return useQuery({ queryKey: ['agro', 'riskler', gardenId], queryFn: () => sulamaRiskApi.risks(gardenId as string), enabled: gardenId !== null, staleTime: 5 * 60_000 })
+}

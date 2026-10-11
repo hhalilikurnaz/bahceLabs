@@ -26,8 +26,7 @@ export const ANALYSIS_ITEMS: ComingSoonItem[] = [
 ]
 
 export const WEATHER_ITEMS: ComingSoonItem[] = [
-  { title: 'Sulama önerisi', step: 'Adım 8', text: 'Su dengesine göre ne zaman ve ne kadar sulanacağı.' },
-  { title: 'Zararlı / hastalık riski', step: 'Adım 8', text: 'Hava koşullarına göre risk kartları.' },
+  { title: 'Tuzak sayımı', step: 'Adım 12', text: 'Tuzaktaki sayıyı girince zararlı riski buna göre güncellenecek.' },
 ]
 
 export const NOTIFICATION_ITEMS: ComingSoonItem[] = [

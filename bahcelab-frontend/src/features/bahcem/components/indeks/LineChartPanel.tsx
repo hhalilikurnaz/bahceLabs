@@ -115,7 +115,7 @@ export function LineChartPanel({
   }
 
   const ticks = monthTicks(range)
-  const step = monthLabelStep(plotW, CHART.monthLabelPx + (range.to > range.from && ticks.some((t) => t.year) ? 18 : 0))
+  const step = monthLabelStep(plotW, CHART.monthLabelPx + (range.to > range.from && ticks.some((t) => t.year) ? 40 : 0))
   const visibleBands = bands.map((b) => clipBand(b, range)).filter((b): b is Band => b !== null)
 
   const primary = lines.find((l) => !l.secondary) ?? lines[0]

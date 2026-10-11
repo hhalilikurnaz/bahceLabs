@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Loader2, TriangleAlert, X } from 'lucide-react'
 import { Button, IconButton, SelectField, TextField } from '@/components/ui'
 import { describeError, gardensApi } from '../../api/gardensApi'
-import { PRODUCTS, type GardenGeometry, type Urun } from '../../api/types'
+import { IRRIGATION_SYSTEMS, PRODUCTS, type GardenGeometry, type SulamaSistemi, type Urun } from '../../api/types'
 import { useCreateGarden } from '../../api/useGardens'
 import { useGardenNav } from '../../hooks/useGardenNav'
 import { VarietyField } from './VarietyField'
@@ -48,6 +48,7 @@ export function GardenForm() {
   const cesit = variety.metin
   const [dikimYili, setDikimYili] = useState('')
   const [agacSayisi, setAgacSayisi] = useState('')
+  const [sulama, setSulama] = useState<SulamaSistemi | ''>('')
   const [il, setIl] = useState('')
   const [ilce, setIlce] = useState('')
   const [measured, setMeasured] = useState<{ for: unknown; result: Measure } | null>(null)
@@ -106,6 +107,7 @@ export function GardenForm() {
         ...varietyPayload(variety),
         dikimYili: parseOptionalInt(dikimYili),
         agacSayisi: parseOptionalInt(agacSayisi),
+        sulamaSistemi: sulama || null,
         geometry,
         il: il.trim() || null,
         ilce: ilce.trim() || null,
@@ -202,6 +204,15 @@ export function GardenForm() {
             error={errors.agacSayisi}
           />
         </div>
+
+        <SelectField label="Sulama sistemi (isteğe bağlı)" value={sulama} onChange={(e) => setSulama(e.target.value as SulamaSistemi | '')} hint="Sulama önerisinde verimlilik için kullanılır.">
+          <option value="">Seçilmedi</option>
+          {IRRIGATION_SYSTEMS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
 
         <div className="grid grid-cols-2 gap-3">
           <TextField label="İl" maxLength={100} value={il} onChange={(e) => { adminTouched.current = true; setIl(e.target.value) }} />

@@ -47,6 +47,15 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
   )
 }
 
+/** Test aracı: bahçeye gerçek yayım yolundan bildirim ekler (öncelik: kritik | uyari | bilgi). */
+export function seedNotification(gardenId: string, oncelik: 'kritik' | 'uyari' | 'bilgi', key: string, sekme = 'hava'): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_notifications', gardenId, oncelik, key, sekme], {
+    cwd: '../bahcelab-backend',
+    env: { ...process.env, PYTHONPATH: 'src' },
+    stdio: 'pipe',
+  })
+}
+
 /** Haritayı verilen konuma (yakın zoom) açacak başlangıç görünümünü yazar: çizim için yakınlaşmak gerekir. */
 export async function startAt(page: Page, lng: number, lat: number, zoom = 17): Promise<void> {
   const me = await page.request.get('/api/auth/me')

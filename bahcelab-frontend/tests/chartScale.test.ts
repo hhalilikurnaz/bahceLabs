@@ -35,5 +35,6 @@ describe('grafik ekseni', () => {
     expect(monthLabelStep(600, 30)).toBe(1)
     expect(monthLabelStep(300, 30)).toBe(2)
     expect(monthLabelStep(150, 30)).toBe(3)
+    expect(monthLabelStep(100, 30)).toBe(4)
   })
 })

@@ -24,6 +24,7 @@ import { MapAttribution } from './MapAttribution'
 import { MapControls } from './MapControls'
 import { MapToolbar } from './MapToolbar'
 import { PlaceSearch } from './PlaceSearch'
+import { NotificationToaster } from '../notifications/NotificationToaster'
 import { OfflineBanner } from './OfflineBanner'
 import { ProcessingWatcher } from './ProcessingWatcher'
 import { RouteSync } from './RouteSync'
@@ -93,6 +94,7 @@ export function BahcemLayout() {
           <RouteSync />
           <ProcessingWatcher />
           <OfflineBanner />
+          <NotificationToaster />
           <Outlet />
           <GardenLayers />
           <GardenMapLabels />

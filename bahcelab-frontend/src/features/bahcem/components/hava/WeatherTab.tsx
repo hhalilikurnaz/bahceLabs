@@ -1,9 +1,16 @@
+import { useMemo, useState } from 'react'
 import { Card, ErrorState, Skeleton } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
-import { useWeather } from '../../api/weatherApi'
+import { useWeather, useWeatherHistory } from '../../api/weatherApi'
+import type { Garden } from '../../api/types'
+import { shiftDays, todayIstanbul } from '../../lib/dates'
 import { ComingSoonList } from '../garden-page/ComingSoonList'
 import { WEATHER_ITEMS } from '../garden-page/comingSoonItems'
+import { WeatherChart } from '../indeks/WeatherChart'
+import { BestSprayBanner } from './BestSprayBanner'
 import { CurrentCard } from './CurrentCard'
+import { IrrigationCard } from './IrrigationCard'
+import { RisksCard } from './RisksCard'
 import { DailyForecast } from './DailyForecast'
 import { SprayStrip } from './SprayStrip'
 import { WaterCard } from './WaterCard'
@@ -25,8 +32,13 @@ function Attribution({ text }: { text: string }) {
 }
 
 /** Bahçe sayfasındaki «Hava» sekmesi. */
-export function WeatherTab({ gardenId }: { gardenId: string }) {
+export function WeatherTab({ garden }: { garden: Garden }) {
+  const gardenId = garden.id
   const { data, isLoading, error, refetch, isFetching } = useWeather(gardenId)
+  const today = todayIstanbul()
+  const range = useMemo(() => ({ from: shiftDays(today, -89), to: today }), [today])
+  const history = useWeatherHistory(gardenId, range.from, shiftDays(today, -1), true)
+  const [hover, setHover] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -53,16 +65,21 @@ export function WeatherTab({ gardenId }: { gardenId: string }) {
 
   return (
     <div className="space-y-3">
+      <BestSprayBanner weather={data} />
       <WeatherAlertsCard alerts={data.uyarilar} />
       <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
-        <div className="space-y-3">
-          <CurrentCard weather={data} />
-          <WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} />
-        </div>
-        <div className="space-y-3">
-          <DailyForecast days={data.gunler} />
-          <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
-        </div>
+        <IrrigationCard garden={garden} />
+        <RisksCard gardenId={gardenId} />
+      </div>
+      <DailyForecast days={data.gunler} />
+      <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
+      <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2 p-3" data-testid="weather-layer">
+        <h3 className="font-display text-h2 text-app-text">Son 90 gün: yağış ve sıcaklık</h3>
+        <WeatherChart days={history.data ?? []} range={range} loading={history.isLoading} hoverDoy={hover} onHoverDoy={setHover} />
+      </Card>
+      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
+        <CurrentCard weather={data} />
+        <WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} />
       </div>
       <ComingSoonList heading="Yakında" items={WEATHER_ITEMS} />
       <p className="px-1 pb-1 text-caption text-app-text-dim" data-testid="weather-attribution">

@@ -35,13 +35,11 @@ test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', asy
 
 test('sol menü bölümleri "Yakında" gösterir; planlama rotası kapalı; Copilot çekmecesi açılır', async ({ page }) => {
   await page.goto('/bahcem')
-  for (const [name, step] of [
-    ['Pazar & Depo', 'Adım 17'],
-    ['Bildirimler', 'Adım 8'],
-  ] as const) {
-    await page.getByRole('link', { name, exact: true }).click()
-    await expect(page.getByText(`Yakında – ${step}`).first()).toBeVisible()
-  }
+  await page.getByRole('link', { name: 'Pazar & Depo', exact: true }).click()
+  await expect(page.getByText('Yakında – Adım 17').first()).toBeVisible()
+  await page.getByRole('link', { name: 'Bildirimler', exact: true }).click()
+  await expect(page.getByTestId('notifications-panel')).toBeVisible()
+  await expect(page.getByText('Henüz bildirim yok')).toBeVisible()
   await page.getByRole('link', { name: 'Ayarlar' }).click()
   await expect(page.getByRole('button', { name: 'Çıkış yap' })).toBeVisible()
   await expect(page.getByText('Planlama')).toHaveCount(0)

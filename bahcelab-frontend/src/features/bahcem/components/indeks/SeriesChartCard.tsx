@@ -38,8 +38,8 @@ export function SeriesChartCard({ title, summary, days, pick, color, unit, forma
   return (
     <Card aria-label={title} className="p-3" data-testid={testId}>
       <h3 className="mb-1 font-display text-h2 text-app-text">{title}</h3>
-      <div className="flex gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-1 @[26rem]:flex-row @[26rem]:gap-3">
+        <div className="min-w-0 flex-1 @[26rem]:order-none order-2">
           <LineChartPanel
             range={range}
             lines={lines}
@@ -57,7 +57,7 @@ export function SeriesChartCard({ title, summary, days, pick, color, unit, forma
             emptyText={emptyText}
           />
         </div>
-        <div className="w-24 shrink-0 self-center text-right" data-testid={`${testId}-summary`}>
+        <div className="order-1 flex flex-wrap items-baseline gap-x-2 @[26rem]:order-none @[26rem]:block @[26rem]:w-24 @[26rem]:shrink-0 @[26rem]:self-center @[26rem]:text-right" data-testid={`${testId}-summary`}>
           {summary ? (
             <>
               <p className="tabular whitespace-nowrap font-display text-display text-app-text">{summary.value}</p>

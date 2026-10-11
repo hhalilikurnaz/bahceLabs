@@ -1,25 +1,20 @@
-import { Bell, LogOut, Store } from 'lucide-react'
+import { LogOut, Store } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, EmptyState } from '@/components/ui'
 import { ComingSoonList } from '../garden-page/ComingSoonList'
+import { NotificationPreferences } from '../notifications/NotificationPreferences'
+import { NotificationsPanel } from '../notifications/NotificationsPanel'
 import { NOTIFICATION_ITEMS, SETTINGS_ITEMS } from '../garden-page/comingSoonItems'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { Section } from '../../lib/routes'
 
-const COPY: Record<'pazar' | 'bildirimler', { title: string; intro: string; step: string; icon: typeof Store; text: string }> = {
+const COPY: Record<'pazar', { title: string; intro: string; step: string; icon: typeof Store; text: string }> = {
   pazar: {
     title: 'Pazar & Depo',
     intro: 'Hasat, stok ve satış kayıtlarınız burada olacak.',
     step: 'Adım 17',
     icon: Store,
     text: 'Hasat sonrası ürününüzü kaydedip depo ve satış durumunu izleyebileceksiniz.',
-  },
-  bildirimler: {
-    title: 'Bildirimler',
-    intro: 'Uyarılar ve hatırlatmalar tek yerde toplanacak.',
-    step: 'Adım 8',
-    icon: Bell,
-    text: 'Don, sıcak, ilaçlama penceresi ve uydu uyarıları burada listelenecek; okundu işaretleyebileceksiniz.',
   },
 }
 
@@ -53,7 +48,19 @@ export function SectionPanel({ section }: { section: Exclude<Section, 'bahceler'
               </Button>
             </section>
           )}
+          <NotificationPreferences />
           <ComingSoonList heading="Yakında" items={SETTINGS_ITEMS} />
+        </div>
+      </div>
+    )
+  }
+
+  if (section === 'bildirimler') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <NotificationsPanel />
+        <div className="px-4 pb-4">
+          <ComingSoonList heading="Yakında" items={NOTIFICATION_ITEMS} />
         </div>
       </div>
     )
@@ -73,11 +80,6 @@ export function SectionPanel({ section }: { section: Exclude<Section, 'bahceler'
         title={`Yakında – ${copy.step}`}
         description={copy.text}
       />
-      {section === 'bildirimler' && (
-        <div className="px-4 pb-4">
-          <ComingSoonList heading="Yakında" items={NOTIFICATION_ITEMS} />
-        </div>
-      )}
     </div>
   )
 }

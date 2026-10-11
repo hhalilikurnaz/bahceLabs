@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Button, TextField } from '@/components/ui'
+import { Button, SelectField, TextField } from '@/components/ui'
 import { describeError } from '../../api/gardensApi'
-import type { Garden } from '../../api/types'
+import { IRRIGATION_SYSTEMS, type Garden, type SulamaSistemi } from '../../api/types'
 import { useUpdateGarden } from '../../api/useGardens'
 import { parseOptionalInt, validateGardenFields, type GardenFieldErrors } from '../../lib/gardenFields'
 import { useToast } from '../layout/toastContext'
@@ -16,6 +16,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
   const cesit = variety.metin
   const [dikimYili, setDikimYili] = useState(garden.dikimYili?.toString() ?? '')
   const [agacSayisi, setAgacSayisi] = useState(garden.agacSayisi?.toString() ?? '')
+  const [sulama, setSulama] = useState<SulamaSistemi | ''>(garden.sulamaSistemi ?? '')
   const [errors, setErrors] = useState<GardenFieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -32,7 +33,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
     if (Object.keys(found).length > 0) return
     setServerError(null)
     update.mutate(
-      { id: garden.id, patch: { ...varietyPayload(variety), dikimYili: parseOptionalInt(dikimYili), agacSayisi: parseOptionalInt(agacSayisi) } },
+      { id: garden.id, patch: { ...varietyPayload(variety), dikimYili: parseOptionalInt(dikimYili), agacSayisi: parseOptionalInt(agacSayisi), sulamaSistemi: sulama || null } },
       {
         onSuccess: () => {
           toast.show('Bahçe bilgileri kaydedildi.')
@@ -65,6 +66,14 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
           <TextField label="Dikim yılı" inputMode="numeric" value={dikimYili} onChange={(e) => setDikimYili(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2015" error={errors.dikimYili} />
           <TextField label="Ağaç sayısı" inputMode="numeric" value={agacSayisi} onChange={(e) => setAgacSayisi(e.target.value.replace(/\D/g, '').slice(0, 7))} placeholder="500" error={errors.agacSayisi} />
         </div>
+        <SelectField label="Sulama sistemi" value={sulama} onChange={(e) => setSulama(e.target.value as SulamaSistemi | '')}>
+          <option value="">Seçilmedi</option>
+          {IRRIGATION_SYSTEMS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
         {serverError && (
           <p role="alert" className="rounded-md bg-app-danger/10 px-3 py-2 text-small text-app-danger">
             {serverError}

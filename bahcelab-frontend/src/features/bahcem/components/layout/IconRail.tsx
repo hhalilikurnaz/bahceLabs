@@ -2,7 +2,9 @@ import { Bell, Settings, Store, Trees, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { BrandMark, Tooltip, cx } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
+import { useUnreadPoll } from '../../api/notificationsApi'
 import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { badgeText } from '../../lib/notifications'
 import { SECTION_PATHS, type Section } from '../../lib/routes'
 import { useBahcemStore } from '../../stores/bahcemStore'
 
@@ -23,6 +25,7 @@ function initials(name: string): string {
 /** Sol menü: Bahçelerim · Pazar & Depo · Bildirimler · Ayarlar. Koyu orman zemini (harita denetimleriyle aynı yüzey). */
 export function IconRail() {
   const { section, gardenId } = useBahcemRoute()
+  const unread = useUnreadPoll().data?.okunmamis ?? 0
   const setAutoCollapse = useBahcemStore((s) => s.setListAutoCollapse)
   const { user } = useAuth()
   const panelOpen = useBahcemStore((s) => s.leftPanelOpen)
@@ -61,6 +64,12 @@ export function IconRail() {
               >
                 {active && panelOpen && <span className="absolute -left-2 h-6 w-1 rounded-r-full bg-lemon" aria-hidden />}
                 <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
+                {target === 'bildirimler' && unread > 0 && (
+                  <span data-testid="unread-badge" className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-app-danger px-1 text-[11px] font-bold leading-[18px] text-white">
+                    {badgeText(unread)}
+                    <span className="sr-only"> okunmamış bildirim</span>
+                  </span>
+                )}
               </NavLink>
             </Tooltip>
           )

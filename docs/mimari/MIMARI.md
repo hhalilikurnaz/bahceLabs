@@ -17,7 +17,7 @@ FastAPI (api → domain servis → depo)  ── PostgreSQL 16 + PostGIS
    ├── Altlık (harita) : Mapbox Satellite (ana) | MapTiler (yedek) | OSM        ── frontend map/mapStyles.ts
    ├── Adres arama     : MapTiler geocoding                                    ── frontend map/geocoding.ts
    ├── LLM (Copilot)   : planlı – Adım 16 (arayüz arkasında)
-   └── Bildirim        : planlı – Adım 8 (uygulama içi), Adım 18 (WhatsApp/SMS)
+   └── Bildirim        : uygulama içi – Adım 8 (yapıldı); Adım 18 (WhatsApp/SMS)
 ```
 
 ## 2. Katmanlar ve modül sınırları
@@ -54,6 +54,7 @@ Frontend (`bahcelab-frontend/src/`):
 - **Bahçe sayfası** → rota `/bahcem/:id/(durum|analiz|hava|gunluk|rapor|arsiv)`; seçili bahçe URL'den gelir (`RouteSync`). Yerleşim: sol liste | harita | sağ panel (ADR 0006).
 - **Bahçe ekleme** (ADR 0007): `DrawController` (terra-draw) → `GardenForm` (sağ panel, canlı) → `POST /gardens` → `ProcessingWatcher` işi izler; bahçe bilgileri `PATCH /gardens/{id}` (`agac_sayisi` dahil).
 - **Durum skoru / Bugün / seriler** (ADR 0008): `domain/agro/` — `rules/katalog.yaml` (sürümlü, kural başına `durum` + `kaynak`), `score.py` ve `today.py` saf; `GET /gardens/{id}/durum|bugun|agro/seriler|agro/fenoloji`. Liste ve harita aynı `derive_status` fonksiyonunu kullanır. Doğrulanmamış kurallar: `docs/agro/KURAL-DURUMU.md`.
+- **Bildirim arayüzü (8B)**: `api/notificationsApi.ts` (liste, okundu, tercih, 60 sn yoklama `useUnreadPoll`), `lib/notifications.ts` (saf: rozet metni, yeni kritik seçimi), `NotificationsPanel` (süzgeç + sayfalama + tıkla→okundu→bahçe/sekme), `NotificationToaster` (ilk yüklemede mevcutlar «görüldü» sayılır), rozet `IconRail`'de. Bahçe başlığındaki skor rozeti canlı `/durum`'dan gelir (liste anlık görüntüsü işe bağlı gecikebilir).
 - **Zamanlanmış işler ve bildirimler** (ADR 0009): `jobs/` (kayıt defteri, `InlineScheduler`, arq işçisi, `JobQueue`); `generate_notifications` her bahçe için risk/uyarı/sulama hesaplar, `notifications` tablosuna tekrar önlemeli yazar (`dedupe_key`), kanallar `channels.registry`; liste skoru `garden_risk_snapshots`'ı okur. `GET /gardens/{id}/sulama|riskler`, `GET/POST /notifications…`.
 - **Ana harita** her zaman en güncel geçerli görüntüyü çizer (`IndexLayer` → `lib/rasterRender.ts`); **Arşiv** aynı çizimi canvas'ta kullanır ve `GET /gardens/{id}/indeks/arsiv` ile sayfalanmış, net/en net işaretli listeyi alır (`domain/ndvi/archive.py`).
 - **Hava** → hücre (0,05°) başına 1 saat önbellek, geçmiş günde bir tamamlanır; ağ yoksa son önbellek ve zaman damgası.
@@ -68,7 +69,7 @@ Frontend (`bahcelab-frontend/src/`):
 | Hava | `WeatherProvider` protokolü | Open-Meteo (ücretsiz/ücretli) | `get_provider()` tek yer |
 | Depolama | `StorageBackend` | `LocalStorage` | S3/R2 sınıfı eklenir |
 | LLM | planlı – Adım 16 | — | — |
-| Bildirim | planlı – Adım 8/18 | — | — |
+| Bildirim | uygulama içi yapıldı (Adım 8); WhatsApp/SMS Adım 18 | `notifications/` | `NotificationsPanel`, `NotificationToaster` |
 
 ## 5. Ortam değişkenleri (değersiz)
 

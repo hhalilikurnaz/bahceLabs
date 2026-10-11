@@ -146,8 +146,8 @@ export function StatusTab({ garden }: { garden: Garden }) {
                 ))}
               </SelectField>
             </div>
-            <div className="flex gap-3">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-1 @[26rem]:flex-row @[26rem]:gap-3">
+              <div className="order-2 min-w-0 flex-1 @[26rem]:order-none">
                 <TimeChart
                   scenes={data.gozlemler}
                   indeks={indexLayer}
@@ -162,7 +162,7 @@ export function StatusTab({ garden }: { garden: Garden }) {
                   onHoverDate={setHoverDate}
                 />
               </div>
-              <div className="w-24 shrink-0 self-center text-right" data-testid="time-chart-summary">
+              <div className="order-1 flex flex-wrap items-baseline gap-x-2 @[26rem]:order-none @[26rem]:block @[26rem]:w-24 @[26rem]:shrink-0 @[26rem]:self-center @[26rem]:text-right" data-testid="time-chart-summary">
                 {paramSummary ? (
                   <>
                     <p className="tabular whitespace-nowrap font-display text-display text-app-text">{paramSummary.value}</p>

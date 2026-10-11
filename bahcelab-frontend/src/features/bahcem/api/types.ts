@@ -8,6 +8,15 @@ export const PRODUCTS = [
 
 export type Urun = (typeof PRODUCTS)[number]['value']
 
+export const IRRIGATION_SYSTEMS = [
+  { value: 'damla', label: 'Damla sulama' },
+  { value: 'yagmurlama', label: 'Yağmurlama' },
+  { value: 'salma', label: 'Salma (yüzey) sulama' },
+  { value: 'yok', label: 'Sulama sistemi yok (yağışa bağlı)' },
+] as const
+
+export type SulamaSistemi = (typeof IRRIGATION_SYSTEMS)[number]['value']
+
 export type Position = [number, number]
 export type PolygonCoordinates = Position[][]
 
@@ -24,6 +33,7 @@ export interface Garden {
   cesitKodu: string | null
   dikimYili: number | null
   agacSayisi: number | null
+  sulamaSistemi: SulamaSistemi | null
   geometry: GardenGeometry
   /** Sunucuda ST_Area(ST_Transform(geom, 32636)) / 1000 ile hesaplanır */
   alanDekar: number
@@ -42,6 +52,7 @@ export interface GardenInput {
   cesitKodu?: string | null
   dikimYili: number | null
   agacSayisi?: number | null
+  sulamaSistemi?: SulamaSistemi | null
   geometry: GardenGeometry
   il: string | null
   ilce: string | null
