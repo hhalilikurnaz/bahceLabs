@@ -17,5 +17,18 @@ Bir kural mühendis tarafından onaylanınca ilgili bloğun `durum` alanı `muhe
 ## Skor parametreleri (kural değil, ürün ayarı — `config.py`)
 Ağırlıklar canlılık %40 · yaprak suyu %20 · uyarılar %20 · hava %20; etiket eşikleri İyi ≥ 75, İzle ≥ 50; tolerans: aralığın %5'i, sıfır puan: %30'u. Bunlar tarımsal eşik değil istatistiksel sezgidir; mühendis onayı gerektirmez ama yayın öncesi gözden geçirilmelidir.
 
-## 8B'de eklenecekler
-Akdeniz meyve sineği, kırmızı örümcek, kuruma hastalığı eşikleri; sulama (Kc, etkili yağış tanımı, sistem verimliliği) — aynı dosya düzeninde, hepsi "doğrulanmadı".
+## Adım 8B — doğrulanmamış kurallar (hepsi "ön değer – ziraat mühendisi onayı bekleniyor")
+
+Dosyalar: `rules/sulama.yaml`, `rules/riskler.yaml`.
+
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| Etkili yağış | günlük yağış < 2 mm sayılmaz; eşiği aşanın %80'i etkili; günlük üst sınır 40 mm | Genel yaklaşım; toprak tipi/eğime göre uyarlanmadı | doğrulanmadı |
+| Sulama sistemi verimliliği | damla 0,90 · yağmurlama 0,75 · salma 0,60 · sistem yok: verimlilik uygulanmaz | Yaygın literatür aralıkları | doğrulanmadı |
+| Sulama hesabı | ETc = ET₀ × Kc − etkili yağış; son 7 gün açığı; önümüzdeki 7 gün ihtiyacı; 1 mm = 1 ton/dekar; ihtiyaç eşiği 5 mm | Kc: katalog (FAO-56 tabanlı ön değer) | doğrulanmadı |
+| Akdeniz meyve sineği | GDD tabanı 10 °C, birikim 1 Mart'tan; orta ≥ 350, yüksek ≥ 600 GDD; son 7 gün ortalaması 16–32 °C dışındaysa bir kademe düşer; "yüksek" yalnızca meyve büyümesi/olgunlaşma evresinde | GDD'ye dayalı genel bölgesel uyarı yaklaşımı; eşikler ön değer | doğrulanmadı |
+| Kırmızı örümcek | sıcak gün: Tmax ≥ 30 °C; kuru gün: yağış < 1 mm (ve bilinen tahmin günlerinde nem ≤ %50); art arda ≥ 4 gün orta, ≥ 7 gün yüksek | Sıcak-kuru gün serisinin popülasyonu hızlandırdığı yönünde genel gözlem | doğrulanmadı |
+| Kuruma hastalığı (mal secco) — yalnız limon | orta: yağış ≥ 5 mm ve rüzgâr ≥ 20 km/s; yüksek: ≥ 10 mm ve ≥ 30 km/s; ortalama sıcaklık 14–28 °C; risk penceresi koşuldan sonra 3 gün | Yağmur + rüzgâr + ılık sıcaklıkta enfeksiyon olasılığı artar (genel bilgi) | doğrulanmadı |
+| Tuzak sayımı | arayüz hazır, değer yok (Adım 12) | — | — |
+
+Bu çıktılar teşhis ya da ilaçlama/sulama reçetesi değildir; arayüzde "risk tahmini" / "yaklaşık öneri" dilindedir.

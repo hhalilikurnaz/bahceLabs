@@ -34,6 +34,9 @@ db-revision:
 backend-dev:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port 8001
 
+worker:
+	cd bahcelab-backend && PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
+
 backend-test:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/pytest -v
 

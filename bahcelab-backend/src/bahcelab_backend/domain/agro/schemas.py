@@ -152,3 +152,64 @@ class BugunMaddesiYanit(BaseModel):
 class BugunYanit(BaseModel):
     tarih: date
     maddeler: list[BugunMaddesiYanit]
+
+
+# ----------------------------------------------------------------------------- sulama
+class SulamaPenceresi(BaseModel):
+    gun: int
+    etc_mm: float
+    etkili_yagis_mm: float
+    net_mm: float  # ETc − etkili yağış (pozitif = su açığı)
+    eksik_gun: int
+
+
+class SulamaSistemiYanit(BaseModel):
+    kod: str | None
+    ad: str | None
+    verimlilik: float | None
+
+
+class SulamaYanit(BaseModel):
+    veri_yeterli: bool
+    veri_yetersiz_nedeni: str | None
+    son_gunler: SulamaPenceresi | None
+    onumuzdeki_gunler: SulamaPenceresi | None
+    ihtiyac_mm: float | None  # önümüzdeki günlerin net ihtiyacı
+    brut_ihtiyac_mm: float | None  # sistem verimliliğine bölünmüş
+    ton_dekar: float | None  # 1 mm = 1 ton/dekar
+    toplam_ton: float | None
+    sistem: SulamaSistemiYanit
+    gerekli: bool
+    cumle: str
+    not_: str
+    etkili_yagis_kural: KuralMeta
+    sistem_kural: KuralMeta
+    kc_kural: KuralMeta | None
+
+
+# ----------------------------------------------------------------------------- riskler
+class RiskYanit(BaseModel):
+    kod: str
+    ad: str
+    kisa: str
+    seviye: Literal["dusuk", "orta", "yuksek"]
+    gerekce: str
+    gecerlilik_baslangic: date
+    gecerlilik_bitis: date
+    veri_yeterli: bool
+    kural: KuralMeta
+
+
+class TuzakArayuzu(BaseModel):
+    """Adım 12: tuzak sayımı girişi bu motora bağlanacak (arayüz şimdi hazır, giriş henüz yok)."""
+
+    desteklenir: bool
+    adim: str
+    aciklama: str
+
+
+class RiskleriYanit(BaseModel):
+    tarih: date
+    riskler: list[RiskYanit]
+    tuzak: TuzakArayuzu
+    not_: str

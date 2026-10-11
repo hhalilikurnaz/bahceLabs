@@ -213,3 +213,16 @@ def test_today_spray_window_wording_and_lower_priorities():
     items = build_today(data, TODAY, PRIORITY, 3)
     assert items[0].tur == "ilaclama" and "Yarın" in items[0].baslik and "05:00–09:00" in items[0].metin
     assert items[1].tur == "indeks_dususu" and items[1].sekme == "durum"
+
+
+def test_high_pest_risk_lowers_points_but_does_not_cap_the_label_by_itself():
+    scenes = series(date(2026, 6, 1), [0.62] * 20)
+    kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
+    plain = assess(scenes, **kwargs)
+    risky = assess(scenes, **kwargs, risk_high_count=1)
+    heavy = assess(scenes, **kwargs, risk_high_count=9)  # alt sınır 0
+    assert plain.skor == 100 and risky.skor is not None and risky.skor < plain.skor
+    weather = next(b for b in risky.bilesenler if b.kod == "hava")
+    assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden
+    assert next(b for b in heavy.bilesenler if b.kod == "hava").puan == 0
+    assert risky.durum == "iyi"  # etiketi yalnızca skor ve uyarılar belirler

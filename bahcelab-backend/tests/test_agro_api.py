@@ -1,5 +1,6 @@
 """Agro API: katalog, çeşit eşlemesi, fenoloji düzeltmeleri, seriler, durum skoru ve «Bugün» (yetki dahil)."""
 
+import uuid
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -216,11 +217,16 @@ async def test_status_drops_after_a_sudden_fall(user_client: AsyncClient, factor
 async def test_list_and_status_endpoint_agree_on_the_label(user_client: AsyncClient, factory, provider):
     garden = await new_garden(user_client)
     await seed_scenes(factory, garden["id"], last_ndvi=0.36)
+    # Liste, zamanlanmış işin son risk özetini (snapshot) okur: önce iş çalışır, sonra ikisi aynı değeri verir
+    from bahcelab_backend.jobs.tasks import generate_notifications
+
+    workspace = uuid.UUID((await user_client.get("/auth/me")).json()["workspace_id"])
+    await generate_notifications(factory, provider, workspace_id=workspace)
     status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
     overview = (await user_client.get("/gardens/overview")).json()
     item = next(g for g in overview["bahceler"] if g["id"] == garden["id"])
     # Tek durum fonksiyonu: liste ile Durum sekmesi aynı etiketi ve skoru verir (liste hava önbelleğini yalnızca okur)
-    assert item["skor"] == status["skor"] or item["durum"] == status["durum"]
+    assert item["skor"] == status["skor"] and item["durum"] == status["durum"]
     assert item["durum"] in ("izle", "dikkat")
 
 
@@ -229,7 +235,7 @@ async def test_today_defaults_to_all_clear_or_spray_window(user_client: AsyncCli
     garden = await new_garden(user_client)
     data = (await user_client.get(f"/gardens/{garden['id']}/bugun")).json()
     assert 1 <= len(data["maddeler"]) <= 3
-    assert {m["tur"] for m in data["maddeler"]} <= {"her_sey_yolunda", "ilaclama", "hava_uyarisi", "indeks_dususu"}
+    assert {m["tur"] for m in data["maddeler"]} <= {"her_sey_yolunda", "ilaclama", "hava_uyarisi", "indeks_dususu", "zararli_riski", "sulama"}
     for item in data["maddeler"]:
         assert item["baslik"] and item["metin"] and item["sekme"] in ("durum", "analiz", "hava", "gunluk", "rapor")
 

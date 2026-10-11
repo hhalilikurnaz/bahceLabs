@@ -54,6 +54,7 @@ Frontend (`bahcelab-frontend/src/`):
 - **Bahçe sayfası** → rota `/bahcem/:id/(durum|analiz|hava|gunluk|rapor|arsiv)`; seçili bahçe URL'den gelir (`RouteSync`). Yerleşim: sol liste | harita | sağ panel (ADR 0006).
 - **Bahçe ekleme** (ADR 0007): `DrawController` (terra-draw) → `GardenForm` (sağ panel, canlı) → `POST /gardens` → `ProcessingWatcher` işi izler; bahçe bilgileri `PATCH /gardens/{id}` (`agac_sayisi` dahil).
 - **Durum skoru / Bugün / seriler** (ADR 0008): `domain/agro/` — `rules/katalog.yaml` (sürümlü, kural başına `durum` + `kaynak`), `score.py` ve `today.py` saf; `GET /gardens/{id}/durum|bugun|agro/seriler|agro/fenoloji`. Liste ve harita aynı `derive_status` fonksiyonunu kullanır. Doğrulanmamış kurallar: `docs/agro/KURAL-DURUMU.md`.
+- **Zamanlanmış işler ve bildirimler** (ADR 0009): `jobs/` (kayıt defteri, `InlineScheduler`, arq işçisi, `JobQueue`); `generate_notifications` her bahçe için risk/uyarı/sulama hesaplar, `notifications` tablosuna tekrar önlemeli yazar (`dedupe_key`), kanallar `channels.registry`; liste skoru `garden_risk_snapshots`'ı okur. `GET /gardens/{id}/sulama|riskler`, `GET/POST /notifications…`.
 - **Ana harita** her zaman en güncel geçerli görüntüyü çizer (`IndexLayer` → `lib/rasterRender.ts`); **Arşiv** aynı çizimi canvas'ta kullanır ve `GET /gardens/{id}/indeks/arsiv` ile sayfalanmış, net/en net işaretli listeyi alır (`domain/ndvi/archive.py`).
 - **Hava** → hücre (0,05°) başına 1 saat önbellek, geçmiş günde bir tamamlanır; ağ yoksa son önbellek ve zaman damgası.
 - **Durum etiketi** (İyi/İzle/Dikkat/Veri yok): `domain/overview/status.py` içinde TEK fonksiyon (`derive_status`); Adım 8'de skora bağlanır.
@@ -80,5 +81,7 @@ Frontend (yalnızca `.env.local`; commit edilmez): `VITE_MAPBOX_TOKEN`, `VITE_MA
 Backend: `make backend-test` (pytest, DB gerekir) · `make backend-typecheck` (mypy + ruff). Frontend: `npx tsc -b` (strict) · `npx oxlint src` · `npx vitest run` · `npm run build` · `npm run test:e2e` (Playwright, çalışan backend + Vite gerekir; başsız tarayıcıda WebGL için SwiftShader bayrakları config'dedir; uydu serisi `tests.support.seed_scenes` test aracıyla yazılır).
 
 ## 7. Planlı (yapılmamış)
+
+(Not: skor/Bugün/sulama/risk/bildirim merkezi Adım 8'de yapıldı.)
 
 Skor ve "Bugün" kartı, sulama önerisi, zararlı riski, bildirim merkezi (Adım 8) · çok yıllık bölgeler ve iş kuyruğu (9) · topografya/don (10) · günlük ve hasat (11) · ilaç defteri (12) · maliyet (13) · toprak (14) · uygulama haritası (15) · Copilot ve PDF (16) · pazar & depo (17) · WhatsApp/SMS (18) · çoklu kullanıcı (19) · yayına hazırlık (20).

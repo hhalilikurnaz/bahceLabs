@@ -1,0 +1,55 @@
+# Zararlı / hastalık RİSK TAHMİNİ kuralları. Her kural ayrıdır, kaynak notlu ve "doğrulanmadı"dır.
+# Çıktılar teşhis veya ilaç/uygulama tavsiyesi DEĞİL, hava koşullarından türetilen risk tahminidir; sahada kontrol esastır.
+# Tuzak sayımı (Adım 12) bu kurallara `tuzak_esikleri` ile bağlanacak (arayüz hazır, değer yok).
+surum: 1
+
+kurallar:
+  akdeniz_meyve_sinegi:
+    ad: "Akdeniz meyve sineği"
+    kisa: "Meyve sineği riski"
+    urunler: [limon, portakal, mandalina, greyfurt]
+    durum: dogrulanmadi
+    kaynak: >-
+      Gün-derece (GDD) birikimine dayalı genel bölgesel uyarı yaklaşımı (Ceratitis capitata). Taban sıcaklık ve nesil eşikleri
+      yayınlarda farklı verilir; buradaki değerler ön değerdir ve ilçe tarım müdürlüğü uyarılarıyla doğrulanmalıdır.
+    parametreler:
+      gdd_taban_c: 10.0
+      birikim_baslangic: "03-01"      # AA-GG: bu tarihten bugüne günlük GDD toplanır
+      orta_gdd: 350.0                  # birikim bu değeri aşınca "orta"
+      yuksek_gdd: 600.0                # birikim bu değeri aşınca "yüksek"
+      aktif_sicaklik_min_c: 16.0       # son 7 günün ortalaması bu aralık dışındaysa seviye bir kademe düşer
+      aktif_sicaklik_max_c: 32.0
+      sicaklik_pencere_gun: 7
+      duyarli_evreler: [meyve_gelisimi, olgunlasma]   # "yüksek" yalnızca meyvenin duyarlı olduğu evrelerde verilir
+      tuzak_esikleri: null             # Adım 12: tuzak başına yakalanan sayıya göre eşikler
+  kirmizi_orumcek:
+    ad: "Kırmızı örümcek"
+    kisa: "Kırmızı örümcek riski"
+    urunler: [limon, portakal, mandalina, greyfurt]
+    durum: dogrulanmadi
+    kaynak: >-
+      Sıcak ve kuru günlerin art arda sürmesinin akar popülasyonunu hızlandırdığı yönünde genel gözlem; eşikler ön değerdir,
+      yerel gözlemle doğrulanmalıdır.
+    parametreler:
+      tmax_esik_c: 30.0               # günün en yüksek sıcaklığı bu değer ve üstü ise "sıcak gün"
+      yagis_esik_mm: 1.0              # günlük yağış bu değerin altındaysa "kuru gün"
+      nem_esik_yuzde: 50.0            # günlük ortalama nem bu değerin altındaysa (nem bilinen tahmin günlerinde) "kuru"
+      orta_gun: 4                      # art arda sıcak+kuru gün sayısı
+      yuksek_gun: 7
+      geriye_bakis_gun: 7              # geçmişten bu kadar gün + tahmin günleri değerlendirilir
+  kuruma_hastaligi:
+    ad: "Kuruma hastalığı (mal secco)"
+    kisa: "Kuruma hastalığı enfeksiyon riski"
+    urunler: [limon]
+    durum: dogrulanmadi
+    kaynak: >-
+      Mal secco (Phoma tracheiphila) enfeksiyonlarının yağmur, rüzgâr ve ılık sıcaklıkta yaralı dokulara bulaşma olasılığının
+      arttığı yönündeki genel bilgi. Eşikler ön değerdir; yarım yaprak/yara durumu bilinmeden bir tahmin olarak okunmalıdır.
+    parametreler:
+      yagis_orta_mm: 5.0
+      yagis_yuksek_mm: 10.0
+      ruzgar_orta_kmh: 20.0
+      ruzgar_yuksek_kmh: 30.0
+      sicaklik_min_c: 14.0             # günlük ortalama sıcaklık bu aralıktaysa "ılık"
+      sicaklik_max_c: 28.0
+      koruma_penceresi_gun: 3          # koşulların sağlandığı günden sonra risk penceresi bu kadar gün sürer

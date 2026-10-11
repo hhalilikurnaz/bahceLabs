@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     score_zero_share: float = 0.30  # bu paydan fazla düşüş 0 puan
     score_alert_points_yellow: int = 50
     score_alert_points_red: int = 0
+    score_risk_penalty_per_high: int = 25  # yüksek zararlı/hastalık riski başına hava bileşeninden düşülen puan (etiketi doğrudan düşürmez)
     score_period_half_window_days: int = 15  # "aynı dönem": geçen yılın ±bu kadar günü
     score_period_min_points: int = 3
     score_fallback_window_days: int = 90  # geçmiş yetersizse kendi son günleri
@@ -66,6 +67,14 @@ class Settings(BaseSettings):
     # "Bugün" listesi
     today_max_items: int = 3
     today_priority: tuple[str, ...] = ("hava_uyarisi", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
+
+    # Zamanlanmış işler (ADR 0009): 'inline' = süreç içi periyodik döngü (geliştirme; Redis gerekmez),
+    # 'arq' = Redis + arq işçisi (üretim; `make worker`). Testlerde işler doğrudan (senkron) çağrılır.
+    job_backend: str = "inline"
+    jobs_enabled: bool = True
+    redis_url: str = "redis://localhost:6379/0"
+    job_weather_interval_minutes: int = 60
+    job_notifications_interval_minutes: int = 60
 
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"

@@ -17,6 +17,7 @@ from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenR
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts, index_series
+from bahcelab_backend.domain.notifications.repository import RiskSnapshotRepository
 from bahcelab_backend.domain.overview.schemas import (
     BahceOzeti,
     BahceOzetiYanit,
@@ -37,7 +38,10 @@ VALID_INDICES = ("ndvi", "msavi", "ndre", "ndmi", "cigreen")
 
 
 class GardenOverviewService:
-    def __init__(self, gardens: GardenRepository, ndvi: NdviRepository, weather: WeatherRepository) -> None:
+    def __init__(
+        self, gardens: GardenRepository, ndvi: NdviRepository, weather: WeatherRepository, snapshots: RiskSnapshotRepository | None = None
+    ) -> None:
+        self.snapshots = snapshots
         self.gardens = gardens
         self.ndvi = ndvi
         self.weather = weather
@@ -51,11 +55,12 @@ class GardenOverviewService:
         ids = [row.garden.id for row in rows]
         scenes = await self.ndvi.list_scenes_bulk(ids)
         weather_by_garden = await self._cached_weather(ids)
+        risk_high = await self.snapshots.high_counts(ids) if self.snapshots else {}
 
         now_utc = datetime.now(UTC)
         local = now_utc.astimezone(ZoneInfo(TIMEZONE))
         items = [
-            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local)
+            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_high.get(row.garden.id, 0))
             for row in rows
         ]
         totals = Toplamlar(
@@ -88,6 +93,7 @@ class GardenOverviewService:
         weather: tuple[Forecast, datetime] | None,
         now_utc: datetime,
         local: datetime,
+        high_risks: int = 0,
     ) -> BahceOzeti:
         garden = row.garden
         series = index_series(scenes, indeks)
@@ -133,9 +139,10 @@ class GardenOverviewService:
         weather_levels: list[Seviye] | None = None
         if weather is not None:
             weather_levels = [a.seviye for a in weather_alerts(weather[0], local.date(), local.strftime("%Y-%m-%dT%H:%M"))]
+
         result = assess(
             scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
-            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg,
+            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg, risk_high_count=high_risks,
         )
         status = result.durum if last_image is not None or result.durum == "dikkat" else "veri_yok"
         return BahceOzeti(

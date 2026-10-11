@@ -35,6 +35,7 @@ class ScoreConfig:
     tolerance_share: float
     zero_share: float
     alert_points: dict[str, int]
+    risk_penalty_per_high: int
     period_half_window_days: int
     period_min_points: int
     fallback_window_days: int
@@ -59,6 +60,7 @@ class ScoreConfig:
             tolerance_share=s.score_tolerance_share,
             zero_share=s.score_zero_share,
             alert_points={"sari": s.score_alert_points_yellow, "kirmizi": s.score_alert_points_red},
+            risk_penalty_per_high=s.score_risk_penalty_per_high,
             period_half_window_days=s.score_period_half_window_days,
             period_min_points=s.score_period_min_points,
             fallback_window_days=s.score_fallback_window_days,
@@ -185,16 +187,24 @@ def alerts_component(severities: list[Seviye], cfg: ScoreConfig, *, has_data: bo
     return Bilesen("uyarilar", name, cfg.alert_points[worst], weight, True, reason)
 
 
-def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig) -> Bilesen:
-    """`None`: hava bilgisi alınamadı (bileşen dışarıda kalır)."""
+def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risk_high: int = 0) -> Bilesen:
+    """Hava riskleri: don/sıcak uyarıları + yüksek zararlı/hastalık riski (risk başına puan düşer; etiketi doğrudan düşürmez).
+    `severities=None`: hava bilgisi alınamadı (bileşen dışarıda kalır)."""
     name, weight = COMPONENT_NAMES["hava"], cfg.weights["hava"]
     if severities is None:
         return Bilesen("hava", name, None, weight, False, "Hava bilgisi alınamadığından değerlendirilemedi.")
-    if not severities:
-        return Bilesen("hava", name, 100, weight, True, "Önümüzdeki günlerde don ya da aşırı sıcak riski görünmüyor.")
-    worst: Seviye = "kirmizi" if "kirmizi" in severities else "sari"
-    reason = "Don ya da aşırı sıcak için kırmızı uyarı var." if worst == "kirmizi" else "Don ya da sıcak için sarı uyarı var."
-    return Bilesen("hava", name, cfg.alert_points[worst], weight, True, reason)
+    base = 100
+    parts: list[str] = []
+    if severities:
+        worst: Seviye = "kirmizi" if "kirmizi" in severities else "sari"
+        base = cfg.alert_points[worst]
+        parts.append("Don ya da aşırı sıcak için kırmızı uyarı var." if worst == "kirmizi" else "Don ya da sıcak için sarı uyarı var.")
+    if risk_high > 0:
+        base = max(0, base - cfg.risk_penalty_per_high * risk_high)
+        parts.append(f"{risk_high} zararlı/hastalık için yüksek risk tahmini var (teşhis değil, risk tahmini).")
+    if not parts:
+        parts.append("Önümüzdeki günlerde don, aşırı sıcak ya da yüksek zararlı riski görünmüyor.")
+    return Bilesen("hava", name, base, weight, True, " ".join(parts))
 
 
 # ----------------------------------------------------------------------------- etiket ve güven
@@ -280,6 +290,7 @@ def assess(
     today: date,
     cfg: ScoreConfig | None = None,
     extra_components: list[Bilesen] | None = None,
+    risk_high_count: int = 0,
 ) -> Skor:
     """Skor ve dökümü üretir. `scenes` bulutsuz sahnelerdir (tarih sıralı olması gerekmez)."""
     cfg = cfg or ScoreConfig.from_settings()
@@ -303,7 +314,7 @@ def assess(
     vigor = index_component("canlilik", series["canlilik"], spans["ndvi"], latest, cfg)
     water = index_component("yaprak_suyu", series["yaprak_suyu"], spans["ndmi"], latest, cfg)
     alerts = alerts_component(sat_severities, cfg, has_data=True)
-    weather = weather_component(weather_severities, cfg)
+    weather = weather_component(weather_severities, cfg, risk_high_count)
     components = [vigor, water, alerts, weather, *(extra_components or [])]
 
     base = baseline([(d, v) for d, v in series["canlilik"] if d < latest], latest, cfg)

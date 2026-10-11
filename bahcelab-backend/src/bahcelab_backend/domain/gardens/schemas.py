@@ -5,6 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, field_validator, model_validator
 
 Urun = Literal["limon", "portakal", "mandalina", "greyfurt", "diger"]
+SulamaSistemi = Literal["damla", "salma", "yagmurlama", "yok"]
 
 MIN_DEKAR = 0.5
 MAX_DEKAR = 5000.0
@@ -115,6 +116,7 @@ class GardenCreate(_GardenFields):
     cesit_kodu: str | None = None
     dikim_yili: int | None = None
     agac_sayisi: int | None = None
+    sulama_sistemi: SulamaSistemi | None = None
     geometry: GeoJsonGeometry
     il: str | None = None
     ilce: str | None = None
@@ -129,6 +131,7 @@ class GardenUpdate(_GardenFields):
     cesit_kodu: str | None = None
     dikim_yili: int | None = None
     agac_sayisi: int | None = None
+    sulama_sistemi: SulamaSistemi | None = None
     geometry: GeoJsonGeometry | None = None
     il: str | None = None
     ilce: str | None = None
@@ -159,6 +162,7 @@ class GardenResponse(BaseModel):
     cesit_kodu: str | None
     dikim_yili: int | None
     agac_sayisi: int | None
+    sulama_sistemi: SulamaSistemi | None
     geometry: dict[str, Any]
     alan_dekar: float
     il: str | None

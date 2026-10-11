@@ -12,6 +12,7 @@ from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
+from bahcelab_backend.api.notifications.router import router as notifications_router
 from bahcelab_backend.api.overview.router import router as overview_router
 from bahcelab_backend.api.planning.router import router as planning_router
 from bahcelab_backend.api.weather.router import router as weather_router
@@ -35,7 +36,20 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             logging.getLogger(__name__).warning(
                 "Yarım kalan NDVI işleri temizlenemedi", exc_info=True
             )
-    yield
+    scheduler = None
+    settings = get_settings()
+    if settings.jobs_enabled and settings.job_backend == "inline":
+        from bahcelab_backend.database import async_session_factory
+        from bahcelab_backend.domain.weather.provider import get_provider
+        from bahcelab_backend.jobs.inline import InlineScheduler
+
+        scheduler = InlineScheduler(settings, async_session_factory, get_provider())
+        scheduler.start()  # hava tazeleme ve bildirim üretimi periyodik çalışır (arq modunda `make worker` çalıştırır)
+    try:
+        yield
+    finally:
+        if scheduler is not None:
+            await scheduler.stop()
 
 
 def create_app() -> FastAPI:
@@ -71,6 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(planning_router)
     app.include_router(weather_router)
     app.include_router(agro_router)
+    app.include_router(notifications_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

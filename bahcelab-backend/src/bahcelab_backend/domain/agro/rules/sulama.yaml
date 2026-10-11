@@ -1,0 +1,32 @@
+# Sulama önerisi kuralları: ETc = ET₀ × Kc − etkili yağış. TÜM DEĞERLER "doğrulanmadı" (ön değer).
+# Kc değerleri katalog.yaml'dandır (evre bazlı); burada yalnızca etkili yağış tanımı, sistem verimlilikleri ve çıktı eşikleri vardır.
+# Çıktı "yaklaşık öneri"dir, sulama reçetesi değildir.
+surum: 1
+
+etkili_yagis:
+  durum: dogrulanmadi
+  kaynak: >-
+    Etkili yağış için genel yaklaşım: küçük yağışlar (yaprak/toprak yüzeyinde buharlaşan) sayılmaz, kalanın bir oranı köke ulaşır,
+    çok şiddetli günlerde fazlası süzülür/akar. Eşik ve oran ön değerdir; toprak tipine ve eğime göre uyarlanmamıştır.
+  kucuk_yagis_esigi_mm: 2.0   # günlük yağış bu değerin altındaysa etkili sayılmaz
+  oran: 0.8                   # eşiği aşan yağışın etkili payı
+  gunluk_ust_sinir_mm: 40.0   # bir günde etkili sayılabilecek en çok yağış
+
+sulama_sistemleri:
+  durum: dogrulanmadi
+  kaynak: >-
+    Sulama sistemi verimlilikleri (uygulama verimi) literatürde yaygın aralıklardır: damla ≈ 0,90 · yağmurlama ≈ 0,75 · salma ≈ 0,60.
+    Ön değerdir; sistem bakımına ve işletmeye göre değişir.
+  sistemler:
+    damla: {ad: "Damla sulama", verimlilik: 0.90}
+    yagmurlama: {ad: "Yağmurlama", verimlilik: 0.75}
+    salma: {ad: "Salma (yüzey) sulama", verimlilik: 0.60}
+    yok: {ad: "Sulama sistemi yok (yağışa bağlı)", verimlilik: null}
+
+hesap:
+  gecmis_gun: 7
+  gelecek_gun: 7
+  # 1 mm su = 1 litre/m² = 1 ton/dekar (1 dekar = 1000 m²)
+  mm_basina_ton_dekar: 1.0
+  # Önümüzdeki 7 günlük net ihtiyaç bu değerin altındaysa "ek sulama görünmüyor" denir
+  ihtiyac_esigi_mm: 5.0

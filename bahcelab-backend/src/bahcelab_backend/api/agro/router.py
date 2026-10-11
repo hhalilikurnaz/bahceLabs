@@ -10,7 +10,9 @@ from bahcelab_backend.domain.agro.schemas import (
     FenolojiDuzeltme,
     FenolojiYanit,
     KatalogYanit,
+    RiskleriYanit,
     SerilerYanit,
+    SulamaYanit,
 )
 from bahcelab_backend.domain.agro.service import AgroService
 
@@ -60,3 +62,15 @@ async def get_status(garden_id: UUID, service: Service) -> DurumYanit:
 async def get_today(garden_id: UUID, service: Service) -> BugunYanit:
     """«Bugün»: öncelik sırasıyla en fazla 3 madde."""
     return await service.today(garden_id)
+
+
+@router.get("/gardens/{garden_id}/sulama", response_model=SulamaYanit)
+async def get_irrigation(garden_id: UUID, service: Service) -> SulamaYanit:
+    """Sulama önerisi: ETc = ET₀ × Kc − etkili yağış; son 7 gün açığı ve önümüzdeki 7 gün ihtiyacı (mm ve ton/dekar). Yaklaşık öneri."""
+    return await service.irrigation(garden_id)
+
+
+@router.get("/gardens/{garden_id}/riskler", response_model=RiskleriYanit)
+async def get_risks(garden_id: UUID, service: Service) -> RiskleriYanit:
+    """Zararlı/hastalık risk tahminleri (meyve sineği, kırmızı örümcek, kuruma hastalığı); kural durumu ve gerekçeyle."""
+    return await service.risks(garden_id)

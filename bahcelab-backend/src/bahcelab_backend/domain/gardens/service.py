@@ -12,6 +12,7 @@ from bahcelab_backend.domain.gardens.schemas import (
     GardenUpdate,
     GeoJsonGeometry,
     MeasureResponse,
+    SulamaSistemi,
     Urun,
 )
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator
@@ -40,6 +41,7 @@ def to_response(row: GardenRow) -> GardenResponse:
         cesit_kodu=g.cesit_kodu,
         dikim_yili=g.dikim_yili,
         agac_sayisi=g.agac_sayisi,
+        sulama_sistemi=cast(SulamaSistemi | None, g.sulama_sistemi),
         geometry=row.geojson,
         alan_dekar=area,
         il=g.il,

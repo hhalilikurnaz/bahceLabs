@@ -16,6 +16,11 @@ from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
+from bahcelab_backend.domain.notifications.repository import (
+    NotificationRepository,
+    RiskSnapshotRepository,
+)
+from bahcelab_backend.domain.notifications.service import NotificationService
 from bahcelab_backend.domain.overview.service import GardenOverviewService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
@@ -110,7 +115,7 @@ async def get_overview_service(
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
 ) -> GardenOverviewService:
     return GardenOverviewService(
-        GardenRepository(session, workspace_id), NdviRepository(session), WeatherRepository(session, workspace_id)
+        GardenRepository(session, workspace_id), NdviRepository(session), WeatherRepository(session, workspace_id), RiskSnapshotRepository(session)
     )
 
 
@@ -125,3 +130,10 @@ async def get_agro_service(
         WeatherService(WeatherRepository(session, workspace_id), provider),
         AgroRepository(session),
     )
+
+
+async def get_notification_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+) -> NotificationService:
+    return NotificationService(NotificationRepository(session, workspace_id))

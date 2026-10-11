@@ -17,5 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  # Zamanlanmış işler için kuyruk/zamanlayıcı (ADR 0009): JOB_BACKEND=arq iken `make worker`
+  redis:
+    image: redis:7-alpine
+    container_name: bahcelab-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   bahcelab_pgdata:

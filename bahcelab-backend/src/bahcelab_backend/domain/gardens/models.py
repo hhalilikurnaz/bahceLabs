@@ -28,6 +28,8 @@ class GardenModel(Base):
     cesit_kodu: Mapped[str | None] = mapped_column(String(40), nullable=True)
     dikim_yili: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     agac_sayisi: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Sulama sistemi (damla | salma | yagmurlama | yok); null = belirtilmedi
+    sulama_sistemi: Mapped[str | None] = mapped_column(String(20), nullable=True)
     # Polygon veya MultiPolygon, EPSG:4326. GiST indeksi migration'da oluşturulur.
     geom = mapped_column(
         Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False), nullable=False

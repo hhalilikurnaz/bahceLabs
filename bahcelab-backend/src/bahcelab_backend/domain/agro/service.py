@@ -8,7 +8,16 @@ from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.agro import catalog as cat
+from bahcelab_backend.domain.agro.irrigation import DayInput, IrrigationResult, StageKc, recommend
 from bahcelab_backend.domain.agro.repository import AgroRepository
+from bahcelab_backend.domain.agro.risks import (
+    GunVerisi,
+    RiskSonucu,
+    fruit_fly,
+    mal_secco,
+    red_spider,
+)
+from bahcelab_backend.domain.agro.rulebook import load_irrigation_rules, load_risk_rules
 from bahcelab_backend.domain.agro.schemas import (
     BilesenYanit,
     BugunMaddesiYanit,
@@ -22,9 +31,15 @@ from bahcelab_backend.domain.agro.schemas import (
     KatalogUrun,
     KatalogYanit,
     KuralMeta,
+    RiskleriYanit,
+    RiskYanit,
     SeriGunu,
     SerilerYanit,
     SeriOzeti,
+    SulamaPenceresi,
+    SulamaSistemiYanit,
+    SulamaYanit,
+    TuzakArayuzu,
 )
 from bahcelab_backend.domain.agro.score import SceneValue, ScoreConfig, Seviye, Skor, assess
 from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
@@ -69,6 +84,14 @@ def score_spans() -> dict[str, float]:
     return {name: INDICES[name].max - INDICES[name].min for name in ("ndvi", "ndmi")}
 
 
+def _meta_of(block: cat.KuralBlok) -> KuralMeta:
+    return KuralMeta(durum=block.durum, kaynak=block.kaynak, onaylayan=block.onaylayan, onay_tarihi=block.onay_tarihi)
+
+
+IRRIGATION_NOTE = "Yaklaşık öneridir, sulama reçetesi değildir; toprak nemi, ağaç durumu ve yerel koşullar sahada kontrol edilmelidir."
+RISK_NOTE = "Hava koşullarından türetilen risk tahminidir; teşhis ya da ilaçlama tavsiyesi değildir. Sahada kontrol edin."
+
+
 def to_status_response(result: Skor, today: date) -> DurumYanit:
     return DurumYanit(
         durum=result.durum,
@@ -100,6 +123,9 @@ class AgroService:
 
     def _today(self) -> date:
         return datetime.now(ZoneInfo(TIMEZONE)).date()
+
+    def current_date(self) -> date:
+        return self._today()
 
     async def _garden(self, garden_id: uuid.UUID) -> GardenModel:
         row = await self.gardens.get(garden_id)
@@ -231,6 +257,139 @@ class AgroService:
             gunler=days, ozet=summary, eksik_gun=missing, onceki_sezon_var=has_prev, notlar=notes,
         )
 
+    # ------------------------------------------------------------------ hava girdileri
+    async def _effective_stages(self, garden: GardenModel) -> tuple[list[StageKc], cat.EtkinKurallar]:
+        rules = cat.effective_rules(self.catalog, garden.urun, garden.cesit_kodu)
+        if rules.fenoloji is None or rules.kc is None:
+            return [], rules
+        overrides = await self.repo.overrides(garden.id)
+        stages = []
+        for stage in rules.fenoloji.evreler:
+            special = overrides.get(stage.kod)
+            start, end = (special.baslangic, special.bitis) if special else (stage.baslangic, stage.bitis)
+            stages.append(StageKc(stage.kod, start, end, rules.kc.degerler[stage.kod]))
+        return stages, rules
+
+    async def _history(self, garden_id: uuid.UUID, today: date) -> dict[date, GunVerisi]:
+        march = date(today.year, 3, 1)
+        start = march if today >= march else today - timedelta(days=14)
+        start = max(start, today - timedelta(days=self.settings.weather_history_days))
+        try:
+            data = await self.weather.history(garden_id, start, today - timedelta(days=1))
+        except AppError:
+            return {}
+        return {g.tarih: GunVerisi(g.tarih, g.min, g.max, g.yagis_mm) for g in data.gunler}
+
+    @staticmethod
+    def _forecast_days(weather: HavaYanit | None) -> list[GunVerisi]:
+        if weather is None:
+            return []
+        humidity: dict[str, list[float]] = {}
+        for hour in weather.saatlik:
+            if hour.nem is not None:
+                humidity.setdefault(hour.zaman[:10], []).append(hour.nem)
+        out = []
+        for d in weather.gunler:
+            hums = humidity.get(d.tarih.isoformat())
+            out.append(GunVerisi(d.tarih, d.min, d.max, d.yagis_mm, d.ruzgar_max, sum(hums) / len(hums) if hums else None))
+        return out
+
+    # ------------------------------------------------------------------ riskler
+    async def _compute_risks(
+        self, garden: GardenModel, history: dict[date, GunVerisi], weather: HavaYanit | None, today: date
+    ) -> list[tuple[RiskSonucu, str, str]]:
+        """(sonuç, kısa ad, kural kodu) listesi; yalnızca bu ürüne uygulanabilir kurallar."""
+        book = load_risk_rules()
+        stages, _ = await self._effective_stages(garden)
+        current = next((st for st in stages if cat.stage_window(st.baslangic, st.bitis, cat.season_start_year(today))[0] <= today <= cat.stage_window(st.baslangic, st.bitis, cat.season_start_year(today))[1]), None)
+        stage_name = None
+        if current is not None and self.catalog.urun(garden.urun) and self.catalog.urun(garden.urun).fenoloji:  # type: ignore[union-attr]
+            stage_name = next((e.ad for e in self.catalog.urun(garden.urun).fenoloji.evreler if e.kod == current.kod), None)  # type: ignore[union-attr]
+        forecast = self._forecast_days(weather)
+        by_date = {**history, **{d.tarih: d for d in forecast}}
+        out: list[tuple[RiskSonucu, str, str]] = []
+        for code, rule in book.kurallar.items():
+            if garden.urun not in rule.urunler:
+                continue
+            if code == "akdeniz_meyve_sinegi":
+                result = fruit_fly(rule, history, today, current.kod if current else None, stage_name)
+            elif code == "kirmizi_orumcek":
+                window = [by_date[d] for d in sorted(by_date) if today - timedelta(days=int(rule.parametreler["geriye_bakis_gun"])) <= d <= today + timedelta(days=3)]
+                result = red_spider(rule, window, today)
+            else:
+                result = mal_secco(rule, forecast, today)
+            out.append((result, rule.kisa, code))
+        return out
+
+    async def risks(self, garden_id: uuid.UUID) -> RiskleriYanit:
+        garden = await self._garden(garden_id)
+        today = self._today()
+        weather = await self._weather_or_none(garden_id)
+        history = await self._history(garden_id, today)
+        book = load_risk_rules()
+        items = [
+            RiskYanit(
+                kod=r.kod, ad=r.ad, kisa=short, seviye=r.seviye, gerekce=r.gerekce, gecerlilik_baslangic=r.gecerlilik_baslangic,
+                gecerlilik_bitis=r.gecerlilik_bitis, veri_yeterli=r.veri_yeterli, kural=_meta_of(book.kurallar[code]),
+            )
+            for r, short, code in await self._compute_risks(garden, history, weather, today)
+        ]
+        return RiskleriYanit(
+            tarih=today, riskler=items,
+            tuzak=TuzakArayuzu(desteklenir=False, adim="Adım 12", aciklama="Tuzak sayımı girişi Adım 12'de bu risk motoruna bağlanacak."),
+            not_=RISK_NOTE,
+        )
+
+    # ------------------------------------------------------------------ sulama
+    async def _compute_irrigation(
+        self, garden: GardenModel, history: dict[date, GunVerisi], weather: HavaYanit | None, today: date, daily_et0: dict[date, float | None]
+    ) -> tuple[IrrigationResult | None, str | None]:
+        stages, _ = await self._effective_stages(garden)
+        if not stages:
+            return None, "Bu ürün için Kc (bitki katsayısı) kuralı tanımlı değil."
+        rules = load_irrigation_rules()
+        past = [DayInput(today - timedelta(days=i), daily_et0.get(today - timedelta(days=i)), (history.get(today - timedelta(days=i)) or GunVerisi(today, None, None)).yagis_mm) for i in range(rules.hesap.gecmis_gun, 0, -1)]
+        future = [DayInput(d.tarih, d.et0_mm, d.yagis_mm) for d in (weather.gunler if weather else []) if d.tarih >= today][: rules.hesap.gelecek_gun]
+        if not future:
+            return None, "Hava tahmini alınamadığından önümüzdeki günlerin su ihtiyacı hesaplanamadı."
+        result = recommend(past, future, stages, rules, dekar=float(garden.alan_dekar), system=garden.sulama_sistemi)
+        return result, None
+
+    async def _daily_et0(self, garden_id: uuid.UUID, today: date) -> dict[date, float | None]:
+        try:
+            data = await self.weather.history(garden_id, today - timedelta(days=14), today - timedelta(days=1))
+        except AppError:
+            return {}
+        return {g.tarih: g.et0_mm for g in data.gunler}
+
+    async def irrigation(self, garden_id: uuid.UUID) -> SulamaYanit:
+        garden = await self._garden(garden_id)
+        today = self._today()
+        rules = load_irrigation_rules()
+        weather = await self._weather_or_none(garden_id)
+        history = await self._history(garden_id, today)
+        et0 = await self._daily_et0(garden_id, today)
+        result, reason = await self._compute_irrigation(garden, history, weather, today, et0)
+        _, eff = await self._effective_stages(garden)
+        info = rules.sulama_sistemleri.sistemler.get(garden.sulama_sistemi or "")
+        system = SulamaSistemiYanit(kod=garden.sulama_sistemi, ad=info.ad if info else None, verimlilik=info.verimlilik if info else None)
+        etkili, sistem_kural, kc_kural = _meta_of(rules.etkili_yagis), _meta_of(rules.sulama_sistemleri), _meta(eff.kc)
+
+        def win(w) -> SulamaPenceresi | None:  # type: ignore[no-untyped-def]
+            return SulamaPenceresi(gun=w.gun, etc_mm=w.etc_mm, etkili_yagis_mm=w.etkili_yagis_mm, net_mm=w.net_mm, eksik_gun=w.eksik_gun) if w else None
+
+        if result is None or result.gelecek is None:
+            return SulamaYanit(
+                veri_yeterli=False, veri_yetersiz_nedeni=reason or "Su ihtiyacı için yeterli veri yok.", son_gunler=None, onumuzdeki_gunler=None,
+                ihtiyac_mm=None, brut_ihtiyac_mm=None, ton_dekar=None, toplam_ton=None, sistem=system, gerekli=False,
+                cumle="Su ihtiyacı için yeterli veri yok.", not_=IRRIGATION_NOTE, etkili_yagis_kural=etkili, sistem_kural=sistem_kural, kc_kural=kc_kural,
+            )
+        return SulamaYanit(
+            veri_yeterli=True, veri_yetersiz_nedeni=None, son_gunler=win(result.gecmis), onumuzdeki_gunler=win(result.gelecek),
+            ihtiyac_mm=result.ihtiyac_mm, brut_ihtiyac_mm=result.brut_ihtiyac_mm, ton_dekar=result.ton_dekar, toplam_ton=result.toplam_ton,
+            sistem=system, gerekli=result.gerekli, cumle=result.cumle, not_=IRRIGATION_NOTE, etkili_yagis_kural=etkili, sistem_kural=sistem_kural, kc_kural=kc_kural,
+        )
+
     # ------------------------------------------------------------------ skor
     async def _weather_or_none(self, garden_id: uuid.UUID) -> HavaYanit | None:
         try:
@@ -238,25 +397,35 @@ class AgroService:
         except AppError:
             return None
 
-    async def assess(self, garden_id: uuid.UUID) -> tuple[Skor, list[SceneWithIndices], HavaYanit | None]:
-        await self._garden(garden_id)
+    async def assess(
+        self, garden_id: uuid.UUID
+    ) -> tuple[Skor, list[SceneWithIndices], HavaYanit | None, list[tuple[RiskSonucu, str, str]], IrrigationResult | None]:
+        garden = await self._garden(garden_id)
+        today = self._today()
         scenes = await self.ndvi.list_scenes(garden_id)
         weather = await self._weather_or_none(garden_id)
+        history = await self._history(garden_id, today)
+        risks = await self._compute_risks(garden, history, weather, today)
+        irrigation, _ = await self._compute_irrigation(garden, history, weather, today, await self._daily_et0(garden_id, today))
         sat_levels, _ = satellite_severities(scenes)
-        weather_levels: list[Seviye] | None = [a.seviye for a in weather.uyarilar] if weather else None
+        weather_levels: list[Seviye] | None = None
+        if weather is not None:
+            # Hava bileşeni: don/sıcak uyarıları (etiketi sınırlar); yüksek zararlı riski yalnızca puanı düşürür
+            weather_levels = [a.seviye for a in weather.uyarilar]
         result = assess(
             scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
-            weather_severities=weather_levels, today=self._today(), cfg=ScoreConfig.from_settings(self.settings),
+            weather_severities=weather_levels, today=today, cfg=ScoreConfig.from_settings(self.settings),
+            risk_high_count=sum(1 for r, _, _ in risks if r.seviye == "yuksek" and r.veri_yeterli),
         )
-        return result, scenes, weather
+        return result, scenes, weather, risks, irrigation
 
     async def status(self, garden_id: uuid.UUID) -> DurumYanit:
-        result, _, _ = await self.assess(garden_id)
+        result, _, _, _, _ = await self.assess(garden_id)
         return to_status_response(result, self._today())
 
     # ------------------------------------------------------------------ bugün
     async def today(self, garden_id: uuid.UUID) -> BugunYanit:
-        _, scenes, weather = await self.assess(garden_id)
+        _, scenes, weather, risks, irrigation = await self.assess(garden_id)
         today = self._today()
         _, sat = satellite_severities(scenes)
         spray = []
@@ -266,10 +435,10 @@ class AgroService:
                     spray.append((day.tarih, *day.ilaclama.en_iyi_aralik))
         data = Girdi(
             hava_uyarilari=[(a.seviye, a.baslik, a.mesaj) for a in (weather.uyarilar if weather else [])],
-            zararli_riskleri=[],  # 8B: risk motoru bağlanınca dolar
+            zararli_riskleri=[(r.seviye, r.ad, r.gerekce) for r, _, _ in risks],
             ilaclama=spray,
             uydu_uyarilari=sat,
-            sulama=None,  # 8B: sulama önerisi bağlanınca dolar
+            sulama=(irrigation.ihtiyac_mm or 0.0, irrigation.cumle) if irrigation is not None and irrigation.gerekli else None,
         )
         items = build_today(data, today, self.settings.today_priority, self.settings.today_max_items)
         return BugunYanit(tarih=today, maddeler=[BugunMaddesiYanit(**i.__dict__) for i in items])
