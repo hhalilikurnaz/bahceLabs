@@ -15,7 +15,7 @@ import {
   layerName,
   vigorLabel,
 } from '@/features/bahcem/lib/indices'
-import { findScene, isUsable, latestIndexValue, pickScene, referenceDate, usableDates } from '@/features/bahcem/lib/scenes'
+import { findScene, isUsable, changeAt, latestIndexValue, latestUsableScene, usableDates } from '@/features/bahcem/lib/scenes'
 
 const scene = (tarih: string, opts: Partial<Scene> & { ndvi?: number; veri?: boolean } = {}): Scene => ({
   tarih,
@@ -111,12 +111,11 @@ describe('sahne seçimi', () => {
     expect(usableDates(scenes, TRUE_COLOR)).toEqual(['2026-09-01', '2026-09-11'])
   })
 
-  it('pickScene: seçili geçerliyse onu, değilse en son kullanılabilir', () => {
-    expect(pickScene(scenes, 'ndvi', '2026-09-01')?.tarih).toBe('2026-09-01')
-    expect(pickScene(scenes, 'ndvi', '2026-09-06')?.tarih).toBe('2026-09-16')
-    expect(pickScene(scenes, TRUE_COLOR, null)?.tarih).toBe('2026-09-11')
-    expect(pickScene([scene('2026-09-06', { durum: 'bulutlu' })], 'ndvi', null)).toBeNull()
-    expect(pickScene(undefined, 'ndvi', null)).toBeNull()
+  it('latestUsableScene: ana ekran her zaman en son kullanılabilir görüntüyü seçer', () => {
+    expect(latestUsableScene(scenes, 'ndvi')?.tarih).toBe('2026-09-16')
+    expect(latestUsableScene(scenes, TRUE_COLOR)?.tarih).toBe('2026-09-11')
+    expect(latestUsableScene([scene('2026-09-06', { durum: 'bulutlu' })], 'ndvi')).toBeNull()
+    expect(latestUsableScene(undefined, 'ndvi')).toBeNull()
     expect(findScene(scenes, '2026-09-11')?.tarih).toBe('2026-09-11')
     expect(findScene(scenes, null)).toBeNull()
   })
@@ -125,30 +124,12 @@ describe('sahne seçimi', () => {
     expect(latestIndexValue(scenes, 'ndvi')).toEqual({ tarih: '2026-09-16', ortalama: 0.5 })
     expect(latestIndexValue(scenes, 'ndre')).toBeNull()
   })
-})
 
-describe('değişim haritası referans tarihi', () => {
-  const dates = ['2025-10-08', '2026-09-10', '2026-09-20', '2026-09-26', '2026-10-04', '2026-10-09']
-
-  it('"son 2 hafta": ~14 gün önceye en yakın görüntü, ±7 gün sınırı', () => {
-    expect(referenceDate('ikihafta', '2026-10-09', dates, null)).toBe('2026-09-26') // hedef 25 Eyl
-    expect(referenceDate('ikihafta', '2026-09-20', dates, null)).toBe('2026-09-10') // hedef 6 Eyl → en yakın 10 Eyl
-    expect(referenceDate('ikihafta', '2025-10-08', dates, null)).toBeNull() // öncesinde görüntü yok
-  })
-
-  it('önce gelen görüntülerle sınırlıdır (ileri tarih referans olmaz)', () => {
-    expect(referenceDate('ikihafta', '2026-09-10', ['2026-09-10', '2026-09-20'], null)).toBeNull()
-  })
-
-  it('"geçen yıl aynı dönem": ~365 gün önce, ±15 gün', () => {
-    expect(referenceDate('gecenyil', '2026-10-09', dates, null)).toBe('2025-10-08')
-    expect(referenceDate('gecenyil', '2026-09-10', dates, null)).toBeNull() // 2025-09-10 civarı yok
-  })
-
-  it('özel tarih yalnızca listedeki başka bir tarihse geçerli', () => {
-    expect(referenceDate('ozel', '2026-10-09', dates, '2026-09-20')).toBe('2026-09-20')
-    expect(referenceDate('ozel', '2026-10-09', dates, '2026-10-09')).toBeNull()
-    expect(referenceDate('ozel', '2026-10-09', dates, null)).toBeNull()
-    expect(referenceDate('ozel', '2026-10-09', dates, '2030-01-01')).toBeNull()
+  it('changeAt: seçili tarihteki değerin 14 gün öncesine göre değişimi; yakın görüntü yoksa null', () => {
+    const change = changeAt(scenes, 'ndvi', '2026-09-16', 14, 7)
+    expect(change?.previous.tarih).toBe('2026-09-01')
+    expect(change?.latest.tarih).toBe('2026-09-16')
+    expect(changeAt(scenes, 'ndvi', '2026-09-01', 14, 7)).toBeNull() // öncesinde görüntü yok
+    expect(changeAt(scenes, 'ndvi', '2026-09-16', 60, 3)).toBeNull() // tolerans içinde görüntü yok
   })
 })

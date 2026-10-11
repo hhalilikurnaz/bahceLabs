@@ -3,6 +3,7 @@ import { TriangleAlert } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { useBahcemStore } from '../../stores/bahcemStore'
+import { useBahcemRoute } from '../../hooks/useBahcemRoute'
 import { usePanelLayout } from '../../hooks/usePanelLayout'
 import { LAYOUT } from '../../lib/config'
 import { TOP_AREA_CLASS } from './topArea'
@@ -14,6 +15,7 @@ import { ZonesLayers } from '../../map/ZonesLayers'
 import { MapProvider } from '../../map/MapProvider'
 import { useMap } from '../../map/useMap'
 import { IndexLegend } from '../indeks/IndexLegend'
+import { ArchivePage } from '../archive/ArchivePage'
 import { CopilotButton, CopilotDrawer } from './CopilotDrawer'
 import { FullMapBar } from './FullMapBar'
 import { IconRail } from './IconRail'
@@ -70,6 +72,7 @@ function layoutVars(listPx: number, detailPx: number, left: number, right: numbe
 export function BahcemLayout() {
   const { user } = useAuth()
   const { listPx, detailPx, insets } = usePanelLayout()
+  const { archive } = useBahcemRoute()
   const copilotOpen = useBahcemStore((s) => s.copilotOpen)
   // Çizim aracı ilk kez gerektiğinde yüklenir ve sonra açık kalır
   const flowActive = useBahcemStore((s) => s.mode !== 'idle')
@@ -106,6 +109,7 @@ export function BahcemLayout() {
           <MapToolbar />
           <MapControls />
           <MapAttribution />
+          {archive && <ArchivePage />}
           <FullMapBar />
           <CopilotDrawer />
         </MapProvider>

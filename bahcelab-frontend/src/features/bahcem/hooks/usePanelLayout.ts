@@ -24,7 +24,7 @@ const viewport = (): number => (typeof window === 'undefined' ? 1280 : window.in
  * Bahçe seçiliyken ikisi de görünür; "Tam harita" ikisini de kapatır. Dar ekranda bahçe paneli listenin yerine geçer.
  */
 export function usePanelLayout(): PanelLayout {
-  const { section, gardenId } = useBahcemRoute()
+  const { section, gardenId, archive } = useBahcemRoute()
   const leftOpen = useBahcemStore((s) => s.leftPanelOpen)
   const fullMap = useBahcemStore((s) => s.fullMap)
   const mode = useBahcemStore((s) => s.mode)
@@ -39,8 +39,8 @@ export function usePanelLayout(): PanelLayout {
   }, [])
 
   const desktop = viewportPx >= LAYOUT.desktopMinPx
-  const detailOpen = section === 'bahceler' && gardenId !== null && mode === 'idle' && !fullMap
-  const listOpen = leftOpen && !fullMap && (desktop || !detailOpen)
+  const detailOpen = section === 'bahceler' && gardenId !== null && mode === 'idle' && !fullMap && !archive
+  const listOpen = leftOpen && !fullMap && !archive && (desktop || !detailOpen)
 
   const listPx = listWidthPx(viewportPx, listOpen)
   const detailPx = detailWidthPx(viewportPx, listPx, detailOpen, preferred)
