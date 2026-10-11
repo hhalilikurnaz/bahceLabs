@@ -35,7 +35,8 @@ export function Drawer({ id, title, open, onClose, side = 'right', widthPx = 380
       inert={!open}
       style={side === 'right' ? { width: `min(${widthPx}px, 100vw)` } : undefined}
       className={cx(
-        'absolute z-30 flex flex-col border-app-border bg-app-panel text-app-text shadow-e3 transition-transform duration-[var(--duration-panel)] ease-[var(--ease-out-soft)]',
+        open ? 'shadow-e3' : 'shadow-none',
+        'absolute z-30 flex flex-col border-app-border bg-app-panel text-app-text transition-[transform,box-shadow] duration-[var(--duration-panel)] ease-[var(--ease-out-soft)]',
         side === 'right'
           ? cx('inset-y-0 right-0 border-l', open ? 'translate-x-0' : 'translate-x-full')
           : cx('inset-x-0 bottom-0 max-h-[85dvh] rounded-t-lg border-t', open ? 'translate-y-0' : 'translate-y-full'),
