@@ -1,4 +1,4 @@
-.PHONY: backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
+.PHONY: e2e-test e2e-clean backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
 
 help:
 	@echo "BahçeLab — bahcelab-web monorepo"
@@ -45,3 +45,9 @@ frontend-dev:
 
 backend-typecheck:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/mypy && .venv/bin/ruff check src tests scripts
+
+e2e-test:
+	cd bahcelab-frontend && npm run test:e2e
+
+e2e-clean:
+	docker exec bahcelab-db psql -U bahcelab -d bahcelab -tAc "DELETE FROM workspaces WHERE id IN (SELECT m.workspace_id FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE u.email LIKE 'e2e-%@example.test'); DELETE FROM users WHERE email LIKE 'e2e-%@example.test';"
