@@ -63,6 +63,7 @@ class MultiyearRepository:
         year.durum, year.sahne_sayisi, year.aday_sayisi, year.kismi = "bekliyor", 0, 0, kismi
         year.hata_mesaji = year.kompozit_yolu = year.baslangic = year.bitis = year.sure_saniye = None
         year.uyumsuz, year.korelasyon, year.uyumsuz_nedeni, year.kapsam = False, None, None, None
+        year.sahne_tarihleri, year.yetersiz_veri = None, False
         await self.session.flush()
 
     async def claim_year(self, garden_id: uuid.UUID, yil: int) -> bool:

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from itertools import zip_longest
 
 import numpy as np
 
+from bahcelab_backend.domain.imagery.provider import SceneRef
 from bahcelab_backend.domain.multiyear.grid import CanonicalGrid, align_to_grid
 from bahcelab_backend.domain.ndvi.indices import compute_index
 from bahcelab_backend.domain.ndvi.processing import MIN_VALID_RATIO, SceneBands
@@ -17,6 +19,16 @@ def window_dates(year: int, month_start: int, month_end: int) -> tuple[date, dat
     first = date(year, month_start, 1)
     last = date(year + 1, 1, 1) if month_end == 12 else date(year, month_end + 1, 1)
     return first, date.fromordinal(last.toordinal() - 1)
+
+
+def spread_by_period(candidates: list[SceneRef], first: date, period_days: int) -> list[SceneRef]:
+    """Okuma sırası: her dönemin (ör. 10 gün) en az bulutlu sahnesi önce, sonra ikinciler… Sahne bütçesi dolarsa bile yıl boyunca
+    zamansal kapsam korunur (aksi halde en temiz sahneler birkaç döneme yığılır ve yıl «yetersiz» görünür)."""
+    by_period: dict[int, list[SceneRef]] = {}
+    for ref in sorted(candidates, key=lambda s: (s.bulut_orani if s.bulut_orani is not None else 100.0, s.tarih)):
+        by_period.setdefault((ref.tarih - first).days // period_days, []).append(ref)
+    rounds = zip_longest(*(by_period[p] for p in sorted(by_period)))
+    return [ref for rnd in rounds for ref in rnd if ref is not None]
 
 
 def net_index_map(scene: SceneBands, index_id: str, grid: CanonicalGrid, garden: np.ndarray) -> np.ndarray | None:

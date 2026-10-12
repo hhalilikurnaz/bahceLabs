@@ -38,7 +38,6 @@ class Settings(BaseSettings):
     multiyear_max_scenes_per_year: int = 12  # kompozite en çok bu kadar net sahne girer (okuma bütçesi)
     multiyear_max_candidates: int = 40  # bir yılda en çok bu kadar aday sahne (en az bulutludan) denenir
     multiyear_search_max_cloud: float = 60.0  # sahne bulut oranı (%) bunun üstündeyse aranmaz
-    multiyear_min_net_scenes: int = 3  # yıl bölgelemeye girmek için gereken net sahne
     multiyear_min_years: int = 3  # bölgeleme için gereken en az yıl
     multiyear_year_min_correlation: float = 0.5  # yıl, diğer yıllarla bu korelasyonun altındaysa «uyumsuz» işaretlenir
     multiyear_min_year_coverage: float = 0.6

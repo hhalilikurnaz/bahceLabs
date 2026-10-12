@@ -257,8 +257,14 @@ async def test_year_without_enough_net_scenes_is_flagged_not_guessed(
     await user_client.post(url(garden["id"]))
     result = (await user_client.get(url(garden["id"], "/sonuc"))).json()
     cloudy = next(y for y in result["yillar"] if y["yil"] == 2020)
-    assert cloudy["sahne_sayisi"] == 0 and cloudy["uyumsuz"] is True and cloudy["dahil"] is False
-    assert "net görüntü yok" in cloudy["uyumsuz_nedeni"]
+    assert cloudy["sahne_sayisi"] == 0 and cloudy["dahil"] is False
+    # «yetersiz veri» ≠ «uyumsuz yıl»: uyumsuzluk sorusu sorulmaz, neden açıkça yazılır
+    assert cloudy["yetersiz_veri"] is True and cloudy["uyumsuz"] is False and cloudy["uyumsuz_nedeni"] is None
+    assert "Yetersiz veri" in cloudy["yetersiz_nedeni"]
+    ok = next(y for y in result["yillar"] if y["yil"] != 2020 and y["dahil"])
+    assert ok["yetersiz_veri"] is False and ok["net_gun_sayisi"] >= 3 and 0 < ok["donem_kapsami"] <= 1
+    refused = await user_client.patch(url(garden["id"], "/yillar"), json={"bolge_sayisi": 3, "yillar": [{"yil": 2020, "dahil": True}]})
+    assert refused.status_code == 422 and "yetersiz veri" in str(refused.json())
     assert result["durum"] == "hazir"  # kalan yıllar yeterli
 
 

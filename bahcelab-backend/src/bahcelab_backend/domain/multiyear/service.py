@@ -34,6 +34,11 @@ from bahcelab_backend.domain.multiyear.schemas import (
     YilDurumu,
     YillarGuncelle,
 )
+from bahcelab_backend.domain.multiyear.sufficiency import (
+    PERIOD_DAYS,
+    Sufficiency,
+    assess_sufficiency,
+)
 from bahcelab_backend.domain.multiyear.vector import class_polygons
 from bahcelab_backend.domain.multiyear.zoning import (
     YearMap,
@@ -208,20 +213,40 @@ class MultiyearService:
         )
 
     # ------------------------------------------------------------------ hesaplama
-    async def _load_year_maps(self, garden_id: uuid.UUID, years: list[MultiyearYearModel]) -> list[YearMap]:
+    def _sufficiency(self, y: MultiyearYearModel, rule: Any) -> Sufficiency | None:
+        """Yılın veri yeterliliği (katalogdaki ön değer eşikleriyle). Tarihi kayıtlı olmayan eski satırda yalnız sahne sayısı sınanır."""
+        if y.durum != "tamam":
+            return None
+        first, last = window_dates(y.yil, rule.ay_baslangic, rule.ay_bitis)
+        dates = [date.fromisoformat(d) for d in (y.sahne_tarihleri or [])]
+        if y.sahne_tarihleri is None:  # tarihler yazılmamış (eski satır): yalnız sahne sayısı sınanır, dönem kapsamı bilinmez
+            low = y.sahne_sayisi < rule.en_az_net_sahne
+            return Sufficiency(y.sahne_sayisi, y.sahne_sayisi, 0, 0, 0.0, low, f"Yetersiz veri: {y.sahne_sayisi} net sahne (en az {rule.en_az_net_sahne} gerekir)" if low else None)
+        return assess_sufficiency(dates, first, last, min_scenes=rule.en_az_net_sahne, min_period_coverage=rule.en_az_donem_kapsami, period_days=PERIOD_DAYS)
+
+    def _rule(self, garden: GardenModel) -> Any:
+        urun = cat.load_catalog().urun(garden.urun)
+        rule = urun.analiz_penceresi if urun else None
+        if rule is None:
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bu ürün için çok yıllık analiz penceresi tanımlı değil.")
+        return rule
+
+    async def _load_year_maps(self, years: list[MultiyearYearModel], sufficient: set[int]) -> list[YearMap]:
         maps: list[YearMap] = []
         for y in years:
-            if y.durum == "tamam" and y.kompozit_yolu and y.sahne_sayisi >= self.settings.multiyear_min_net_scenes and self.storage.exists(y.kompozit_yolu):
+            if y.yil in sufficient and y.kompozit_yolu and self.storage.exists(y.kompozit_yolu):
                 maps.append(YearMap(y.yil, decode_array(self.storage.read(y.kompozit_yolu))))
         return maps
 
     async def compute(self, garden_id: uuid.UUID, k: int) -> MultiyearResultModel:
         """Kompozitlerden bölgeleri hesaplar, yıl işaretlerini günceller ve YENİ sürüm olarak PostGIS'e yazar."""
-        _, geometry = await self._garden(garden_id)
+        garden, geometry = await self._garden(garden_id)
+        rule = self._rule(garden)
         years = await self.repo.list_years(garden_id)
         grid = canonical_grid(geometry)
         mask = garden_mask(grid, geometry)
-        maps = await self._load_year_maps(garden_id, years)
+        suff = {y.yil: s for y in years if (s := self._sufficiency(y, rule)) is not None}
+        maps = await self._load_year_maps(years, {yil for yil, s in suff.items() if not s.insufficient})
         manual = {y.yil: y.dahil_elle for y in years if y.dahil_elle is not None}
         cfg = zoning_config(self.settings)
         result = await asyncio.to_thread(compute_zones, maps, mask, k, cfg, manual)  # CPU ağırlıklı: olay döngüsünü tutmaz
@@ -229,11 +254,12 @@ class MultiyearService:
         by_year = {a.year: a for a in result.assessments}
         for y in years:
             a = by_year.get(y.yil)
-            if a is not None:
+            s = suff.get(y.yil)
+            y.yetersiz_veri = bool(s and s.insufficient)
+            if s is not None and s.insufficient:  # «yetersiz veri» ≠ «uyumsuz yıl»: analize girmez, uyumsuzluk sorusu sorulmaz
+                y.uyumsuz, y.korelasyon, y.kapsam, y.uyumsuz_nedeni = False, None, None, s.reason
+            elif a is not None:
                 y.uyumsuz, y.korelasyon, y.uyumsuz_nedeni, y.kapsam = a.incompatible, a.correlation, a.reason, a.coverage
-            elif y.durum == "tamam":
-                y.uyumsuz, y.korelasyon, y.kapsam = True, None, None
-                y.uyumsuz_nedeni = f"Yeterli net görüntü yok ({y.sahne_sayisi} sahne)" if y.sahne_sayisi else "Bu yıl net görüntü yok"
         version = await self.repo.next_version(garden_id, k)
         model = MultiyearResultModel(
             garden_id=garden_id, bolge_sayisi=k, versiyon=version, durum="tamam" if result.status == "ok" else "yetersiz",
@@ -282,14 +308,22 @@ class MultiyearService:
         )
 
     async def _year_infos(self, garden_id: uuid.UUID, used: list[int] | None) -> list[YilBilgisi]:
-        years = await self.repo.list_years(garden_id)
-        return [
-            YilBilgisi(
-                yil=y.yil, sahne_sayisi=y.sahne_sayisi, kismi=y.kismi, kapsam=y.kapsam, korelasyon=y.korelasyon, uyumsuz=y.uyumsuz,
-                uyumsuz_nedeni=y.uyumsuz_nedeni, dahil=(y.yil in used) if used is not None else False, elle=y.dahil_elle,
+        garden, _ = await self._garden(garden_id)
+        rule = self._rule(garden)
+        out: list[YilBilgisi] = []
+        for y in await self.repo.list_years(garden_id):
+            s = self._sufficiency(y, rule)
+            out.append(
+                YilBilgisi(
+                    yil=y.yil, sahne_sayisi=y.sahne_sayisi, kismi=y.kismi, kapsam=y.kapsam, korelasyon=y.korelasyon, uyumsuz=y.uyumsuz,
+                    uyumsuz_nedeni=None if y.yetersiz_veri else y.uyumsuz_nedeni, yetersiz_veri=y.yetersiz_veri,
+                    yetersiz_nedeni=y.uyumsuz_nedeni if y.yetersiz_veri else None,
+                    net_gun_sayisi=s.net_days if s and y.sahne_tarihleri is not None else None,
+                    donem_kapsami=s.period_coverage if s and y.sahne_tarihleri is not None else None, aday_sayisi=y.aday_sayisi,
+                    dahil=(y.yil in used) if used is not None else False, elle=y.dahil_elle,
+                )
             )
-            for y in years
-        ]
+        return out
 
     async def _build(self, garden_id: uuid.UUID, model: MultiyearResultModel) -> CokYillikSonuc:
         years = await self._year_infos(garden_id, list(model.yillar))
@@ -354,6 +388,8 @@ class MultiyearService:
         if unknown:
             raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"Bilinmeyen yıl: {unknown[0]}")
         for choice in body.yillar:
+            if choice.dahil and years[choice.yil].yetersiz_veri:
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"{choice.yil} yılı yetersiz veri nedeniyle analize eklenemez.")
             years[choice.yil].dahil_elle = choice.dahil
         await self.session.commit()
         if (await self.status(garden_id)).durum == "isleniyor":

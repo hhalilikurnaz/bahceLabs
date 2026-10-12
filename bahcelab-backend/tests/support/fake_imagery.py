@@ -51,7 +51,7 @@ class FakeImageryProvider:
             [0.45, 0.6, 0.75], self.grid.shape
         )
         self.noise = 0.01
-        self.scenes_per_year = 5
+        self.scenes_per_year = 8  # pencereye yayılır: 13 dönemin ≥ %50'si
         self.cloud_by_year: dict[
             int, float
         ] = {}  # sahnenin geçerli piksel kaybı (0–1: soldan bulut)

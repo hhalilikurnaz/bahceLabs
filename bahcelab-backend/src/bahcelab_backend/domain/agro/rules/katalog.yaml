@@ -45,6 +45,10 @@ varsayilan_narenciye: &narenciye
     ay_baslangic: 6
     ay_bitis: 9
     indeks: ndvi
+    # Yeterlilik eşikleri de ön değerdir (mühendis onayı bekliyor): pencerede en az 3 farklı günde net sahne ve 10 günlük dönemlerin
+    # en az yarısında net sahne. Sentinel-2 arşivi 13 Ağu 2015'te başlar; ilk yıllar bu yüzden «yetersiz veri» çıkabilir.
+    en_az_net_sahne: 3
+    en_az_donem_kapsami: 0.5
 
 urunler:
   limon:

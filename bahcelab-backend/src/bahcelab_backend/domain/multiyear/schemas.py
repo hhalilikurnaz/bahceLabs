@@ -41,6 +41,11 @@ class YilBilgisi(BaseModel):
     korelasyon: float | None
     uyumsuz: bool
     uyumsuz_nedeni: str | None
+    yetersiz_veri: bool = False  # net sahne/dönem kapsamı eşiğin altında: kompozitte görünür, analize girmez, uyumsuzluk sorulmaz
+    yetersiz_nedeni: str | None = None
+    net_gun_sayisi: int | None = None
+    donem_kapsami: float | None = None  # net sahne olan 10 günlük dönemlerin payı (0–1)
+    aday_sayisi: int = 0
     dahil: bool  # sonuçta kullanıldı mı
     elle: bool | None  # kullanıcı seçimi (None = otomatik)
 

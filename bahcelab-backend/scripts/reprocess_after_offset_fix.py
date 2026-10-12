@@ -3,6 +3,7 @@
 Varsayılan dry-run. Örnek:
   python scripts/reprocess_after_offset_fix.py --user test@bahcelab.com            # yalnız sayılar
   python scripts/reprocess_after_offset_fix.py --user test@bahcelab.com --apply    # yedek + onay + işlem
+  python scripts/reprocess_after_offset_fix.py --user test@bahcelab.com --apply --sadece-cokyillik  # yalnız çok yıllık kompozitler
 """
 
 import asyncio
@@ -45,7 +46,9 @@ async def counts(ids: list[uuid.UUID]) -> dict[str, int]:
 
 
 async def main() -> None:
-    args = parser("Uydu indekslerini yeniden işle (radyometri düzeltmesi)").parse_args()
+    ap = parser("Uydu indekslerini yeniden işle (radyometri düzeltmesi)")
+    ap.add_argument("--sadece-cokyillik", action="store_true", help="Sahne gözlemlerine dokunma; yalnız çok yıllık kompozitleri yeniden kur")
+    args = ap.parse_args()
     targets = await resolve(args.user, args.garden)
     if not targets:
         raise SystemExit("Kapsamda bahçe yok.")
@@ -63,12 +66,15 @@ async def main() -> None:
         started = time.monotonic()
         async with async_session_factory() as session:
             repo = NdviRepository(session)
-            await repo.delete_observations(gid)
+            job = None
+            if not args.sadece_cokyillik:
+                await repo.delete_observations(gid)
+                storage.delete_prefix(storage_prefix(gid))
             for table in ("multiyear_results", "multiyear_years", "multiyear_runs"):
                 await session.execute(text(f"DELETE FROM {table} WHERE garden_id = :g"), {"g": gid})
-            storage.delete_prefix(storage_prefix(gid))
             storage.delete_prefix(f"multiyear/{gid}")
-            job = await repo.create_job(gid, "yeniden")
+            if not args.sadece_cokyillik:
+                job = await repo.create_job(gid, "yeniden")
             await session.commit()
         if job is not None:
             await run_job(job.id)

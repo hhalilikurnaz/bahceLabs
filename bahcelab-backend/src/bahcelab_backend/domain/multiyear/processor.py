@@ -11,7 +11,7 @@ import io
 import logging
 import time
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import numpy as np
@@ -22,10 +22,12 @@ from bahcelab_backend.domain.imagery.provider import ImageryError, ImageryProvid
 from bahcelab_backend.domain.multiyear.composite import (
     median_composite,
     net_index_map,
+    spread_by_period,
     window_dates,
 )
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
 from bahcelab_backend.domain.multiyear.repository import MultiyearRepository
+from bahcelab_backend.domain.multiyear.sufficiency import PERIOD_DAYS
 from bahcelab_backend.domain.ndvi.indices import bands_needed
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -92,24 +94,26 @@ async def process_year(
 
     month_start, month_end, index_id = window
     status, message, count, candidates_n, key = "tamam", None, 0, 0, None
+    scene_dates: list[str] = []
     try:
         grid = canonical_grid(geometry)
         mask = garden_mask(grid, geometry)
         first, last = window_dates(year, month_start, month_end)
         candidates = await asyncio.to_thread(provider.search_scenes, geometry, first, last, cfg.multiyear_search_max_cloud)
-        candidates = sorted(candidates, key=lambda s: (s.bulut_orani if s.bulut_orani is not None else 100.0, s.tarih))[: cfg.multiyear_max_candidates]
+        candidates = spread_by_period(candidates, first, PERIOD_DAYS)[: cfg.multiyear_max_candidates]
         candidates_n = len(candidates)
         roles = bands_needed({index_id})
         limiter = RateLimiter(cfg.multiyear_scene_interval_seconds)
-        maps: list[np.ndarray] = []
+        maps: list[tuple[date, np.ndarray]] = []
         failures = 0
 
-        async def read(ref: SceneRef) -> np.ndarray | None:
+        async def read(ref: SceneRef) -> tuple[date, np.ndarray] | None:
             nonlocal failures
             await limiter.wait()
             try:
                 data = await asyncio.to_thread(provider.read_scene, ref, geometry, roles)
-                return net_index_map(data, index_id, grid, mask)
+                net = net_index_map(data, index_id, grid, mask)
+                return None if net is None else (ref.tarih, net)
             except Exception as exc:  # noqa: BLE001 - tek sahne hatası yılı durdurmaz
                 failures += 1
                 logger.warning("Çok yıllık: sahne okunamadı %s: %s", ref.scene_id, exc)
@@ -124,8 +128,9 @@ async def process_year(
         maps = maps[: cfg.multiyear_max_scenes_per_year]
         if candidates and failures == len(candidates):
             raise ImageryError("Uydu görüntüleri okunamadı. Birazdan tekrar deneyin.")
-        composite = median_composite(maps)
+        composite = median_composite([m for _, m in maps])
         count = composite.scene_count if composite else 0
+        scene_dates = sorted(d.isoformat() for d, _ in maps)
         if composite is not None:
             key = composite_key(garden_id, year)
             storage.save(key, encode_array(composite.values))
@@ -145,6 +150,7 @@ async def process_year(
         if row is not None:
             row.durum, row.hata_mesaji, row.sahne_sayisi, row.aday_sayisi = status, message, count, candidates_n
             row.kompozit_yolu = key
+            row.sahne_tarihleri = scene_dates
             row.bitis = datetime.now(UTC)
             row.sure_saniye = round(time.monotonic() - started, 2)
         await session.commit()

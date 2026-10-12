@@ -70,6 +70,9 @@ class AnalizPenceresi(KuralBlok):
     ay_baslangic: int = Field(ge=1, le=12)
     ay_bitis: int = Field(ge=1, le=12)
     indeks: str = "ndvi"
+    # Yıl veri yeterliliği (ön değer): eşik altındaki yıl «yetersiz veri» olur; kompozitte görünür ama analize girmez
+    en_az_net_sahne: int = Field(default=3, ge=1)
+    en_az_donem_kapsami: float = Field(default=0.5, ge=0, le=1)  # net sahne olan 10 günlük dönemlerin payı
 
     @model_validator(mode="after")
     def _ordered(self) -> AnalizPenceresi:
