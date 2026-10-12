@@ -1,6 +1,7 @@
 """Uydu sağlayıcı SÖZLEŞME testleri (ağ yok): her sağlayıcı aynı kuralları sağlar; ücretli sağlayıcı yalnızca «yapılandırılmadı» der."""
 
 from datetime import date
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -12,6 +13,11 @@ from bahcelab_backend.domain.imagery.provider import (
     ImageryProvider,
     ProviderNotConfigured,
     SceneRef,
+)
+from bahcelab_backend.domain.imagery.radiometry import (
+    from_baseline,
+    from_raster_bands,
+    parse_l2a_metadata,
 )
 from bahcelab_backend.domain.imagery.roles import ALL_ROLES, CORE_ROLES, Band
 from bahcelab_backend.domain.imagery.sentinel2 import ROLE_TO_BAND, Sentinel2L2AProvider
@@ -114,34 +120,54 @@ def test_indices_work_from_roles_not_from_provider_band_names():
         )  # Sentinel bant adları artık bilinmez
 
 
-# ----------------------------------------------------------------------------- yansıtım ofseti (işleme sürümü ≥ 04.00)
-def _item(baseline: str | None, raster_bands=None):
-    from pystac import Asset, Item
-
-    item = Item(id="x", geometry=None, bbox=None, datetime=__import__("datetime").datetime(2024, 7, 1), properties={"s2:processing_baseline": baseline} if baseline else {})
-    extra = {"raster:bands": raster_bands} if raster_bands else {}
-    item.add_asset("B04", Asset(href="x", extra_fields=extra))
-    return item
+# ----------------------------------------------------------------------------- yansıtım ofseti (sahnenin kendi meta verisi)
+FIX = Path(__file__).parent / "fixtures" / "offset"
 
 
-@pytest.mark.parametrize(("baseline", "offset"), [("03.00", 0.0), ("03.01", 0.0), ("04.00", -0.1), ("05.10", -0.1), (None, 0.0), ("bozuk", 0.0)])
-def test_boa_offset_follows_the_processing_baseline_when_the_asset_has_no_raster_metadata(baseline, offset):
-    from bahcelab_backend.domain.imagery.sentinel2 import _band_scale_offset
+def test_radiometry_is_parsed_from_each_scenes_own_product_metadata():
+    before = parse_l2a_metadata((FIX / "once_MTD.xml").read_text(encoding="utf-8"))
+    after = parse_l2a_metadata((FIX / "sonra_MTD.xml").read_text(encoding="utf-8"))
+    assert before is not None and after is not None
+    assert before.kaynak == after.kaynak == "urun-metaverisi"
+    assert before.scale_offset("B04") == (0.0001, 0.0)  # 03.00: ofset yok
+    assert (
+        after.baseline == 4.0
+        and after.scale_offset("B04") == (0.0001, -0.1)
+        and after.scale_offset("B8A") == (0.0001, -0.1)
+    )
+    assert parse_l2a_metadata("<x>bozuk</x>") is None
 
-    assert _band_scale_offset(_item(baseline), "B04") == (0.0001, offset)
+
+def test_fallbacks_are_raster_bands_then_the_baseline_rule():
+    rb = from_raster_bands({"B04": (0.0002, -0.2)})
+    assert rb.kaynak == "raster-bands" and rb.scale_offset("B04") == pytest.approx((0.0002, -0.2))
+    assert from_baseline(5.1).scale_offset("B08") == (0.0001, -0.1) and from_baseline(
+        3.0
+    ).scale_offset("B08") == (0.0001, 0.0)
+    assert from_baseline(None).kaynak == "surum-kurali" and from_baseline(None).scale_offset(
+        "B04"
+    ) == (0.0001, 0.0)
 
 
-def test_asset_raster_metadata_wins_over_the_baseline_rule():
-    from bahcelab_backend.domain.imagery.sentinel2 import _band_scale_offset
-
-    assert _band_scale_offset(_item("05.10", [{"scale": 0.0002, "offset": -0.2}]), "B04") == (0.0002, -0.2)
-
-
-def test_missing_offset_would_lower_ndvi_by_about_a_fifth_so_it_must_be_applied():
+def _ndvi_median(name: str, radiometry) -> float:
     from bahcelab_backend.domain.ndvi.indices import compute_ndvi
     from bahcelab_backend.domain.ndvi.processing import to_reflectance
 
-    red_dn, nir_dn = np.array([1600], np.uint16), np.array([4100], np.uint16)  # 2022 sonrası: DN = (yansıtım + 0,1) × 10000
-    right = compute_ndvi(to_reflectance(red_dn, 0.0001, -0.1), to_reflectance(nir_dn, 0.0001, -0.1))[0]
-    wrong = compute_ndvi(to_reflectance(red_dn, 0.0001, 0.0), to_reflectance(nir_dn, 0.0001, 0.0))[0]
-    assert right == pytest.approx((0.31 - 0.06) / (0.31 + 0.06)) and right - wrong > 0.15
+    arr = np.load(FIX / f"{name}.npz")
+    red = to_reflectance(arr["B04"], *radiometry.scale_offset("B04"))
+    nir = to_reflectance(arr["B08"], *radiometry.scale_offset("B08"))
+    return float(np.nanmedian(compute_ndvi(red, nir)))
+
+
+def test_ndvi_is_continuous_across_the_2022_baseline_change_on_real_scenes():
+    """Aynı bahçe, 2022-01-03 (03.00) ve 2022-02-12 (04.00) gerçek sahneleri: meta veriyle süreklilik; ofsetsiz kırılma."""
+    before = parse_l2a_metadata((FIX / "once_MTD.xml").read_text(encoding="utf-8"))
+    after = parse_l2a_metadata((FIX / "sonra_MTD.xml").read_text(encoding="utf-8"))
+    assert before and after
+    right = _ndvi_median("sonra", after) - _ndvi_median("once", before)
+    wrong = _ndvi_median("sonra", from_baseline(3.0)) - _ndvi_median(
+        "once", before
+    )  # ofset atlanmış hâl
+    # 40 günlük kış farkı (gerçek değişim) ofset hatasından çok küçük olmalı: hata her bandı +0,1 kaydırır
+    assert abs(right) < 0.1, right
+    assert wrong < right - 0.1, (right, wrong)

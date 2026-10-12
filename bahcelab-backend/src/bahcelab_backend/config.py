@@ -10,14 +10,17 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    database_url: str = "postgresql+asyncpg://bahcelab:bahcelab@localhost:5432/bahcelab"
-    api_host: str = "0.0.0.0"
-    api_port: int = 8001
+    # Bağlantı adresleri ve portlar yalnız ortamdan (.env); kodda varsayılan yok
+    database_url: str
     api_debug: bool = True
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = ""
 
     # Dosya depolama (NDVI PNG'leri). Yerelde diskte; ileride S3/R2 uygulaması aynı arayüze takılır.
     storage_dir: str = "uploads"
+
+    # Veri değiştiren betikler: işlemden önce pg_dump yedeği (docker konteyneri içinden) bu klasöre yazılır
+    backup_dir: str = "backups"
+    db_container: str = "bahcelab-db"
 
     # NDVI işleme: false ise bahçe kaydında arka plan işi başlatılmaz (testler, ağsız ortam)
     ndvi_enabled: bool = True
@@ -26,6 +29,7 @@ class Settings(BaseSettings):
     ndvi_refresh_hours: int = 12
     # Takılıp çıkarılabilir uydu kaynağı (ADR 0011): domain/imagery/registry.py'deki ad
     imagery_provider: str = "sentinel2-l2a"
+    imagery_metadata_timeout_seconds: float = 20.0  # sahne ürün meta verisi (radyometri) okuma zaman aşımı
 
     # Çok yıllık bölgeler (Adım 9, ADR 0011): yıllık kompozit işleri ve bölgeleme eşikleri. Tarımsal pencere (aylar) kural dosyasındadır.
     multiyear_parallel_years: int = 2  # aynı anda işlenen bahçe×yıl görevi sayısı (tüm bahçeler için ortak)
@@ -96,7 +100,7 @@ class Settings(BaseSettings):
     # 'arq' = Redis + arq işçisi (üretim; `make worker`). Testlerde işler doğrudan (senkron) çağrılır.
     job_backend: str = "inline"
     jobs_enabled: bool = True
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = ""  # JOB_BACKEND=arq iken zorunlu
     job_weather_interval_minutes: int = 60
     job_notifications_interval_minutes: int = 60
 
@@ -120,4 +124,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore[call-arg]  # database_url .env'den gelir

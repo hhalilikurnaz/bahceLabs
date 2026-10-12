@@ -1,14 +1,14 @@
 services:
   db:
     image: postgis/postgis:16-3.4
-    container_name: bahcelab-db
+    container_name: ${DB_CONTAINER:-bahcelab-db}
     restart: unless-stopped
     environment:
       POSTGRES_USER: bahcelab
       POSTGRES_PASSWORD: bahcelab
       POSTGRES_DB: bahcelab
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5434}:5432"
     volumes:
       - bahcelab_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,6 +16,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Uçtan uca testlerin AYRI veritabanı (yalnız `--profile e2e`); geliştirme verisine dokunmaz. Kaldırma: README «e2e veritabanı».
+  db-e2e:
+    image: postgis/postgis:16-3.4
+    profiles: ["e2e"]
+    container_name: ${E2E_DB_CONTAINER:-bahcelab-db-e2e}
+    environment:
+      POSTGRES_USER: bahcelab
+      POSTGRES_PASSWORD: bahcelab
+      POSTGRES_DB: ${E2E_DB_NAME:-bahcelab_e2e}
+    ports:
+      - "${E2E_DB_PORT:-5435}:5432"
+    volumes:
+      - bahcelab_pgdata_e2e:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bahcelab"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   # Zamanlanmış işler için kuyruk/zamanlayıcı (ADR 0009): JOB_BACKEND=arq iken `make worker`
   redis:
@@ -33,3 +52,4 @@ services:
 
 volumes:
   bahcelab_pgdata:
+  bahcelab_pgdata_e2e:

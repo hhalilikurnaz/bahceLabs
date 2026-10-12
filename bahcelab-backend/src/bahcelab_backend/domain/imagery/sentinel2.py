@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
+import httpx
 import numpy as np
 import planetary_computer
 import rasterio
@@ -22,12 +23,19 @@ from rasterio.windows import Window, from_bounds
 from rasterio.windows import bounds as window_bounds
 from shapely.geometry import shape
 
+from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.imagery.masks import scl_valid_mask
 from bahcelab_backend.domain.imagery.provider import (
     Capabilities,
     ImageryError,
     SceneRef,
     compute_capabilities_indices,
+)
+from bahcelab_backend.domain.imagery.radiometry import (
+    Radiometry,
+    from_baseline,
+    from_raster_bands,
+    parse_l2a_metadata,
 )
 from bahcelab_backend.domain.imagery.roles import ALL_ROLES, Band
 from bahcelab_backend.domain.ndvi.processing import (
@@ -118,25 +126,38 @@ def search_scenes(geometry: dict[str, Any], start: date, end: date, max_cloud: f
     return sorted(scenes, key=lambda s: s.tarih)
 
 
-BASELINE_WITH_OFFSET = 4.0  # işleme sürümü 04.00 ve sonrası (2022-01-25'ten itibaren): BOA_ADD_OFFSET = −1000 sayısal değer
-BOA_OFFSET_REFLECTANCE = -0.1
+_RADIOMETRY_CACHE: dict[str, Radiometry] = {}
 
 
-def _processing_baseline(item: Item) -> float | None:
+def _baseline(item: Item) -> float | None:
     try:
         return float(str(item.properties.get("s2:processing_baseline", "")))
     except ValueError:
         return None
 
 
-def _band_scale_offset(item: Item, asset_key: str) -> tuple[float, float]:
-    """Ölçek ve ofset: varlıkta `raster:bands` varsa o; yoksa işleme sürümüne göre (≥ 04.00 → −0,1). Ofset atlanırsa her bant +0,1 yüksek
-    çıkar ve NDVI 2022 sonrası görüntülerde ≈ 0,2 düşük hesaplanır (yıllar arası düzey kayması)."""
-    bands = item.assets[asset_key].extra_fields.get("raster:bands")
-    if bands:
-        return float(bands[0].get("scale", 0.0001)), float(bands[0].get("offset", 0.0))
-    baseline = _processing_baseline(item)
-    return 0.0001, BOA_OFFSET_REFLECTANCE if baseline is not None and baseline >= BASELINE_WITH_OFFSET else 0.0
+def _radiometry(item: Item) -> Radiometry:
+    """Sahnenin kendi radyometrisi (ürün meta verisi) → `raster:bands` → işleme sürümü kuralı. Sonuç sahne kimliğiyle önbelleklenir."""
+    cached = _RADIOMETRY_CACHE.get(item.id)
+    if cached is not None:
+        return cached
+    result: Radiometry | None = None
+    asset = item.assets.get("product-metadata")
+    if asset is not None:
+        try:
+            response = httpx.get(planetary_computer.sign(asset.href), timeout=get_settings().imagery_metadata_timeout_seconds)
+            response.raise_for_status()
+            result = parse_l2a_metadata(response.text)
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("Radyometri meta verisi okunamadı (sahne=%s): %s", item.id, exc)
+    if result is None:
+        bands = {k: a.extra_fields.get("raster:bands") for k, a in item.assets.items()}
+        usable = {k: (float(v[0].get("scale", 0.0001)), float(v[0].get("offset", 0.0))) for k, v in bands.items() if v}
+        result = from_raster_bands(usable) if usable else from_baseline(_baseline(item))
+    if result.kaynak != "urun-metaverisi":
+        logger.warning("Radyometri yedek kaynaktan: sahne=%s kaynak=%s surum=%s", item.id, result.kaynak, _baseline(item))
+    _RADIOMETRY_CACHE[item.id] = result
+    return result
 
 
 _GDAL_ENV = {
@@ -220,15 +241,17 @@ def _read_scene(scene: SceneRef, geometry: dict[str, Any], roles: set[str]) -> S
         arrays = {key: future.result() for key, future in futures.items()}
 
     band_to_role = {v: k for k, v in ROLE_TO_BAND.items()}
+    radiometry = _radiometry(item)
     reflectance: dict[str, np.ndarray] = {}
     for key in wanted:
-        scale, offset = _band_scale_offset(item, key)
+        scale, offset = radiometry.scale_offset(key)
         reflectance[str(band_to_role[key])] = to_reflectance(arrays[key], scale, offset)
     return SceneBands(
         bands=reflectance,
         valid=scl_valid_mask(scl),
         transform=ref.transform,
         crs=ref.crs,
+        radiometri=radiometry.kaynak,
     )
 
 

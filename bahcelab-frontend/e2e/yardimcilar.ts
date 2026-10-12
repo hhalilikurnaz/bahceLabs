@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { backendEnv } from './ortam'
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 
 export const PASSWORD = 'test1234'
@@ -43,7 +44,7 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
   execFileSync(
     '../bahcelab-backend/.venv/bin/python',
     ['-m', 'tests.support.seed_scenes', gardenId, ...(options.flat ? ['--flat'] : [])],
-    { cwd: '../bahcelab-backend', env: { ...process.env, PYTHONPATH: 'src' }, stdio: 'pipe' },
+    { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' },
   )
 }
 
@@ -51,7 +52,7 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
 export function seedNotification(gardenId: string, oncelik: 'kritik' | 'uyari' | 'bilgi', key: string, sekme = 'hava'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_notifications', gardenId, oncelik, key, sekme], {
     cwd: '../bahcelab-backend',
-    env: { ...process.env, PYTHONPATH: 'src' },
+    env: backendEnv(),
     stdio: 'pipe',
   })
 }

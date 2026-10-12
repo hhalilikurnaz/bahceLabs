@@ -1,17 +1,21 @@
-.PHONY: e2e-test e2e-clean backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
+# Kök .env (portlar, konteyner adları): cp .env.example .env
+-include .env
+export
+
+.PHONY: e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
 
 help:
 	@echo "BahçeLab — bahcelab-web monorepo"
 	@echo ""
-	@echo "  make docker-up          Start PostgreSQL + PostGIS (port 5432)"
+	@echo "  make docker-up          Start PostgreSQL + PostGIS (port $$DB_PORT)"
 	@echo "  make docker-down        Stop database"
 	@echo "  make backend-install    Install Python dependencies"
 	@echo "  make db-migrate         Run Alembic migrations"
 	@echo "  make db-seed            Create dev user test@bahcelab.com / test1234"
-	@echo "  make backend-dev        Start FastAPI dev server (port 8001)"
+	@echo "  make backend-dev        Start FastAPI dev server (port $$API_PORT)"
 	@echo "  make backend-test       Run backend tests"
 	@echo "  make frontend-install   Install frontend dependencies"
-	@echo "  make frontend-dev       Start Vite dev server (port 5173)"
+	@echo "  make frontend-dev       Start Vite dev server (port $$WEB_PORT)"
 
 docker-up:
 	docker compose up -d
@@ -32,7 +36,7 @@ db-revision:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/alembic revision --autogenerate -m "$(msg)"
 
 backend-dev:
-	cd bahcelab-backend && PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port 8001
+	cd bahcelab-backend && PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port $(API_PORT)
 
 worker:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
@@ -49,8 +53,8 @@ frontend-dev:
 backend-typecheck:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/mypy && .venv/bin/ruff check src tests scripts
 
-e2e-test:
+e2e-test:  ## ayrı e2e veritabanı (docker profili e2e) + ayrı API/web portları; sonunda temizlenir
 	cd bahcelab-frontend && npm run test:e2e
 
-e2e-clean:
-	docker exec bahcelab-db psql -U bahcelab -d bahcelab -tAc "DELETE FROM workspaces WHERE id IN (SELECT m.workspace_id FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE u.email LIKE 'e2e-%@example.test'); DELETE FROM users WHERE email LIKE 'e2e-%@example.test';"
+e2e-db-remove:  ## e2e veritabanını ve hacmini tamamen kaldırır
+	docker compose --profile e2e rm -sf db-e2e && docker volume rm bahcelab_bahcelab_pgdata_e2e

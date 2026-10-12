@@ -40,3 +40,9 @@ bahcelab-backend/*.egg-info/
 # Yerel gizli ayarlar (API anahtarları) — asla commit edilmez
 .env.local
 .env*.local
+
+# Veri betiklerinin pg_dump yedekleri
+backups/
+bahcelab-backend/backups/
+.env
+.env.e2e

@@ -47,6 +47,7 @@ class SceneBands:
     valid: np.ndarray  # bool
     transform: Affine
     crs: CRS
+    radiometri: str | None = None  # yansıtım dönüşümünün kaynağı (urun-metaverisi | raster-bands | surum-kurali)
 
     @property
     def shape(self) -> tuple[int, int]:
