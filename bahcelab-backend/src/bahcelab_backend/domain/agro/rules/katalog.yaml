@@ -5,6 +5,19 @@
 surum: 1
 sezon_baslangici: "10-01"   # su yılı (DSİ/MGM ile uyumlu); weather/rules.py ile aynı kural
 
+# Durum kademesi (v1): iç skor (0–100) yalnız kademeyi belirler, arayüze ÇIKMAZ. Aktif risk varken kademe en fazla «İzle» olur.
+# Tam formül 9F'de (Durum v2). Eşikler ön değerdir.
+durum_kademesi:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · v1: ≥85 İyi · 70–84 İzle · 50–69 Dikkat · <50 Sorun. Bileşen çipi: ≥90 normal · 50–89 normalin altı · ≤49 belirgin düşük.
+    Mevcut skorun geçici türetmesidir; Durum v2'de (9F) tam formül ve mühendis onayıyla değişecek.
+  iyi_min: 85
+  izle_min: 70
+  dikkat_min: 50
+  bilesen_normal_min: 90
+  bilesen_belirgin_dusuk_max: 49
+
 # Narenciye için ortak ön değerler (ürün blokları bunu `miras` ile kullanır)
 varsayilan_narenciye: &narenciye
   fenoloji:
@@ -49,6 +62,14 @@ varsayilan_narenciye: &narenciye
     # en az yarısında net sahne. Sentinel-2 arşivi 13 Ağu 2015'te başlar; ilk yıllar bu yüzden «yetersiz veri» çıkabilir.
     en_az_net_sahne: 3
     en_az_donem_kapsami: 0.5
+  tipik_bantlar:
+    ndvi:
+      durum: dogrulanmadi
+      kaynak: >-
+        10 m Sentinel-2 NDVI'sinde dikili narenciye bahçesi için yaz dönemi tipik aralığı (ön değer): ağaç tacı ve sıra arası birlikte 0,45–0,70.
+        Seyrek dikim, genç ağaç ve çıplak toprakta altına; sık ve olgun bahçede üstüne çıkabilir. Ziraat mühendisiyle doğrulanmalıdır.
+      alt: 0.45
+      ust: 0.70
 
 urunler:
   limon:

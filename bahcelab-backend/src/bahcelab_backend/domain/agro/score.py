@@ -1,9 +1,9 @@
 """Bahçe durumu skoru (SAF fonksiyonlar): bahçenin KENDİ geçmişine göre 0–100.
 
-Skor, bileşen puanlarının ağırlıklı ortalamasıdır; kullanılamayan bileşenler (veri yok, 8B'de bağlanacak olanlar)
-dışarıda bırakılır ve kalan ağırlıklar yeniden normalleştirilir. Geçmiş ya da görüntü yetersizse skor yerine
-"veri yetersiz" ve nedeni döner. Etiket (İyi/İzle/Dikkat) bu skordan türetilir; kırmızı uyarı etiketi en fazla
-"dikkat"e, sarı uyarı en fazla "izle"ye çeker. Tüm eşik ve ağırlıklar `Settings`'ten gelir (`ScoreConfig`).
+İÇ skor, bileşen puanlarının ağırlıklı ortalamasıdır; kullanılamayan bileşenler dışarıda bırakılır ve kalan ağırlıklar yeniden
+normalleştirilir. Geçmiş ya da görüntü yetersizse "veri yetersiz" ve nedeni döner. Kademe (İyi · İzle · Dikkat · Sorun) skordan
+türetilir; skor ARAYÜZE ÇIKMAZ. Aktif risk (uyarı ya da yüksek zararlı riski) kademeyi en fazla "İzle"ye çeker; kırmızı uyarı en az
+"Dikkat" yapar. Kademe ve bileşen eşikleri katalogdadır («ön değer · v1»); ağırlıklar `Settings`'ten gelir (`ScoreConfig`).
 """
 
 from __future__ import annotations
@@ -14,8 +14,11 @@ from datetime import date, timedelta
 from typing import Literal
 
 from bahcelab_backend.config import Settings, get_settings
+from bahcelab_backend.domain.agro.catalog import load_catalog
 
-Durum = Literal["iyi", "izle", "dikkat", "veri_yok"]
+Durum = Literal["iyi", "izle", "dikkat", "sorun", "veri_yok"]
+BilesenSeviyesi = Literal["normal", "normalin_alti", "belirgin_dusuk"]
+KADEME_ADLARI: dict[str, str] = {"iyi": "İyi", "izle": "İzle", "dikkat": "Dikkat", "sorun": "Sorun", "veri_yok": "Veri yok"}
 Seviye = Literal["sari", "kirmizi"]
 GuvenSeviyesi = Literal["yuksek", "orta", "dusuk"]
 
@@ -32,6 +35,9 @@ class ScoreConfig:
     weights: dict[str, float]
     good_min: int
     watch_min: int
+    caution_min: int
+    component_normal_min: int
+    component_low_max: int
     tolerance_share: float
     zero_share: float
     alert_points: dict[str, int]
@@ -48,6 +54,7 @@ class ScoreConfig:
     @classmethod
     def from_settings(cls, s: Settings | None = None) -> ScoreConfig:
         s = s or get_settings()
+        tiers = load_catalog().durum_kademesi
         return cls(
             weights={
                 "canlilik": s.score_weight_vigor,
@@ -55,8 +62,11 @@ class ScoreConfig:
                 "uyarilar": s.score_weight_alerts,
                 "hava": s.score_weight_weather,
             },
-            good_min=s.score_good_min,
-            watch_min=s.score_watch_min,
+            good_min=tiers.iyi_min,
+            watch_min=tiers.izle_min,
+            caution_min=tiers.dikkat_min,
+            component_normal_min=tiers.bilesen_normal_min,
+            component_low_max=tiers.bilesen_belirgin_dusuk_max,
             tolerance_share=s.score_tolerance_share,
             zero_share=s.score_zero_share,
             alert_points={"sari": s.score_alert_points_yellow, "kirmizi": s.score_alert_points_red},
@@ -98,14 +108,27 @@ class Guven:
 
 
 @dataclass(frozen=True)
+class Cip:
+    """Arayüz çipi: Ağaç gücü (NDVI) · Su (NDMI) · Risk — sayı yok, yalnız seviye (None = veri yok)."""
+
+    kod: str
+    ad: str
+    seviye: BilesenSeviyesi | None
+    aciklama: str
+
+
+@dataclass(frozen=True)
 class Skor:
     durum: Durum
-    skor: int | None
+    skor: int | None  # İÇ değer: arayüze ve API yanıtına çıkmaz
     bilesenler: list[Bilesen]
     guven: Guven
     ozet: str
     veri_yeterli: bool
     veri_yetersiz_nedeni: str | None
+    cipler: list[Cip]
+    kademe_nedeni: str
+    dusuren: str | None  # kademeyi en çok düşüren çipin kodu (agac_gucu | su | risk); düşüren yoksa None
 
 
 Series = list[tuple[date, float]]
@@ -208,32 +231,33 @@ def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risk_hi
 
 
 # ----------------------------------------------------------------------------- etiket ve güven
-def label_from_score(score: int, severities: list[Seviye], cfg: ScoreConfig) -> Durum:
-    """Skordan etiket; kırmızı uyarı en iyi "dikkat", sarı uyarı en iyi "izle" bırakır."""
-    label: Durum = "iyi" if score >= cfg.good_min else "izle" if score >= cfg.watch_min else "dikkat"
-    if "kirmizi" in severities:
+def label_from_score(score: int, severities: list[Seviye], cfg: ScoreConfig, *, risk_active: bool = False) -> Durum:
+    """Skordan kademe. Aktif risk (uyarı ya da yüksek zararlı riski) en iyi «izle» bırakır, daha kötü kademeyi yükseltmez;
+    kırmızı uyarı en az «dikkat» yapar (zaten «sorun» ise öyle kalır)."""
+    label: Durum = "iyi" if score >= cfg.good_min else "izle" if score >= cfg.watch_min else "dikkat" if score >= cfg.caution_min else "sorun"
+    if "kirmizi" in severities and label in ("iyi", "izle"):
         return "dikkat"
-    if severities and label == "iyi":
+    if (severities or risk_active) and label == "iyi":
         return "izle"
     return label
 
 
 def derive_status(
-    *, has_data: bool, severities: list[Seviye], score: int | None, cfg: ScoreConfig | None = None
+    *, has_data: bool, severities: list[Seviye], score: int | None, cfg: ScoreConfig | None = None, risk_active: bool = False
 ) -> Durum:
     """TEK durum fonksiyonu (liste, harita rengi ve Durum sekmesi bunu kullanır).
 
-    Görüntü yoksa «veri yok»; kırmızı uyarı varsa «dikkat» (skor hesaplanamasa bile); skor varsa skordan etiket;
-    skor yoksa (yetersiz geçmiş) yalnızca uyarılardan: sarı → «izle», yoksa «iyi».
+    Görüntü yoksa «veri yok»; kırmızı uyarı varsa «dikkat» (skor hesaplanamasa bile); skor varsa skordan kademe;
+    skor yoksa (yetersiz geçmiş) yalnızca risklerden: uyarı/yüksek risk → «izle», yoksa «iyi».
     """
     cfg = cfg or ScoreConfig.from_settings()
     if "kirmizi" in severities:
-        return "dikkat"
+        return "dikkat" if score is None or score >= cfg.caution_min else "sorun"
     if not has_data:
         return "veri_yok"
     if score is not None:
-        return label_from_score(score, severities, cfg)
-    return "izle" if severities else "iyi"
+        return label_from_score(score, severities, cfg, risk_active=risk_active)
+    return "izle" if (severities or risk_active) else "iyi"
 
 
 def confidence(
@@ -257,20 +281,56 @@ def confidence(
     return Guven(level, text, history_days, image_age_days)
 
 
-# ----------------------------------------------------------------------------- özet cümlesi (şablon)
-def summary_sentence(durum: Durum, score: int | None, components: list[Bilesen]) -> str:
-    if score is None:
-        return "Skor için yeterli veri yok."
-    worst = min((c for c in components if c.kullanilabilir and c.puan is not None), key=lambda c: c.puan or 0, default=None)
-    head = {
-        "iyi": f"Bahçeniz bu dönemin kendi normuna göre iyi durumda ({score}/100).",
-        "izle": f"Bahçenizde takip edilmesi gereken bir değişim var ({score}/100).",
-        "dikkat": f"Bahçeniz bu dönemin kendi normunun belirgin altında ya da öncelikli bir uyarı var ({score}/100).",
-        "veri_yok": "Skor için yeterli veri yok.",
+# ----------------------------------------------------------------------------- özet, çipler ve kademe nedeni (sayı içermez)
+CIP_ADLARI = {"agac_gucu": "Ağaç gücü (NDVI)", "su": "Su (NDMI)", "risk": "Risk"}
+SEVIYE_ADLARI: dict[str, str] = {"normal": "normal", "normalin_alti": "normalin altı", "belirgin_dusuk": "belirgin düşük"}
+
+
+def summary_sentence(durum: Durum) -> str:
+    return {
+        "iyi": "Bahçeniz bu dönemin kendi normuna göre iyi durumda.",
+        "izle": "Bahçenizde takip edilmesi gereken bir değişim var.",
+        "dikkat": "Bahçeniz bu dönemin kendi normunun belirgin altında ya da öncelikli bir uyarı var.",
+        "sorun": "Bahçenizde ciddi bir sorun görünüyor; sahada kontrol edin.",
+        "veri_yok": "Durum için yeterli veri yok.",
     }[durum]
-    if worst is not None and worst.puan is not None and worst.puan < 100:
-        return f"{head} En çok etkileyen: {worst.neden}"
-    return head
+
+
+def _level(points: int | None, cfg: ScoreConfig) -> BilesenSeviyesi | None:
+    if points is None:
+        return None
+    return "normal" if points >= cfg.component_normal_min else "belirgin_dusuk" if points <= cfg.component_low_max else "normalin_alti"
+
+
+def build_chips(components: list[Bilesen], cfg: ScoreConfig) -> list[Cip]:
+    by = {c.kod: c for c in components}
+    risk_parts = [c for c in (by.get("uyarilar"), by.get("hava")) if c is not None and c.kullanilabilir and c.puan is not None]
+    risk_points = min((c.puan for c in risk_parts if c.puan is not None), default=None)
+    risk_reason = next((c.neden for c in sorted(risk_parts, key=lambda c: c.puan or 0)), "Uyarı ve risk değerlendirilemedi.")
+    vigor, water = by.get("canlilik"), by.get("yaprak_suyu")
+    return [
+        Cip("agac_gucu", CIP_ADLARI["agac_gucu"], _level(vigor.puan if vigor and vigor.kullanilabilir else None, cfg), vigor.neden if vigor else ""),
+        Cip("su", CIP_ADLARI["su"], _level(water.puan if water and water.kullanilabilir else None, cfg), water.neden if water else ""),
+        Cip("risk", CIP_ADLARI["risk"], _level(risk_points, cfg), risk_reason),
+    ]
+
+
+def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool) -> tuple[str, str | None]:
+    """«Nasıl hesaplandı?»: hangi bileşenin kademeyi düşürdüğü (sayı yok). Dönüş: (metin, düşüren çip kodu)."""
+    if durum == "veri_yok":
+        return "Kademe için yeterli veri yok.", None
+    order: dict[str, int] = {"belirgin_dusuk": 0, "normalin_alti": 1, "normal": 2}
+    worst = min((c for c in chips if c.seviye is not None), key=lambda c: order[c.seviye or "normal"], default=None)
+    lowered = worst if worst is not None and worst.seviye != "normal" else None
+    name = KADEME_ADLARI[durum]
+    parts: list[str] = []
+    if lowered is not None:
+        parts.append(f"{lowered.ad} {SEVIYE_ADLARI[lowered.seviye or 'normal']}: {lowered.aciklama} Bu yüzden kademe {name}.")
+    if risk_capped:
+        parts.append("Aktif risk olduğu için kademe en fazla İzle olabilir.")
+    if not parts:
+        parts.append("Ağaç gücü, su ve risk normal; kademe İyi." if durum == "iyi" else f"Kademe {name}.")
+    return " ".join(parts), (lowered.kod if lowered is not None else None)
 
 
 @dataclass(frozen=True)
@@ -295,6 +355,14 @@ def assess(
     """Skor ve dökümü üretir. `scenes` bulutsuz sahnelerdir (tarih sıralı olması gerekmez)."""
     cfg = cfg or ScoreConfig.from_settings()
     ordered = sorted(scenes, key=lambda s: s.tarih)
+    risk_active = risk_high_count > 0
+
+    def result(durum: Durum, score: int | None, components: list[Bilesen], trust: Guven, sufficient: bool, reason: str | None) -> Skor:
+        chips = build_chips(components, cfg)
+        capped = score is not None and durum == "izle" and label_from_score(score, [], cfg) == "iyi"  # kademeyi yalnız risk düşürdü
+        text, lowered = explain_tier(durum, chips, capped)
+        return Skor(durum, score, components, trust, summary_sentence(durum), sufficient, reason, chips, text, lowered)
+
     if not ordered:
         comps = [
             Bilesen("canlilik", COMPONENT_NAMES["canlilik"], None, cfg.weights["canlilik"], False, "Henüz net uydu görüntüsü yok."),
@@ -302,9 +370,9 @@ def assess(
             alerts_component([], cfg, has_data=False),
             weather_component(weather_severities, cfg),
         ]
-        reason = "Henüz net uydu görüntüsü yok; görüntü geldikçe skor hesaplanacak."
+        reason = "Henüz net uydu görüntüsü yok; görüntü geldikçe durum hesaplanacak."
         durum_no_data = derive_status(has_data=False, severities=list(weather_severities or []), score=None, cfg=cfg)
-        return Skor(durum_no_data, None, comps, Guven("dusuk", reason, 0, None), "Skor için yeterli veri yok.", False, reason)
+        return result(durum_no_data, None, comps, Guven("dusuk", reason, 0, None), False, reason)
 
     latest = ordered[-1].tarih
     image_age = (today - latest).days
@@ -324,15 +392,15 @@ def assess(
     stale = image_age > cfg.stale_image_days
     if stale or not vigor.kullanilabilir:
         reason = (
-            f"Son net görüntü {image_age} günlük; güncel bir görüntü gelince skor hesaplanacak."
+            f"Son net görüntü {image_age} günlük; güncel bir görüntü gelince durum hesaplanacak."
             if stale
             else vigor.neden
         )
-        durum = derive_status(has_data=True, severities=severities, score=None, cfg=cfg)
-        return Skor(durum, None, components, trust, "Skor için yeterli veri yok.", False, reason)
+        durum = derive_status(has_data=True, severities=severities, score=None, cfg=cfg, risk_active=risk_active)
+        return result(durum, None, components, trust, False, reason)
 
     usable = [c for c in components if c.kullanilabilir and c.puan is not None]
     total_weight = sum(c.agirlik for c in usable)
     score = round(sum((c.puan or 0) * c.agirlik for c in usable) / total_weight) if total_weight > 0 else None
-    durum = derive_status(has_data=True, severities=severities, score=score, cfg=cfg)
-    return Skor(durum, score, components, trust, summary_sentence(durum, score, components), True, None)
+    durum = derive_status(has_data=True, severities=severities, score=score, cfg=cfg, risk_active=risk_active)
+    return result(durum, score, components, trust, True, None)

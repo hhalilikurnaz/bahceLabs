@@ -74,8 +74,6 @@ class Settings(BaseSettings):
     score_weight_water: float = 0.20  # yaprak suyu (NDMI) – aynı mantık
     score_weight_alerts: float = 0.20  # uydu uyarıları
     score_weight_weather: float = 0.20  # hava riskleri (don/sıcak; zararlı riski 8B'de)
-    score_good_min: int = 75  # ≥ bu değer: İyi
-    score_watch_min: int = 50  # ≥ bu değer: İzle; altı: Dikkat
     score_tolerance_share: float = 0.05  # normdan bu pay (indeks aralığının oranı) kadar sapma kayıpsız sayılır
     score_zero_share: float = 0.30  # bu paydan fazla düşüş 0 puan
     score_alert_points_yellow: int = 50

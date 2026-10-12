@@ -209,3 +209,19 @@ def test_circular_garden_mask_only_counts_pixels_inside():
     assert result.labels is not None
     assert (result.labels[~mask] == 0).all() and (result.labels[mask] > 0).all()
     assert sum(z.area_m2 for z in result.zones) == pytest.approx(mask.sum() * CFG.pixel_area_m2)
+
+
+def test_incompatible_recent_year_is_never_silently_dropped():
+    """Son iki yıl uyumsuz çıksa bile varsayılan olarak analizde kalır (gerçek bir değişim olabilir); karar kullanıcıya sorulur."""
+    pattern = bands([0.45, 0.6, 0.75])
+    years = years_from(pattern, 7)
+    rng = np.random.default_rng(99)
+    last = YearMap(2025, rng.uniform(0.3, 0.8, (H, W)).astype(np.float32))  # son yıl: desen yok
+    years.append(last)
+    result = compute_zones(years, MASK, 3, CFG)
+    flagged = next(a for a in result.assessments if a.year == 2025)
+    assert flagged.incompatible and flagged.protected  # uyumsuz ama korumalı
+    assert 2025 in result.years_used  # sessizce atılmadı
+    excluded = compute_zones(years, MASK, 3, CFG, include={2025: False})
+    assert 2025 not in excluded.years_used  # kullanıcı kararı geçerli
+    assert [a.year for a in result.assessments if a.protected] == [2025]  # yalnız uyumsuz ve son iki yılda olan

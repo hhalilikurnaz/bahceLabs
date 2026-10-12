@@ -291,5 +291,5 @@ async def test_today_and_status_use_the_new_risk_and_irrigation_inputs(user_clie
     today = (await user_client.get(f"/gardens/{garden['id']}/bugun")).json()
     assert 1 <= len(today["maddeler"]) <= 3
     status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert status["veri_yeterli"] is True and 0 <= status["skor"] <= 100
+    assert status["veri_yeterli"] is True and "skor" not in status
     assert istanbul_today() - timedelta(days=0) == date.fromisoformat(today["tarih"])

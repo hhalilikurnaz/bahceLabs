@@ -66,8 +66,15 @@ class Uyari(BaseModel):
     normdan_sapma_yuzde: float | None = None  # son değerin normdan sapması (negatif: altında)
 
 
+class TipikBantBilgi(BaseModel):
+    alt: float
+    ust: float
+    durum: Literal["dogrulanmadi", "muhendis_onayli"]  # «ön değer · mühendis onayı bekliyor» rozeti için
+
+
 class IndeksYanit(BaseModel):
     gozlemler: list[SahneGozlemi]
+    tipik_bantlar: dict[str, TipikBantBilgi] = {}  # ürünün indeks başına tipik aralığı (ön değer)
     isleme: NdviIs | None
     son_kontrol: datetime | None
     uyarilar: list[Uyari]

@@ -154,7 +154,6 @@ class GardenOverviewService:
             il=garden.il,
             ilce=garden.ilce,
             durum=status,
-            skor=result.skor,
             durum_nedeni=alerts[0].baslik if alerts else None,
             indeks=indeks,
             son_goruntu=last_image,

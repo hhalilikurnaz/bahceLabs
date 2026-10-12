@@ -189,19 +189,22 @@ async def test_series_rejects_future_season_and_handles_missing_weather(user_cli
 async def test_status_without_images_is_insufficient_data(user_client: AsyncClient, provider):
     garden = await new_garden(user_client)
     data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["durum"] == "veri_yok" and data["skor"] is None and data["veri_yeterli"] is False
+    assert data["durum"] == "veri_yok" and "skor" not in data and data["veri_yeterli"] is False
     assert "net uydu görüntüsü" in data["veri_yetersiz_nedeni"]
-    assert data["guven"]["seviye"] == "dusuk"
+    assert data["nasil"]["guven"]["seviye"] == "dusuk" and data["nasil"]["son_goruntu_tarihi"] is None
 
 
 async def test_status_scores_against_the_gardens_own_history(user_client: AsyncClient, factory, provider):
     garden = await new_garden(user_client)
     await seed_scenes(factory, garden["id"])
     data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["veri_yeterli"] is True and data["skor"] >= 75 and data["durum"] == "iyi"
-    assert [b["kod"] for b in data["bilesenler"]] == ["canlilik", "yaprak_suyu", "uyarilar", "hava"]
-    assert all(b["neden"] for b in data["bilesenler"])
-    assert data["guven"]["seviye"] in ("orta", "yuksek") and data["guven"]["son_goruntu_yasi_gun"] in (1, 2, 3)
+    assert data["veri_yeterli"] is True and data["durum"] == "iyi" and data["etiket"] == "İyi"
+    assert "skor" not in data and "bilesenler" not in data and "/100" not in str(data)  # iç skor arayüze çıkmaz
+    assert [c["kod"] for c in data["cipler"]] == ["agac_gucu", "su", "risk"]
+    assert [c["ad"] for c in data["cipler"]] == ["Ağaç gücü (NDVI)", "Su (NDMI)", "Risk"] and all(c["aciklama"] for c in data["cipler"])
+    nasil = data["nasil"]
+    assert nasil["guven"]["seviye"] in ("orta", "yuksek") and nasil["guven"]["son_goruntu_yasi_gun"] in (1, 2, 3)
+    assert nasil["esik_durumu"] == "ön değer · v1" and "9F" in nasil["formul_notu"] and nasil["son_goruntu_tarihi"]
     assert "iyi durumda" in data["ozet"]
 
 
@@ -209,9 +212,10 @@ async def test_status_drops_after_a_sudden_fall(user_client: AsyncClient, factor
     garden = await new_garden(user_client)
     await seed_scenes(factory, garden["id"], last_ndvi=0.36)
     data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["skor"] < 75 and data["durum"] in ("izle", "dikkat")
-    vigor = next(b for b in data["bilesenler"] if b["kod"] == "canlilik")
-    assert vigor["puan"] < 60 and "altında" in vigor["neden"]
+    assert data["durum"] in ("izle", "dikkat", "sorun")
+    vigor = next(c for c in data["cipler"] if c["kod"] == "agac_gucu")
+    assert vigor["seviye"] in ("normalin_alti", "belirgin_dusuk") and "altında" in vigor["aciklama"]
+    assert data["nasil"]["dusuren_bilesen"] == "agac_gucu" and "Ağaç gücü" in data["nasil"]["kademe_nedeni"]
 
 
 async def test_list_and_status_endpoint_agree_on_the_label(user_client: AsyncClient, factory, provider):
@@ -225,9 +229,9 @@ async def test_list_and_status_endpoint_agree_on_the_label(user_client: AsyncCli
     status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
     overview = (await user_client.get("/gardens/overview")).json()
     item = next(g for g in overview["bahceler"] if g["id"] == garden["id"])
-    # Tek durum fonksiyonu: liste ile Durum sekmesi aynı etiketi ve skoru verir (liste hava önbelleğini yalnızca okur)
-    assert item["skor"] == status["skor"] and item["durum"] == status["durum"]
-    assert item["durum"] in ("izle", "dikkat")
+    # Tek durum fonksiyonu: liste ile Durum sekmesi aynı kademeyi verir (liste hava önbelleğini yalnızca okur)
+    assert "skor" not in item and item["durum"] == status["durum"]
+    assert item["durum"] in ("izle", "dikkat", "sorun")
 
 
 # ----------------------------------------------------------------------------- bugün

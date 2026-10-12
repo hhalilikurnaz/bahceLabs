@@ -140,7 +140,7 @@ def test_sudden_drop_lowers_score_and_names_the_cause():
     assert result.skor is not None and result.skor < 75
     vigor = next(b for b in result.bilesenler if b.kod == "canlilik")
     assert vigor.puan is not None and vigor.puan < 50 and "altında" in vigor.neden and "%" in vigor.neden
-    assert "Canlılık" in result.ozet
+    assert "Ağaç gücü" in result.kademe_nedeni and result.dusuren == "agac_gucu"
 
 
 def test_homogeneous_constant_garden_does_not_break_scoring():
@@ -182,6 +182,7 @@ def test_label_thresholds_come_from_one_function():
     assert derive_status(has_data=True, severities=[], score=CFG.good_min, cfg=CFG) == "iyi"
     assert derive_status(has_data=True, severities=[], score=CFG.good_min - 1, cfg=CFG) == "izle"
     assert derive_status(has_data=True, severities=[], score=CFG.watch_min - 1, cfg=CFG) == "dikkat"
+    assert derive_status(has_data=True, severities=[], score=CFG.caution_min - 1, cfg=CFG) == "sorun"
 
 
 # ----------------------------------------------------------------------------- bugün
@@ -230,7 +231,7 @@ def test_today_risk_item_is_plain_with_technical_detail_kept_separately():
     assert build_today(low, TODAY, PRIORITY, 3)[0].tur == "her_sey_yolunda"
 
 
-def test_high_pest_risk_lowers_points_but_does_not_cap_the_label_by_itself():
+def test_high_pest_risk_lowers_points_and_caps_the_tier_at_watch():
     scenes = series(date(2026, 6, 1), [0.62] * 20)
     kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
     plain = assess(scenes, **kwargs)
@@ -240,4 +241,4 @@ def test_high_pest_risk_lowers_points_but_does_not_cap_the_label_by_itself():
     weather = next(b for b in risky.bilesenler if b.kod == "hava")
     assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden
     assert next(b for b in heavy.bilesenler if b.kod == "hava").puan == 0
-    assert risky.durum == "iyi"  # etiketi yalnızca skor ve uyarılar belirler
+    assert plain.durum == "iyi" and risky.durum == "izle"  # aktif risk (yüksek zararlı riski) kademeyi en fazla İzle yapar

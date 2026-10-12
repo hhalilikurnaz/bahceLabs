@@ -19,9 +19,9 @@ from bahcelab_backend.domain.agro.risks import (
 )
 from bahcelab_backend.domain.agro.rulebook import load_irrigation_rules, load_risk_rules
 from bahcelab_backend.domain.agro.schemas import (
-    BilesenYanit,
     BugunMaddesiYanit,
     BugunYanit,
+    CipYanit,
     DurumYanit,
     EvreYanit,
     FenolojiDuzeltme,
@@ -31,6 +31,7 @@ from bahcelab_backend.domain.agro.schemas import (
     KatalogUrun,
     KatalogYanit,
     KuralMeta,
+    NasilHesaplandi,
     RiskleriYanit,
     RiskYanit,
     SeriGunu,
@@ -41,7 +42,14 @@ from bahcelab_backend.domain.agro.schemas import (
     SulamaYanit,
     TuzakArayuzu,
 )
-from bahcelab_backend.domain.agro.score import SceneValue, ScoreConfig, Seviye, Skor, assess
+from bahcelab_backend.domain.agro.score import (
+    KADEME_ADLARI,
+    SceneValue,
+    ScoreConfig,
+    Seviye,
+    Skor,
+    assess,
+)
 from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
 from bahcelab_backend.domain.agro.today import Girdi, build_today
 from bahcelab_backend.domain.gardens.models import GardenModel
@@ -54,7 +62,8 @@ from bahcelab_backend.domain.weather.schemas import HavaYanit
 from bahcelab_backend.domain.weather.service import WeatherService
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
-LABELS = {"iyi": "İyi", "izle": "İzle", "dikkat": "Dikkat", "veri_yok": "Veri yok"}
+FORMUL_NOTU = "v1: kademe mevcut skorun geçici türetmesidir; tam formül 9F’de (Durum v2)."
+VERI_KAYNAKLARI = ["Canlılık (NDVI) · Sentinel-2 10 m", "Yaprak suyu (NDMI) · Sentinel-2 20 m", "Uydu uyarıları", "Hava ve zararlı/hastalık risk tahminleri"]
 
 
 def _meta(block: cat.KuralBlok | None) -> KuralMeta | None:
@@ -93,15 +102,25 @@ RISK_NOTE = "Hava koşullarından türetilen risk tahminidir; teşhis ya da ila�
 
 
 def to_status_response(result: Skor, today: date) -> DurumYanit:
+    """İç skor yanıta GİRMEZ: arayüze kademe, çipler ve «Nasıl hesaplandı?» döner."""
+    rule = cat.load_catalog().durum_kademesi
+    age = result.guven.son_goruntu_yasi_gun
     return DurumYanit(
         durum=result.durum,
-        etiket=LABELS[result.durum],
-        skor=result.skor,
+        etiket=KADEME_ADLARI[result.durum],
         ozet=result.ozet,
         veri_yeterli=result.veri_yeterli,
         veri_yetersiz_nedeni=result.veri_yetersiz_nedeni,
-        bilesenler=[BilesenYanit(**b.__dict__) for b in result.bilesenler],
-        guven=GuvenYanit(**result.guven.__dict__),
+        cipler=[CipYanit(**c.__dict__) for c in result.cipler],
+        nasil=NasilHesaplandi(
+            veri=VERI_KAYNAKLARI,
+            son_goruntu_tarihi=today - timedelta(days=age) if age is not None else None,
+            guven=GuvenYanit(**result.guven.__dict__),
+            dusuren_bilesen=result.dusuren,  # type: ignore[arg-type]
+            kademe_nedeni=result.kademe_nedeni,
+            esik_durumu="ön değer · v1" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v1",
+            formul_notu=FORMUL_NOTU,
+        ),
         hesaplama_tarihi=today,
     )
 

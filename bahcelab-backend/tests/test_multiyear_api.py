@@ -283,6 +283,7 @@ async def test_incompatible_year_is_flagged_and_user_can_toggle_it(user_client: 
         and bad["korelasyon"] < get_settings().multiyear_year_min_correlation
     )
     assert bad["elle"] is None and "uyumsuz" in bad["uyumsuz_nedeni"]
+    assert bad["karar_bekliyor"] is True and bad["varsayilan_dahil"] is False and bad["karar_zamani"] is None
     assert result["versiyon"] == 1
 
     # kullanıcı yılı dahil eder → yeniden hesaplanır, yeni sürüm
@@ -293,6 +294,7 @@ async def test_incompatible_year_is_flagged_and_user_can_toggle_it(user_client: 
     body = patched.json()
     included = next(y for y in body["yillar"] if y["yil"] == 2021)
     assert included["dahil"] is True and included["elle"] is True and body["versiyon"] == 2
+    assert included["karar_bekliyor"] is False and included["karar_zamani"] is not None  # karar kayıtlı
 
     # başka bir yılı hariç tut
     out = (
@@ -315,6 +317,7 @@ async def test_incompatible_year_is_flagged_and_user_can_toggle_it(user_client: 
     y2021 = next(y for y in auto["yillar"] if y["yil"] == 2021)
     assert (
         y2021["elle"] is None
+        and y2021["karar_bekliyor"] is True and y2021["karar_zamani"] is None  # geri alındı: soru yeniden açılır
         and y2021["dahil"] is False
         and next(y for y in auto["yillar"] if y["yil"] == 2019)["dahil"] is True
     )
@@ -652,3 +655,20 @@ async def test_year_values_expose_the_composite_grid_inside_the_garden_only(
     assert 0.3 * len(data["degerler"]) < len(inside) < len(data["degerler"])  # bahçe dışı null
     assert 0.4 <= min(inside) and max(inside) <= 0.85  # sahte desen aralığı (0,45–0,75 + gürültü)
     assert (await user_client.get(url(garden["id"], "/yillar/1999/degerler"))).status_code == 404
+
+
+async def test_incompatible_recent_year_stays_in_the_analysis_until_the_user_decides(user_client: AsyncClient, fake):
+    garden = await new_garden(user_client)
+    rng = np.random.default_rng(11)
+    odd = rng.uniform(0.3, 0.8, fake.grid.shape).astype(np.float32)
+    base = fake.pattern
+    last_year = max(YEARS)
+    fake.pattern = lambda year: odd if year == last_year else base(year)
+    await user_client.post(url(garden["id"]))
+    result = (await user_client.get(url(garden["id"], "/sonuc"))).json()
+    recent = next(y for y in result["yillar"] if y["yil"] == last_year)
+    assert recent["uyumsuz"] is True and recent["dahil"] is True  # sessizce atılmadı
+    assert recent["karar_bekliyor"] is True and recent["varsayilan_dahil"] is True
+    out = (await user_client.patch(url(garden["id"], "/yillar"), json={"yillar": [{"yil": last_year, "dahil": False}]})).json()
+    decided = next(y for y in out["yillar"] if y["yil"] == last_year)
+    assert decided["dahil"] is False and decided["karar_bekliyor"] is False

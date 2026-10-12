@@ -198,13 +198,13 @@ def _reference_window(href: str, geometry: dict[str, Any]) -> _Window:
 
 
 def _read_one(href: str, ref: _Window, band: str) -> np.ndarray:
-    """Tek bandı referans ızgarasına okur: 10 m doğrudan, 20 m bilinear, SCL nearest."""
+    """Tek bandı referans ızgarasına okur: 10 m doğrudan; 20 m bantlar ve SCL en yakın komşuyla (doğal çözünürlük korunur: 20 m
+    piksel 2×2 blok olur, yumuşatılmış/uydurma ara değer üretilmez)."""
     with rasterio.Env(**_GDAL_ENV), rasterio.open(href) as src:
         if band in BANDS_10M:
             return src.read(1, window=ref.window)
         window = from_bounds(*ref.bounds, transform=src.transform)
-        resampling = Resampling.nearest if band == BAND_SCL else Resampling.bilinear
-        return src.read(1, window=window, out_shape=ref.shape, resampling=resampling)
+        return src.read(1, window=window, out_shape=ref.shape, resampling=Resampling.nearest)
 
 
 def first_scene_date(geometry: dict[str, Any]) -> date | None:

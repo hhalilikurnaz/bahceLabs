@@ -171,3 +171,21 @@ def test_ndvi_is_continuous_across_the_2022_baseline_change_on_real_scenes():
     # 40 günlük kış farkı (gerçek değişim) ofset hatasından çok küçük olmalı: hata her bandı +0,1 kaydırır
     assert abs(right) < 0.1, right
     assert wrong < right - 0.1, (right, wrong)
+
+
+def test_20m_bands_keep_native_resolution_as_nearest_blocks(tmp_path: Path) -> None:
+    """20 m bant 10 m ızgaraya bilinear ile yumuşatılmaz: her 20 m piksel aynı değerli 2×2 blok olur (uydurma ara değer yok)."""
+    import rasterio
+    from rasterio.transform import from_origin
+    from rasterio.windows import Window
+
+    from bahcelab_backend.domain.imagery import sentinel2
+
+    native = np.arange(16, dtype=np.uint16).reshape(4, 4) * 100 + 1000
+    path = tmp_path / "b11.tif"
+    with rasterio.open(path, "w", driver="GTiff", height=4, width=4, count=1, dtype="uint16", crs="EPSG:32636", transform=from_origin(500000, 4000000, 20, 20)) as dst:
+        dst.write(native, 1)
+    ref_transform = from_origin(500000, 4000000, 10, 10)
+    ref = sentinel2._Window(window=Window(0, 0, 8, 8), transform=ref_transform, shape=(8, 8), bounds=(500000, 3999920, 500080, 4000000), crs="EPSG:32636")
+    out = sentinel2._read_one(str(path), ref, "B11")
+    assert np.array_equal(out, np.kron(native, np.ones((2, 2), dtype=np.uint16)))

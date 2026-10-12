@@ -17,6 +17,7 @@ import numpy as np
 from scipy import ndimage
 
 Stability = Literal["yuksek", "orta", "dusuk"]
+RECENT_YEARS = 2  # uyumsuz bulunsa da otomatik dışlanmayan son yıl sayısı (gerçek değişim olabilir; kullanıcıya sorulur)
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class YearAssessment:
     correlation: float | None  # diğer (tutulan) yılların ortalamasıyla; yıl sayısı yetmezse None
     incompatible: bool  # otomatik işaret
     reason: str | None = None
+    protected: bool = False  # uyumsuz ama son iki yılda: sessizce atılmaz, varsayılan olarak analizde kalır (kullanıcıya sorulur)
 
 
 @dataclass
@@ -241,8 +243,10 @@ def compute_zones(
     flag = _has_spatial_structure(years, garden_mask, cfg)
     assessments, normalized = assess_years(years, garden_mask, cfg, flag_incompatible=flag)
     used: list[int] = []
+    recent = {y.year for y in years if y.year >= max((m.year for m in years), default=0) - (RECENT_YEARS - 1)}
     for a in assessments:
-        wanted = include[a.year] if include is not None and a.year in include else not a.incompatible
+        a.protected = a.incompatible and a.year in recent
+        wanted = include[a.year] if include is not None and a.year in include else (not a.incompatible or a.protected)
         if wanted and a.year in normalized:
             used.append(a.year)
     if len(used) < cfg.min_years:

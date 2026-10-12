@@ -113,13 +113,25 @@ class SerilerYanit(BaseModel):
     notlar: list[str]
 
 
-class BilesenYanit(BaseModel):
-    kod: str
+class CipYanit(BaseModel):
+    """Bileşen çipi: sayı yok; yalnız seviye (None = veri yok) ve tek cümle neden."""
+
+    kod: Literal["agac_gucu", "su", "risk"]
     ad: str
-    puan: int | None
-    agirlik: float
-    kullanilabilir: bool
-    neden: str
+    seviye: Literal["normal", "normalin_alti", "belirgin_dusuk"] | None
+    aciklama: str
+
+
+class NasilHesaplandi(BaseModel):
+    """«Nasıl hesaplandı?» kutusu: veri, tarih, güven, hangi bileşenin kademeyi düşürdüğü ve kural durumu."""
+
+    veri: list[str]
+    son_goruntu_tarihi: date | None
+    guven: GuvenYanit
+    dusuren_bilesen: Literal["agac_gucu", "su", "risk"] | None
+    kademe_nedeni: str
+    esik_durumu: str  # «ön değer · v1» (katalogdan)
+    formul_notu: str
 
 
 class GuvenYanit(BaseModel):
@@ -130,14 +142,15 @@ class GuvenYanit(BaseModel):
 
 
 class DurumYanit(BaseModel):
+    """Durum kademesi (İyi · İzle · Dikkat · Sorun · Veri yok). İç skor bu yanıtta YOKTUR (arayüze sayı çıkmaz)."""
+
     durum: Durum
     etiket: str
-    skor: int | None
     ozet: str
     veri_yeterli: bool
     veri_yetersiz_nedeni: str | None
-    bilesenler: list[BilesenYanit]
-    guven: GuvenYanit
+    cipler: list[CipYanit]
+    nasil: NasilHesaplandi
     hesaplama_tarihi: date
 
 

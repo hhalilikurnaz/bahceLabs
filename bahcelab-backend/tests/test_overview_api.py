@@ -56,10 +56,12 @@ def real_png(size: tuple[int, int] = (400, 300)) -> bytes:
 def test_status_rules():
     """Tek durum fonksiyonu: skor etiketi + uyarılar (kırmızı en fazla «dikkat», sarı en fazla «izle» bırakır)."""
     assert derive_status(has_data=True, severities=[], score=90) == "iyi"
-    assert derive_status(has_data=True, severities=[], score=75) == "iyi"  # sınır dahil
-    assert derive_status(has_data=True, severities=[], score=74) == "izle"
-    assert derive_status(has_data=True, severities=[], score=50) == "izle"
-    assert derive_status(has_data=True, severities=[], score=49) == "dikkat"
+    assert derive_status(has_data=True, severities=[], score=85) == "iyi"  # sınır dahil
+    assert derive_status(has_data=True, severities=[], score=84) == "izle"
+    assert derive_status(has_data=True, severities=[], score=70) == "izle"
+    assert derive_status(has_data=True, severities=[], score=69) == "dikkat"
+    assert derive_status(has_data=True, severities=[], score=50) == "dikkat"
+    assert derive_status(has_data=True, severities=[], score=49) == "sorun"
     assert derive_status(has_data=True, severities=["sari"], score=95) == "izle"  # sarı uyarı «iyi»yi engeller
     assert derive_status(has_data=True, severities=["sari", "kirmizi"], score=95) == "dikkat"
     assert derive_status(has_data=True, severities=[], score=None) == "iyi"  # skor yok (geçmiş yetersiz), uyarı da yok
@@ -128,7 +130,7 @@ async def test_overview_status_follows_alerts(user_client: AsyncClient, factory)
     await add_scene(factory, gid, TODAY - timedelta(days=18), {**ALL_MEANS, "ndvi": 0.7})
     await add_scene(factory, gid, TODAY - timedelta(days=2), {**ALL_MEANS, "ndvi": 0.5})
     (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
-    assert item["durum"] in ("izle", "dikkat") and item["skor"] is not None
+    assert item["durum"] in ("izle", "dikkat", "sorun") and "skor" not in item
     assert [(u["kaynak"], u["seviye"]) for u in item["uyarilar"]] == [("uydu", "sari")]
     assert item["durum_nedeni"] == item["uyarilar"][0]["baslik"]
 

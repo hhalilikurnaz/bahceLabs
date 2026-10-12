@@ -41,6 +41,9 @@ class YilBilgisi(BaseModel):
     korelasyon: float | None
     uyumsuz: bool
     uyumsuz_nedeni: str | None
+    karar_bekliyor: bool = False  # uyumsuz ve kullanıcı henüz karar vermedi
+    varsayilan_dahil: bool = False  # karar verilmezse analizde olur mu (son iki yıl: evet)
+    karar_zamani: datetime | None = None
     yetersiz_veri: bool = False  # net sahne/dönem kapsamı eşiğin altında: kompozitte görünür, analize girmez, uyumsuzluk sorulmaz
     yetersiz_nedeni: str | None = None
     net_gun_sayisi: int | None = None

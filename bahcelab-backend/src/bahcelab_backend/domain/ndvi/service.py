@@ -5,6 +5,7 @@ from typing import Any, Literal, cast
 import numpy as np
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.agro.catalog import load_catalog
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.archive import build_archive
 from bahcelab_backend.domain.ndvi.indices import INDEX_IDS, INDICES, TRUE_COLOR
@@ -19,6 +20,7 @@ from bahcelab_backend.domain.ndvi.schemas import (
     IndeksYanit,
     NdviIs,
     SahneGozlemi,
+    TipikBantBilgi,
     VerimlilikYanit,
 )
 from bahcelab_backend.domain.ndvi.thumbnail import make_thumbnail
@@ -157,7 +159,7 @@ class NdviService:
         return row
 
     async def overview(self, garden_id: uuid.UUID) -> IndeksYanit:
-        await self._garden(garden_id)
+        garden_row = await self._garden(garden_id)
         scenes = await self.repo.list_scenes(garden_id)
         incomplete = any(missing_outputs(s) for s in scenes)
 
@@ -178,8 +180,11 @@ class NdviService:
             job = await self.coordinator.enqueue(garden_id, "guncelleme" if scenes else "ilk")
 
         latest = job or latest_job
+        product = load_catalog().urun(garden_row.garden.urun)
+        bands = {k: TipikBantBilgi(alt=v.alt, ust=v.ust, durum=v.durum) for k, v in (product.tipik_bantlar if product else {}).items()}
         return IndeksYanit(
             gozlemler=[to_gozlem(s) for s in scenes],
+            tipik_bantlar=bands,
             isleme=to_is(latest) if latest else None,
             son_kontrol=last_attempt,
             uyarilar=build_alerts(scenes),

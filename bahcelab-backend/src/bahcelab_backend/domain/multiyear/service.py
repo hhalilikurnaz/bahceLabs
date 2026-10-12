@@ -256,6 +256,7 @@ class MultiyearService:
             a = by_year.get(y.yil)
             s = suff.get(y.yil)
             y.yetersiz_veri = bool(s and s.insufficient)
+            y.korumali = bool(a and a.protected)
             if s is not None and s.insufficient:  # «yetersiz veri» ≠ «uyumsuz yıl»: analize girmez, uyumsuzluk sorusu sorulmaz
                 y.uyumsuz, y.korelasyon, y.kapsam, y.uyumsuz_nedeni = False, None, None, s.reason
             elif a is not None:
@@ -321,6 +322,7 @@ class MultiyearService:
                     net_gun_sayisi=s.net_days if s and y.sahne_tarihleri is not None else None,
                     donem_kapsami=s.period_coverage if s and y.sahne_tarihleri is not None else None, aday_sayisi=y.aday_sayisi,
                     dahil=(y.yil in used) if used is not None else False, elle=y.dahil_elle,
+                    karar_bekliyor=y.uyumsuz and y.dahil_elle is None, varsayilan_dahil=y.korumali or not y.uyumsuz, karar_zamani=y.karar_zamani,
                 )
             )
         return out
@@ -391,6 +393,7 @@ class MultiyearService:
             if choice.dahil and years[choice.yil].yetersiz_veri:
                 raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"{choice.yil} yılı yetersiz veri nedeniyle analize eklenemez.")
             years[choice.yil].dahil_elle = choice.dahil
+            years[choice.yil].karar_zamani = datetime.now(UTC) if choice.dahil is not None else None  # geri alınca (None) karar silinir
         await self.session.commit()
         if (await self.status(garden_id)).durum == "isleniyor":
             return await self.result(garden_id, body.bolge_sayisi)
