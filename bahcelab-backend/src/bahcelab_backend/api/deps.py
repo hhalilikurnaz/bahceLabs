@@ -7,6 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bahcelab_backend.api.auth.cookies import ACCESS_COOKIE
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory, get_db_session
+from bahcelab_backend.domain.acquisitions.backfill import (
+    BackfillRunner,
+    BackfillService,
+    MonthQueue,
+    month_queue_for,
+)
+from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 from bahcelab_backend.domain.agro.repository import AgroRepository
 from bahcelab_backend.domain.agro.service import AgroService
 from bahcelab_backend.domain.auth.repository import AuthRepository
@@ -165,6 +172,30 @@ async def get_year_queue(provider: Annotated[ImageryProvider, Depends(get_imager
             _ARQ_POOL = await create_pool(RedisSettings.from_dsn(settings.redis_url))
         return year_queue_for(runner, _ARQ_POOL)
     return year_queue_for(runner)
+
+
+async def get_month_queue(provider: Annotated[ImageryProvider, Depends(get_imagery)]) -> MonthQueue:
+    """Ay görevi kuyruğu: `JOB_BACKEND=arq` ise Redis, değilse süreç içi."""
+    global _ARQ_POOL
+    settings = get_settings()
+    runner = BackfillRunner(async_session_factory, provider, get_storage(), settings)
+    if settings.job_backend == "arq":
+        if _ARQ_POOL is None:
+            from arq import create_pool
+            from arq.connections import RedisSettings
+
+            _ARQ_POOL = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+        return month_queue_for(runner, _ARQ_POOL)
+    return month_queue_for(runner)
+
+
+async def get_data_foundation_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+    provider: Annotated[ImageryProvider, Depends(get_imagery)],
+    queue: Annotated[MonthQueue, Depends(get_month_queue)],
+) -> DataFoundationService:
+    return DataFoundationService(session, workspace_id, BackfillService(session, provider, get_storage(), queue))
 
 
 async def get_multiyear_service(

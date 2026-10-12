@@ -20,6 +20,8 @@ class InlineScheduler:
         self._tasks: list[asyncio.Task[None]] = []
 
     async def _loop(self, spec: registry.JobSpec) -> None:
+        if spec.hour is not None:  # günlük iş: açılışta hemen değil, ilk aralıktan sonra (ağır sahne taraması)
+            await asyncio.sleep(spec.interval_minutes * 60)
         while True:
             try:
                 result = await spec.fn(self.factory, self.provider)

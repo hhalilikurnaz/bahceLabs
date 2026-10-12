@@ -19,6 +19,7 @@ class JobSpec:
     name: str
     fn: JobFn
     interval_minutes: int
+    hour: int | None = None  # arq: günlük işler için çalışma saati (None = interval_minutes dakika dilimleri)
 
 
 def job_specs(settings: Settings) -> list[JobSpec]:
@@ -26,6 +27,7 @@ def job_specs(settings: Settings) -> list[JobSpec]:
     return [
         JobSpec("refresh_weather", tasks.refresh_weather, settings.job_weather_interval_minutes),
         JobSpec("generate_notifications", tasks.generate_notifications, settings.job_notifications_interval_minutes),
+        JobSpec("refresh_acquisitions", tasks.refresh_acquisitions, settings.job_acquisitions_interval_minutes, hour=settings.job_acquisitions_hour),
     ]
 
 

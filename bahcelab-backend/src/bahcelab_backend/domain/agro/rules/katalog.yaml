@@ -71,6 +71,16 @@ varsayilan_narenciye: &narenciye
       alt: 0.45
       ust: 0.70
 
+# Normal bant (gösterge × ay): bahçenin kendi 2015–(geçen yıl) dağılımı. Yetersiz veri ve uyumsuz/hariç yıllar banda girmez. Ön değerler.
+normal_bant:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer: p25–p75 (ve ortanca) için en az 5 yıl, p10–p90 için en az 8 yıl. Altında «yetersiz geçmiş» yazılır, yüzdelik gösterilmez.
+    Yıl sayısı küçük olduğundan uçlar gürültülüdür; ziraat mühendisiyle doğrulanmalıdır.
+  asgari_yil_ceyrek: 5
+  asgari_yil_onluk: 8
+  ilk_yil: 2015
+
 urunler:
   limon:
     ad: Limon

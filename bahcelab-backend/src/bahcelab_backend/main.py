@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from bahcelab_backend.api.acquisitions.router import router as acquisitions_router
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
@@ -43,6 +44,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             from bahcelab_backend.domain.multiyear.runner import fail_stale_years
 
             await fail_stale_years(async_session_factory)  # yarım kalan yıl görevleri «Yeniden dene» ile sürdürülebilir
+            from bahcelab_backend.domain.acquisitions.backfill import (
+                BackfillRunner,
+                fail_stale_months,
+                resume_incomplete,
+            )
+            from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+            from bahcelab_backend.shared.storage import get_storage
+
+            await fail_stale_months(async_session_factory)  # yarım kalan geçmiş doldurma aylarını kaldığı yerden sürdür
+            if get_settings().job_backend == "inline":
+                await resume_incomplete(async_session_factory, BackfillRunner(async_session_factory, get_imagery_provider(), get_storage()))
         except Exception:  # noqa: BLE001
             logging.getLogger(__name__).warning("Yarım kalan yıl görevleri temizlenemedi", exc_info=True)
     scheduler = None
@@ -96,6 +108,7 @@ def create_app() -> FastAPI:
     app.include_router(agro_router)
     app.include_router(notifications_router)
     app.include_router(multiyear_router)
+    app.include_router(acquisitions_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

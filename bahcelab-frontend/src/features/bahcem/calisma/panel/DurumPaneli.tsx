@@ -4,6 +4,7 @@ import { ErrorState, Skeleton } from '@/components/ui'
 import { TodayCard } from '../../components/garden-page/TodayCard'
 import { BosDurum } from '../../kabuk/BosDurum'
 import { KADEME_META, SEVIYE_META, type Kademe } from '../../lib/kademe'
+import { GecmisCekiliyor } from './GecmisCekiliyor'
 import { KademeSeridi } from './KademeSeridi'
 import { NasilHesaplandi } from './NasilHesaplandi'
 
@@ -13,6 +14,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
   const kademe: Kademe | null = data && data.durum !== 'veri_yok' ? data.durum : null
   return (
     <div className="grid gap-4 p-5">
+      <GecmisCekiliyor gardenId={garden.id} />
       {isLoading ? (
         <Skeleton className="h-40" aria-label="Durum yükleniyor" />
       ) : isError || !data ? (

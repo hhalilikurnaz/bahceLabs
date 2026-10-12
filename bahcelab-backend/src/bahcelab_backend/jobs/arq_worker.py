@@ -31,7 +31,10 @@ def minute_slots(interval_minutes: int) -> set[int]:
 def build_settings(settings: Settings) -> dict[str, Any]:
     specs = registry.job_specs(settings)
     functions = [_wrap(s) for s in specs]
-    cron_jobs = [cron(fn, minute=minute_slots(s.interval_minutes), run_at_startup=False, unique=True) for fn, s in zip(functions, specs, strict=True)]
+    cron_jobs = [
+        cron(fn, hour={s.hour}, minute={0}, run_at_startup=False, unique=True) if s.hour is not None else cron(fn, minute=minute_slots(s.interval_minutes), run_at_startup=False, unique=True)
+        for fn, s in zip(functions, specs, strict=True)
+    ]
     return {"functions": functions, "cron_jobs": cron_jobs, "redis_settings": RedisSettings.from_dsn(settings.redis_url)}
 
 
@@ -47,8 +50,21 @@ async def process_garden_year(ctx: dict[str, Any], garden_id: str, year: int) ->
     return await runner.run_year(uuid.UUID(garden_id), year)
 
 
+async def process_garden_month(ctx: dict[str, Any], garden_id: str, month_iso: str) -> str:
+    """Geçmiş doldurma: bir bahçe × ay görevi (ADR 0015). Aynı görev iki kez çalışmaz (`_job_id` + idempotent `claim_month`)."""
+    import uuid
+    from datetime import date
+
+    from bahcelab_backend.domain.acquisitions.backfill import BackfillRunner
+    from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+    from bahcelab_backend.shared.storage import get_storage
+
+    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage())
+    return await runner.run_month(uuid.UUID(garden_id), date.fromisoformat(month_iso))
+
+
 class WorkerSettings:
     _built = build_settings(get_settings())
-    functions = [*_built["functions"], process_garden_year]
+    functions = [*_built["functions"], process_garden_year, process_garden_month]
     cron_jobs = _built["cron_jobs"]
     redis_settings = _built["redis_settings"]

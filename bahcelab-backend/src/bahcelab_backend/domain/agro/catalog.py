@@ -134,10 +134,25 @@ class DurumKademesi(KuralBlok):
         return self
 
 
+class NormalBant(KuralBlok):
+    """Normal bant (gösterge × ay) asgari yıl şartları (ön değer): altında «yetersiz geçmiş»; yüzdelikler gösterilmez."""
+
+    asgari_yil_ceyrek: int = Field(ge=2)  # p25–p75 (ve ortanca)
+    asgari_yil_onluk: int = Field(ge=2)  # p10–p90
+    ilk_yil: int = 2015
+
+    @model_validator(mode="after")
+    def _ordered(self) -> NormalBant:
+        if self.asgari_yil_onluk < self.asgari_yil_ceyrek:
+            raise ValueError("p10–p90 için gereken yıl, p25–p75 için gerekenden az olamaz.")
+        return self
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
     durum_kademesi: DurumKademesi
+    normal_bant: NormalBant
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

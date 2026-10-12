@@ -29,10 +29,11 @@ def test_engine():
 @pytest.fixture
 def app(test_engine, tmp_path):
     settings = get_settings()
-    previous = (settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir)
+    previous = (settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill)
     settings.registration_enabled = True
     # Testler ağa çıkmaz ve arka plan işi başlatmaz; NDVI testleri bunu kendileri açar
     settings.ndvi_enabled = False
+    settings.acq_auto_backfill = False  # geçmiş doldurma testleri hizmeti kendileri sürer (ağsız sahte sağlayıcı)
     settings.storage_dir = str(tmp_path / "uploads")
 
     factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
@@ -49,7 +50,7 @@ def app(test_engine, tmp_path):
     application = create_app()
     application.dependency_overrides[get_db_session] = override_session
     yield application
-    settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir = previous
+    settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill = previous
 
 
 def make_client(app) -> AsyncClient:

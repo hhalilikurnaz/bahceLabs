@@ -39,6 +39,21 @@ class JobResult:
     hata: int = 0
 
 
+async def refresh_acquisitions(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
+    """Günlük artımlı çekim (ADR 0015): geçmiş doldurması başlamış bahçeler için son aylardaki YENİ sahneleri edinir; bütçe doluysa okuma yapılmaz."""
+    from bahcelab_backend.domain.acquisitions.backfill import BackfillRunner, refresh_recent
+    from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+    from bahcelab_backend.shared.storage import get_storage
+
+    result = JobResult()
+    try:
+        result.isler = await refresh_recent(factory, BackfillRunner(factory, get_imagery_provider(), get_storage()))
+    except Exception:  # noqa: BLE001
+        logger.exception("Artımlı sahne çekimi başarısız")
+        result.hata += 1
+    return result
+
+
 async def refresh_weather(factory: SessionFactory, provider: WeatherProvider, *, workspace_id: uuid.UUID | None = None) -> JobResult:
     """Tüm çalışma alanlarının hava hücrelerini tazeler (1 saatlik önbellek: sık çağrı sağlayıcıya yük bindirmez)."""
     result = JobResult()

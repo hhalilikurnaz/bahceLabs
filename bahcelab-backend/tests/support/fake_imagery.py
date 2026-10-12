@@ -14,6 +14,7 @@ from typing import Any
 import numpy as np
 from rasterio.transform import Affine
 
+from bahcelab_backend.domain.imagery.angles import SceneAngles
 from bahcelab_backend.domain.imagery.provider import (
     Capabilities,
     ImageryError,
@@ -124,4 +125,7 @@ class FakeImageryProvider:
             bands = {}
         for key in list(bands):
             bands[key] = np.where(np.isfinite(full), bands[key], np.nan).astype(np.float32)
-        return SceneBands(bands=bands, valid=valid, transform=transform, crs=self.grid.crs)
+        return SceneBands(
+            bands=bands, valid=valid, transform=transform, crs=self.grid.crs, acilar=SceneAngles(30.0, 160.0, 6.0, 280.0), parite=(0, 0),
+            isleme_surumu="05.13", sahne_kimligi=scene.scene_id,
+        )

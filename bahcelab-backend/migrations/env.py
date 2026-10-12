@@ -13,6 +13,7 @@ from bahcelab_backend.domain.notifications import models as notification_models 
 from bahcelab_backend.domain.auth import models as auth_models  # noqa: F401
 from bahcelab_backend.domain.gardens import models as garden_models  # noqa: F401
 from bahcelab_backend.domain.multiyear import models as multiyear_models  # noqa: F401
+from bahcelab_backend.domain.acquisitions import models as acquisition_models  # noqa: F401
 from bahcelab_backend.domain.ndvi import models as ndvi_models  # noqa: F401
 from bahcelab_backend.domain.planning import models  # noqa: F401
 from bahcelab_backend.domain.weather import models as weather_models  # noqa: F401

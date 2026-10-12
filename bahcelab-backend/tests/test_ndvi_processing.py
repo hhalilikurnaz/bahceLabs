@@ -138,7 +138,8 @@ def test_bands_needed_per_output():
     }  # çekirdek (bulut kararı) her zaman
     assert ix.bands_needed({"ndmi"}) == {"red", "nir", "nir_narrow", "swir1"}
     assert ix.bands_needed({ix.TRUE_COLOR}) == {"red", "nir", "green", "blue"}
-    assert ix.bands_needed(set(ix.ALL_OUTPUTS)) == set(ix.ALL_ROLES)
+    # LAI girdileri (rededge2/3, swir2) indekslerde kullanılmaz: yalnız arşiv çekiminde okunur (formulas.ROLES_NEEDED)
+    assert ix.bands_needed(set(ix.ALL_OUTPUTS)) == set(ix.ALL_ROLES) - {"rededge2", "rededge3", "swir2"}
 
 
 def test_reflectance_applies_offset_and_nodata():

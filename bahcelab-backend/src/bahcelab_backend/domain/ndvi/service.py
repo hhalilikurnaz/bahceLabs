@@ -103,6 +103,24 @@ class NdviCoordinator:
 
     async def start_initial(self, garden_id: uuid.UUID) -> None:
         await self.enqueue(garden_id, "ilk")
+        await self._start_backfill(garden_id)
+
+    async def _start_backfill(self, garden_id: uuid.UUID) -> None:
+        """Geçmiş doldurma (ADR 0015): bahçe eklenince / sınırı değişince 2015'ten bugüne; işleme kapalıysa çalışmaz."""
+        if not get_settings().ndvi_enabled or not get_settings().acq_auto_backfill:
+            return
+        from bahcelab_backend.database import async_session_factory
+        from bahcelab_backend.domain.acquisitions.backfill import (
+            BackfillRunner,
+            BackfillService,
+            month_queue_for,
+        )
+        from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+
+        await self.repo.session.commit()  # bahçe satırı görünür olsun (görevler kendi bağlantısından okur)
+        runner = BackfillRunner(async_session_factory, get_imagery_provider(), self.storage)
+        async with async_session_factory() as session:
+            await BackfillService(session, runner.provider, self.storage, month_queue_for(runner)).start(garden_id)
 
     async def restart_after_boundary_change(self, garden_id: uuid.UUID) -> None:
         """Sınır değişti: eski kayıtlar ve dosyalar silinir, devam eden iş iptal edilir, baştan işlenir."""
@@ -115,6 +133,7 @@ class NdviCoordinator:
         await self.repo.delete_observations(garden_id)
         self.purge_files(garden_id)
         await self.enqueue(garden_id, "yeniden")
+        await self._start_backfill(garden_id)
 
     def purge_files(self, garden_id: uuid.UUID) -> None:
         self.storage.delete_prefix(storage_prefix(garden_id))

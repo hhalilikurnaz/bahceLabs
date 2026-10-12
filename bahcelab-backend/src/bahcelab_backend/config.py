@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     multiyear_simplify_m: float = 0.0  # 0 = sadeleştirme yok: bölge çizimi 10 m piksel kenarlarını izler (net piksel ilkesi)
     multiyear_smooth_m: float = 0.0  # 0 = köşe yumuşatma yok
     multiyear_zone_counts: tuple[int, ...] = (3, 5)
+    # Veri temeli (ADR 0015): sahne bütçesi ve geçmiş doldurma
+    acq_scenes_per_month: int = 2  # ay başına en iyi N net sahne
+    acq_min_gap_days: int = 10  # kabul edilen net sahneler arası en az gün
+    acq_max_cloud: float = 60.0  # sahne bulut oranı (%) bunun üstündeyse aranmaz
+    acq_max_candidates_per_month: int = 8  # bir ayda en çok bu kadar aday sahne okunur
+    acq_parallel_months: int = 3  # aynı anda işlenen ay görevi (tüm bahçeler için ortak)
+    acq_start: str = "2015-06-01"  # arşiv taraması başlangıcı (Sentinel-2 L2A 13 Ağu 2015'te başlar; ilk aylar boş çıkar)
+    acq_auto_backfill: bool = True  # bahçe eklenince / sınırı değişince geçmiş doldurma kendiliğinden başlar (işleme açıksa)
+    acq_incremental_days: int = 45  # günlük artımlı çekim bu kadar geriye bakar
 
     # Hava durumu (Open-Meteo). Ticari kullanımda ücretli plan anahtarı buraya; sağlayıcı değişimi domain/weather/provider.py
     open_meteo_api_key: str | None = None
@@ -101,6 +110,8 @@ class Settings(BaseSettings):
     redis_url: str = ""  # JOB_BACKEND=arq iken zorunlu
     job_weather_interval_minutes: int = 60
     job_notifications_interval_minutes: int = 60
+    job_acquisitions_interval_minutes: int = 1440  # günlük artımlı sahne çekimi (arq: her gün job_acquisitions_hour saatinde)
+    job_acquisitions_hour: int = 3
 
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"
