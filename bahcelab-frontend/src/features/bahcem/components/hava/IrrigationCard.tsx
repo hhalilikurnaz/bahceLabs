@@ -64,7 +64,6 @@ export function IrrigationCard({ garden }: { garden: Garden }) {
               ))}
             </dl>
           )}
-          {data.kurallar.sistem.durum === 'dogrulanmadi' && <RuleBadge meta={data.kurallar.sistem} />}
         </>
       )}
 

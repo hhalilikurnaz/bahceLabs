@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import type { Garden } from '../../api/types'
 import { geometryBounds } from '../../lib/geo'
 import { gardenPath } from '../../lib/routes'
+import { KADEME_META } from '../../lib/kademe'
+import type { Kademe } from '../../lib/kademe'
 import { useMap } from '../../map/useMap'
 
 interface Konum {
@@ -13,7 +15,7 @@ interface Konum {
 }
 
 /** Komşu bahçelerin adları: raster altlıkta glif olmadığı için DOM'da; beyaz haleli, tıklayınca o bahçeye geçer. */
-export function KomsuEtiketleri({ others }: { others: Garden[] }) {
+export function KomsuEtiketleri({ others, kademeler }: { others: Garden[]; kademeler?: Map<string, Kademe | 'veri_yok'> }) {
   const { map } = useMap()
   const navigate = useNavigate()
   const [points, setPoints] = useState<Konum[]>([])
@@ -66,6 +68,11 @@ export function KomsuEtiketleri({ others }: { others: Garden[] }) {
           className="absolute z-[5] max-w-[160px] -translate-x-1/2 -translate-y-1/2 truncate rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[11.5px] font-semibold text-[#17201b] shadow-sm ring-1 ring-black/15 hover:bg-white max-[560px]:min-h-11"
           style={{ left: p.x, top: p.y }}
         >
+          {kademeler && kademeler.get(p.id) && kademeler.get(p.id) !== 'veri_yok' && (
+            <span aria-hidden data-testid="etiket-kademe" style={{ color: KADEME_META[kademeler.get(p.id) as Kademe].renk }} className="mr-1">
+              {KADEME_META[kademeler.get(p.id) as Kademe].isaret}
+            </span>
+          )}
           {p.ad}
         </button>
       ))}

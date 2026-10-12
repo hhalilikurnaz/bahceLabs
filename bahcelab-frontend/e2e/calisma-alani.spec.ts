@@ -182,3 +182,71 @@ test.describe('Bahçeler sayfası', () => {
     await expect(page.getByTestId('bahce-yok')).toContainText('İlk bahçenizi ekleyin')
   })
 })
+
+test.describe('1024 ve 390 yerleşim düzeltmeleri', () => {
+  test.describe('1024', () => {
+    test.use({ viewport: { width: 1024, height: 768 } })
+    test('tarih kutusu görünür; lejant köşe kutusuyla çakışmaz; Analiz tabloları taşmaz', async ({ page }) => {
+      await newUser(page)
+      const garden = await createGarden(page.request, { ad: 'Dar 1024', lng: 27.77, lat: 38.77, sideM: 220 })
+      seedScenes(garden.id)
+      await page.goto(`/bahceler/${garden.id}`)
+      await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByTestId('tarih-kutusu')).toBeVisible()
+      const kutu = async (id: string) => (await page.getByTestId(id).boundingBox()) ?? { x: 0, y: 0, width: 0, height: 0 }
+      const [tarih, menu, lejant, kose] = [await kutu('tarih-kutusu'), await kutu('katman-menusu'), await kutu('histogram-lejant'), await kutu('harita-kosesi')]
+      const kesisir = (a: typeof tarih, b: typeof tarih) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
+      expect(kesisir(tarih, menu), 'tarih kutusu katman menüsüyle çakışmamalı').toBe(false)
+      expect(kesisir(lejant, kose), 'lejant ölçek kutusuyla çakışmamalı').toBe(false)
+      const harita = await kutu('harita-paneli')
+      expect(tarih.x + tarih.width).toBeLessThanOrEqual(harita.x + harita.width)
+
+      await page.route('**/bolgeler/cok-yillik/sonuc*', (route) =>
+        route.fulfill({
+          json: {
+            durum: 'hazir', mesaj: null, bolge_sayisi: 3, versiyon: 1, hesaplama: '2026-10-12T10:00:00Z', yil_araligi: '2017–2026', yillar: [],
+            bolgeler: { type: 'FeatureCollection', features: [] },
+            ozet: [1, 2, 3].map((k) => ({ sinif: k, ad: ['Zayıf', 'Orta', 'Güçlü'][k - 1], alan_m2: 3000 * k, alan_dekar: 3 * k, pay: k / 6, fark_yuzde: (k - 2) * 10, istikrar: 0.8, istikrar_sinifi: 'yuksek', kontrol_onerisi: k === 1 })),
+            homojen: false, yayilim_yuzde: 20, yorumlar: ['Bulgu cümlesi.'], not_: 'Not.',
+          },
+        }),
+      )
+      await page.goto(`/bahceler/${garden.id}/analiz`)
+      await expect(page.getByTestId('bolge-tablosu')).toBeVisible()
+      const tasma = await page.getByTestId('bolge-tablosu').evaluate((el) => el.scrollWidth - el.clientWidth)
+      expect(tasma, 'bölge tablosu yatay taşmamalı').toBeLessThanOrEqual(1)
+    })
+  })
+
+  test.describe('390', () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+    test('lejant küçük bir çip; açılınca histogram dolu görünür', async ({ page }) => {
+      await newUser(page)
+      const garden = await createGarden(page.request, { ad: 'Mobil Lejant', lng: 27.78, lat: 38.78, sideM: 220 })
+      seedScenes(garden.id)
+      await page.goto(`/bahceler/${garden.id}`)
+      const cip = page.getByTestId('lejant-cip')
+      await expect(cip).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByTestId('histogram-lejant')).toHaveCount(0)
+      const kutu = await cip.boundingBox()
+      expect(kutu?.height ?? 0).toBeGreaterThanOrEqual(44)
+      expect(kutu?.width ?? 999).toBeLessThan(260)
+      await cip.click()
+      const lejant = page.getByTestId('histogram-lejant')
+      await expect(lejant).toBeVisible()
+      await expect(lejant.getByRole('img', { name: 'Piksel dağılımı' }).locator('rect[fill^="rgb"]')).not.toHaveCount(0)
+      await lejant.getByRole('button', { name: 'Lejantı küçült' }).click()
+      await expect(page.getByTestId('lejant-cip')).toBeVisible()
+    })
+  })
+
+  test('Bahçeler sayfasında bahçeler dolgusuz; etiketlerde kademe işareti var', async ({ page }) => {
+    await newUser(page)
+    const a = await createGarden(page.request, { ad: 'Etiketli Bahçe', lng: 27.79, lat: 38.79, sideM: 150 })
+    seedScenes(a.id)
+    await page.goto('/bahceler')
+    await expect(page.getByTestId('komsu-etiketi').first()).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('etiket-kademe').first()).toBeVisible()
+    await expect(page.getByTestId('komsu-etiketi').first()).toContainText('Etiketli Bahçe')
+  })
+})

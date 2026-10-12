@@ -65,6 +65,8 @@ export interface StatusChip {
   ad: string
   seviye: Seviye | null
   aciklama: string
+  /** Görünen seviye yazısı (Risk çipinde «orta» / «yüksek»); boşsa seviye adı */
+  etiket?: string | null
 }
 
 /** Durum kademesi (İyi · İzle · Dikkat · Sorun · Veri yok). Sayısal skor arayüze çıkmaz. */

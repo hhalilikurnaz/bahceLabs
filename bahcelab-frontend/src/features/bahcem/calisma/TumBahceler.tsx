@@ -30,7 +30,7 @@ function TumBahcelerKatmani({ gardens, tiers }: { gardens: Garden[]; tiers: Map<
     const src = map.getSource('tb') as { setData?: (d: GeoJSON.GeoJSON) => void } | undefined
     if (src?.setData) src.setData(data)
     else map.addSource('tb', { type: 'geojson', data })
-    if (!map.getLayer('tb-fill')) map.addLayer({ id: 'tb-fill', type: 'fill', source: 'tb', paint: { 'fill-color': ['get', 'renk'], 'fill-opacity': 0.38 } })
+    if (!map.getLayer('tb-fill')) map.addLayer({ id: 'tb-fill', type: 'fill', source: 'tb', paint: { 'fill-color': '#000000', 'fill-opacity': 0 } }) // dolgu yok (uydu görünür); yalnız tıklama hedefi
     if (!map.getLayer('tb-hale')) map.addLayer({ id: 'tb-hale', type: 'line', source: 'tb', paint: { 'line-color': '#ffffff', 'line-width': 5, 'line-opacity': 0.9 } })
     if (!map.getLayer('tb-line')) map.addLayer({ id: 'tb-line', type: 'line', source: 'tb', paint: { 'line-color': ['get', 'renk'], 'line-width': 2 } })
   }, [map, styleVersion, data])
@@ -48,7 +48,7 @@ function TumBahcelerKatmani({ gardens, tiers }: { gardens: Garden[]; tiers: Map<
     map.on('click', 'tb-fill', open)
     return () => void map.off('click', 'tb-fill', open)
   }, [map, navigate])
-  return <KomsuEtiketleri others={gardens} />
+  return <KomsuEtiketleri others={gardens} kademeler={tiers} />
 }
 
 /** `/bahceler`: haritada tüm bahçeler + liste (ad · ürün · dekar · kademe) + «+ Bahçe ekle». Bahçe yoksa boş durum. */

@@ -120,6 +120,7 @@ class CipYanit(BaseModel):
     ad: str
     seviye: Literal["normal", "normalin_alti", "belirgin_dusuk"] | None
     aciklama: str
+    etiket: str | None = None  # Risk çipinde «orta» / «yüksek»
 
 
 class NasilHesaplandi(BaseModel):

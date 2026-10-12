@@ -78,6 +78,8 @@ export interface ApiCip {
   ad: string
   seviye: 'normal' | 'normalin_alti' | 'belirgin_dusuk' | null
   aciklama: string
+  /** Risk çipinde «orta» / «yüksek» */
+  etiket?: string | null
 }
 
 /** Durum kademesi yanıtı: iç skor YOKTUR (arayüze sayı çıkmaz). */

@@ -41,7 +41,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <b className="text-[13.5px]">{c.ad}</b>
-                      <span className="text-[12.5px] font-semibold" style={{ color: meta?.renk }}>{meta?.ad ?? 'veri yok'}</span>
+                      <span className="text-[12.5px] font-semibold" style={{ color: meta?.renk }}>{c.etiket ?? meta?.ad ?? 'veri yok'}</span>
                     </div>
                     <p className="mt-0.5 text-[12.5px] leading-snug text-app-text-muted">{c.aciklama}</p>
                   </div>

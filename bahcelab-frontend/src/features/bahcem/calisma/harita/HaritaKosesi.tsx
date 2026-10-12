@@ -22,10 +22,10 @@ export function HaritaKosesi({ garden }: { garden: Garden }) {
   }, [map])
   const btn = 'grid h-9 w-9 place-items-center rounded-md hover:bg-app-card-hover'
   return (
-    <div className="glass flex items-center gap-3 px-2.5 py-1.5" data-testid="harita-kosesi">
+    <div className="glass flex items-center gap-3 px-2.5 py-1.5 max-[1279px]:flex-col max-[1279px]:items-start max-[1279px]:gap-1" data-testid="harita-kosesi">
       <ScaleBar pxPerMeter={ppm} />
-      <NorthArrow size={28} />
-      <div className="flex items-center gap-0.5 border-l border-app-border pl-2">
+      <span className="max-[1279px]:hidden"><NorthArrow size={28} /></span>
+      <div className="flex items-center gap-0.5 border-l border-app-border pl-2 max-[1279px]:border-l-0 max-[1279px]:pl-0">
         <button type="button" aria-label="Yakınlaştır" className={btn} onClick={() => map?.zoomIn()}><Plus className="h-4 w-4" aria-hidden /></button>
         <button type="button" aria-label="Uzaklaştır" className={btn} onClick={() => map?.zoomOut()}><Minus className="h-4 w-4" aria-hidden /></button>
         <button type="button" aria-label="Bahçeye dön" className={btn} onClick={() => map?.fitBounds(geometryBounds(garden.geometry), { padding: ODAK_PAYI, maxZoom: ODAK_MAKS_YAKINLASTIRMA })}><Crosshair className="h-4 w-4" aria-hidden /></button>

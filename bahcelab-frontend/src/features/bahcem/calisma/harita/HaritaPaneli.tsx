@@ -36,7 +36,7 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
         <KomsuEtiketleri others={others} />
         <BolgeKatmani gardenId={garden.id} visible={katman === 'bolgeler'} />
         <div className="absolute left-3.5 top-3.5 z-20"><KatmanMenusu gardenId={garden.id} /></div>
-        <div className="absolute right-3.5 top-3.5 z-10 max-[560px]:left-3.5 max-[560px]:right-auto max-[560px]:top-[66px]"><TarihKutusu gardenId={garden.id} view={view} /></div>
+        <div className="absolute right-3.5 top-3.5 z-10 max-[1279px]:left-3.5 max-[1279px]:right-auto max-[1279px]:top-[66px]"><TarihKutusu gardenId={garden.id} view={view} /></div>
         <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)]">{katman === 'bolgeler' ? <BolgeLejanti gardenId={garden.id} /> : <HistogramLejant view={view} />}</div>
         <div className="absolute bottom-9 right-3.5 z-10 max-[900px]:hidden"><HaritaKosesi garden={garden} /></div>
         {view.hata && (

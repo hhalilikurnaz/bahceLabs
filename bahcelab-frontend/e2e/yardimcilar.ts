@@ -48,6 +48,11 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
   )
 }
 
+/** Test aracı: bahçenin hava önbelleğini kayıtlı örnek veriyle doldurur (ağsız; gerçek hava servisi ve risk motoru çalışır). */
+export function seedWeather(gardenId: string): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_weather', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+}
+
 /** Test aracı: bahçeye gerçek yayım yolundan bildirim ekler (öncelik: kritik | uyari | bilgi). */
 export function seedNotification(gardenId: string, oncelik: 'kritik' | 'uyari' | 'bilgi', key: string, sekme = 'hava'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_notifications', gardenId, oncelik, key, sekme], {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useDarEkran } from '../../hooks/useDarEkran'
 import { sayi } from '../../lib/format'
 import { histogram } from '../../lib/izgara'
 import { rampCss } from '../../lib/paletler'
@@ -20,6 +21,10 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   const setSkala = useCalismaStore((s) => s.setSkala)
   const setVurgu = useCalismaStore((s) => s.setVurgu)
   const [hover, setHover] = useState<number | null>(null)
+  // Telefonda varsayılan küçük bir çip; dokununca histogramlı tam lejant açılır (masaüstünde hep açık)
+  const dar = useDarEkran()
+  const [elle, setElle] = useState<boolean | null>(null)
+  const acik = elle ?? !dar
   const bins = useMemo(() => (view.izgara ? histogram(view.izgara, view.alan, BINS) : []), [view.izgara, view.alan])
   if (!view.izgara || !view.ramp) return null
   const max = Math.max(...bins.map((b) => b.share), 1e-6)
@@ -32,9 +37,21 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   const band = view.tipikBant
   const bandVisible = band !== null && band.ust > lo && band.alt < hi
   const [dusuk, yuksek] = view.tanim.uclar
+  if (!acik) {
+    return (
+      <button type="button" onClick={() => setElle(true)} aria-expanded={false} data-testid="lejant-cip" className="glass flex min-h-11 items-center gap-2 px-3.5 text-[12.5px] font-semibold">
+        {view.tanim.ad}{degisim ? ' farkı' : ''}
+        {view.ortanca !== null && <span className="num font-normal text-app-text-muted">· ortanca {sayi(view.ortanca)}</span>}
+        <span aria-hidden>▴</span>
+      </button>
+    )
+  }
   return (
     <div className="glass w-[286px] max-w-full px-3.5 pb-2.5 pt-3" data-testid="histogram-lejant">
-      <div className="text-[12.5px] font-bold leading-tight">{view.tanim.ad}{degisim ? ' farkı' : ''}</div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12.5px] font-bold leading-tight">{view.tanim.ad}{degisim ? ' farkı' : ''}</span>
+        {dar && <button type="button" onClick={() => setElle(false)} aria-expanded aria-label="Lejantı küçült" className="grid h-11 w-11 place-items-center text-app-text-muted">▾</button>}
+      </div>
       <div className="mt-1 flex gap-3 text-[11px]" role="group" aria-label="Renk skalası">
         {(['kendi', 'genel'] as const).map((k) => (
           <button
@@ -48,7 +65,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
           </button>
         ))}
       </div>
-      <svg width={W} height={H + (bandVisible ? 8 : 0)} className="mt-2 block max-[560px]:hidden" role="img" aria-label="Piksel dağılımı" onMouseLeave={() => (setHover(null), setVurgu(null))}>
+      <svg width={W} height={H + (bandVisible ? 8 : 0)} className="mt-2 block" role="img" aria-label="Piksel dağılımı" onMouseLeave={() => (setHover(null), setVurgu(null))}>
         {bins.map((b, i) => {
           const h = Math.max(1, (b.share / max) * (H - 4))
           return (

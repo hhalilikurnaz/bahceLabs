@@ -232,7 +232,7 @@ def test_today_risk_item_is_plain_with_technical_detail_kept_separately():
     assert build_today(low, TODAY, PRIORITY, 3)[0].tur == "her_sey_yolunda"
 
 
-def test_high_pest_risk_lowers_points_and_caps_the_tier_at_watch():
+def test_high_pest_risk_lowers_points_and_caps_the_tier_at_attention():
     scenes = series(date(2026, 6, 1), [0.62] * 20)
     kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
     plain = assess(scenes, **kwargs)
@@ -242,4 +242,4 @@ def test_high_pest_risk_lowers_points_and_caps_the_tier_at_watch():
     weather = next(b for b in risky.bilesenler if b.kod == "hava")
     assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden
     assert next(b for b in heavy.bilesenler if b.kod == "hava").puan == 0
-    assert plain.durum == "iyi" and risky.durum == "izle"  # aktif risk (yüksek zararlı riski) kademeyi en fazla İzle yapar
+    assert plain.durum == "iyi" and risky.durum == "dikkat"  # yüksek zararlı riski kademeyi en fazla Dikkat yapar (orta: İzle)

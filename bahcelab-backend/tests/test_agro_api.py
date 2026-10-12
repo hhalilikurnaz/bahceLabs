@@ -292,3 +292,21 @@ async def test_medium_pest_risk_on_the_weather_tab_caps_the_tier_and_is_named(us
     assert after["durum"] == "izle" and risk["seviye"] == "normalin_alti" and "Meyve sineği · orta" in risk["aciklama"]
     assert after["nasil"]["dusuren_bilesen"] == "risk" and "en fazla İzle" in after["nasil"]["kademe_nedeni"]
     assert "skor" not in after
+
+
+async def test_high_pest_risk_caps_the_tier_at_attention_and_the_chip_says_yuksek(user_client: AsyncClient, factory, provider, monkeypatch):
+    from datetime import timedelta
+
+    from bahcelab_backend.domain.agro.risks import RiskSonucu
+    from bahcelab_backend.domain.agro.service import AgroService
+
+    async def high_risk(self, garden_row, history, weather, today):
+        return [(RiskSonucu("akdeniz_meyve_sinegi", "Meyve sineği", "yuksek", "gerekçe", today, today + timedelta(days=7), True), None, None)]
+
+    monkeypatch.setattr(AgroService, "_compute_risks", high_risk)
+    garden = await new_garden(user_client)
+    await seed_scenes(factory, garden["id"])
+    data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
+    risk = next(c for c in data["cipler"] if c["kod"] == "risk")
+    assert data["durum"] == "dikkat" and risk["etiket"] == "yüksek" and risk["seviye"] == "belirgin_dusuk"
+    assert "en fazla Dikkat" in data["nasil"]["kademe_nedeni"]

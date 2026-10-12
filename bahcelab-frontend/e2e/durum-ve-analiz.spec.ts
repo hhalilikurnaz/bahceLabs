@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createGarden, newUser, seedScenes } from './yardimcilar'
+import { createGarden, newUser, seedScenes, seedWeather } from './yardimcilar'
 
 test.describe('Durum sekmesi (kademe, sayı yok)', () => {
   test('kademe şeridi, üç çip ve «Nasıl hesaplandı?» görünür; sayısal skor hiçbir yerde yok', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
           cipler: [
             { kod: 'agac_gucu', ad: 'Ağaç gücü (NDVI)', seviye: 'normal', aciklama: 'Canlılık, bu dönemin kendi normu ile uyumlu.' },
             { kod: 'su', ad: 'Su (NDMI)', seviye: 'normal', aciklama: 'Yaprak suyu, bu dönemin kendi normu ile uyumlu.' },
-            { kod: 'risk', ad: 'Risk', seviye: 'normalin_alti', aciklama: 'Zararlı/hastalık risk tahmini: Meyve sineği · orta (teşhis değil, risk tahmini).' },
+            { kod: 'risk', ad: 'Risk', seviye: 'normalin_alti', etiket: 'orta', aciklama: 'Zararlı/hastalık risk tahmini: Meyve sineği · orta (teşhis değil, risk tahmini).' },
           ],
           nasil: {
             veri: ['Canlılık (NDVI) · Sentinel-2 10 m'], son_goruntu_tarihi: '2026-10-09',
@@ -56,10 +56,34 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
     await expect(risk).toContainText('Meyve sineği · orta')
     await expect(risk).toHaveAttribute('data-seviye', 'normalin_alti')
+    await expect(risk).toContainText('orta') // çip seviyeyi yazar: «orta» / «yüksek»
+    await expect(risk).not.toContainText('normalin altı')
     await expect(page.getByTestId('kademe-ad')).toContainText('İzle')
     await page.getByText('Nasıl hesaplandı?').click()
     await expect(page.getByTestId('kademe-nedeni')).toContainText('Meyve sineği · orta')
     await expect(page.getByTestId('kademe-nedeni')).toContainText('en fazla İzle')
+  })
+
+  test('GERÇEK ARKA UÇ (mock yok): kayıtlı hava verisi + örnek uydu serisiyle Risk çipi riski adlandırır, kademe en fazla İzle', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Gerçek Arka Uç', lng: 27.971, lat: 38.971, sideM: 200 })
+    seedScenes(garden.id) // gerçek işleme hattından geçen örnek uydu serisi
+    seedWeather(garden.id) // gerçek hava servisi + risk motoru, kayıtlı örnek veriyle (ağsız)
+    const yanit = page.waitForResponse((r) => r.url().includes('/durum') && r.request().method() === 'GET')
+    await page.goto(`/bahceler/${garden.id}`)
+    const api = (await (await yanit).json()) as { cipler: { kod: string; etiket: string | null; seviye: string }[]; durum: string }
+    const riskCip = api.cipler.find((c) => c.kod === 'risk')
+    expect(riskCip?.etiket, 'kayıtlı hava verisinde aktif risk beklenir').toMatch(/orta|yüksek/)
+    expect(['izle', 'dikkat', 'sorun']).toContain(api.durum) // aktif risk varken «İyi» olamaz
+    if (riskCip?.etiket === 'yüksek') expect(['dikkat', 'sorun']).toContain(api.durum) // yüksek risk: en fazla Dikkat
+
+    const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
+    await expect(risk).toContainText(/Meyve sineği|örümcek|Kuruma/)
+    await expect(risk).toContainText(riskCip?.etiket ?? '')
+    await expect(page.getByTestId('kademe-ad')).not.toContainText('İyi')
+    await page.getByText('Nasıl hesaplandı?').click()
+    await expect(page.getByTestId('kademe-nedeni')).toContainText(/Meyve sineği|örümcek|Kuruma/) // neden riski adıyla açıklar
+    await expect(page.getByTestId('kademe-nedeni')).toContainText(/Bu yüzden kademe|en fazla/)
   })
 
   test('görüntüsü olmayan bahçede «Veri yetersiz» ve nedeni gösterilir', async ({ page }) => {

@@ -106,6 +106,7 @@ test('Hava sekmesi: sulama ve zararlı riski kartları ön değer uyarısı ile 
   await expect(irrigation).not.toContainText('Sistem verimliliği')
   await expect(irrigation.getByTestId('irrigation-sentence')).toBeVisible()
   await expect(irrigation.getByRole('button', { name: 'Sulama sistemi seçin' })).toBeVisible()
+  await expect(irrigation.getByTestId('rule-badge')).toHaveCount(1) // «Ön değer» rozeti tek
 
   const risks = page.getByTestId('risks-card')
   await expect(risks).toBeVisible()

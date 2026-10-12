@@ -108,7 +108,10 @@ test.describe('mobil 390 px', () => {
     const g = await createGarden(page.request, { ad: 'Mobil Erişim', lng: 27.6, lat: 38.6, sideM: 200 })
     seedScenes(g.id)
     await page.goto(`/bahceler/${g.id}`)
-    await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('lejant-cip')).toBeVisible({ timeout: 30_000 }) // telefonda lejant küçük çip
+    expect(await audit(page, { touch: true })).toEqual([])
+    await page.getByTestId('lejant-cip').click() // açık lejant da dokunma hedeflerini karşılar
+    await expect(page.getByTestId('histogram-lejant')).toBeVisible()
     expect(await audit(page, { touch: true })).toEqual([])
   })
 })

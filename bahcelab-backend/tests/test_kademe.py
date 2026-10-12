@@ -37,7 +37,10 @@ def test_score_maps_to_four_tiers(score: int, expected: str) -> None:
 
 def test_active_risk_caps_at_watch_but_does_not_hide_worse_tiers() -> None:
     assert label_from_score(95, ["sari"], CFG) == "izle"
-    assert label_from_score(95, [], CFG, risk_active=True) == "izle"  # yüksek zararlı riski
+    assert label_from_score(95, [], CFG, risk_level="orta") == "izle"  # orta zararlı riski: en fazla İzle
+    assert label_from_score(95, [], CFG, risk_level="yuksek") == "dikkat"  # yüksek zararlı riski: en fazla Dikkat
+    assert label_from_score(75, [], CFG, risk_level="yuksek") == "dikkat" and label_from_score(55, [], CFG, risk_level="orta") == "dikkat"
+    assert label_from_score(30, [], CFG, risk_level="yuksek") == "sorun"  # daha kötü kademe yükseltilmez
     assert label_from_score(75, ["sari"], CFG) == "izle"
     assert label_from_score(55, ["sari"], CFG) == "dikkat"  # zaten daha düşük: yükseltilmez
     assert label_from_score(30, ["sari"], CFG) == "sorun"
@@ -71,9 +74,10 @@ def test_sudden_vigor_drop_names_the_component_that_lowered_the_tier() -> None:
 def test_risk_chip_and_cap_explain_themselves() -> None:
     scenes = series(date(2026, 6, 1), [0.62] * 20)
     result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG, active_risks=[AktifRisk("Meyve sineği", "yuksek")])
-    assert result.durum == "izle"  # skor yüksek ama aktif risk var
-    assert next(c for c in result.cipler if c.kod == "risk").seviye == "belirgin_dusuk"
-    assert "risk" in result.kademe_nedeni.lower() and "en fazla" in result.kademe_nedeni
+    assert result.durum == "dikkat"  # skor yüksek ama yüksek risk var: en fazla Dikkat
+    risk = next(c for c in result.cipler if c.kod == "risk")
+    assert risk.seviye == "belirgin_dusuk" and risk.etiket == "yüksek"
+    assert "risk" in result.kademe_nedeni.lower() and "en fazla Dikkat" in result.kademe_nedeni
 
 
 def test_medium_pest_risk_names_the_pest_caps_the_tier_and_explains_it() -> None:
@@ -84,13 +88,14 @@ def test_medium_pest_risk_names_the_pest_caps_the_tier_and_explains_it() -> None
     result = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "orta")])
     assert plain.durum == "iyi" and result.durum == "izle"
     risk = next(c for c in result.cipler if c.kod == "risk")
-    assert risk.seviye == "normalin_alti" and "Meyve sineği · orta" in risk.aciklama
+    assert risk.seviye == "normalin_alti" and risk.etiket == "orta" and "Meyve sineği · orta" in risk.aciklama  # çip seviyeyi yazar
     assert result.dusuren == "risk"
     assert "Meyve sineği · orta" in result.kademe_nedeni and "en fazla İzle" in result.kademe_nedeni
     # düşük risk kademeyi etkilemez; iki risk birlikte adlanır
     assert assess(scenes, **kwargs, active_risks=[]).durum == "iyi"
     both = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "orta"), AktifRisk("Kırmızı örümcek", "yuksek")])
     assert next(c for c in both.cipler if c.kod == "risk").seviye == "belirgin_dusuk"
+    assert both.durum == "dikkat" and next(c for c in both.cipler if c.kod == "risk").etiket == "yüksek"  # en yüksek risk seviyesi yazılır
     assert "Kırmızı örümcek · yüksek" in both.kademe_nedeni
 
 

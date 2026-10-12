@@ -131,6 +131,7 @@ class Cip:
     ad: str
     seviye: BilesenSeviyesi | None
     aciklama: str
+    etiket: str | None = None  # görünen seviye yazısı: Risk çipinde «orta» / «yüksek»; boşsa seviye adı kullanılır
 
 
 @dataclass(frozen=True)
@@ -249,13 +250,18 @@ def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risks: 
 
 
 # ----------------------------------------------------------------------------- etiket ve güven
-def label_from_score(score: int, severities: list[Seviye], cfg: ScoreConfig, *, risk_active: bool = False) -> Durum:
-    """Skordan kademe. Aktif risk (uyarı ya da yüksek zararlı riski) en iyi «izle» bırakır, daha kötü kademeyi yükseltmez;
-    kırmızı uyarı en az «dikkat» yapar (zaten «sorun» ise öyle kalır)."""
+RiskSeviyesi = Literal["orta", "yuksek"]
+
+
+def label_from_score(score: int, severities: list[Seviye], cfg: ScoreConfig, *, risk_level: RiskSeviyesi | None = None) -> Durum:
+    """Skordan kademe. Aktif risk kademeyi sınırlar: uyarı ya da ORTA zararlı riski en iyi «izle», YÜKSEK zararlı riski en iyi
+    «dikkat» bırakır; daha kötü kademe yükseltilmez. Kırmızı uyarı en az «dikkat» yapar (zaten «sorun» ise öyle kalır)."""
     label: Durum = "iyi" if score >= cfg.good_min else "izle" if score >= cfg.watch_min else "dikkat" if score >= cfg.caution_min else "sorun"
     if "kirmizi" in severities and label in ("iyi", "izle"):
         return "dikkat"
-    if (severities or risk_active) and label == "iyi":
+    if risk_level == "yuksek" and label in ("iyi", "izle"):
+        return "dikkat"
+    if (severities or risk_level) and label == "iyi":
         return "izle"
     return label
 
@@ -266,7 +272,7 @@ def active_risks_of(risks: Sequence[tuple[RiskSonucu, object, object]]) -> list[
 
 
 def derive_status(
-    *, has_data: bool, severities: list[Seviye], score: int | None, cfg: ScoreConfig | None = None, risk_active: bool = False
+    *, has_data: bool, severities: list[Seviye], score: int | None, cfg: ScoreConfig | None = None, risk_level: RiskSeviyesi | None = None
 ) -> Durum:
     """TEK durum fonksiyonu (liste, harita rengi ve Durum sekmesi bunu kullanır).
 
@@ -279,8 +285,10 @@ def derive_status(
     if not has_data:
         return "veri_yok"
     if score is not None:
-        return label_from_score(score, severities, cfg, risk_active=risk_active)
-    return "izle" if (severities or risk_active) else "iyi"
+        return label_from_score(score, severities, cfg, risk_level=risk_level)
+    if risk_level == "yuksek":
+        return "dikkat"
+    return "izle" if (severities or risk_level) else "iyi"
 
 
 def confidence(
@@ -340,7 +348,7 @@ def build_chips(components: list[Bilesen], cfg: ScoreConfig, risks: list[AktifRi
     return [
         Cip("agac_gucu", CIP_ADLARI["agac_gucu"], _level(vigor.puan if vigor and vigor.kullanilabilir else None, cfg), vigor.neden if vigor else ""),
         Cip("su", CIP_ADLARI["su"], _level(water.puan if water and water.kullanilabilir else None, cfg), water.neden if water else ""),
-        Cip("risk", CIP_ADLARI["risk"], risk_level, risk_reason),
+        Cip("risk", CIP_ADLARI["risk"], risk_level, risk_reason, etiket=("yüksek" if any(r.seviye == "yuksek" for r in risks) else "orta") if risks else None),
     ]
 
 
@@ -357,7 +365,8 @@ def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool, risks: list[
         parts.append(f"{lowered.ad} {SEVIYE_ADLARI[lowered.seviye or 'normal']}: {lowered.aciklama} Bu yüzden kademe {name}.")
     if risk_capped:
         names = f" ({', '.join(r.metin for r in risks)})" if risks else ""
-        parts.append(f"Aktif risk{names} olduğu için kademe en fazla İzle olabilir.")
+        ceiling = "Dikkat" if risks and any(r.seviye == "yuksek" for r in risks) else "İzle"
+        parts.append(f"Aktif risk{names} olduğu için kademe en fazla {ceiling} olabilir.")
     if not parts:
         parts.append("Ağaç gücü, su ve risk normal; kademe İyi." if durum == "iyi" else f"Kademe {name}.")
     return " ".join(parts), (lowered.kod if lowered is not None else None)
@@ -386,11 +395,13 @@ def assess(
     cfg = cfg or ScoreConfig.from_settings()
     ordered = sorted(scenes, key=lambda s: s.tarih)
     risks = active_risks or []
-    risk_active = bool(risks)
+    risk_level: RiskSeviyesi | None = "yuksek" if any(r.seviye == "yuksek" for r in risks) else ("orta" if risks else None)
+
+    severities_all: list[Seviye] = [*sat_severities, *(weather_severities or [])]
 
     def result(durum: Durum, score: int | None, components: list[Bilesen], trust: Guven, sufficient: bool, reason: str | None) -> Skor:
         chips = build_chips(components, cfg, risks)
-        capped = score is not None and durum == "izle" and label_from_score(score, [], cfg) == "iyi"  # kademeyi yalnız risk düşürdü
+        capped = score is not None and durum in ("izle", "dikkat") and label_from_score(score, severities_all, cfg, risk_level=None) != durum  # kademeyi risk sınırladı
         text, lowered = explain_tier(durum, chips, capped, risks)
         return Skor(durum, score, components, trust, summary_sentence(durum), sufficient, reason, chips, text, lowered)
 
@@ -418,7 +429,7 @@ def assess(
 
     base = baseline([(d, v) for d, v in series["canlilik"] if d < latest], latest, cfg)
     trust = confidence(base, history_days, image_age, cfg)
-    severities: list[Seviye] = [*sat_severities, *(weather_severities or [])]
+    severities = severities_all
 
     stale = image_age > cfg.stale_image_days
     if stale or not vigor.kullanilabilir:
@@ -427,11 +438,11 @@ def assess(
             if stale
             else vigor.neden
         )
-        durum = derive_status(has_data=True, severities=severities, score=None, cfg=cfg, risk_active=risk_active)
+        durum = derive_status(has_data=True, severities=severities, score=None, cfg=cfg, risk_level=risk_level)
         return result(durum, None, components, trust, False, reason)
 
     usable = [c for c in components if c.kullanilabilir and c.puan is not None]
     total_weight = sum(c.agirlik for c in usable)
     score = round(sum((c.puan or 0) * c.agirlik for c in usable) / total_weight) if total_weight > 0 else None
-    durum = derive_status(has_data=True, severities=severities, score=score, cfg=cfg, risk_active=risk_active)
+    durum = derive_status(has_data=True, severities=severities, score=score, cfg=cfg, risk_level=risk_level)
     return result(durum, score, components, trust, True, None)

@@ -22,17 +22,17 @@ function YilTablosu({ yillar }: { yillar: MultiyearYear[] }) {
         Yıl yıl veri ({yillar.length} yıl)
         <span aria-hidden className="text-app-text-muted">⌄</span>
       </summary>
-      <div className="overflow-x-auto border-t border-app-border">
-        <table className="w-full min-w-[400px] text-left text-[12.5px]">
+      <div className="@container border-t border-app-border">
+        <table className="w-full table-fixed text-left text-[12.5px]">
           <thead className="text-[11px] uppercase tracking-[.06em] text-app-text-dim">
-            <tr><th className="px-3 py-1.5 font-semibold">Yıl</th><th className="px-2 py-1.5 text-right font-semibold">Net sahne</th><th className="px-2 py-1.5 text-right font-semibold">Dönem kapsamı</th><th className="px-3 py-1.5 font-semibold">Durum</th></tr>
+            <tr><th className="px-3 py-1.5 font-semibold">Yıl</th><th className="px-2 py-1.5 text-right font-semibold">Net sahne</th><th className="px-2 py-1.5 text-right font-semibold @max-[400px]:hidden">Dönem kapsamı</th><th className="px-3 py-1.5 font-semibold">Durum</th></tr>
           </thead>
           <tbody>
             {yillar.map((y) => (
               <tr key={y.yil} className="border-t border-app-border" data-testid="yil-satiri" data-yil={y.yil} title={y.yetersiz_nedeni ?? y.uyumsuz_nedeni ?? undefined}>
                 <th scope="row" className="num px-3 py-1.5 font-semibold">{y.yil}{y.kismi ? ' · kısmi yıl' : ''}</th>
                 <td className="num px-2 py-1.5 text-right">{y.sahne_sayisi}</td>
-                <td className="num px-2 py-1.5 text-right">{y.donem_kapsami === null ? '—' : `%${Math.round(y.donem_kapsami * 100)}`}</td>
+                <td className="num px-2 py-1.5 text-right @max-[400px]:hidden">{y.donem_kapsami === null ? '—' : `%${Math.round(y.donem_kapsami * 100)}`}</td>
                 <td className="px-3 py-1.5">{yilDurumu(y)}</td>
               </tr>
             ))}
