@@ -4,12 +4,14 @@ import { createGarden, newUser, seedScenes } from './yardimcilar'
 /**
  * Performans eşikleri (aşılırsa test kırmızı). Başsız ortamda yazılım oluşturucu (SwiftShader) kullanıldığı için 60 fps hedefi
  * gerçek GPU'da, burada ortam değişkeniyle ayarlanabilen taban değer sınanır; ölçülen değerler rapora yazılır.
- *   E2E_KATMAN_MAKS_MS (varsayılan 150) · E2E_FPS_MIN (varsayılan 30) · E2E_KARE_P95_MAKS_MS (varsayılan 66)
+ *   E2E_KATMAN_MAKS_MS (medyan, varsayılan 150) · E2E_KATMAN_P95_MAKS_MS (varsayılan 200) · E2E_FPS_MIN (varsayılan 30) · E2E_KARE_P95_MAKS_MS (varsayılan 66)
  */
-const KATMAN_MAKS_MS = Number(process.env.E2E_KATMAN_MAKS_MS ?? 150)
+const KATMAN_MAKS_MS = Number(process.env.E2E_KATMAN_MAKS_MS ?? 150) // medyan
+const KATMAN_P95_MAKS_MS = Number(process.env.E2E_KATMAN_P95_MAKS_MS ?? 200)
 const FPS_MIN = Number(process.env.E2E_FPS_MIN ?? 30)
 const KARE_P95_MAKS_MS = Number(process.env.E2E_KARE_P95_MAKS_MS ?? 66)
 
+const yuzdelik = (v: number[], q: number) => [...v].sort((a, b) => a - b)[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)]
 const medyan = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)]
 
 test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yeterli', async ({ page }, testInfo) => {
@@ -44,6 +46,7 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   }
   const med = medyan(sureler)
   const max = Math.max(...sureler)
+  const p95Katman = yuzdelik(sureler, 0.95)
 
   // 2) Harita sürükleme: rAF kare süreleri
   const box = await page.getByTestId('harita-paneli').boundingBox()
@@ -80,10 +83,11 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   const sirali = [...kareler].sort((a, b) => a - b)
   const p95 = sirali[Math.floor(sirali.length * 0.95)] ?? 0
 
-  const sonuc = { katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanOlcumleri: sureler.map(Math.round), fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
+  const sonuc = { katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanP95Ms: Math.round(p95Katman), katmanOlcumleri: sureler.map(Math.round), fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, KATMAN_P95_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
   console.log('PERFORMANS ' + JSON.stringify(sonuc))
   await testInfo.attach('performans.json', { body: JSON.stringify(sonuc, null, 2), contentType: 'application/json' })
 
+  expect(p95Katman, `katman değişimi p95 ${Math.round(p95Katman)} ms (eşik ${KATMAN_P95_MAKS_MS})`).toBeLessThanOrEqual(KATMAN_P95_MAKS_MS)
   expect(med, `katman değişimi medyanı ${Math.round(med)} ms (eşik ${KATMAN_MAKS_MS})`).toBeLessThan(KATMAN_MAKS_MS)
   expect(fps, `harita fps ${fps.toFixed(1)} (eşik ${FPS_MIN})`).toBeGreaterThanOrEqual(FPS_MIN)
   expect(p95, `kare süresi p95 ${Math.round(p95)} ms (eşik ${KARE_P95_MAKS_MS})`).toBeLessThan(KARE_P95_MAKS_MS)

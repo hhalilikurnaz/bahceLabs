@@ -109,7 +109,8 @@ from bahcelab_backend.domain.agro.score import AY_ADLARI, BandRef  # noqa: E402
 
 
 def band(month: int = 10, median: float = 0.60, mad: float = 0.02, years: int = 9) -> BandRef:
-    return BandRef(ay=month, yil_sayisi=years, yillar=list(range(2016, 2016 + years)), median=median, mad=mad)
+    decile = years >= 8
+    return BandRef(ay=month, yil_sayisi=years, yillar=list(range(2016, 2016 + years)), p25=median - mad, p50=median, p75=median + mad, p10=median - 2 * mad if decile else None, onluk_yeterli=decile)
 
 
 def october_scenes(ndvi_last: float) -> list[SceneValue]:
@@ -127,7 +128,7 @@ def test_tree_vigor_chip_follows_the_normal_band_not_the_recent_weeks() -> None:
     result = assess(low, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands=bands)
     chip = next(c for c in result.cipler if c.kod == "agac_gucu")
     assert chip.seviye == "belirgin_dusuk" and result.durum != "iyi" and result.dusuren == "agac_gucu"
-    assert "bandı" in chip.aciklama and "altında" in chip.aciklama
+    assert "bandının en düşüğünde" in chip.aciklama
 
 
 def test_band_only_penalises_values_below_the_median() -> None:
@@ -148,7 +149,7 @@ def test_confidence_is_told_in_terms_of_the_band_and_its_years() -> None:
 def test_insufficient_band_falls_back_to_own_history_and_says_so() -> None:
     scenes = october_scenes(0.60)
     today = scenes[-1].tarih
-    short = BandRef(ay=today.month, yil_sayisi=3, yillar=[2023, 2024, 2025], median=0.6, mad=0.02)
+    short = BandRef(ay=today.month, yil_sayisi=3, yillar=[2023, 2024, 2025], p25=0.58, p50=0.6, p75=0.62)
     result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": short})
     assert "yetersiz geçmiş" in result.guven.aciklama.lower()
 
@@ -161,3 +162,45 @@ def test_how_computed_text_is_at_most_three_short_sentences_and_names_a_risk_onc
     text = " ".join(result.cumleler)
     assert text.count("Meyve sineği") == 1 and "normalin altı" not in text  # aynı risk iki kez sayılmaz; seviye yazılır
     assert "orta" in text and "en fazla İzle" in text and f"{AY_ADLARI[today.month]} bandı" in text
+
+
+# ----------------------------------------------------------------------------- tutarlılık: çip, çubuk ve kademe AYNI bant kuralı
+from bahcelab_backend.domain.acquisitions.normal_bands import (  # noqa: E402
+    MonthBand,
+    position_in_band,
+)
+
+
+@pytest.mark.parametrize(
+    ("value", "position", "level"),
+    [(0.64, "ust", "normal"), (0.60, "normal", "normal"), (0.585, "normal", "normal"), (0.57, "alt", "normalin_alti"), (0.55, "en_dusuk", "belirgin_dusuk")],
+)
+def test_chip_and_bar_use_the_same_band_rule(value: float, position: str, level: str) -> None:
+    ref = band(median=0.60, mad=0.02)  # p10 0,56 · p25 0,58 · p75 0,62
+    scenes = october_scenes(value)
+    today = scenes[-1].tarih
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": band(month=today.month)})
+    chip = next(c for c in result.cipler if c.kod == "agac_gucu")
+    month_band = MonthBand(today.month, ref.yil_sayisi, ref.yillar, p10=ref.p10, p25=ref.p25, p50=ref.p50, p75=ref.p75, ceyrek_yeterli=True, onluk_yeterli=True)
+    assert position_in_band(value, month_band) == position  # çubuk
+    assert chip.seviye == level  # çip: aynı etiket
+
+
+def test_value_below_the_median_but_inside_the_quartile_band_is_normal_everywhere() -> None:
+    scenes = october_scenes(0.59)  # ortancanın altında, p25 (0,58) üstünde
+    today = scenes[-1].tarih
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": band(month=today.month)})
+    assert next(c for c in result.cipler if c.kod == "agac_gucu").seviye == "normal"
+    assert result.durum == "iyi"
+
+
+def test_risk_chip_label_and_description_come_from_the_same_active_risks_even_without_images() -> None:
+    risks = [AktifRisk("Meyve sineği", "orta")]
+    for scenes in ([], october_scenes(0.60)):
+        today = scenes[-1].tarih if scenes else date(2026, 10, 10)
+        result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, active_risks=risks)
+        chip = next(c for c in result.cipler if c.kod == "risk")
+        assert chip.etiket == "orta" and "Meyve sineği · orta" in chip.aciklama and "görünmüyor" not in chip.aciklama
+    none = assess([], spans=SPANS, sat_severities=[], weather_severities=[], today=date(2026, 10, 10), cfg=CFG)
+    chip = next(c for c in none.cipler if c.kod == "risk")
+    assert chip.etiket is None and "Meyve sineği" not in chip.aciklama

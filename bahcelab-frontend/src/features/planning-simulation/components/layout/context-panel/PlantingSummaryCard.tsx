@@ -54,7 +54,7 @@ export function PlantingSummaryCard({
             label="Alan"
             value={
               summary.totalAreaHa !== null
-                ? `${summary.totalAreaHa.toFixed(2)} ha`
+                ? `${(summary.totalAreaHa * 10).toFixed(1).replace(".", ",")} da`
                 : null
             }
           />

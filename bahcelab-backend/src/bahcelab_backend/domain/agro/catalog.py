@@ -140,9 +140,6 @@ class NormalBant(KuralBlok):
     asgari_yil_ceyrek: int = Field(ge=2)  # p25–p75 (ve ortanca)
     asgari_yil_onluk: int = Field(ge=2)  # p10–p90
     ilk_yil: int = 2015
-    # Normal banda göre karar: z = (değer − ortanca) / (1,4826·MAD). z ≥ −sapma_normal → tam puan; z ≤ −sapma_sifir → sıfır puan (yalnız ortancanın ALTI cezalandırılır)
-    sapma_normal: float = 1.0
-    sapma_sifir: float = 3.0
 
     @model_validator(mode="after")
     def _ordered(self) -> NormalBant:

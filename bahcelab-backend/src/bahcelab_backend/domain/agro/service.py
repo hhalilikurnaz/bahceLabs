@@ -6,8 +6,12 @@ import uuid
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
+from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
+from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro.irrigation import DayInput, IrrigationResult, StageKc, recommend
 from bahcelab_backend.domain.agro.repository import AgroRepository
@@ -83,12 +87,18 @@ def scene_values(scenes: list[SceneWithIndices]) -> list[SceneValue]:
     ]
 
 
-def satellite_severities(scenes: list[SceneWithIndices]) -> tuple[list[Seviye], list[tuple[Seviye, str, str]]]:
+async def acquisition_values(session: AsyncSession, garden_id: uuid.UUID) -> list[SceneValue]:
+    """Net edinimlerin bahçe medyanları (normal bantların ve gösterge çubuklarının kullandığı değer)."""
+    rows = await AcquisitionRepository(session).net_with_stats(garden_id, SOURCE_ID)
+    return [SceneValue(a.tarih, {st.indeks: st.medyan for st in stats if st.indeks in ("ndvi", "ndmi")}) for a, stats in rows if stats]
+
+
+def satellite_severities(scenes: list[SceneWithIndices]) -> tuple[list[Seviye], list[tuple[Seviye, str, str, str | None]]]:
     alerts = build_alerts(scenes)
-    levels: list[tuple[Seviye, str, str]] = [
-        ("kirmizi" if a.oncelik == "yuksek" else "sari", a.baslik, a.mesaj) for a in alerts
+    levels: list[tuple[Seviye, str, str, str | None]] = [
+        ("kirmizi" if a.oncelik == "yuksek" else "sari", a.baslik, a.mesaj, a.ayrinti) for a in alerts
     ]
-    return [lvl for lvl, _, _ in levels], levels
+    return [lvl for lvl, _, _, _ in levels], levels
 
 
 def score_spans() -> dict[str, float]:
@@ -435,8 +445,9 @@ class AgroService:
             # Hava bileşeni: don/sıcak uyarıları (etiketi sınırlar); yüksek zararlı riski yalnızca puanı düşürür
             weather_levels = [a.seviye for a in weather.uyarilar]
         bands = (await band_refs_for(self.ndvi.session, [garden_id], today.month)).get(garden_id, {})
+        values = await acquisition_values(self.ndvi.session, garden_id) or scene_values(scenes)  # bant ve bugünkü değer AYNI veri hattından (edinim medyanı)
         result = assess(
-            scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
+            values, spans=score_spans(), sat_severities=sat_levels,
             weather_severities=weather_levels, today=today, cfg=ScoreConfig.from_settings(self.settings),
             active_risks=active_risks_of(risks), bands=bands,
         )

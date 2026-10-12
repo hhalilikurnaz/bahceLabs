@@ -510,6 +510,10 @@ def test_alerts_merge_into_one_event_when_indices_drop_in_the_same_area():
     # Bir olay = bir uyarı: bireysel uyarılar çoklu uyarıda erir
     assert len(alerts) == 1 and alerts[0].tur == "coklu_indeks" and alerts[0].oncelik == "yuksek"
     assert set(alerts[0].indeksler) == {"ndvi", "ndre"} and "saha kontrolü" in alerts[0].mesaj
+    import re
+
+    assert re.search(r"≈ \d+,\d da", alerts[0].mesaj) and "m²" not in alerts[0].mesaj  # alan dönüm; kısa mesaj kesilmez
+    assert len(alerts[0].mesaj) < 100 and alerts[0].ayrinti and "normunun" in alerts[0].ayrinti  # ayrıntı açılırda
 
     # Bölgeler farklı yerlerdeyse öncelik yükselmez
     far = dict(

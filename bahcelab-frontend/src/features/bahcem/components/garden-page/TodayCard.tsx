@@ -32,7 +32,13 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
               <Icon className={cx('h-5 w-5 shrink-0', done ? 'text-app-success' : TONE[item.oncelik])} aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="text-body font-semibold leading-snug text-app-text">{item.baslik}</p>
-                <p className="line-clamp-2 text-small text-app-text-muted" title={item.metin}>{item.metin}</p>
+                <p className="text-small text-app-text-muted">{item.metin}</p>
+                {item.ayrinti && item.tur === 'indeks_dususu' && (
+                  <details className="mt-1 text-small text-app-text-muted" data-testid="today-ayrinti">
+                    <summary className="flex min-h-9 cursor-pointer items-center font-semibold text-app-text max-[560px]:min-h-11">Ayrıntı</summary>
+                    <p className="pb-1">{item.ayrinti}</p>
+                  </details>
+                )}
               </div>
               {!done && (
                 <Link

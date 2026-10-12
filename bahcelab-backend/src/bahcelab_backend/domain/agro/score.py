@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from bahcelab_backend.config import Settings, get_settings
+from bahcelab_backend.domain.acquisitions.normal_bands import MonthBand, position_in_band
 from bahcelab_backend.domain.agro.catalog import load_catalog
 from bahcelab_backend.domain.agro.risks import RiskSonucu
 
@@ -45,8 +46,6 @@ class ScoreConfig:
     component_low_max: int
     band_min_years: int
     band_high_years: int
-    deviation_normal: float
-    deviation_zero: float
     tolerance_share: float
     zero_share: float
     alert_points: dict[str, int]
@@ -79,8 +78,6 @@ class ScoreConfig:
             component_low_max=tiers.bilesen_belirgin_dusuk_max,
             band_min_years=load_catalog().normal_bant.asgari_yil_ceyrek,
             band_high_years=load_catalog().normal_bant.asgari_yil_onluk,
-            deviation_normal=load_catalog().normal_bant.sapma_normal,
-            deviation_zero=load_catalog().normal_bant.sapma_sifir,
             tolerance_share=s.score_tolerance_share,
             zero_share=s.score_zero_share,
             alert_points={"sari": s.score_alert_points_yellow, "kirmizi": s.score_alert_points_red},
@@ -99,13 +96,20 @@ class ScoreConfig:
 
 @dataclass(frozen=True)
 class BandRef:
-    """Bahçenin takvim ayı normal bandı (acquisitions/normal_bands): ortanca ve MAD (yıl değerlerinden), bantta kullanılan yıllar."""
+    """Bahçenin takvim ayı normal bandı (acquisitions/normal_bands): p10/p25/ortanca/p75 ve bantta kullanılan yıllar."""
 
     ay: int
     yil_sayisi: int
     yillar: list[int]
-    median: float
-    mad: float  # yıl değerlerinin ortancadan mutlak sapmasının ortancası (ham, ölçeklenmemiş)
+    p25: float
+    p50: float
+    p75: float
+    p10: float | None = None  # p10–p90 için en az 8 yıl gerekir
+    onluk_yeterli: bool = False
+
+    def konum(self, value: float) -> str:
+        """Tek kural (çip, çubuk ve kademe aynı): p25–p75 normal · p10–p25 alt kısmı · p10 altı en düşüğü · p75 üstü 'ust'."""
+        return position_in_band(value, MonthBand(self.ay, self.yil_sayisi, self.yillar, p10=self.p10, p25=self.p25, p50=self.p50, p75=self.p75, ceyrek_yeterli=True, onluk_yeterli=self.onluk_yeterli)) or "normal"
 
 
 @dataclass(frozen=True)
@@ -211,15 +215,12 @@ def _percent_text(latest: float, base: float) -> str:
     return f"%{round(pct)}"
 
 
-def band_points(value: float, band: BandRef, cfg: ScoreConfig) -> int:
-    """Normal banda göre puan (0–100): z = (değer − ortanca)/(1,4826·MAD); yalnız ortancanın ALTI cezalandırılır."""
-    scale = max(1.4826 * band.mad, 1e-3)
-    z = (value - band.median) / scale
-    if z >= -cfg.deviation_normal:
-        return 100
-    if z <= -cfg.deviation_zero:
-        return 0
-    return round(100 * (cfg.deviation_zero + z) / (cfg.deviation_zero - cfg.deviation_normal))
+BAND_PUANI = {"ust": 100, "normal": 100, "alt": 70, "en_dusuk": 30}  # çip eşikleriyle uyumlu: ≥90 normal · ≤49 belirgin düşük
+
+
+def band_points(value: float, band: BandRef) -> int:
+    """Normal banda göre puan: p25 ve üstü 100 (normal), p10–p25 70 (normalin alt kısmı), p10 altı 30 (belirgin düşük)."""
+    return BAND_PUANI[band.konum(value)]
 
 
 def usable_band(band: BandRef | None, month: int, cfg: ScoreConfig) -> BandRef | None:
@@ -241,9 +242,13 @@ def index_component(
     latest = next(v for d, v in reversed(series) if d <= latest_date)
     ref = usable_band(band, latest_date.month, cfg)
     if ref is not None:  # karar bahçenin kendi normal bandına göre (ADR 0015)
-        points = band_points(latest, ref, cfg)
+        position = ref.konum(latest)
+        points = BAND_PUANI[position]
         month = AY_ADLARI[ref.ay]
-        reason = f"{name}, {month} bandı ile uyumlu." if points == 100 else f"{name}, {month} bandının ortancasının altında."
+        reason = {
+            "alt": f"{name}, {month} bandının alt kısmında.",
+            "en_dusuk": f"{name}, {month} bandının en düşüğünde.",
+        }.get(position, f"{name}, {month} bandı ile uyumlu.")
         return Bilesen(code, name, points, weight, True, reason)
     base = baseline([(d, v) for d, v in series if d < latest_date], latest_date, cfg)
     if base is None:
@@ -394,6 +399,10 @@ def build_chips(components: list[Bilesen], cfg: ScoreConfig, risks: list[AktifRi
     reasons = [c.neden for c in sorted(alert_parts, key=lambda c: c.puan or 0) if (c.puan or 0) < 100]
     risk_reason = " ".join(reasons) or next((c.neden for c in alert_parts), "Uyarı ve risk değerlendirilemedi.")
     risk_level = _level(risk_points, cfg)
+    if risks:  # etiket ile açıklama AYNI kaynaktan: aktif riskler adıyla yazılır, «risk görünmüyor» denemez
+        risk_reason = f"Zararlı/hastalık risk tahmini: {', '.join(r.metin for r in risks)} (teşhis değil, risk tahmini)."
+        extra = [c.neden for c in sorted(alert_parts, key=lambda c: c.puan or 0) if (c.puan or 0) < 100 and 'risk tahmini' not in c.neden]
+        risk_reason = " ".join([*extra, risk_reason])
     if risks:  # Risk çipi zararlı/hastalık motorunu da kapsar: «Meyve sineği · orta» (puandan bağımsız: orta ve üstü = normalin altı)
         by_risk: BilesenSeviyesi = "belirgin_dusuk" if any(r.seviye == "yuksek" for r in risks) else "normalin_alti"
         worse: dict[str | None, int] = {None: -1, "normal": 0, "normalin_alti": 1, "belirgin_dusuk": 2}
@@ -474,7 +483,7 @@ def assess(
             Bilesen("canlilik", COMPONENT_NAMES["canlilik"], None, cfg.weights["canlilik"], False, "Henüz net uydu görüntüsü yok."),
             Bilesen("yaprak_suyu", COMPONENT_NAMES["yaprak_suyu"], None, cfg.weights["yaprak_suyu"], False, "Henüz net uydu görüntüsü yok."),
             alerts_component([], cfg, has_data=False),
-            weather_component(weather_severities, cfg),
+            weather_component(weather_severities, cfg, risks),
         ]
         reason = "Henüz net uydu görüntüsü yok; görüntü geldikçe durum hesaplanacak."
         durum_no_data = derive_status(has_data=False, severities=list(weather_severities or []), score=None, cfg=cfg)

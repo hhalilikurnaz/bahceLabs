@@ -12,8 +12,13 @@ from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
-from bahcelab_backend.domain.agro.score import AktifRisk, BandRef, ScoreConfig, assess
-from bahcelab_backend.domain.agro.service import satellite_severities, scene_values, score_spans
+from bahcelab_backend.domain.agro.score import AktifRisk, BandRef, SceneValue, ScoreConfig, assess
+from bahcelab_backend.domain.agro.service import (
+    acquisition_values,
+    satellite_severities,
+    scene_values,
+    score_spans,
+)
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
@@ -60,10 +65,11 @@ class GardenOverviewService:
         local_month = datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).month
         band_map = await band_refs_for(self.ndvi.session, ids, local_month)  # liste de Durum sekmesi gibi normal banda göre karar verir
 
+        acq_values = {gid: await acquisition_values(self.ndvi.session, gid) for gid in ids}  # Durum sekmesiyle AYNI değer (edinim medyanı)
         now_utc = datetime.now(UTC)
         local = now_utc.astimezone(ZoneInfo(TIMEZONE))
         items = [
-            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_active.get(row.garden.id, []), band_map.get(row.garden.id, {}))
+            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_active.get(row.garden.id, []), band_map.get(row.garden.id, {}), acq_values.get(row.garden.id, []))
             for row in rows
         ]
         totals = Toplamlar(
@@ -98,6 +104,7 @@ class GardenOverviewService:
         local: datetime,
         active_risks: list[dict[str, str]] | None = None,
         bands: dict[str, BandRef] | None = None,
+        values: list[SceneValue] | None = None,
     ) -> BahceOzeti:
         garden = row.garden
         series = index_series(scenes, indeks)
@@ -145,7 +152,7 @@ class GardenOverviewService:
             weather_levels = [a.seviye for a in weather_alerts(weather[0], local.date(), local.strftime("%Y-%m-%dT%H:%M"))]
 
         result = assess(
-            scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
+            values or scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
             weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg, active_risks=[AktifRisk(r["ad"], r["seviye"]) for r in (active_risks or [])],  # type: ignore[arg-type]
             bands=bands,
         )

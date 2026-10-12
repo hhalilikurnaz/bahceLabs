@@ -30,7 +30,7 @@ class Girdi:
     hava_uyarilari: list[tuple[Literal["sari", "kirmizi"], str, str]]  # (seviye, başlık, mesaj)
     zararli_riskleri: list[tuple[str, str, str, str]]  # (seviye düşük/orta/yüksek, ad, sade cümle, teknik gerekçe)
     ilaclama: list[tuple[date, str, str]]  # (gün, başlangıç, bitiş) bugün/yarın en iyi aralıklar (gündüz)
-    uydu_uyarilari: list[tuple[Literal["sari", "kirmizi"], str, str]]
+    uydu_uyarilari: list[tuple[Literal["sari", "kirmizi"], str, str, str | None]]  # (seviye, başlık, kısa mesaj, açılır ayrıntı)
     sulama: tuple[float, str] | None  # (önümüzdeki 7 gün ihtiyaç mm, tek cümle) — yalnızca öneri anlamlıysa
 
 
@@ -51,9 +51,9 @@ def build_today(data: Girdi, today: date, priority: tuple[str, ...], limit: int)
         candidates["ilaclama"].append(
             BugunMaddesi("ilaclama", "bilgi", "İlaçlama: " + ", ".join(parts), "Rüzgâr, yağış ve sıcaklığa göre en uygun gündüz saatleri; ürün etiketindeki koşullar esastır.", "hava")
         )
-    for level, title, message in data.uydu_uyarilari:
+    for level, title, message, detail in data.uydu_uyarilari:
         candidates["indeks_dususu"].append(
-            BugunMaddesi("indeks_dususu", "kritik" if level == "kirmizi" else "uyari", title, message, "durum")
+            BugunMaddesi("indeks_dususu", "kritik" if level == "kirmizi" else "uyari", title, message, "durum", detail)
         )
     if data.sulama is not None:
         need, sentence = data.sulama

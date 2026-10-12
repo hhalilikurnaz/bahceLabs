@@ -92,7 +92,7 @@ def test_same_day_same_area_drops_merge_into_one_event():
     event = alerts[0]
     assert event.tur == "coklu_indeks" and event.oncelik == "yuksek"
     assert event.indeksler == ["msavi", "ndre", "ndvi"] and event.indeks is None
-    assert "tek bir olay" in event.mesaj and event.son_tarih == date(2026, 9, 9)
+    assert "tek olay" in event.mesaj and event.son_tarih == date(2026, 9, 9)
 
 
 def test_drops_in_different_areas_stay_separate_alerts():

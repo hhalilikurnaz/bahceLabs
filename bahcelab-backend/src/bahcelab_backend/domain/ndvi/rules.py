@@ -229,7 +229,7 @@ def build_alerts(scenes: list[SceneWithIndices], cfg: ScoreConfig | None = None)
                 continue
             area = max(v for (x, y), v in overlaps.items() if x in {a.indeks for a in members} and y in {a.indeks for a in members})
             names = [a.indeks for a in members if a.indeks]
-            area_text = f"{round(area):,}".replace(",", ".")
+            area_text = f"{area / 1000:.1f}".replace(".", ",")  # dönüm (1 da = 1000 m²)
             details = "; ".join(
                 f"{display_name(a.indeks)} normunun {_tr_pct(a.normdan_sapma_yuzde or 0)} altında" for a in members if a.indeks
             )
@@ -239,11 +239,9 @@ def build_alerts(scenes: list[SceneWithIndices], cfg: ScoreConfig | None = None)
                     indeks=None,
                     indeksler=sorted(names),
                     oncelik="yuksek",
-                    baslik="Aynı bölgede birden fazla indeks düşüyor",
-                    mesaj=(
-                        f"Aynı bölgede (≈ {area_text} m²) birlikte düşüyor: {details}. "
-                        "Bu, tek bir olay olarak değerlendirildi; bu bölgede saha kontrolü öncelikli."
-                    ),
+                    baslik="Aynı bölgede birkaç gösterge düşüyor",
+                    mesaj=f"≈ {area_text} da alanda birlikte düşüyor; tek olay sayıldı, saha kontrolü öncelikli.",
+                    ayrinti=f"{details}.",
                     son_tarih=max(a.son_tarih for a in members),
                     degisim_yuzde=None,
                 )

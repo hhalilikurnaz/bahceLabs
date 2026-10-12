@@ -87,6 +87,45 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     await expect(page.getByTestId('kademe-nedeni')).toContainText(/Bu yüzden kademe|en fazla/)
   })
 
+  test('GERÇEK ARKA UÇ: çip ve çubuk aynı bant kuralıyla aynı etiketi verir; sezon eğrisi bantları, evreleri ve ortanca etiketini çizer', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Tutarlılık', lng: 27.973, lat: 38.973, sideM: 200 })
+    seedScenes(garden.id)
+    await page.goto(`/bahceler/${garden.id}`)
+    await expect(page.getByTestId('gosterge-cubuklari')).toBeVisible({ timeout: 30_000 })
+    const KONUM_SEVIYE: Record<string, string> = { ust: 'normal', normal: 'normal', alt: 'normalin_alti', en_dusuk: 'belirgin_dusuk' }
+    for (const [cip, gosterge] of [['agac_gucu', 'ndvi'], ['su', 'ndmi']] as const) {
+      const konum = await page.locator(`[data-testid="gosterge-satiri"][data-gosterge="${gosterge}"]`).getAttribute('data-konum')
+      expect(konum, `${gosterge} bandı yeterli olmalı`).not.toBe('yetersiz')
+      await expect(page.locator(`[data-testid="durum-cip"][data-kod="${cip}"]`)).toHaveAttribute('data-seviye', KONUM_SEVIYE[konum ?? ''])
+    }
+    // Sezon eğrisi: iki bant, tüm evreler, tek ay etiketi, soluk ortanca etiketi
+    const sezon = page.getByTestId('sezon-egrisi')
+    await sezon.scrollIntoViewIfNeeded()
+    await expect(sezon.getByTestId('band-p25-p75')).toHaveCount(1)
+    await expect(sezon.getByTestId('band-p10-p90')).toHaveCount(1)
+    await expect(sezon.getByTestId('band-ortanca-etiket')).toHaveText('geçmiş yılların ortancası')
+    expect(await sezon.getByTestId('fenoloji-evre').count()).toBeGreaterThanOrEqual(6)
+    expect(await sezon.getByTestId('fenoloji-etiket').count()).toBeGreaterThanOrEqual(5)
+    await expect(sezon.locator('svg text', { hasText: /^Oca$/ })).toHaveCount(0) // ay etiketi yalnız «aya git» eksen satırında
+    await expect(sezon.getByTestId('ay-1')).toHaveCount(1)
+    // Taç ve toprak lejantı notu
+    await page.getByTestId('katman-menusu').getByRole('button').first().click()
+    await page.getByTestId('katman-tacToprak').click()
+    await expect(page.getByTestId('lejant-not')).toContainText('Daire = 10 m piksel, ağaç konumu değil')
+  })
+
+  test('GERÇEK ARKA UÇ: görüntüsü olmayan bahçede risk çipinin etiketi ile açıklaması aynı riskten gelir', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Yalnız Risk', lng: 27.974, lat: 38.974, sideM: 200 })
+    seedWeather(garden.id)
+    await page.goto(`/bahceler/${garden.id}`)
+    const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
+    await expect(risk).toContainText(/orta|yüksek/, { timeout: 30_000 })
+    await expect(risk).toContainText(/Meyve sineği|örümcek|Kuruma/)
+    await expect(risk).not.toContainText('görünmüyor')
+  })
+
   test('görüntüsü olmayan bahçede «Veri yetersiz» ve nedeni gösterilir', async ({ page }) => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'Boş Durum', lng: 27.91, lat: 38.91 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Edinim } from '../src/features/bahcem/api/edinimApi'
 import { bandKonumu, type NormalBantAy } from '../src/features/bahcem/api/normalBantApi'
-import { ayTarihi, bandAylari, cubukAraligi, sezonNoktalari, yilIciKonum } from '../src/features/bahcem/lib/sezon'
+import { ayTarihi, bandAylari, cubukAraligi, evreAraligi, sezonNoktalari, yilIciKonum } from '../src/features/bahcem/lib/sezon'
 
 const ed = (tarih: string, ndvi: number): Edinim => ({ tarih, scene_id: tarih, bulut_orani: 3, gecerli_oran: 1, isleme_surumu: '05.13', formul_surumu: 'f1', gostergeler: { ndvi: { ortalama: ndvi, medyan: ndvi, p10: ndvi - 0.1, p25: ndvi - 0.05, p75: ndvi + 0.05, p90: ndvi + 0.1, gecerli_piksel: 100 } } })
 const band = (o: Partial<NormalBantAy>): NormalBantAy => ({ ay: 10, yil_sayisi: 9, yillar: [2016], p10: 0.5, p25: 0.55, p50: 0.6, p75: 0.65, p90: 0.7, ceyrek_yeterli: true, onluk_yeterli: true, durum: 'yeterli', ...o })
@@ -39,5 +39,20 @@ describe('band konumu ve çizimi', () => {
   it('çubuk aralığı değeri ve bant uçlarını kapsar', () => {
     const [lo, hi] = cubukAraligi(0.45, band({}))
     expect(lo).toBeLessThan(0.45) && expect(hi).toBeGreaterThan(0.7)
+  })
+})
+
+describe('evreAraligi', () => {
+  it('önceki yıldan başlayan evre yıl başına kırpılır, yıl dışındaki evre atlanır', () => {
+    expect(evreAraligi('2025-10-01', '2025-12-14', 2026)).toBeNull()
+    expect(evreAraligi('2026-10-01', '2026-12-14', 2026)![0]).toBeCloseTo(9, 1)
+    expect(evreAraligi('2025-12-15', '2026-02-15', 2026)![0]).toBe(0)
+    expect(evreAraligi('2026-12-15', '2027-02-15', 2026)![1]).toBe(12)
+  })
+  it('katalogdaki tüm evreler bir takvim yılında görünür ve çakışmaz', () => {
+    const e = [['2025-12-15', '2026-02-15'], ['2026-02-16', '2026-03-14'], ['2026-03-15', '2026-04-30'], ['2026-05-01', '2026-06-15'], ['2026-06-16', '2026-09-30'], ['2026-10-01', '2026-12-14'], ['2026-12-15', '2027-02-15']]
+    const a = e.map(([b, c]) => evreAraligi(b, c, 2026)!).sort((p, q) => p[0] - q[0])
+    expect(a).toHaveLength(7)
+    for (let i = 1; i < a.length; i++) expect(a[i][0]).toBeGreaterThanOrEqual(a[i - 1][1] - 0.04)
   })
 })

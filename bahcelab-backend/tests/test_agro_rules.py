@@ -201,7 +201,7 @@ def test_today_orders_by_priority_and_limits_to_three():
         hava_uyarilari=[("sari", "Sıcak dalgası", "…"), ("kirmizi", "Don riski", "…")],
         zararli_riskleri=[("yuksek", "Meyve sineği", "Sade cümle.", "GDD …"), ("dusuk", "Kırmızı örümcek", "—", "…")],
         ilaclama=[(TODAY, "06:00", "10:00")],
-        uydu_uyarilari=[("kirmizi", "Canlılık düşüşü", "…")],
+        uydu_uyarilari=[("kirmizi", "Canlılık düşüşü", "…", None)],
         sulama=(12.0, "Önümüzdeki hafta yaklaşık 12 mm su ihtiyacı var."),
     )
     items = build_today(data, TODAY, PRIORITY, 3)
@@ -211,7 +211,7 @@ def test_today_orders_by_priority_and_limits_to_three():
 
 
 def test_today_spray_window_wording_and_lower_priorities():
-    data = Girdi([], [], [(TODAY + timedelta(days=1), "05:00", "09:00")], [("sari", "Klorofil düşüşü", "…")], None)
+    data = Girdi([], [], [(TODAY + timedelta(days=1), "05:00", "09:00")], [("sari", "Klorofil düşüşü", "…", None)], None)
     items = build_today(data, TODAY, PRIORITY, 3)
     assert items[0].tur == "ilaclama" and items[0].baslik == "İlaçlama: yarın 05:00–09:00"
     assert items[1].tur == "indeks_dususu" and items[1].sekme == "durum"

@@ -80,9 +80,7 @@ normal_bant:
   asgari_yil_ceyrek: 5
   asgari_yil_onluk: 8
   ilk_yil: 2015
-  # Çiplerin kararı (ön değer): z = (değer − ortanca)/(1,4826·MAD); z ≥ −1 normal, −2 ≈ belirgin düşük, −3 ve altı sıfır puan.
-  sapma_normal: 1.0
-  sapma_sifir: 3.0
+  # Çip, çubuk ve kademe AYNI kuralı kullanır: p25–p75 normal · p10–p25 normalin alt kısmı · p10 altı belirgin düşük (ön değer).
 
 urunler:
   limon:

@@ -98,6 +98,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
         {view.ortanca !== null && <span>ortanca <b className="font-semibold text-app-text">{degisim && view.ortanca > 0 ? '+' : ''}{sayi(view.ortanca)}</b></span>}
         {bandVisible && band && <span> · {TIPIK_ETIKETI} {sayi(band.alt)}–{sayi(band.ust)}{band.onDeger ? ' · mühendis onayı bekliyor' : ''}</span>}
       </div>
+      {view.tanim.gorunum === 'daireler' && <p className="mt-1 text-[11px] leading-snug text-app-text-muted" data-testid="lejant-not">Daire = 10 m piksel, ağaç konumu değil.</p>}
     </div>
   )
 }

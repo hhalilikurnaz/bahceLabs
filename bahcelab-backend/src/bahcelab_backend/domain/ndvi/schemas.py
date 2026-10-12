@@ -54,6 +54,7 @@ class Uyari(BaseModel):
     oncelik: Literal["normal", "yuksek"]
     baslik: str
     mesaj: str
+    ayrinti: str | None = None  # kısa mesajın açılır ayrıntısı (ör. hangi göstergeler ne kadar düştü)
     onceki_tarih: date | None = None
     onceki_ortalama: float | None = None
     son_tarih: date

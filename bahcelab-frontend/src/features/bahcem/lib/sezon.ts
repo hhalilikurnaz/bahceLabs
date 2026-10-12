@@ -53,3 +53,20 @@ export function cubukAraligi(deger: number, band: NormalBantAy | undefined): [nu
   const pay = (hi - lo) * 0.08 || 0.02
   return [lo - pay, hi + pay]
 }
+
+const gunSayisi = (y: number, m: number) => new Date(y, m, 0).getDate()
+/** Tarihin ay ekseni konumu: başlangıç için günün başı, bitiş için günün sonu (0–12). */
+const konum = (iso: string, son: boolean): number => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return m - 1 + (son ? d : d - 1) / gunSayisi(y, m)
+}
+
+/** Evrenin verilen takvim yılındaki aralığı [x0, x1] (ay ekseni 0–12); yıl dışında kalıyorsa null. Yıl sınırında kırpılır. */
+export function evreAraligi(baslangic: string, bitis: string, yil: number): [number, number] | null {
+  const ilk = `${yil}-01-01`
+  const son = `${yil}-12-31`
+  if (bitis < ilk || baslangic > son) return null
+  const x0 = baslangic < ilk ? 0 : konum(baslangic, false)
+  const x1 = bitis > son ? 12 : konum(bitis, true)
+  return x1 > x0 ? [x0, x1] : null
+}

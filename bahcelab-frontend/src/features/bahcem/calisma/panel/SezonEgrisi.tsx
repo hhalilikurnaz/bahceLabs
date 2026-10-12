@@ -1,17 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useEdinimler, type GostergeId } from '../../api/edinimApi'
 import { usePhenology } from '../../api/agroApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { useNormalBantlar } from '../../api/normalBantApi'
 import { useElementWidth } from '../../hooks/useElementWidth'
 import { sayi } from '../../lib/format'
-import { AY_KISA, ayTarihi, bandAylari, sezonNoktalari, yilIciKonum } from '../../lib/sezon'
+import { AY_KISA, ayTarihi, bandAylari, evreAraligi, sezonNoktalari } from '../../lib/sezon'
 import { useCalismaStore } from '../calismaStore'
 import { GOSTERGE_KATMAN, KATMANLAR } from '../katmanlar'
 
 const SECENEKLER: GostergeId[] = ['ndvi', 'ndre', 'lai', 'ndmi', 'msavi']
-const YUKSEKLIK = 190
-const KENAR = { sol: 34, sag: 10, ust: 14, alt: 22 }
+const YUKSEKLIK = 170
+const KENAR = { sol: 34, sag: 10, ust: 14, alt: 6 }
 
 /**
  * «Bu sezon, kendi geçmişine göre»: bu yılın eğrisi, bahçenin kendi normal bandı (p10–p90 açık, p25–p75 koyu, ortanca kesikli),
@@ -30,7 +30,7 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
   const noktalar = useMemo(() => sezonNoktalari(edinim.data?.edinimler ?? [], gosterge, yil), [edinim.data, gosterge, yil])
   const band = bantlar.data?.gostergeler[gosterge]
   const { koyu, acik } = bandAylari(band)
-  const yillar = band?.find((b) => b.ceyrek_yeterli)?.yillar
+  const yillar = (band?.find((b) => b.ay === new Date().getMonth() + 1 && b.ceyrek_yeterli) ?? band?.find((b) => b.ceyrek_yeterli))?.yillar
   const w = Math.max(240, genislik)
   const iw = w - KENAR.sol - KENAR.sag
   const ih = YUKSEKLIK - KENAR.ust - KENAR.alt
@@ -51,7 +51,11 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
     const sag = [...list].reverse().map((b) => `${X(b.ay - 0.5).toFixed(1)},${Y(b[alt]!).toFixed(1)}`)
     return `M${[...sol, ...sag].join(' L')}Z`
   }
-  const ortanca = koyu.length ? `M${koyu.map((b) => `${X(b.ay - 0.5).toFixed(1)},${Y(b.p50!).toFixed(1)}`).join(' L')}` : ''
+  const bugunAy = new Date().getMonth() + 1
+  const ortancaYol = (list: typeof koyu) => (list.length ? `M${list.map((b) => `${X(b.ay - 0.5).toFixed(1)},${Y(b.p50!).toFixed(1)}`).join(' L')}` : '')
+  const ortancaGecmis = ortancaYol(koyu.filter((b) => b.ay <= bugunAy))
+  const ortancaSonrasi = ortancaYol(koyu.filter((b) => b.ay >= bugunAy)) // bugünden sonrası soluk: tahmin değil, geçmiş yılların ortancası
+  const sonOrtanca = koyu.find((b) => b.ay === 12) ?? koyu[koyu.length - 1]
   const egri = noktalar.length ? `M${noktalar.map((n) => `${X(n.x).toFixed(1)},${Y(n.deger).toFixed(1)}`).join(' L')}` : ''
   const son = noktalar[noktalar.length - 1]
   const dolduruluyor = gecmis?.durum === 'isleniyor'
@@ -77,9 +81,9 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
       </div>
       <div ref={ref} className="relative mt-2">
         {edinim.isLoading || bantlar.isLoading ? (
-          <div className="h-[190px] animate-pulse rounded bg-app-card-hover" aria-label="Sezon eğrisi yükleniyor" />
+          <div className="h-[170px] animate-pulse rounded bg-app-card-hover" aria-label="Sezon eğrisi yükleniyor" />
         ) : noktalar.length === 0 && koyu.length === 0 ? (
-          <div className="grid h-[190px] place-items-center rounded border border-dashed border-app-border px-4 text-center text-[13px] text-app-text-muted" data-testid="sezon-bos">
+          <div className="grid h-[170px] place-items-center rounded border border-dashed border-app-border px-4 text-center text-[13px] text-app-text-muted" data-testid="sezon-bos">
             {dolduruluyor ? `Veri çekiliyor · %${gecmis?.yuzde ?? 0}. Grafik, geçmiş çekildikçe dolacak.` : 'Bu gösterge için henüz net görüntü ya da yeterli geçmiş yok.'}
           </div>
         ) : (
@@ -95,7 +99,10 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
             })}
             {acik.length > 0 && <path d={aySerisi(acik, 'p10', 'p90')} fill="color-mix(in srgb, var(--color-app-accent) 12%, transparent)" data-testid="band-p10-p90" />}
             {koyu.length > 0 && <path d={aySerisi(koyu, 'p25', 'p75')} fill="color-mix(in srgb, var(--color-app-accent) 26%, transparent)" data-testid="band-p25-p75" />}
-            {ortanca && <path d={ortanca} fill="none" stroke="var(--color-app-text-muted)" strokeWidth={1.2} strokeDasharray="4 3" data-testid="band-ortanca" />}
+            {ortancaGecmis && <path d={ortancaGecmis} fill="none" stroke="var(--color-app-text-muted)" strokeWidth={1.2} strokeDasharray="4 3" data-testid="band-ortanca" />}
+            {ortancaSonrasi && <path d={ortancaSonrasi} fill="none" stroke="var(--color-app-text-muted)" strokeWidth={1} strokeDasharray="2 4" opacity={0.4} data-testid="band-ortanca-sonrasi" />}
+            {sonOrtanca && <text x={w - KENAR.sag} y={KENAR.ust + ih - 4} textAnchor="end" fontSize={10} fill="var(--color-app-text-muted)" data-testid="band-ortanca-etiket">geçmiş yılların ortancası</text>}
+            <line x1={X(bugunAy - 1 + new Date().getDate() / 31)} x2={X(bugunAy - 1 + new Date().getDate() / 31)} y1={KENAR.ust} y2={KENAR.ust + ih} stroke="var(--color-app-border-strong)" strokeWidth={1} />
             {egri && <path d={egri} fill="none" stroke="var(--color-app-text)" strokeWidth={1.8} strokeLinejoin="round" data-testid="sezon-yili-egrisi" />}
             {noktalar.map((n) => <circle key={n.tarih} cx={X(n.x)} cy={Y(n.deger)} r={2.2} fill="var(--color-app-text)" />)}
             {son && (
@@ -104,46 +111,50 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
             {koyu.length === 0 && !dolduruluyor && (
               <text x={KENAR.sol + 6} y={KENAR.ust + 12} fontSize={11} fill="var(--color-app-text-muted)" data-testid="sezon-yetersiz-gecmis">Normal bant için yetersiz geçmiş (en az {bantlar.data?.asgari_yil_ceyrek ?? 5} yıl gerekir)</text>
             )}
-            {AY_KISA.map((a, i) => (i % 3 === 0 || w > 360 ? <text key={a} x={X(i + 0.5)} y={YUKSEKLIK - 6} textAnchor="middle" fontSize={10} fill="var(--color-app-text-muted)">{a}</text> : null))}
           </svg>
         )}
         {dolduruluyor && noktalar.length > 0 && <p className="mt-1 text-[11.5px] text-app-text-muted" data-testid="sezon-doluyor">Geçmiş çekiliyor · %{gecmis?.yuzde}: bant tamamlanana kadar eksik olabilir.</p>}
       </div>
       <Fenoloji evreler={fenoloji?.evreler ?? []} yil={yil} genislik={w} />
-      <div className="mt-1 grid grid-cols-6 gap-1 min-[480px]:grid-cols-12" role="group" aria-label="Aya git">
+      <div className="mt-0.5 grid grid-cols-6 gap-1 min-[480px]:grid-cols-12 min-[480px]:ml-[34px] min-[480px]:w-[var(--iw)] min-[480px]:gap-0" style={{ '--iw': `${iw}px` } as CSSProperties} role="group" aria-label="Aya git (eksen)">
         {AY_KISA.map((a, i) => (
-          <button key={a} type="button" onClick={() => aya(i + 1)} data-testid={`ay-${i + 1}`} className="min-h-9 rounded text-[11.5px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text max-[560px]:min-h-11">{a}</button>
+          <button key={a} type="button" onClick={() => aya(i + 1)} data-testid={`ay-${i + 1}`} className="min-h-9 rounded text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text max-[560px]:min-h-11">{a}</button>
         ))}
       </div>
-      <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: ortanca · çizgi: {yil}. Aya dokununca harita o aya geçer.</p>
+      <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: geçmiş yılların ortancası · çizgi: {yil}. Aya dokununca harita o aya geçer.</p>
     </section>
   )
 }
 
-/** Fenoloji şeridi: katalogdaki evreler (ön değer) takvim yılı eksenine yerleştirilir. */
+/** Evrelerin kısa adları (şerit etiketi için); katalog adı title'da kalır. */
+const KISA_AD: Record<string, string> = { kis_dinlenme: 'Dinlenme', tomurcuklanma: 'Tomurcuk', ciceklenme: 'Çiçek', meyve_tutumu: 'Tutum', meyve_gelisimi: 'Büyüme', olgunlasma: 'Olgunlaşma' }
+
+/** Fenoloji şeridi: katalogdaki TÜM evreler takvim yılına kırpılarak yerleştirilir; etiketler iki satıra dağıtılır (üst üste binmez). */
 function Fenoloji({ evreler, yil, genislik }: { evreler: { kod: string; ad: string; baslangic: string; bitis: string }[]; yil: number; genislik: number }) {
   if (!evreler.length) return null
   const iw = genislik - KENAR.sol - KENAR.sag
   const parcalar = evreler
-    .map((e) => {
-      const bas = e.baslangic.slice(0, 4) < String(yil) ? 0 : yilIciKonum(e.baslangic) - 0.5
-      const bit = e.bitis.slice(0, 4) > String(yil) ? 12 : yilIciKonum(e.bitis) + 0.5
-      return { ...e, x0: Math.max(0, bas), x1: Math.min(12, bit) }
+    .flatMap((e) => {
+      const aralik = evreAraligi(e.baslangic, e.bitis, yil)
+      return aralik ? [{ ...e, x0: aralik[0], x1: aralik[1] }] : []
     })
-    .filter((e) => e.x1 > e.x0)
     .sort((p, q) => p.x0 - q.x0)
-  // Komşu evreler birbirine taşmasın: her evre öncekinin bittiği yerden başlar
-  parcalar.forEach((e, i) => {
-    if (i > 0) e.x0 = Math.max(e.x0, parcalar[i - 1].x1)
-    e.x1 = Math.max(e.x1, e.x0)
-  })
+  const etiketli = parcalar.filter((e) => (e.x1 - e.x0) * (iw / 12) >= 30)
   return (
-    <div className="relative mt-1 h-6" style={{ marginLeft: KENAR.sol, width: iw }} data-testid="fenoloji-seridi" aria-label="Fenoloji evreleri (ön değer)" role="img">
+    <div className="relative mt-1 h-[46px]" style={{ marginLeft: KENAR.sol, width: iw }} data-testid="fenoloji-seridi" aria-label="Fenoloji evreleri (ön değer)" role="img">
       {parcalar.map((e, i) => (
-        <span key={e.kod + i} title={e.ad} className="absolute top-0 h-5 overflow-hidden whitespace-nowrap border-l border-app-card px-1 text-[10px] leading-5 text-app-text" style={{ left: `${(e.x0 / 12) * 100}%`, width: `${(Math.max(0, e.x1 - e.x0) / 12) * 100}%`, background: `color-mix(in srgb, var(--color-app-accent) ${10 + (i % 2) * 8}%, transparent)` }}>
-          {(e.x1 - e.x0) * (iw / 12) > 90 ? e.ad : ''}
-        </span>
+        <span key={e.kod + i} title={`${e.ad} (ön değer)`} data-testid="fenoloji-evre" className="absolute top-0 h-2.5 border-l border-app-card" style={{ left: `${(e.x0 / 12) * 100}%`, width: `${((e.x1 - e.x0) / 12) * 100}%`, background: `color-mix(in srgb, var(--color-app-accent) ${14 + (i % 2) * 14}%, transparent)` }} />
       ))}
+      {etiketli.map((e, i) => {
+        const ad = KISA_AD[e.kod] ?? e.ad
+        const yaklasik = ad.length * 5.6
+        const sol = Math.min(Math.max(((e.x0 + e.x1) / 2 / 12) * iw - yaklasik / 2, 0), iw - yaklasik)
+        return (
+          <span key={e.kod + 'e' + i} data-testid="fenoloji-etiket" className="absolute whitespace-nowrap text-[10px] leading-3 text-app-text-muted" style={{ left: sol, top: 13 + (i % 2) * 13 }}>
+            {ad}
+          </span>
+        )
+      })}
     </div>
   )
 }

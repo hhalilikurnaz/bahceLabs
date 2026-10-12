@@ -32,7 +32,7 @@ const STEP_ICONS = {
 
 function formatArea(areaM2: number | null): string | null {
   if (areaM2 === null) return null
-  return `${(areaM2 / 10_000).toFixed(2)} ha`
+  return `${(areaM2 / 1000).toFixed(1).replace(".", ",")} da`
 }
 
 function HeaderField({

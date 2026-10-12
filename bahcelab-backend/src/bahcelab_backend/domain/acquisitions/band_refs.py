@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import statistics
 import uuid
 
 from sqlalchemy import select
@@ -26,10 +25,10 @@ async def band_refs_for(session: AsyncSession, garden_ids: list[uuid.UUID], mont
     ).scalars().all()
     out: dict[uuid.UUID, dict[str, BandRef]] = {}
     for r in rows:
-        values = [float(v) for v in (r.ayrinti or {}).values()]
-        if not values or not r.ceyrek_yeterli or r.p50 is None:
+        if not r.ceyrek_yeterli or r.p25 is None or r.p50 is None or r.p75 is None:
             continue
-        median = float(r.p50)
-        mad = statistics.median(abs(v - median) for v in values)
-        out.setdefault(r.garden_id, {})[r.indeks] = BandRef(ay=r.ay, yil_sayisi=r.yil_sayisi, yillar=[int(y) for y in r.yillar], median=median, mad=mad)
+        out.setdefault(r.garden_id, {})[r.indeks] = BandRef(
+            ay=r.ay, yil_sayisi=r.yil_sayisi, yillar=[int(y) for y in r.yillar], p25=float(r.p25), p50=float(r.p50), p75=float(r.p75),
+            p10=float(r.p10) if r.onluk_yeterli and r.p10 is not None else None, onluk_yeterli=bool(r.onluk_yeterli and r.p10 is not None),
+        )
     return out

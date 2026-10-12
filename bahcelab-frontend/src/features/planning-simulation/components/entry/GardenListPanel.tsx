@@ -14,7 +14,7 @@ interface GardenListPanelProps {
 
 function formatAreaHa(areaM2: number | null): string {
   if (areaM2 === null) return '—'
-  return `${(areaM2 / 10_000).toFixed(2)} ha`
+  return `${(areaM2 / 1000).toFixed(1).replace(".", ",")} da`
 }
 
 export function GardenListPanel({
