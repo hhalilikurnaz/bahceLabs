@@ -1,7 +1,7 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,20 +18,33 @@ class NotificationRepository:
         self.session = session
         self.workspace_id = workspace_id
 
-    def _filters(self, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool) -> list:
+    @staticmethod
+    def _unread_cond():  # type: ignore[no-untyped-def]
+        """Okunmamış: yeni (olustu) ya da erteleme süresi dolmuş (yeniden görünür)."""
+        now = datetime.now(UTC)
+        return or_(NotificationModel.durum == "olustu", and_(NotificationModel.durum == "ertelendi", NotificationModel.ertelendi_bitis <= now))
+
+    def _filters(self, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, durum: str = "aktif") -> list:
         cond = [NotificationModel.workspace_id == self.workspace_id]
         if tur:
             cond.append(NotificationModel.tur == tur)
         if garden_id:
             cond.append(NotificationModel.garden_id == garden_id)
+        now = datetime.now(UTC)
+        if durum == "aktif":  # oluştu + görüldü + süresi dolan ertelemeler
+            cond.append(or_(NotificationModel.durum.in_(("olustu", "goruldu")), and_(NotificationModel.durum == "ertelendi", NotificationModel.ertelendi_bitis <= now)))
+        elif durum == "ertelendi":
+            cond.append(and_(NotificationModel.durum == "ertelendi", NotificationModel.ertelendi_bitis > now))
+        elif durum == "cozuldu":
+            cond.append(NotificationModel.durum == "cozuldu")
         if unread_only:
-            cond.append(NotificationModel.okundu.is_(False))
+            cond.append(self._unread_cond())
         return cond
 
     async def page(
-        self, *, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, page: int, size: int
+        self, *, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, page: int, size: int, durum: str = "aktif"
     ) -> tuple[list[NotificationModel], int]:
-        cond = self._filters(tur, garden_id, unread_only)
+        cond = self._filters(tur, garden_id, unread_only, durum)
         total = (await self.session.execute(select(func.count()).select_from(NotificationModel).where(*cond))).scalar_one()
         rows = (
             await self.session.execute(
@@ -44,7 +57,7 @@ class NotificationRepository:
         return int(
             (
                 await self.session.execute(
-                    select(func.count()).select_from(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.okundu.is_(False))
+                    select(func.count()).select_from(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, self._unread_cond())
                 )
             ).scalar_one()
         )
@@ -54,14 +67,30 @@ class NotificationRepository:
         return row if row is not None and row.workspace_id == self.workspace_id else None
 
     async def mark_read(self, notification: NotificationModel) -> None:
-        if not notification.okundu:
-            notification.okundu = True
-            notification.okundu_zamani = datetime.now(UTC)
+        """oluştu (ya da süresi dolmuş erteleme) → görüldü; çözülen/ertelenen bildirimin durumu bozulmaz."""
+        now = datetime.now(UTC)
+        expired = notification.durum == "ertelendi" and notification.ertelendi_bitis is not None and notification.ertelendi_bitis <= now
+        if notification.durum == "olustu" or expired:
+            self._apply(notification, "goruldu", None, now)
             await self.session.flush()
+
+    @staticmethod
+    def _apply(notification: NotificationModel, durum: str, days: int | None, now: datetime) -> None:
+        notification.durum = durum
+        notification.okundu = True
+        notification.okundu_zamani = notification.okundu_zamani or now
+        notification.ertelendi_bitis = now + timedelta(days=days) if durum == "ertelendi" and days else None
+        notification.cozuldu_zamani = now if durum == "cozuldu" else None
+
+    async def set_state(self, notification: NotificationModel, durum: str, days: int | None) -> None:
+        self._apply(notification, durum, days, datetime.now(UTC))
+        await self.session.flush()
 
     async def mark_all_read(self, *, tur: str | None, garden_id: uuid.UUID | None) -> int:
         cond = self._filters(tur, garden_id, True)
-        result = await self.session.execute(update(NotificationModel).where(*cond).values(okundu=True, okundu_zamani=datetime.now(UTC)))
+        result = await self.session.execute(
+            update(NotificationModel).where(*cond).values(durum="goruldu", okundu=True, okundu_zamani=datetime.now(UTC), ertelendi_bitis=None)
+        )
         return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
     async def insert_if_new(self, candidate: Candidate) -> NotificationModel | None:

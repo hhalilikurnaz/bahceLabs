@@ -34,10 +34,12 @@ export function WeatherChart({ days, range, loading = false, hoverDoy, onHoverDo
   const temps = data.flatMap((d) => (d.min != null && d.max != null ? [d.min, d.max] : []))
   const tempDomain = temps.length ? { min: Math.floor(Math.min(...temps) / 5) * 5, max: Math.ceil(Math.max(...temps) / 5) * 5 } : { min: 0, max: 30 }
   const tempTicks = niceTicks(tempDomain, 3)
+  // Eksen, çizilen en uç etiketleri de kapsar: etiket ya da çizgi çizim alanının dışına taşıp kırpılmaz
+  const tempScale = { min: Math.min(tempDomain.min, ...tempTicks), max: Math.max(tempDomain.max, ...tempTicks) }
 
   const x = (date: string) => m.left + xFraction(date, range) * plotW
   const yRain = (mm: number) => m.top + (1 - mm / rainTop) * plotH
-  const yTemp = (t: number) => m.top + (1 - (t - tempDomain.min) / Math.max(1, tempDomain.max - tempDomain.min)) * plotH
+  const yTemp = (t: number) => m.top + (1 - (t - tempScale.min) / Math.max(1, tempScale.max - tempScale.min)) * plotH
   const step = monthLabelStep(plotW, CHART.monthLabelPx)
   const months = monthTicks(range).map((t, i) => ({ label: `${t.label}${t.year ? ` ${t.year}` : ''}`, i, px: x(t.date) })).filter((mo) => mo.i % step === 0)
 
@@ -50,7 +52,7 @@ export function WeatherChart({ days, range, loading = false, hoverDoy, onHoverDo
 
   return (
     <div ref={ref} className="relative w-full" data-testid="weather-chart">
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Günlük yağış (mm) ve sıcaklık (°C) grafiği" className="block overflow-visible">
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Günlük yağış (mm) ve sıcaklık (°C) grafiği" className="block overflow-visible" data-testid="weather-chart-svg">
         <text x={m.left - 6} y={12} textAnchor="end" style={{ ...FONT, fill: 'var(--color-app-water)', fontWeight: 600 }}>
           mm
         </text>

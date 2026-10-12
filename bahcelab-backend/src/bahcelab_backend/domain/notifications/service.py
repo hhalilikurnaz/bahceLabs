@@ -1,5 +1,6 @@
 import math
 import uuid
+from datetime import UTC, datetime
 
 from bahcelab_backend.domain.notifications.channels import registry
 from bahcelab_backend.domain.notifications.models import NotificationModel
@@ -7,6 +8,7 @@ from bahcelab_backend.domain.notifications.repository import NotificationReposit
 from bahcelab_backend.domain.notifications.schemas import (
     BildirimListesi,
     BildirimYanit,
+    DurumDegistir,
     TercihYanit,
     TopluOkundu,
 )
@@ -14,10 +16,19 @@ from bahcelab_backend.domain.notifications.types import TYPES, Candidate
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 
+def effective_state(row: NotificationModel) -> str:
+    """Süresi dolan erteleme yeniden «olustu» olarak görünür."""
+    if row.durum == "ertelendi" and row.ertelendi_bitis is not None and row.ertelendi_bitis <= datetime.now(UTC):
+        return "olustu"
+    return row.durum
+
+
 def to_response(row: NotificationModel) -> BildirimYanit:
+    state = effective_state(row)
     return BildirimYanit(
         id=row.id, bahce_id=row.garden_id, tur=row.tur, tur_adi=TYPES.get(row.tur, {}).get("ad", row.tur), oncelik=row.oncelik,  # type: ignore[arg-type]
-        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=row.okundu, olusturma=row.created_at,
+        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", durum=state,  # type: ignore[arg-type]
+        ertelendi_bitis=row.ertelendi_bitis if state == "ertelendi" else None, olusturma=row.created_at,
     )
 
 
@@ -25,10 +36,12 @@ class NotificationService:
     def __init__(self, repo: NotificationRepository) -> None:
         self.repo = repo
 
-    async def list_page(self, *, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, page: int, size: int) -> BildirimListesi:
+    async def list_page(
+        self, *, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, page: int, size: int, durum: str = "aktif"
+    ) -> BildirimListesi:
         if tur is not None and tur not in TYPES:
             raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bilinmeyen bildirim türü.")
-        rows, total = await self.repo.page(tur=tur, garden_id=garden_id, unread_only=unread_only, page=page, size=size)
+        rows, total = await self.repo.page(tur=tur, garden_id=garden_id, unread_only=unread_only, page=page, size=size, durum=durum)
         return BildirimListesi(
             sayfa=page, boyut=size, toplam=total, sayfa_sayisi=max(1, math.ceil(total / size)),
             okunmamis_sayisi=await self.repo.unread_count(), ogeler=[to_response(r) for r in rows],
@@ -42,6 +55,13 @@ class NotificationService:
         if row is None:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bildirim bulunamadı.")
         await self.repo.mark_read(row)
+        return to_response(row)
+
+    async def set_state(self, notification_id: uuid.UUID, body: DurumDegistir) -> BildirimYanit:
+        row = await self.repo.get(notification_id)
+        if row is None:
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Bildirim bulunamadı.")
+        await self.repo.set_state(row, body.durum, body.erteleme_gun)
         return to_response(row)
 
     async def mark_all_read(self, *, tur: str | None, garden_id: uuid.UUID | None) -> TopluOkundu:

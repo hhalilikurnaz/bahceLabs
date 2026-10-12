@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
-import { useGrid, useIndices, type Scene } from '../api/indeksApi'
+import { useGrid, useIndices, type Scene, type TipikBant } from '../api/indeksApi'
 import { INDEX_DEFS } from '../lib/indices'
-import { differenceGrid, percentileDomain, symmetricDomain, type PGrid } from '../lib/izgara'
+import { differenceGrid, median, percentileDomain, symmetricDomain, type PGrid } from '../lib/izgara'
 import { RAMPS, type Stops } from '../lib/paletler'
 import { isUsable } from '../lib/scenes'
 import { useCalismaStore } from './calismaStore'
@@ -24,6 +24,10 @@ export interface HaritaGorunumu {
   /** Uydu verisi alınamadı (ağ/sunucu hatası) */
   hata: boolean
   tekrarDene: () => void
+  /** Bahçedeki geçerli piksellerin ortancası (gösterilen ızgaradan) */
+  ortanca: number | null
+  /** Ürünün bu indeks için tipik aralığı (ön değer); fark katmanında yok */
+  tipikBant: TipikBant | null
 }
 
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
@@ -58,11 +62,11 @@ export function useHaritaGorunumu(gardenId: string | null): HaritaGorunumu {
       const neden = !onceki ? `Karşılaştırılacak, en az ${DEGISIM_MIN_GUN} gün önceki net görüntü yok.` : a && b && !diff ? 'İki görüntünün ızgarası farklı; fark gösterilmiyor.' : null
       const def = indeks ? INDEX_DEFS[indeks] : null
       const alan: [number, number] = diff ? (skala === 'kendi' ? symmetricDomain(diff) : [-(def?.farkAraligi ?? 0.25), def?.farkAraligi ?? 0.25]) : [-0.1, 0.1]
-      return { tanim, sahneler, sahne, onceki, izgara: diff, alan, ramp, yukleniyor: isLoading || (Boolean(onceki) && !diff && !neden), neden, hata, tekrarDene }
+      return { tanim, sahneler, sahne, onceki, izgara: diff, alan, ramp, yukleniyor: isLoading || (Boolean(onceki) && !diff && !neden), neden, hata, tekrarDene, ortanca: diff ? median(diff) : null, tipikBant: null }
     }
     const izgara = asP(grid)
     const def = indeks ? INDEX_DEFS[indeks] : null
     const alan: [number, number] = izgara && def ? (skala === 'kendi' ? percentileDomain([izgara]) : [def.min, def.max]) : [0, 1]
-    return { tanim, sahneler, sahne, onceki, izgara, alan, ramp, yukleniyor: isLoading || (Boolean(indeks && sahne) && !izgara), neden: null, hata, tekrarDene }
-  }, [tanim, katman, sahneler, sahne, onceki, grid, prevGrid, skala, indeks, isLoading, hata, tekrarDene])
+    return { tanim, sahneler, sahne, onceki, izgara, alan, ramp, yukleniyor: isLoading || (Boolean(indeks && sahne) && !izgara), neden: null, hata, tekrarDene, ortanca: izgara ? median(izgara) : null, tipikBant: (indeks && data?.tipikBantlar[indeks]) || null }
+  }, [tanim, katman, sahneler, sahne, onceki, grid, prevGrid, skala, indeks, isLoading, hata, tekrarDene, data?.tipikBantlar])
 }

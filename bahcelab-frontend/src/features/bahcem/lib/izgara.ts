@@ -15,6 +15,14 @@ export interface PGrid {
 
 export const finiteValues = (g: PGrid): number[] => Array.from(g.values).filter((v) => Number.isFinite(v))
 
+/** Ortanca (geçerli piksellerin); piksel yoksa null. */
+export function median(g: PGrid): number | null {
+  const v = finiteValues(g).sort((a, b) => a - b)
+  if (!v.length) return null
+  const m = Math.floor(v.length / 2)
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2
+}
+
 /** Yüzdelik alan [p2, p98]; aynı ekrandaki tüm ızgaralar aynı alanı paylaşabilir. */
 export function percentileDomain(grids: PGrid[], lo = 0.02, hi = 0.98): [number, number] {
   const all = grids.flatMap(finiteValues).sort((a, b) => a - b)

@@ -60,11 +60,11 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
         </button>
         {katman !== 'bolgeler' && (
           <>
-            <label className="flex h-10 max-[560px]:h-11 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[12.5px] font-medium hover:bg-app-card-hover">
+            <label className="flex h-10 cursor-pointer items-center max-[560px]:hidden gap-2 rounded-md px-2.5 text-[12.5px] font-medium hover:bg-app-card-hover">
               <input type="checkbox" checked={kontur} onChange={(e) => setKontur(e.target.checked)} className="h-4 w-4 accent-[var(--color-app-text)]" disabled={katman === 'degisim'} />
               Eş değer çizgisi
             </label>
-            <label className="flex h-10 items-center gap-2 px-2.5 text-[12.5px] font-medium">
+            <label className="flex h-10 items-center gap-2 px-2.5 text-[12.5px] font-medium max-[560px]:hidden">
               Opaklık
               <input type="range" min={0.3} max={1} step={0.05} value={opaklik} onChange={(e) => setOpaklik(Number(e.target.value))} className="w-20 max-[560px]:h-11 accent-[var(--color-app-text)]" aria-label="Katman opaklığı" />
             </label>

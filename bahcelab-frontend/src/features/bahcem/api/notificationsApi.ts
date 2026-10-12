@@ -12,8 +12,13 @@ export interface AppNotification {
   metin: string
   baglanti: string
   okundu: boolean
+  /** Yaşam döngüsü: oluştu → görüldü → çözüldü / ertelendi (süre dolunca yeniden oluştu) */
+  durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
+  ertelendiBitis: string | null
   olusturma: string
 }
+
+export type NotificationView = 'aktif' | 'ertelendi' | 'cozuldu'
 
 export interface NotificationPage {
   sayfa: number
@@ -28,6 +33,7 @@ export interface NotificationFilters {
   bahce: string
   yalnizOkunmamis: boolean
   sayfa: number
+  gorunum?: NotificationView
 }
 
 export interface Preference {
@@ -39,7 +45,7 @@ export interface Preference {
 
 const mapItem = (n: ApiNotification): AppNotification => ({
   id: n.id, bahceId: n.bahce_id, tur: n.tur, turAdi: n.tur_adi, oncelik: n.oncelik, baslik: n.baslik, metin: n.metin,
-  baglanti: n.baglanti, okundu: n.okundu, olusturma: n.olusturma,
+  baglanti: n.baglanti, okundu: n.okundu, durum: n.durum, ertelendiBitis: n.ertelendi_bitis, olusturma: n.olusturma,
 })
 
 export const PAGE_SIZE = 20
@@ -51,6 +57,7 @@ async function fetchPage(filters: NotificationFilters, size = PAGE_SIZE): Promis
   if (filters.tur) params.set('tur', filters.tur)
   if (filters.bahce) params.set('bahce', filters.bahce)
   if (filters.yalnizOkunmamis) params.set('okunmamis', 'true')
+  if (filters.gorunum && filters.gorunum !== 'aktif') params.set('durum', filters.gorunum)
   const raw = await apiRequest<ApiNotificationList>(`/notifications?${params}`)
   return { sayfa: raw.sayfa, sayfaSayisi: raw.sayfa_sayisi, toplam: raw.toplam, okunmamis: raw.okunmamis_sayisi, ogeler: raw.ogeler.map(mapItem) }
 }
@@ -78,6 +85,16 @@ export function useMarkRead() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiRequest(`/notifications/${id}/okundu`, { method: 'POST' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }),
+  })
+}
+
+/** Yaşam döngüsü geçişi: görüldü · çözüldü · ertelendi (gün). */
+export function useSetNotificationState() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, durum, erteleme_gun }: { id: string; durum: 'goruldu' | 'cozuldu' | 'ertelendi'; erteleme_gun?: number }) =>
+      apiRequest(`/notifications/${id}/durum`, { method: 'POST', body: JSON.stringify({ durum, erteleme_gun }) }),
     onSuccess: () => client.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }),
   })
 }

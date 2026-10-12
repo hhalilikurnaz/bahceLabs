@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -9,27 +7,7 @@ import {
 } from 'react'
 import { ApiError, apiRequest, setUnauthorizedHandler } from '@/lib/apiClient'
 import type { AuthUser } from './types'
-
-interface RegisterInput {
-  name: string
-  email: string
-  password: string
-}
-
-interface LoginInput {
-  email: string
-  password: string
-}
-
-interface AuthContextValue {
-  user: AuthUser | null
-  isAuthenticated: boolean
-  /** İlk oturum kontrolü (GET /auth/me) bitene kadar true */
-  isLoading: boolean
-  login: (input: LoginInput) => Promise<void>
-  register: (input: RegisterInput) => Promise<void>
-  logout: () => Promise<void>
-}
+import { AuthContext, type LoginInput, type RegisterInput } from './useAuth'
 
 interface ApiAuthUser {
   id: string
@@ -38,7 +16,6 @@ interface ApiAuthUser {
   workspace_id: string
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 function mapUser(user: ApiAuthUser): AuthUser {
   return { id: user.id, name: user.name, email: user.email, workspaceId: user.workspace_id }
@@ -119,12 +96,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return ctx
 }

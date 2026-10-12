@@ -12,6 +12,8 @@ export interface ApiNotification {
   metin: string
   baglanti: string
   okundu: boolean
+  durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
+  ertelendi_bitis: string | null
   olusturma: string
 }
 

@@ -62,7 +62,11 @@ export function FrameSequence({
       order.push(i)
     }
     for (const stride of [n, 16, 8, 4, 2, 1]) {
-      for (let i = 0; i < n; i += stride) if (!seen.has(i)) (seen.add(i), order.push(i))
+      for (let i = 0; i < n; i += stride) {
+        if (seen.has(i)) continue
+        seen.add(i)
+        order.push(i)
+      }
     }
     if (!seen.has(n - 1)) order.push(n - 1)
 

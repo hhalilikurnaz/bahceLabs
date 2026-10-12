@@ -8,8 +8,11 @@ import type { HaritaGorunumu } from '../useHaritaGorunumu'
 import { sinirlarUste } from './haritaYardim'
 
 const SRC = 'kg-raster'
-/** Tuval büyütmesi: net piksel (10 m) en yakın komşuyla; kontur açıkken çizgi ve etiket için daha yüksek */
-const OLCEK = { piksel: 4, kontur: 10 } as const
+/** Tuval büyütmesi: net piksel en yakın komşuyla; sınır kırpması ve kontur çizgisi pürüzsüz olsun diye piksel başına çok sayıda tuval pikseli.
+ *  Büyük bahçede tuval kenarı sınırı aşmasın. */
+const OLCEK = { piksel: 16, kontur: 12 } as const
+const TUVAL_KENAR_MAKS = 4096
+const olcek = (cols: number, rows: number, kontur: boolean) => Math.max(2, Math.min(kontur ? OLCEK.kontur : OLCEK.piksel, Math.floor(TUVAL_KENAR_MAKS / Math.max(cols, rows))))
 
 /** Seçili katmanın ızgarasını net piksel olarak çizer (kontur, opaklık, histogram vurgusu dahil). Bölgeler katmanında gizli. */
 export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaGorunumu }) {
@@ -29,7 +32,7 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
     const canvas = paintGrid(view.izgara, {
       ramp: view.ramp,
       domain: view.alan,
-      scale: kontur && view.tanim.id !== 'degisim' ? OLCEK.kontur : OLCEK.piksel,
+      scale: olcek(view.izgara.cols, view.izgara.rows, kontur && view.tanim.id !== 'degisim'),
       contour: kontur && view.tanim.id !== 'degisim' ? contourStep(view.alan) : null,
       clip: ring,
       highlight: vurgu,

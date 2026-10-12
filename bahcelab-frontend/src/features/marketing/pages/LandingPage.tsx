@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react'
 import { BarChart3, Brain, Cpu, Leaf, LineChart, Sprout, Target } from 'lucide-react'
-import {
-  DiagonalStripSection,
-  StripTextContent,
-  textSideForStripEdge,
-} from '../components/DiagonalStripSection'
+import { DiagonalStripSection, StripTextContent } from '../components/DiagonalStripSection'
+import { textSideForStripEdge } from '../components/stripKenar'
 import { JourneyHero } from '../journey/JourneyHero'
 import { MarketingFutureStepsSection } from '../components/MarketingFutureStepsSection'
 import { MissionOutcomeCards } from '../components/MissionOutcomeCards'

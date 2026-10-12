@@ -293,3 +293,55 @@ async def test_today_and_status_use_the_new_risk_and_irrigation_inputs(user_clie
     status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
     assert status["veri_yeterli"] is True and "skor" not in status
     assert istanbul_today() - timedelta(days=0) == date.fromisoformat(today["tarih"])
+
+
+# ----------------------------------------------------------------------------- yaşam döngüsü
+async def test_notification_lifecycle_created_seen_resolved_or_snoozed(user_client: AsyncClient, factory, provider, test_engine):
+    provider.frost = True
+    await new_garden(user_client, ad="Döngü")
+    await new_garden(user_client, ad="Döngü 2")
+    await run_job(factory, provider, user_client)
+    everything = await listing(user_client)
+    first, second = everything["ogeler"][0], everything["ogeler"][1]
+    assert first["durum"] == "olustu" and first["okundu"] is False
+
+    seen = (await user_client.post(f"/notifications/{first['id']}/okundu")).json()
+    assert seen["durum"] == "goruldu" and seen["okundu"] is True
+
+    resolved = (await user_client.post(f"/notifications/{first['id']}/durum", json={"durum": "cozuldu"})).json()
+    assert resolved["durum"] == "cozuldu" and resolved["okundu"] is True
+    active = await listing(user_client)
+    assert first["id"] not in [n["id"] for n in active["ogeler"]]  # çözülen aktif listeden çıkar
+    assert first["id"] in [n["id"] for n in (await listing(user_client, durum="cozuldu"))["ogeler"]]
+    assert active["okunmamis_sayisi"] == everything["okunmamis_sayisi"] - 1
+
+    snoozed = (await user_client.post(f"/notifications/{second['id']}/durum", json={"durum": "ertelendi", "erteleme_gun": 2})).json()
+    assert snoozed["durum"] == "ertelendi" and snoozed["ertelendi_bitis"]
+    assert second["id"] not in [n["id"] for n in (await listing(user_client))["ogeler"]]
+    assert second["id"] in [n["id"] for n in (await listing(user_client, durum="ertelendi"))["ogeler"]]
+
+    # Erteleme süresi dolunca bildirim yeniden «oluştu» olarak görünür
+    async with test_engine.begin() as conn:
+        await conn.execute(text("UPDATE notifications SET ertelendi_bitis = now() - interval '1 minute' WHERE id = :i"), {"i": second["id"]})
+    back = [n for n in (await listing(user_client))["ogeler"] if n["id"] == second["id"]]
+    assert back and back[0]["durum"] == "olustu"
+
+    # Aynı olay yeniden bildirilmez (dedupe): çözülen bildirim iş tekrarında geri gelmez
+    again = await run_job(factory, provider, user_client)
+    assert again.uretilen == 0
+    assert first["id"] not in [n["id"] for n in (await listing(user_client))["ogeler"]]
+
+    reopened = (await user_client.post(f"/notifications/{first['id']}/durum", json={"durum": "goruldu"})).json()
+    assert reopened["durum"] == "goruldu"
+
+
+async def test_lifecycle_rejects_invalid_requests(user_client: AsyncClient, factory, provider):
+    provider.frost = True
+    await new_garden(user_client)
+    await run_job(factory, provider, user_client)
+    item = (await listing(user_client))["ogeler"][0]
+    url = f"/notifications/{item['id']}/durum"
+    assert (await user_client.post(url, json={"durum": "olustu"})).status_code == 422
+    assert (await user_client.post(url, json={"durum": "ertelendi"})).status_code == 422  # süre zorunlu
+    assert (await user_client.post(url, json={"durum": "ertelendi", "erteleme_gun": 99})).status_code == 422
+    assert (await user_client.post(f"/notifications/{uuid.uuid4()}/durum", json={"durum": "cozuldu"})).status_code == 404

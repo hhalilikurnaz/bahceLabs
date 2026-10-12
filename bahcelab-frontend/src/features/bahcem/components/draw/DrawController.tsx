@@ -15,8 +15,9 @@ import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
 import { useQueryClient } from '@tanstack/react-query'
 import { describeError } from '../../api/gardensApi'
 import { indeksKey, type IndexData } from '../../api/indeksApi'
-import type { PolygonCoordinates } from '../../api/types'
+import type { GardenGeometry, PolygonCoordinates } from '../../api/types'
 import { useGardens, useUpdateGarden } from '../../api/useGardens'
+import { OverlapWarning } from '../garden/OverlapWarning'
 import { DRAW } from '../../lib/config'
 import { formatDecare, geometryBounds, polygonsOf, ringAreaM2 } from '../../lib/geo'
 import { finishDrawing } from '../../lib/drawAdapter'
@@ -116,6 +117,7 @@ function DrawSession() {
   const [canRedo, setCanRedo] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [confirmGeometry, setConfirmGeometry] = useState<GardenGeometry | null>(null)
   const [ring, setRing] = useState<LngLat[] | null>(null)
   const [radiusM, setRadiusM] = useState<number | null>(null)
 
@@ -306,6 +308,13 @@ function DrawSession() {
     openForm({ geometry: { type: 'Polygon', coordinates }, source: 'draw' })
   }
 
+  /** «Kaydet»: önce örtüşme ve yeniden işleme uyarısı gösterilir */
+  function startConfirm() {
+    const feature = drawRef.current ? findPolygon(drawRef.current) : undefined
+    setConfirmGeometry(feature ? { type: 'Polygon', coordinates: feature.geometry.coordinates as PolygonCoordinates } : null)
+    setConfirming(true)
+  }
+
   function saveBoundary() {
     const draw = drawRef.current
     const feature = draw ? findPolygon(draw) : undefined
@@ -382,6 +391,7 @@ function DrawSession() {
             </p>
           )}
 
+          {confirming && editing && <div className="mt-3"><OverlapWarning geometry={confirmGeometry} ignoreId={editingId} /></div>}
           {confirming && (
             <p role="alert" className="mt-3 rounded-md bg-app-warn/10 px-3 py-2 text-small text-app-warn" data-testid="reprocess-warning">
               Sınır değişirse bu bahçenin eski uydu görüntüleri ve bölgeleri silinip yeniden işlenir; bu birkaç dakika sürebilir. Devam edilsin mi?
@@ -412,7 +422,7 @@ function DrawSession() {
               {editing ? (
                 <Button
                   variant="primary"
-                  onClick={confirming ? saveBoundary : () => setConfirming(true)}
+                  onClick={confirming ? saveBoundary : startConfirm}
                   loading={update.isPending}
                   icon={<Check className="h-4 w-4" aria-hidden />}
                 >

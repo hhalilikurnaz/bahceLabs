@@ -58,24 +58,32 @@ export interface Series {
   notlar: string[]
 }
 
-export interface ScoreComponent {
-  kod: string
+export type Seviye = 'normal' | 'normalin_alti' | 'belirgin_dusuk'
+
+export interface StatusChip {
+  kod: 'agac_gucu' | 'su' | 'risk'
   ad: string
-  puan: number | null
-  agirlik: number
-  kullanilabilir: boolean
-  neden: string
+  seviye: Seviye | null
+  aciklama: string
 }
 
+/** Durum kademesi (İyi · İzle · Dikkat · Sorun · Veri yok). Sayısal skor arayüze çıkmaz. */
 export interface GardenStatus {
-  durum: 'iyi' | 'izle' | 'dikkat' | 'veri_yok'
+  durum: 'iyi' | 'izle' | 'dikkat' | 'sorun' | 'veri_yok'
   etiket: string
-  skor: number | null
   ozet: string
   veriYeterli: boolean
   veriYetersizNedeni: string | null
-  bilesenler: ScoreComponent[]
-  guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmisGun: number; sonGoruntuYasiGun: number | null }
+  cipler: StatusChip[]
+  nasil: {
+    veri: string[]
+    sonGoruntuTarihi: string | null
+    guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmisGun: number; sonGoruntuYasiGun: number | null }
+    dusurenBilesen: StatusChip['kod'] | null
+    kademeNedeni: string
+    esikDurumu: string
+    formulNotu: string
+  }
 }
 
 export interface TodayItem {
@@ -144,12 +152,19 @@ export const agroApi = {
     return {
       durum: raw.durum,
       etiket: raw.etiket,
-      skor: raw.skor,
       ozet: raw.ozet,
       veriYeterli: raw.veri_yeterli,
       veriYetersizNedeni: raw.veri_yetersiz_nedeni,
-      bilesenler: raw.bilesenler,
-      guven: { seviye: raw.guven.seviye, aciklama: raw.guven.aciklama, gecmisGun: raw.guven.gecmis_gun, sonGoruntuYasiGun: raw.guven.son_goruntu_yasi_gun },
+      cipler: raw.cipler,
+      nasil: {
+        veri: raw.nasil.veri,
+        sonGoruntuTarihi: raw.nasil.son_goruntu_tarihi,
+        guven: { seviye: raw.nasil.guven.seviye, aciklama: raw.nasil.guven.aciklama, gecmisGun: raw.nasil.guven.gecmis_gun, sonGoruntuYasiGun: raw.nasil.guven.son_goruntu_yasi_gun },
+        dusurenBilesen: raw.nasil.dusuren_bilesen,
+        kademeNedeni: raw.nasil.kademe_nedeni,
+        esikDurumu: raw.nasil.esik_durumu,
+        formulNotu: raw.nasil.formul_notu,
+      },
     }
   },
   async today(gardenId: string): Promise<TodayItem[]> {

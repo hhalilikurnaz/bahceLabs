@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { useAuth } from '@/features/auth/AuthContext'
+import { useAuth } from '@/features/auth/useAuth'
 import { AddGardenMenu } from '../components/garden/AddGardenMenu'
 import { GardenForm } from '../components/garden/GardenForm'
 import { ImportPicker } from '../components/garden/ImportPicker'

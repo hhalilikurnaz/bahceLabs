@@ -125,7 +125,7 @@ export function AuthShell({ variant, title, subtitle, children, footer }: AuthSh
               className="overflow-hidden rounded-[1.25rem] border border-ink/12 bg-marketing-cream sm:rounded-[1.5rem]"
             >
               <div className="border-b border-ink/8 bg-cream/90 px-6 py-6 sm:px-8 sm:py-7">
-                <p className="text-caption font-medium uppercase tracking-[0.24em] text-leaf-deep/80">
+                <p className="text-caption font-medium uppercase tracking-[0.24em] text-leaf-deep">
                   {cardEyebrow[variant]}
                 </p>
                 <h1 className="mt-2 text-balance font-display text-[clamp(1.75rem,4vw,2.25rem)] leading-tight text-ink">

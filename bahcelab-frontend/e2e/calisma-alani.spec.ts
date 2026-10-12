@@ -102,3 +102,50 @@ test.describe('çalışma alanı (harita + sabit panel)', () => {
     })
   })
 })
+
+test.describe('harita görünümü (9B düzeltmeleri)', () => {
+  test('tarih yılı gösterir; histogram lejantı ortanca, tipik bant ve katmana özel uç kelimeleri taşır', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Lejant', lng: 27.74, lat: 38.74, sideM: 220 })
+    seedScenes(garden.id)
+    await page.goto(`/bahceler/${garden.id}`)
+    await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('secili-tarih')).toHaveText(/\d{1,2} \S+ \d{4}/)
+
+    const lejant = page.getByTestId('histogram-lejant')
+    await expect(lejant).toContainText('zayıf → güçlü')
+    await expect(page.getByTestId('lejant-ortanca')).toBeVisible()
+    await page.getByRole('button', { name: 'Genel skala' }).click()
+    await expect(page.getByTestId('lejant-tipik-bant')).toBeVisible()
+    await expect(page.getByTestId('lejant-ozet')).toContainText('tipik bant (ön değer)')
+    // başlık tek satır: skala seçimi başlığın altında küçük bir seçim
+    const title = await lejant.locator('div').first().boundingBox()
+    expect(title?.height ?? 99).toBeLessThan(24)
+
+    await page.getByTestId('katman-menusu').getByRole('button', { name: /Canlılık/ }).click()
+    await page.getByTestId('katman-yaprakSuyu').click()
+    await expect(lejant).toContainText('kuru → nemli')
+    await expect(page.getByTestId('lejant-tipik-bant')).toHaveCount(0) // NDMI için tipik bant tanımlı değil
+  })
+
+  test('komşu bahçenin adı haritada görünür ve tıklayınca o bahçeye geçilir', async ({ page }) => {
+    await newUser(page)
+    const a = await createGarden(page.request, { ad: 'Birinci Bahçe', lng: 27.75, lat: 38.75, sideM: 120 })
+    await createGarden(page.request, { ad: 'Soğuk Hava Deposu', lng: 27.7512, lat: 38.75, sideM: 100 })
+    await page.goto(`/bahceler/${a.id}`)
+    const etiket = page.getByTestId('komsu-etiketi')
+    await expect(etiket).toHaveText('Soğuk Hava Deposu', { timeout: 30_000 })
+    await etiket.click()
+    await expect(page.getByTestId('bahce-secici')).toContainText('Soğuk Hava Deposu')
+  })
+
+  test('harita köşesi telif yazısının altına girmez', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Hale', lng: 27.76, lat: 38.76 })
+    await page.goto(`/bahceler/${garden.id}`)
+    await expect(page.getByTestId('harita-kosesi')).toBeVisible({ timeout: 30_000 })
+    const corner = await page.getByTestId('harita-kosesi').boundingBox()
+    const attrib = await page.locator('.maplibregl-ctrl-attrib').boundingBox()
+    if (corner && attrib) expect(corner.y + corner.height).toBeLessThanOrEqual(attrib.y + 1) // köşe kutusu telifin altına girmez
+  })
+})

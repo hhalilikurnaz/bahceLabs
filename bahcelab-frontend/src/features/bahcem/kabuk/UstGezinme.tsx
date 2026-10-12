@@ -1,7 +1,7 @@
 import { Bell, LogOut, Moon, Search, Settings, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/features/auth/AuthContext'
+import { useAuth } from '@/features/auth/useAuth'
 import { useUnreadPoll } from '../api/notificationsApi'
 import { NotificationsPanel } from '../components/notifications/NotificationsPanel'
 import { badgeText } from '../lib/notifications'

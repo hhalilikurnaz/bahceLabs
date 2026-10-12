@@ -65,13 +65,13 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
   // Saatlik şerit: satıra odaklanıp ok tuşuyla saat seç
   const row = page.getByTestId('spray-row').first().getByRole('group')
   await row.focus()
-  for (let i = 0; i < 11; i++) await row.press('ArrowRight')
+  for (let i = 0; i < 5; i++) await row.press('ArrowRight') // 06:00 → 10:00
   await expect(page.getByTestId('spray-info')).toContainText('Rüzgâr çok kuvvetli')
 
-  // Gece saatleri soluk ve «gece» etiketli; üç durum desenle de ayrışır (renk körü dostu palet)
+  // Çubuk yalnız 06:00–19:00'u gösterir (13 saat); gece yalnız lejantta anılır. Üç durum desenle de ayrışır (renk körü dostu palet)
   const strip = page.getByTestId('spray-strip')
-  await expect(strip.getByTestId('night-label').first()).toHaveText('gece')
-  await expect(strip.locator('[data-night="true"]').first()).toHaveClass(/opacity-35/)
+  await expect(strip.getByTestId('spray-row').first().locator('[data-status]')).toHaveCount(13)
+  await expect(strip).toContainText('gece ilaçlama önerilmez')
   await expect(strip.locator('[data-status="uygun"].spray-ok').first()).toBeVisible()
   await expect(strip.locator('[data-status="sinirda"].spray-edge').first()).toBeVisible()
   await expect(strip.locator('[data-status="uygun_degil"].spray-no').first()).toBeVisible()

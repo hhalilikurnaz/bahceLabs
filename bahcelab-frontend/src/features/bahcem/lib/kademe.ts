@@ -8,3 +8,11 @@ export const KADEME_META: Record<Kademe, { ad: string; isaret: string; renk: str
   dikkat: { ad: 'Dikkat', isaret: '◆', renk: 'var(--color-app-warn)' },
   sorun: { ad: 'Sorun', isaret: '■', renk: 'var(--color-app-danger)' },
 }
+
+/** Bileşen çipi seviyesi: renk yerine metin + işaret (renk körlüğü). */
+export const SEVIYE_META = {
+  normal: { ad: 'normal', isaret: '✓', renk: 'var(--color-app-success)' },
+  normalin_alti: { ad: 'normalin altı', isaret: '▲', renk: 'var(--color-app-watch)' },
+  belirgin_dusuk: { ad: 'belirgin düşük', isaret: '■', renk: 'var(--color-app-danger)' },
+} as const
+export type SeviyeKodu = keyof typeof SEVIYE_META

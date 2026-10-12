@@ -5,6 +5,7 @@ import { describeError, gardensApi } from '../../api/gardensApi'
 import { IRRIGATION_SYSTEMS, PRODUCTS, type GardenGeometry, type SulamaSistemi, type Urun } from '../../api/types'
 import { useCreateGarden } from '../../api/useGardens'
 import { useGardenNav } from '../../hooks/useGardenNav'
+import { OverlapWarning } from './OverlapWarning'
 import { VarietyField } from './VarietyField'
 import { varietyPayload, type VarietyValue } from '../../lib/variety'
 import { GARDEN_LIMITS } from '../../lib/config'
@@ -151,6 +152,7 @@ export function GardenForm() {
             {areaError}
           </p>
         )}
+        {ready && <OverlapWarning geometry={geometry} />}
         {!ready && (
           <p className="rounded-md bg-app-accent-soft px-3 py-2.5 text-small text-app-text">
             Önce haritada sınırı çizin, ardından <strong>“Sınır tamam”</strong>a basın. Bilgileri şimdiden doldurabilirsiniz.

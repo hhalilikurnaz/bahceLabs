@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { newUser, square } from './yardimcilar'
+import { createGarden, newUser, square } from './yardimcilar'
 
 test.beforeEach(async ({ page }) => {
   await newUser(page)
@@ -55,4 +55,23 @@ test('bozuk dosya anlaşılır hata verir ve akış bozulmaz', async ({ page }) 
   await (await chooser).setFiles({ name: 'bozuk.geojson', mimeType: 'application/geo+json', buffer: Buffer.from('{ bu json degil') })
   await expect(page.getByText(/okunamadı|geçersiz|bulunamadı/i).first()).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Yeni bahçe' })).toHaveCount(0)
+})
+
+test('başka bir bahçeyle örtüşen sınır uyarı verir (engellemez); komşu parsel uyarmaz', async ({ page }) => {
+  await createGarden(page.request, { ad: 'Mevcut', lng: 27.7, lat: 38.7, sideM: 150 })
+  const upload = async (geometry: GeoJSON.Polygon) => {
+    await page.goto('/bahceler/yeni')
+    await page.getByRole('button', { name: 'Bahçe ekle' }).first().click()
+    const chooser = page.waitForEvent('filechooser')
+    await page.getByRole('menuitem', { name: /Dosya yükle/ }).click()
+    await (await chooser).setFiles({ name: 'b.geojson', mimeType: 'application/geo+json', buffer: Buffer.from(JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { name: 'Yeni' }, geometry }] })) })
+    await expect(page.getByRole('heading', { name: 'Yeni bahçe' })).toBeVisible()
+  }
+  await upload(square(27.7005, 38.7, 150)) // büyük ölçüde örtüşür
+  await expect(page.getByTestId('ortusme-uyarisi')).toContainText('“Mevcut”')
+  await expect(page.getByRole('button', { name: 'Kaydet' })).toBeEnabled() // engellemez
+
+  await upload(square(27.7035, 38.7, 150)) // yan yana, örtüşmez
+  await expect(page.getByTestId('form-area')).toContainText('dekar')
+  await expect(page.getByTestId('ortusme-uyarisi')).toHaveCount(0)
 })

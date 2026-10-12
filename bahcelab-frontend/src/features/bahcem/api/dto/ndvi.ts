@@ -50,7 +50,14 @@ export interface ApiAlert {
   degisim_yuzde: number | null
 }
 
+export interface ApiTipikBant {
+  alt: number
+  ust: number
+  durum: 'dogrulanmadi' | 'muhendis_onayli'
+}
+
 export interface ApiIndexOverview {
+  tipik_bantlar?: Record<string, ApiTipikBant>
   gozlemler: ApiScene[]
   isleme: ApiJob | null
   son_kontrol: string | null

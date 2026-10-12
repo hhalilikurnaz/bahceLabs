@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Reveal } from './Reveal'
-import { narrowAnchorForEdge, StripNarrowGlyph } from './StripNarrowGlyph'
+import { StripNarrowGlyph } from './StripNarrowGlyph'
+import { narrowAnchorForEdge } from './stripKenar'
 
 export type StripTone = 'cream' | 'sage' | 'forest' | 'paper'
 type TopEdge = 'flat' | 'slant-down' | 'slant-up'
@@ -70,11 +71,6 @@ export function DiagonalStripSection({
       {bottomSlot}
     </section>
   )
-}
-
-export function textSideForStripEdge(topEdge: TopEdge): 'left' | 'right' {
-  if (topEdge === 'slant-up') return 'left'
-  return 'right'
 }
 
 interface StripTextContentProps {

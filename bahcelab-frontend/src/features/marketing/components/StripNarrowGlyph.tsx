@@ -29,12 +29,6 @@ const nudgeClass: Record<NarrowAnchor, string> = {
   'edge-right': 'translate-x-[18%]',
 }
 
-export function narrowAnchorForEdge(topEdge: 'flat' | 'slant-down' | 'slant-up'): NarrowAnchor {
-  if (topEdge === 'slant-down') return 'top-left'
-  if (topEdge === 'slant-up') return 'top-right'
-  return 'edge-right'
-}
-
 export function StripNarrowGlyph({ icon: Icon, anchor, label }: StripNarrowGlyphProps) {
   return (
     <div

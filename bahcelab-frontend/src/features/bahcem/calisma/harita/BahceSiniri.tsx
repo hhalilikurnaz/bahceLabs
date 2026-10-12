@@ -27,7 +27,9 @@ export function BahceSiniri({ garden, others }: { garden: Garden; others: Garden
     upsert('kb-rest', rest)
     if (!map.getLayer('kb-dim')) map.addLayer({ id: 'kb-dim', type: 'fill', source: 'kb-dim', paint: { 'fill-color': '#f6f5f0', 'fill-opacity': 0.42 } })
     if (!map.getLayer('kb-rest')) map.addLayer({ id: 'kb-rest', type: 'line', source: 'kb-rest', paint: { 'line-color': '#ffffff', 'line-width': 1, 'line-opacity': 0.7, 'line-dasharray': [2, 2] } })
-    if (!map.getLayer('kb-sel')) map.addLayer({ id: 'kb-sel', type: 'line', source: 'kb-sel', paint: { 'line-color': '#17201b', 'line-width': 2 } })
+    // Uydu görüntüsü üstünde de seçilsin: koyu çizgi + beyaz hale
+    if (!map.getLayer('kb-sel-hale')) map.addLayer({ id: 'kb-sel-hale', type: 'line', source: 'kb-sel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 5, 'line-opacity': 0.9 } })
+    if (!map.getLayer('kb-sel')) map.addLayer({ id: 'kb-sel', type: 'line', source: 'kb-sel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#17201b', 'line-width': 2 } })
   }, [map, styleVersion, garden, others])
 
   useEffect(() => {

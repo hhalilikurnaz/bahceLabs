@@ -2,7 +2,7 @@ import { Bell, CircleAlert, Info, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, EmptyState, ErrorState, SelectField, Skeleton, Switch, cx } from '@/components/ui'
-import { useMarkAllRead, useMarkRead, useNotifications, type AppNotification, type NotificationFilters } from '../../api/notificationsApi'
+import { useMarkAllRead, useMarkRead, useNotifications, useSetNotificationState, type AppNotification, type NotificationFilters, type NotificationView } from '../../api/notificationsApi'
 import { useGardens } from '../../api/useGardens'
 import { timeAgo } from '../../lib/dates'
 
@@ -18,34 +18,43 @@ const TYPES = [
 const ICON = { kritik: CircleAlert, uyari: TriangleAlert, bilgi: Info } as const
 const TONE = { kritik: 'text-app-danger', uyari: 'text-app-warn', bilgi: 'text-app-accent' } as const
 
-function Item({ item, gardenName, onOpen }: { item: AppNotification; gardenName: string | null; onOpen: (item: AppNotification) => void }) {
+const VIEWS: { value: NotificationView; label: string }[] = [
+  { value: 'aktif', label: 'Aktif' },
+  { value: 'ertelendi', label: 'Ertelenen' },
+  { value: 'cozuldu', label: 'Çözülen' },
+]
+const actionBtn = 'min-h-9 rounded-md border border-app-border px-2.5 text-caption font-semibold text-app-text hover:bg-app-card-hover max-[560px]:min-h-11'
+
+function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; gardenName: string | null; onOpen: (item: AppNotification) => void; onState: (item: AppNotification, durum: 'goruldu' | 'cozuldu' | 'ertelendi', gun?: number) => void }) {
   const Icon = ICON[item.oncelik]
   return (
-    <li>
-      <button
-        type="button"
-        onClick={() => onOpen(item)}
-        data-testid="notification-item"
-        data-read={item.okundu}
-        data-priority={item.oncelik}
-        className={cx(
-          'flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors hover:bg-app-card-hover',
-          item.okundu ? 'border-app-border bg-app-panel' : 'border-app-accent/40 bg-app-card shadow-e1',
-        )}
-      >
+    <li className={cx('rounded-md border', item.okundu ? 'border-app-border bg-app-panel' : 'border-app-accent/40 bg-app-card shadow-e1')} data-testid="notification-item" data-read={item.okundu} data-state={item.durum} data-priority={item.oncelik}>
+      <button type="button" onClick={() => onOpen(item)} data-testid="notification-open" className="flex w-full items-start gap-3 rounded-md p-3 text-left transition-colors hover:bg-app-card-hover">
         <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2">
             <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
-            {!item.okundu && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
+            {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
           </span>
           <span className="mt-0.5 line-clamp-3 block text-small text-app-text-muted">{item.metin}</span>
           <span className="mt-1 block text-caption text-app-text-dim">
             {item.turAdi}
             {gardenName ? ` · ${gardenName}` : ''} · {timeAgo(item.olusturma) ?? ''}
+            {item.durum === 'ertelendi' && item.ertelendiBitis ? ` · ${new Date(item.ertelendiBitis).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} tarihine ertelendi` : ''}
           </span>
         </span>
       </button>
+      <div className="flex flex-wrap gap-2 px-3 pb-3 pl-11">
+        {item.durum === 'cozuldu' || item.durum === 'ertelendi' ? (
+          <button type="button" className={actionBtn} onClick={() => onState(item, 'goruldu')}>{item.durum === 'cozuldu' ? 'Yeniden aç' : 'Ertelemeyi kaldır'}</button>
+        ) : (
+          <>
+            <button type="button" className={actionBtn} onClick={() => onState(item, 'cozuldu')}>Çözüldü</button>
+            <button type="button" className={actionBtn} onClick={() => onState(item, 'ertelendi', 1)}>1 gün ertele</button>
+            <button type="button" className={actionBtn} onClick={() => onState(item, 'ertelendi', 3)}>3 gün ertele</button>
+          </>
+        )}
+      </div>
     </li>
   )
 }
@@ -54,10 +63,11 @@ function Item({ item, gardenName, onOpen }: { item: AppNotification; gardenName:
 export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   const navigate = useNavigate()
   const { data: gardens } = useGardens()
-  const [filters, setFilters] = useState<NotificationFilters>({ tur: '', bahce: '', yalnizOkunmamis: false, sayfa: 1 })
+  const [filters, setFilters] = useState<NotificationFilters>({ tur: '', bahce: '', yalnizOkunmamis: false, sayfa: 1, gorunum: 'aktif' })
   const { data, isLoading, isError, refetch, isFetching } = useNotifications(filters)
   const markRead = useMarkRead()
   const markAll = useMarkAllRead()
+  const setState = useSetNotificationState()
   const names = new Map((gardens ?? []).map((g) => [g.id, g.ad]))
   const patch = (next: Partial<NotificationFilters>) => setFilters((f) => ({ ...f, sayfa: 1, ...next }))
 
@@ -99,6 +109,11 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
             ))}
           </SelectField>
         </div>
+        <div role="tablist" aria-label="Bildirim durumu" className="flex gap-1">
+          {VIEWS.map((v) => (
+            <button key={v.value} role="tab" type="button" aria-selected={(filters.gorunum ?? 'aktif') === v.value} onClick={() => patch({ gorunum: v.value })} className={cx('min-h-9 rounded-md px-3 text-small font-semibold max-[560px]:min-h-11', (filters.gorunum ?? 'aktif') === v.value ? 'bg-app-text text-app-panel' : 'text-app-text-muted hover:bg-app-card-hover')}>{v.label}</button>
+          ))}
+        </div>
         <Switch label="Yalnız okunmamışlar" checked={filters.yalnizOkunmamis} onChange={(v) => patch({ yalnizOkunmamis: v })} />
       </header>
 
@@ -114,14 +129,14 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
         ) : data.ogeler.length === 0 ? (
           <EmptyState
             icon={<Bell className="h-6 w-6" aria-hidden />}
-            title={filters.tur || filters.bahce || filters.yalnizOkunmamis ? 'Bu süzgeçle bildirim yok' : 'Henüz bildirim yok'}
+            title={filters.tur || filters.bahce || filters.yalnizOkunmamis ? 'Bu süzgeçle bildirim yok' : (filters.gorunum ?? 'aktif') === 'cozuldu' ? 'Çözülen bildirim yok' : (filters.gorunum ?? 'aktif') === 'ertelendi' ? 'Ertelenen bildirim yok' : 'Henüz bildirim yok'}
             description="Don, sıcak, zararlı riski, uydu uyarısı ve sulama ihtiyacı oluştuğunda burada listelenir."
           />
         ) : (
           <>
             <ul className="space-y-2" data-testid="notification-list">
               {data.ogeler.map((item) => (
-                <Item key={item.id} item={item} gardenName={item.bahceId ? (names.get(item.bahceId) ?? null) : null} onOpen={open} />
+                <Item key={item.id} item={item} gardenName={item.bahceId ? (names.get(item.bahceId) ?? null) : null} onOpen={open} onState={(it, durum, erteleme_gun) => setState.mutate({ id: it.id, durum, erteleme_gun })} />
               ))}
             </ul>
             {data.sayfaSayisi > 1 && (

@@ -1,4 +1,4 @@
-import { useAuth } from '@/features/auth/AuthContext'
+import { useAuth } from '@/features/auth/useAuth'
 import { NotificationPreferences } from '../components/notifications/NotificationPreferences'
 import { BosDurum } from './BosDurum'
 

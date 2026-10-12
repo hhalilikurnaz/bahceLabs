@@ -1,13 +1,13 @@
 import { Check } from 'lucide-react'
 import type { PlantingSubStepId, PlanningStepId, ProductSelection } from '../../../types'
 
-export interface SidebarStepDefinition {
+interface SidebarStepDefinition {
   id: PlanningStepId
   label: string
   subSteps?: { id: PlantingSubStepId; label: string }[]
 }
 
-export const SIDEBAR_STEPS: SidebarStepDefinition[] = [
+const SIDEBAR_STEPS: SidebarStepDefinition[] = [
   { id: 'land', label: 'Arazi Tanımı' },
   { id: 'product', label: 'Ürün Seçimi' },
   {

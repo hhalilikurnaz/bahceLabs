@@ -58,7 +58,15 @@ export interface Alert {
   degisimYuzde: number | null
 }
 
+/** Ürünün indeks başına tipik aralığı (katalogda ön değer; mühendis onayı bekliyor olabilir). */
+export interface TipikBant {
+  alt: number
+  ust: number
+  onDeger: boolean
+}
+
 export interface IndexData {
+  tipikBantlar: Partial<Record<IndexId, TipikBant>>
   gozlemler: Scene[]
   isleme: Job | null
   sonKontrol: string | null
@@ -125,6 +133,7 @@ function mapScene(o: ApiScene): Scene {
 
 function fromApi(data: ApiIndexOverview): IndexData {
   return {
+    tipikBantlar: Object.fromEntries(Object.entries(data.tipik_bantlar ?? {}).map(([k, b]) => [k, { alt: b.alt, ust: b.ust, onDeger: b.durum !== 'muhendis_onayli' }])),
     gozlemler: data.gozlemler.map(mapScene),
     isleme: data.isleme && {
       id: data.isleme.id,

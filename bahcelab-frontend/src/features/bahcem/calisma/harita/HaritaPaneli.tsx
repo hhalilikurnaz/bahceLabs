@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { useAuth } from '@/features/auth/AuthContext'
+import { lazy, Suspense, useMemo } from 'react'
+import { useAuth } from '@/features/auth/useAuth'
 import { ErrorState } from '@/components/ui'
 import { useBahcemStore } from '../../stores/bahcemStore'
 import type { Garden } from '../../api/types'
@@ -8,9 +8,11 @@ import { useCalismaStore } from '../calismaStore'
 import { useHaritaGorunumu } from '../useHaritaGorunumu'
 import { BahceSiniri } from './BahceSiniri'
 import { BolgeKatmani } from './BolgeKatmani'
+import { BolgeLejanti } from './BolgeLejanti'
 import { GorunumKatmani } from './GorunumKatmani'
 import { HaritaKosesi } from './HaritaKosesi'
 import { HistogramLejant } from './HistogramLejant'
+import { KomsuEtiketleri } from './KomsuEtiketleri'
 import { KatmanMenusu } from './KatmanMenusu'
 import { NoktaInceleme } from './NoktaInceleme'
 import { TarihKutusu } from './TarihKutusu'
@@ -23,18 +25,20 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
   const { user } = useAuth()
   const view = useHaritaGorunumu(garden.id)
   const katman = useCalismaStore((s) => s.katman)
+  const others = useMemo(() => gardens.filter((g) => g.id !== garden.id), [gardens, garden.id])
   const drawing = useBahcemStore((s) => s.mode !== 'idle')
   if (!user) return null
   return (
     <div className="relative h-full w-full overflow-hidden" data-testid="harita-paneli">
       <MapProvider userId={user.id}>
-        <BahceSiniri garden={garden} others={gardens.filter((g) => g.id !== garden.id)} />
+        <BahceSiniri garden={garden} others={others} />
         <GorunumKatmani garden={garden} view={view} />
+        <KomsuEtiketleri others={others} />
         <BolgeKatmani gardenId={garden.id} visible={katman === 'bolgeler'} />
-        <div className="absolute left-3.5 top-3.5 z-10"><KatmanMenusu gardenId={garden.id} /></div>
-        <div className="absolute right-3.5 top-3.5 z-10"><TarihKutusu gardenId={garden.id} view={view} /></div>
-        <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)]"><HistogramLejant view={view} /></div>
-        <div className="absolute bottom-7 right-3.5 z-10 max-[900px]:hidden"><HaritaKosesi garden={garden} /></div>
+        <div className="absolute left-3.5 top-3.5 z-20"><KatmanMenusu gardenId={garden.id} /></div>
+        <div className="absolute right-3.5 top-3.5 z-10 max-[560px]:left-3.5 max-[560px]:right-auto max-[560px]:top-[66px]"><TarihKutusu gardenId={garden.id} view={view} /></div>
+        <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)]">{katman === 'bolgeler' ? <BolgeLejanti gardenId={garden.id} /> : <HistogramLejant view={view} />}</div>
+        <div className="absolute bottom-9 right-3.5 z-10 max-[900px]:hidden"><HaritaKosesi garden={garden} /></div>
         {view.hata && (
           <div className="glass absolute left-1/2 top-1/2 z-10 w-[min(360px,calc(100%-28px))] -translate-x-1/2 -translate-y-1/2">
             <ErrorState title="Uydu verisi alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." onRetry={view.tekrarDene} />

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/features/auth/AuthContext'
+import { useAuth } from '@/features/auth/useAuth'
 import { BahcelabBrandLogo } from '@/features/marketing/components/BahcelabBrandLogo'
 
 interface PlanningEntryShellProps {

@@ -73,24 +73,30 @@ export interface ApiSeriler {
   notlar: string[]
 }
 
-export interface ApiBilesen {
-  kod: string
+export interface ApiCip {
+  kod: 'agac_gucu' | 'su' | 'risk'
   ad: string
-  puan: number | null
-  agirlik: number
-  kullanilabilir: boolean
-  neden: string
+  seviye: 'normal' | 'normalin_alti' | 'belirgin_dusuk' | null
+  aciklama: string
 }
 
+/** Durum kademesi yanıtı: iç skor YOKTUR (arayüze sayı çıkmaz). */
 export interface ApiDurum {
-  durum: 'iyi' | 'izle' | 'dikkat' | 'veri_yok'
+  durum: 'iyi' | 'izle' | 'dikkat' | 'sorun' | 'veri_yok'
   etiket: string
-  skor: number | null
   ozet: string
   veri_yeterli: boolean
   veri_yetersiz_nedeni: string | null
-  bilesenler: ApiBilesen[]
-  guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmis_gun: number; son_goruntu_yasi_gun: number | null }
+  cipler: ApiCip[]
+  nasil: {
+    veri: string[]
+    son_goruntu_tarihi: string | null
+    guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmis_gun: number; son_goruntu_yasi_gun: number | null }
+    dusuren_bilesen: 'agac_gucu' | 'su' | 'risk' | null
+    kademe_nedeni: string
+    esik_durumu: string
+    formul_notu: string
+  }
   hesaplama_tarihi: string
 }
 

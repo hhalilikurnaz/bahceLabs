@@ -21,7 +21,7 @@ export function TarihKutusu({ gardenId, view }: { gardenId: string; view: Harita
         <ChevronLeft className="h-4 w-4" aria-hidden />
       </button>
       <div className="min-w-[132px] px-1.5 leading-tight">
-        <b className="num block text-[13px]" data-testid="secili-tarih">{s ? gunAy(s.tarih) : '—'}</b>
+        <b className="num block text-[13px]" data-testid="secili-tarih">{s ? gunAy(s.tarih, 'always') : '—'}</b>
         <span className="num block text-[10.5px] text-app-text-muted">
           {s ? kaynakSatiri([view.tanim.id === 'degisim' && view.onceki ? `${gunAy(view.onceki.tarih)} ile fark` : null, s.bulutOrani != null ? `bulut ${yuzde(s.bulutOrani)}` : null, view.tanim.cozunurluk]) : 'görüntü yok'}
         </span>
