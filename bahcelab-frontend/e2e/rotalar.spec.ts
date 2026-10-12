@@ -81,3 +81,20 @@ test('üst gezinme: «Faz 1.5 / Adım 17» bölümleri; planlama rotası kapalı
   await page.goto('/planning')
   await expect(page).toHaveURL(/\/bahceler/)
 })
+
+test.describe('1024 px', () => {
+  test.use({ viewport: { width: 1024, height: 768 } })
+  test('üst gezinmede bütün bölümler (Pazar dahil) tam görünür; arama simgeye iner', async ({ page }) => {
+    await page.goto('/bahceler')
+    const nav = page.getByRole('navigation', { name: 'Ana gezinme' })
+    await expect(nav.getByRole('link', { name: /^Pazar/ })).toBeVisible()
+    const kapsayici = await nav.boundingBox()
+    for (const ad of ['Bahçeler', 'Asistan', 'İşlerim', 'Hizmetler', 'Pazar']) {
+      const kutu = await nav.getByRole('link', { name: new RegExp(`^${ad}`) }).boundingBox()
+      expect(kutu, ad).not.toBeNull()
+      expect((kutu?.x ?? 0) + (kutu?.width ?? 0), `${ad} kırpılmamalı`).toBeLessThanOrEqual((kapsayici?.x ?? 0) + (kapsayici?.width ?? 0) + 1)
+    }
+    const kaydirma = await nav.evaluate((el) => el.scrollWidth - el.clientWidth)
+    expect(kaydirma, 'gezinme yatay kaymamalı').toBeLessThanOrEqual(1)
+  })
+})

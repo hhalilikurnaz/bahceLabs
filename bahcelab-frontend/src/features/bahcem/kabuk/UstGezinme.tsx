@@ -63,10 +63,10 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
         ))}
       </nav>
       <span className="flex-1" />
-      <button type="button" onClick={onKomut} aria-label="Ara veya sor" data-testid="komut-ac" className="flex h-9 max-[900px]:h-11 shrink-0 w-[300px] max-w-[32vw] items-center gap-2.5 rounded-md border border-app-border bg-app-bg px-2.5 text-left text-app-text-muted max-[900px]:w-11 max-[900px]:min-w-11 max-[900px]:justify-center">
+      <button type="button" onClick={onKomut} aria-label="Ara veya sor" data-testid="komut-ac" className="flex h-9 max-[1180px]:h-11 shrink-0 w-[300px] max-w-[32vw] items-center gap-2.5 rounded-md border border-app-border bg-app-bg px-2.5 text-left text-app-text-muted max-[1180px]:w-11 max-[1180px]:min-w-11 max-[1180px]:justify-center">
         <Search className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="flex-1 truncate text-[13px] max-[900px]:hidden">Ara veya sor — “zayıf bölgeleri göster”</span>
-        <kbd className="rounded-[2px] border border-app-border bg-app-panel px-1.5 text-[10.5px] max-[900px]:hidden">⌘K</kbd>
+        <span className="flex-1 truncate text-[13px] max-[1180px]:hidden">Ara veya sor — “zayıf bölgeleri göster”</span>
+        <kbd className="rounded-[2px] border border-app-border bg-app-panel px-1.5 text-[10.5px] max-[1180px]:hidden">⌘K</kbd>
       </button>
       <div ref={bRef} className="relative shrink-0">
         <button type="button" className={icon} aria-label={`Bildirimler${unread ? `, ${unread} okunmamış` : ''}`} aria-expanded={bildirim} onClick={() => setBildirim(!bildirim)} data-testid="bildirim-ac">
