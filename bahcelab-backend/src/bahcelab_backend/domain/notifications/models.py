@@ -38,6 +38,7 @@ class NotificationModel(Base):
     durum: Mapped[str] = mapped_column(String(12), nullable=False, server_default="olustu", default="olustu")
     ertelendi_bitis: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cozuldu_zamani: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    otomatik_cozuldu: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)  # koşul ortadan kalktığı için sistem çözdü (koşul dönerse yeniden açılır)
     dedupe_key: Mapped[str] = mapped_column(String(200), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

@@ -81,6 +81,7 @@ class NotificationRepository:
         notification.okundu_zamani = notification.okundu_zamani or now
         notification.ertelendi_bitis = now + timedelta(days=days) if durum == "ertelendi" and days else None
         notification.cozuldu_zamani = now if durum == "cozuldu" else None
+        notification.otomatik_cozuldu = False  # kullanıcı kararı: koşul dönse de kendiliğinden yeniden açılmaz
 
     async def set_state(self, notification: NotificationModel, durum: str, days: int | None) -> None:
         self._apply(notification, durum, days, datetime.now(UTC))
@@ -108,6 +109,25 @@ class NotificationRepository:
         if new_id is None:
             return None
         return await self.session.get(NotificationModel, new_id)
+
+    async def update_risk(self, notification: NotificationModel, title: str, text: str, *, reopen: bool) -> None:
+        notification.baslik, notification.metin = title, text
+        if reopen:  # sistem çözmüştü, risk geri döndü: yeniden «oluştu»
+            notification.durum, notification.okundu, notification.okundu_zamani = "olustu", False, None
+            notification.cozuldu_zamani, notification.otomatik_cozuldu, notification.ertelendi_bitis = None, False, None
+        await self.session.flush()
+
+    async def resolve_auto(self, notification: NotificationModel) -> None:
+        """Risk ortadan kalktı: aktif bildirim otomatik «çözüldü»."""
+        notification.durum, notification.okundu = "cozuldu", True
+        notification.okundu_zamani = notification.okundu_zamani or datetime.now(UTC)
+        notification.cozuldu_zamani, notification.otomatik_cozuldu, notification.ertelendi_bitis = datetime.now(UTC), True, None
+        await self.session.flush()
+
+    async def by_key(self, dedupe_key: str) -> NotificationModel | None:
+        return (
+            await self.session.execute(select(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.dedupe_key == dedupe_key))
+        ).scalar_one_or_none()
 
     # --- tercihler
     async def preferences(self) -> dict[str, bool]:

@@ -2,6 +2,7 @@ import math
 import uuid
 from datetime import UTC, datetime
 
+from bahcelab_backend.domain.agro.risks import RiskSonucu
 from bahcelab_backend.domain.notifications.channels import registry
 from bahcelab_backend.domain.notifications.models import NotificationModel
 from bahcelab_backend.domain.notifications.repository import NotificationRepository
@@ -77,6 +78,36 @@ class NotificationService:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bilinmeyen bildirim türü.")
         await self.repo.set_preference(tur, enabled)
         return await self.preferences()
+
+    async def reconcile_risks(self, garden_id: uuid.UUID, garden_name: str, risks: list[RiskSonucu]) -> int:
+        """Zararlı/hastalık riski bildirimi riskin SEVİYESİNİ izler; bahçe + risk başına tek bildirim (anahtar `risk:<bahçe>:<kod>`).
+
+        yüksek: yoksa oluşturulur; sistem tarafından çözülmüşse yeniden açılır (kullanıcı elle çözdüyse risk sürerken açılmaz).
+        orta: var olan aktif bildirim «orta risk» olarak güncellenir; yeni bildirim üretilmez.
+        düşük / veri yok / risk yok: var olan aktif bildirim otomatik «çözüldü» olur. Dönüş: yeni oluşturulan sayısı."""
+        prefs = await self.repo.preferences()
+        created = 0
+        for risk in risks:
+            key = f"risk:{garden_id}:{risk.kod}"
+            level = risk.seviye if risk.veri_yeterli else "dusuk"
+            existing = await self.repo.by_key(key)
+            title = f"{garden_name}: {risk.ad} – {'yüksek' if level == 'yuksek' else 'orta'} risk"
+            if level in ("yuksek", "orta") and not prefs.get("zararli_riski", True):
+                continue
+            if level == "yuksek":
+                if existing is None:
+                    row = await self.repo.insert_if_new(Candidate(garden_id, "zararli_riski", "uyari", title, risk.sade, "hava", key))
+                    if row is not None:
+                        created += 1
+                        await registry.deliver(self.repo.workspace_id, row)
+                else:
+                    await self.repo.update_risk(existing, title, risk.sade, reopen=existing.durum == "cozuldu" and existing.otomatik_cozuldu)
+            elif existing is not None and existing.durum != "cozuldu":
+                if level == "orta":
+                    await self.repo.update_risk(existing, title, risk.sade, reopen=False)
+                else:
+                    await self.repo.resolve_auto(existing)
+        return created
 
     async def publish(self, candidates: list[Candidate]) -> list[NotificationModel]:
         """Tercihi kapalı türler atlanır; aynı olay (dedupe) için yalnızca ilk çağrı kayıt üretir. Yeni kayıtlar ek kanallara iletilir."""

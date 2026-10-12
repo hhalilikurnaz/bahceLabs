@@ -1,4 +1,4 @@
-"""Bildirim adaylarını üretir (SAF): hava uyarıları, uydu uyarıları, yüksek zararlı riski, sulama ihtiyacı.
+"""Bildirim adaylarını üretir (SAF): hava uyarıları, uydu uyarıları, sulama ihtiyacı. (Zararlı riski bildirimi seviyeyi izler: `NotificationService.reconcile_risks`.)
 Her aday tekrar önleme anahtarı (`dedupe_key`) taşır: aynı olay iş tekrarında tek bildirim üretir."""
 
 from __future__ import annotations
@@ -7,7 +7,6 @@ import uuid
 from datetime import date
 
 from bahcelab_backend.domain.agro.irrigation import IrrigationResult
-from bahcelab_backend.domain.agro.risks import RiskSonucu
 from bahcelab_backend.domain.ndvi.schemas import Uyari
 from bahcelab_backend.domain.notifications.types import Candidate
 from bahcelab_backend.domain.weather.schemas import HavaUyarisi
@@ -19,7 +18,6 @@ def build_candidates(
     *,
     weather_alerts: list[HavaUyarisi],
     satellite_alerts: list[Uyari],
-    risks: list[RiskSonucu],
     irrigation: IrrigationResult | None,
     today: date,
 ) -> list[Candidate]:
@@ -35,12 +33,6 @@ def build_candidates(
             Candidate(garden_id, "indeks_dususu", "kritik" if sat.oncelik == "yuksek" else "uyari", f"{garden_name}: {sat.baslik}", sat.mesaj, "durum",
                       f"uydu:{garden_id}:{sat.son_tarih}:{','.join(sorted(sat.indeksler))}")
         )
-    for risk in risks:
-        if risk.seviye == "yuksek" and risk.veri_yeterli:
-            out.append(
-                Candidate(garden_id, "zararli_riski", "uyari", f"{garden_name}: {risk.ad}", risk.sade, "hava",
-                          f"risk:{garden_id}:{risk.kod}:{today.isocalendar().year}-W{today.isocalendar().week:02d}")
-            )
     if irrigation is not None and irrigation.gerekli:
         iso = today.isocalendar()
         out.append(Candidate(garden_id, "sulama", "bilgi", f"{garden_name}: sulama ihtiyacı görünüyor", irrigation.cumle, "hava", f"sulama:{garden_id}:{iso.year}-W{iso.week:02d}"))

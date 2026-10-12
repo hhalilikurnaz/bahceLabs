@@ -345,3 +345,45 @@ async def test_lifecycle_rejects_invalid_requests(user_client: AsyncClient, fact
     assert (await user_client.post(url, json={"durum": "ertelendi"})).status_code == 422  # süre zorunlu
     assert (await user_client.post(url, json={"durum": "ertelendi", "erteleme_gun": 99})).status_code == 422
     assert (await user_client.post(f"/notifications/{uuid.uuid4()}/durum", json={"durum": "cozuldu"})).status_code == 404
+
+
+# ----------------------------------------------------------------------------- risk bildirimi: seviye değişince güncellenir / çözülür
+def _risk_stub(level: str):
+    from datetime import timedelta
+
+    from bahcelab_backend.domain.agro.risks import RiskSonucu
+
+    async def compute(self, garden_row, history, weather, today):
+        return [(RiskSonucu("akdeniz_meyve_sinegi", "Akdeniz meyve sineği", level, "gerekçe", today, today + timedelta(days=7), True), None, None)]  # type: ignore[arg-type]
+
+    return compute
+
+
+async def test_risk_notification_follows_the_risk_level_with_a_single_active_item(user_client: AsyncClient, factory, provider, monkeypatch):
+    from bahcelab_backend.domain.agro.service import AgroService
+
+    await new_garden(user_client, ad="Risk Bahçesi")
+
+    async def run(level: str):
+        monkeypatch.setattr(AgroService, "_compute_risks", _risk_stub(level))
+        await run_job(factory, provider, user_client)
+        return [n for n in (await listing(user_client, tur="zararli_riski", durum="hepsi"))["ogeler"]]
+
+    high = await run("yuksek")
+    assert len(high) == 1 and "yüksek risk" in high[0]["baslik"] and high[0]["durum"] == "olustu"
+    assert len(await run("yuksek")) == 1  # iş tekrarı çoğaltmaz
+
+    medium = await run("orta")  # yüksek → orta: aynı bildirim güncellenir, hâlâ aktif
+    assert len(medium) == 1 and medium[0]["id"] == high[0]["id"] and "orta risk" in medium[0]["baslik"] and medium[0]["durum"] != "cozuldu"
+
+    low = await run("dusuk")  # orta → düşük: otomatik çözüldü
+    assert len(low) == 1 and low[0]["durum"] == "cozuldu"
+    assert not (await listing(user_client, tur="zararli_riski"))["ogeler"]  # aktif listede yok
+
+    back = await run("yuksek")  # risk geri döndü: otomatik çözülen bildirim yeniden açılır (yine tek)
+    assert len(back) == 1 and back[0]["id"] == high[0]["id"] and back[0]["durum"] == "olustu"
+
+    # Kullanıcı elle çözdüyse risk sürerken yeniden açılmaz
+    await user_client.post(f"/notifications/{back[0]['id']}/durum", json={"durum": "cozuldu"})
+    still = await run("yuksek")
+    assert len(still) == 1 and still[0]["durum"] == "cozuldu"

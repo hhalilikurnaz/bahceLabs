@@ -79,15 +79,16 @@ async def generate_notifications(factory: SessionFactory, provider: WeatherProvi
                     garden_id, name,
                     weather_alerts=weather.uyarilar if weather else [],
                     satellite_alerts=build_alerts(scenes),
-                    risks=[r for r, _, _ in risks],
                     irrigation=irrigation,
                     today=agro.current_date(),
                 )
-                created = await NotificationService(NotificationRepository(session, workspace_id)).publish(candidates)
+                notifier = NotificationService(NotificationRepository(session, workspace_id))
+                created = await notifier.publish(candidates)
+                new_risk = await notifier.reconcile_risks(garden_id, name, [r for r, _, _ in risks])
                 await RiskSnapshotRepository(session).save(garden_id, [{"ad": r.ad, "seviye": r.seviye} for r in active_risks_of(risks)])
                 await session.commit()
             result.isler += 1
-            result.uretilen += len(created)
+            result.uretilen += len(created) + new_risk
         except Exception:  # noqa: BLE001
             logger.exception("Bildirim üretimi başarısız (bahçe %s)", garden_id)
             result.hata += 1
