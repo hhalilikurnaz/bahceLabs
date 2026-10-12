@@ -8,6 +8,7 @@ from bahcelab_backend.domain.multiyear.schemas import (
     BaslatIstegi,
     CokYillikDurum,
     CokYillikSonuc,
+    YilDegerleri,
     YillarGuncelle,
 )
 from bahcelab_backend.domain.multiyear.service import MultiyearService
@@ -48,3 +49,9 @@ async def get_year_image(garden_id: UUID, yil: int, service: Service) -> Respons
     """O yılın kompoziti: yıl içi bağıl ağaç gücü (aynı palet), bahçe sınırına kırpılmış PNG."""
     png = await service.year_png(garden_id, yil)
     return Response(content=png, media_type="image/png", headers={"Cache-Control": "private, max-age=300"})
+
+
+@router.get(f"{BASE}/yillar/{{yil}}/degerler", response_model=YilDegerleri)
+async def get_year_values(garden_id: UUID, yil: int, service: Service) -> YilDegerleri:
+    """O yılın kompozit ızgara değerleri (bahçe dışı null): küçük çoklu haritalar ve yıl dağılımları için."""
+    return await service.year_values(garden_id, yil)

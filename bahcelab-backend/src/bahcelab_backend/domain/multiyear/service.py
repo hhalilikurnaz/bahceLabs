@@ -30,6 +30,7 @@ from bahcelab_backend.domain.multiyear.schemas import (
     CokYillikDurum,
     CokYillikSonuc,
     YilBilgisi,
+    YilDegerleri,
     YilDurumu,
     YillarGuncelle,
 )
@@ -41,7 +42,7 @@ from bahcelab_backend.domain.multiyear.zoning import (
     compute_zones,
 )
 from bahcelab_backend.domain.ndvi.indices import INDICES
-from bahcelab_backend.domain.ndvi.processing import colorize, render_clipped_png
+from bahcelab_backend.domain.ndvi.processing import colorize, image_corners, render_clipped_png
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -378,3 +379,16 @@ class MultiyearService:
         from rasterio.warp import transform_geom
 
         return render_clipped_png(rgba, transform_geom("EPSG:4326", f"EPSG:{grid.epsg}", geometry), grid.transform)
+
+    async def year_values(self, garden_id: uuid.UUID, year: int) -> YilDegerleri:
+        _, geometry = await self._garden(garden_id)
+        row = await self.repo.get_year(garden_id, year)
+        if row is None or row.durum != "tamam" or not row.kompozit_yolu or not self.storage.exists(row.kompozit_yolu):
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Bu yıl için görüntü yok.")
+        values = decode_array(self.storage.read(row.kompozit_yolu))
+        grid = canonical_grid(geometry)
+        mask = garden_mask(grid, geometry)
+        shown = np.where(mask & np.isfinite(values), values, np.nan)
+        flat = [None if not np.isfinite(v) else round(float(v), 3) for v in shown.ravel()]
+        corners = image_corners(grid.transform, grid.crs, grid.shape)
+        return YilDegerleri(yil=year, satir=grid.shape[0], sutun=grid.shape[1], koordinatlar=corners, degerler=flat)

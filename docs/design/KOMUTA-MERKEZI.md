@@ -64,3 +64,14 @@ Ortak: limon sarısı `#f2c94c` yalnız birincil eylem ve seçili tarih/işaret�
 1. Hangi yön? (veya ikisinden hibrit: ör. Gece'nin renkleri + Toprak'ın rakam/etiket dili)
 2. Bahçe listesi: şerit varsayılan, liste flyout (önizlemedeki gibi) mi; yoksa liste sabit mi?
 3. Brifing genişliği 408 px yeterli mi?
+
+---
+## A2 — «Saha defteri × kartografi» yönü (önceki iki yönün yerine)
+Önizleme: `/tasarim-onizleme/saha/{calisma|analiz|hava|asistan|mobil|varliklar}` (`?mod=son12`, `?dar=1`, `?katman=1`, `?sayfa=ozet|zaman`). Kod: `src/features/tasarim/saha/`. Ekran görüntüleri: `adim-9/tasarim/saha-*`.
+
+**Dil.** Kırık beyaz kâğıt (`#fbfaf6`) + %2,5 SVG gürültü dokusu; paneller kart değil, ince çizgilerle ayrılmış sayfa bölümleri; köşe 0–2 px. Arayüz mürekkep ve gri; renk yalnız veride. Marka koyu yeşili yalnız logo ve «İyi»; limon yalnız birincil eylem ve seçili tarih. Tipografi: **Newsreader** (başlık), **Inter Tight** (arayüz), **JetBrains Mono** (tabular rakam; birimler küçük).
+**Renk.** İndeks: açık saman → turkuaz → koyu lacivert (L tek yönlü azalır). Bölge: `#eb6834 #2a78d6 #eda100 #1baf7a #6250d6` (validate_palette: tüm kapılar geçti, ΔE ≥ 8 CVD / ≥ 15 normal). Durum: `#008300 #b87a00 #d1302f`, her zaman simge + etiket.
+**Varlıklar (SVG, repoda).** 16 tarım ikonu (tek çizgi kalınlığı), 5 botanik gravür (limon dalı, çiçek, meyve kesiti, ağaç silueti, yaprak levhası), kartografik öğeler (ölçek çubuğu, kuzey oku, koordinat işaretleri, tarama desenleri).
+**Görselleştirmeler.** Net piksel (10 m) harita + isteğe bağlı kontur (eş değer çizgisi) · zayıf bölge tarama deseni · bahçe dışı soluk · **limon yılı çarkı** (fenoloji halkası, canlılık halkası, yağış çubukları, bugün işareti; Brifing'in kalbi) · takvim ısı haritası · **ridgeline** (yıl yıl dağılım) · aynı skalada 12 ay / 12 yıl küçük haritalar · eğim (bu sezon/geçen sezon) · zaman dok'u (ince çizgi + fenoloji şeridi + yağış + doğrudan uç etiketi). Grafikler tek aile, lejant yerine doğrudan etiket.
+**İçerik düzeltmeleri.** Skor çarkı = metindeki sayı; bileşenler 100 iken skor 90 ise neden dipnotta. Aynı ekranda tek renk skalası (küçük resimler dahil). Bugün: madde başına tek eylem. Sulama sade cümle. Zararlı satırlarında seviye kelimesi. Isı haritasında «Gece» yalnız lejantta. Asistan: karşılama + 4 örnek soru + durum özeti.
+**Veri notu.** Çok yıllık yıl değerleri için `GET …/cok-yillik/yillar/{yil}/degerler` eklendi (ridgeline ve küçük haritalar).

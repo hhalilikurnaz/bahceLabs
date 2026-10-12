@@ -83,6 +83,7 @@ async def test_every_endpoint_requires_login(client: AsyncClient):
         )
     ).status_code == 401
     assert (await client.get(url(str(gid), "/yillar/2020/gorsel"))).status_code == 401
+    assert (await client.get(url(str(gid), "/yillar/2020/degerler"))).status_code == 401
 
 
 async def test_other_users_garden_is_404_on_every_endpoint(app, user_client: AsyncClient, fake):
@@ -97,6 +98,7 @@ async def test_other_users_garden_is_404_on_every_endpoint(app, user_client: Asy
             await other.patch(url(gid, "/yillar"), json={"yillar": [{"yil": 2020, "dahil": False}]})
         ).status_code == 404
         assert (await other.get(url(gid, "/yillar/2020/gorsel"))).status_code == 404
+        assert (await other.get(url(gid, "/yillar/2020/degerler"))).status_code == 404
 
 
 async def test_unknown_garden_is_404(user_client: AsyncClient, fake):
@@ -625,3 +627,22 @@ async def test_rate_limiter_spaces_requests():
     for _ in range(50):
         await free.wait()
     assert time.monotonic() - started < 0.05
+
+
+async def test_year_values_expose_the_composite_grid_inside_the_garden_only(
+    user_client: AsyncClient, fake
+):
+    garden = await new_garden(user_client)
+    await user_client.post(url(garden["id"]))
+    response = await user_client.get(url(garden["id"], "/yillar/2020/degerler"))
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert (
+        data["yil"] == 2020
+        and len(data["degerler"]) == data["satir"] * data["sutun"]
+        and len(data["koordinatlar"]) == 4
+    )
+    inside = [v for v in data["degerler"] if v is not None]
+    assert 0.3 * len(data["degerler"]) < len(inside) < len(data["degerler"])  # bahçe dışı null
+    assert 0.4 <= min(inside) and max(inside) <= 0.85  # sahte desen aralığı (0,45–0,75 + gürültü)
+    assert (await user_client.get(url(garden["id"], "/yillar/1999/degerler"))).status_code == 404

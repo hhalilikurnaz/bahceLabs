@@ -112,3 +112,36 @@ def test_indices_work_from_roles_not_from_provider_band_names():
         compute_index(
             "ndvi", {"B04": np.array([0.1]), "B08": np.array([0.5])}
         )  # Sentinel bant adları artık bilinmez
+
+
+# ----------------------------------------------------------------------------- yansıtım ofseti (işleme sürümü ≥ 04.00)
+def _item(baseline: str | None, raster_bands=None):
+    from pystac import Asset, Item
+
+    item = Item(id="x", geometry=None, bbox=None, datetime=__import__("datetime").datetime(2024, 7, 1), properties={"s2:processing_baseline": baseline} if baseline else {})
+    extra = {"raster:bands": raster_bands} if raster_bands else {}
+    item.add_asset("B04", Asset(href="x", extra_fields=extra))
+    return item
+
+
+@pytest.mark.parametrize(("baseline", "offset"), [("03.00", 0.0), ("03.01", 0.0), ("04.00", -0.1), ("05.10", -0.1), (None, 0.0), ("bozuk", 0.0)])
+def test_boa_offset_follows_the_processing_baseline_when_the_asset_has_no_raster_metadata(baseline, offset):
+    from bahcelab_backend.domain.imagery.sentinel2 import _band_scale_offset
+
+    assert _band_scale_offset(_item(baseline), "B04") == (0.0001, offset)
+
+
+def test_asset_raster_metadata_wins_over_the_baseline_rule():
+    from bahcelab_backend.domain.imagery.sentinel2 import _band_scale_offset
+
+    assert _band_scale_offset(_item("05.10", [{"scale": 0.0002, "offset": -0.2}]), "B04") == (0.0002, -0.2)
+
+
+def test_missing_offset_would_lower_ndvi_by_about_a_fifth_so_it_must_be_applied():
+    from bahcelab_backend.domain.ndvi.indices import compute_ndvi
+    from bahcelab_backend.domain.ndvi.processing import to_reflectance
+
+    red_dn, nir_dn = np.array([1600], np.uint16), np.array([4100], np.uint16)  # 2022 sonrası: DN = (yansıtım + 0,1) × 10000
+    right = compute_ndvi(to_reflectance(red_dn, 0.0001, -0.1), to_reflectance(nir_dn, 0.0001, -0.1))[0]
+    wrong = compute_ndvi(to_reflectance(red_dn, 0.0001, 0.0), to_reflectance(nir_dn, 0.0001, 0.0))[0]
+    assert right == pytest.approx((0.31 - 0.06) / (0.31 + 0.06)) and right - wrong > 0.15

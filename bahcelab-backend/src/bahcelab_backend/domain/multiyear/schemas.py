@@ -82,3 +82,14 @@ class YilSecimi(BaseModel):
 class YillarGuncelle(BaseModel):
     yillar: list[YilSecimi] = Field(min_length=1, max_length=40)
     bolge_sayisi: Literal[3, 5] = 3
+
+
+class YilDegerleri(BaseModel):
+    """Bir yılın kompoziti: bahçe penceresi ızgarası (satır sırasıyla, geçersiz/bahçe dışı = null). Küçük harita, dağılım ve ridgeline için."""
+
+    yil: int
+    satir: int
+    sutun: int
+    koordinatlar: list[list[float]]  # KB, KD, GD, GB [boylam, enlem]
+    degerler: list[float | None]
+    indeks: str = "ndvi"

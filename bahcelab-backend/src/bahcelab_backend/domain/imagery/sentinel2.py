@@ -118,9 +118,25 @@ def search_scenes(geometry: dict[str, Any], start: date, end: date, max_cloud: f
     return sorted(scenes, key=lambda s: s.tarih)
 
 
+BASELINE_WITH_OFFSET = 4.0  # işleme sürümü 04.00 ve sonrası (2022-01-25'ten itibaren): BOA_ADD_OFFSET = −1000 sayısal değer
+BOA_OFFSET_REFLECTANCE = -0.1
+
+
+def _processing_baseline(item: Item) -> float | None:
+    try:
+        return float(str(item.properties.get("s2:processing_baseline", "")))
+    except ValueError:
+        return None
+
+
 def _band_scale_offset(item: Item, asset_key: str) -> tuple[float, float]:
-    bands = item.assets[asset_key].extra_fields.get("raster:bands") or [{}]
-    return float(bands[0].get("scale", 0.0001)), float(bands[0].get("offset", 0.0))
+    """Ölçek ve ofset: varlıkta `raster:bands` varsa o; yoksa işleme sürümüne göre (≥ 04.00 → −0,1). Ofset atlanırsa her bant +0,1 yüksek
+    çıkar ve NDVI 2022 sonrası görüntülerde ≈ 0,2 düşük hesaplanır (yıllar arası düzey kayması)."""
+    bands = item.assets[asset_key].extra_fields.get("raster:bands")
+    if bands:
+        return float(bands[0].get("scale", 0.0001)), float(bands[0].get("offset", 0.0))
+    baseline = _processing_baseline(item)
+    return 0.0001, BOA_OFFSET_REFLECTANCE if baseline is not None and baseline >= BASELINE_WITH_OFFSET else 0.0
 
 
 _GDAL_ENV = {
