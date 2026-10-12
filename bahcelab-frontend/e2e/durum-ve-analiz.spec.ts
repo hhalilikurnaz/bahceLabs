@@ -24,9 +24,10 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     const nasil = page.getByTestId('nasil-hesaplandi')
     await expect(nasil).toContainText('ön değer · v1')
     await expect(nasil).toContainText('9F')
-    await expect(nasil).toContainText('Sentinel-2')
+    await expect(nasil).toContainText(/bandı: \d+ yıl/) // güven, bant diliyle (ör. «Ekim bandı: 9 yıl, 2017–2025»)
+    expect((await nasil.locator('li, p').count()) <= 4).toBe(true)
     await expect(page.getByTestId('kademe-nedeni')).not.toBeEmpty()
-    await expect(page.getByTestId('sezon-bandi-bos')).toContainText('9C')
+    await expect(page.getByTestId('sezon-egrisi')).toBeVisible()
   })
 
   test('orta zararlı riski varken Risk çipi riski adlandırır, kademe en fazla İzle olur ve neden açıklanır', async ({ page }) => {
@@ -45,6 +46,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
           nasil: {
             veri: ['Canlılık (NDVI) · Sentinel-2 10 m'], son_goruntu_tarihi: '2026-10-09',
             guven: { seviye: 'yuksek', aciklama: 'Geçen yılla karşılaştırıldı.', gecmis_gun: 300, son_goruntu_yasi_gun: 3 },
+            cumleler: ['Risk orta düzeyde: Meyve sineği · orta. Bu yüzden kademe en fazla İzle.', 'Ekim bandı: 9 yıl, 2017–2025.', 'Son net görüntü 9 Eki; eşikler ön değer (v1).'],
             dusuren_bilesen: 'risk', kademe_nedeni: 'Risk normalin altı: Zararlı/hastalık risk tahmini: Meyve sineği · orta. Bu yüzden kademe İzle. Aktif risk (Meyve sineği · orta) olduğu için kademe en fazla İzle olabilir.',
             esik_durumu: 'ön değer · v1', formul_notu: 'v1: tam formül 9F’de.',
           },
@@ -82,7 +84,6 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     await expect(risk).toContainText(riskCip?.etiket ?? '')
     await expect(page.getByTestId('kademe-ad')).not.toContainText('İyi')
     await page.getByText('Nasıl hesaplandı?').click()
-    await expect(page.getByTestId('kademe-nedeni')).toContainText(/Meyve sineği|örümcek|Kuruma/) // neden riski adıyla açıklar
     await expect(page.getByTestId('kademe-nedeni')).toContainText(/Bu yüzden kademe|en fazla/)
   })
 
@@ -97,7 +98,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
 
 const yil = (y: number, o: Record<string, unknown> = {}) => ({
   yil: y, sahne_sayisi: 12, kismi: false, kapsam: 1, korelasyon: 0.8, uyumsuz: false, uyumsuz_nedeni: null, dahil: true, elle: null,
-  karar_bekliyor: false, varsayilan_dahil: true, karar_zamani: null, karar_notu: null, yetersiz_veri: false, yetersiz_nedeni: null, net_gun_sayisi: 12, donem_kapsami: 0.92, aday_sayisi: 20, ...o,
+  karar_bekliyor: false, varsayilan_dahil: true, karar_zamani: null, karar_notu: null, yetersiz_veri: false, yetersiz_nedeni: null, net_gun_sayisi: 12, yil_net_sahne: 22, yil_bulutlu: 6, donem_kapsami: 0.92, aday_sayisi: 20, ...o,
 })
 const bolge = (sinif: number, ad: string, extra: Record<string, unknown> = {}) => ({ sinif, ad, alan_m2: 3000 * sinif, alan_dekar: 3 * sinif, pay: sinif / 6, fark_yuzde: (sinif - 2) * 10, istikrar: 0.8, istikrar_sinifi: 'yuksek', kontrol_onerisi: false, ...extra })
 

@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro.irrigation import DayInput, IrrigationResult, StageKc, recommend
 from bahcelab_backend.domain.agro.repository import AgroRepository
@@ -119,6 +120,7 @@ def to_status_response(result: Skor, today: date) -> DurumYanit:
             guven=GuvenYanit(**result.guven.__dict__),
             dusuren_bilesen=result.dusuren,  # type: ignore[arg-type]
             kademe_nedeni=result.kademe_nedeni,
+            cumleler=result.cumleler,
             esik_durumu="ön değer · v1" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v1",
             formul_notu=FORMUL_NOTU,
         ),
@@ -432,10 +434,11 @@ class AgroService:
         if weather is not None:
             # Hava bileşeni: don/sıcak uyarıları (etiketi sınırlar); yüksek zararlı riski yalnızca puanı düşürür
             weather_levels = [a.seviye for a in weather.uyarilar]
+        bands = (await band_refs_for(self.ndvi.session, [garden_id], today.month)).get(garden_id, {})
         result = assess(
             scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
             weather_severities=weather_levels, today=today, cfg=ScoreConfig.from_settings(self.settings),
-            active_risks=active_risks_of(risks),
+            active_risks=active_risks_of(risks), bands=bands,
         )
         return result, scenes, weather, risks, irrigation
 

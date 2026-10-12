@@ -142,6 +142,25 @@ class AcquisitionRepository:
             out.setdefault(int(y), {})[int(m)] = float(v)
         return out
 
+    async def net_with_stats(self, garden_id: uuid.UUID, source_id: str) -> list[tuple[AcquisitionModel, list[AcquisitionStatModel]]]:
+        acqs = (
+            await self.session.execute(select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == ACQ_NET).order_by(AcquisitionModel.tarih))
+        ).scalars().all()
+        stats = (await self.session.execute(select(AcquisitionStatModel).where(AcquisitionStatModel.acquisition_id.in_([a.id for a in acqs])))).scalars().all() if acqs else []
+        by: dict[uuid.UUID, list[AcquisitionStatModel]] = {}
+        for st in stats:
+            by.setdefault(st.acquisition_id, []).append(st)
+        return [(a, by.get(a.id, [])) for a in acqs]
+
+    async def count_cloudy(self, garden_id: uuid.UUID, source_id: str) -> int:
+        n = await self.session.execute(select(func.count()).select_from(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == "bulutlu"))
+        return int(n.scalar_one())
+
+    async def acquisition_on(self, garden_id: uuid.UUID, source_id: str, day: date) -> AcquisitionModel | None:
+        return (
+            await self.session.execute(select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.tarih == day, AcquisitionModel.durum == ACQ_NET))
+        ).scalars().first()
+
     async def storage_bytes(self, garden_id: uuid.UUID) -> tuple[int, int]:
         row = (await self.session.execute(select(func.coalesce(func.sum(AcquisitionModel.izgara_boyut_bayt), 0), func.count()).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.durum == ACQ_NET))).one()
         return int(row[0] or 0), int(row[1] or 0)

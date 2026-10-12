@@ -6,7 +6,7 @@ import { fold } from '../lib/metin'
 
 export type Eylem =
   | { tur: 'git'; yol: string }
-  | { tur: 'katman'; katman: 'bolgeler' | 'canlilik' | 'yaprakSuyu' | 'degisim' }
+  | { tur: 'katman'; katman: 'bolgeler' | 'canlilik' | 'klorofil' | 'yaprakAlani' | 'tacToprak' | 'yaprakSuyu' | 'degisim' }
   | { tur: 'tema' }
 
 export interface Komut {
@@ -32,6 +32,9 @@ export function komutlar(ctx: KomutBaglami): Komut[] {
       { id: 'gecenyil', baslik: 'Geçen yılla karşılaştır', ipucu: 'Geçmiş sayfası', anahtarlar: ['geçen yıl', 'karşılaştır', 'gecen yil'], eylem: { tur: 'git', yol: `/bahceler/${id}/gecmis` } },
       { id: 'ilaclama', baslik: 'İlaçlama zamanı', ipucu: 'Hava sekmesi', anahtarlar: ['ilaçlama', 'ilac', 'püskürt'], eylem: { tur: 'git', yol: `/bahceler/${id}/hava` } },
       { id: 'canlilik', baslik: 'Canlılık katmanı', ipucu: 'NDVI', anahtarlar: ['canlılık', 'ndvi'], eylem: { tur: 'katman', katman: 'canlilik' } },
+      { id: 'klorofil', baslik: 'Klorofil katmanı', ipucu: 'NDRE', anahtarlar: ['klorofil', 'ndre', 'sarı', 'azot'], eylem: { tur: 'katman', katman: 'klorofil' } },
+      { id: 'yaprakalani', baslik: 'Yaprak alanı katmanı (deneysel)', ipucu: 'LAI', anahtarlar: ['yaprak alanı', 'lai', 'gür'], eylem: { tur: 'katman', katman: 'yaprakAlani' } },
+      { id: 'tac', baslik: 'Taç ve toprak katmanı', ipucu: 'MSAVI', anahtarlar: ['taç', 'toprak', 'msavi'], eylem: { tur: 'katman', katman: 'tacToprak' } },
       { id: 'su', baslik: 'Yaprak suyu katmanı', ipucu: 'NDMI', anahtarlar: ['yaprak suyu', 'su', 'ndmi'], eylem: { tur: 'katman', katman: 'yaprakSuyu' } },
       { id: 'degisim', baslik: 'Değişimi göster', ipucu: 'Önceki net görüntüyle fark', anahtarlar: ['değişim', 'fark'], eylem: { tur: 'katman', katman: 'degisim' } },
     )

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Literal
 
@@ -23,6 +23,9 @@ BilesenSeviyesi = Literal["normal", "normalin_alti", "belirgin_dusuk"]
 KADEME_ADLARI: dict[str, str] = {"iyi": "İyi", "izle": "İzle", "dikkat": "Dikkat", "sorun": "Sorun", "veri_yok": "Veri yok"}
 Seviye = Literal["sari", "kirmizi"]
 GuvenSeviyesi = Literal["yuksek", "orta", "dusuk"]
+
+AY_ADLARI: dict[int, str] = {1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran", 7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"}
+AY_KISA: dict[int, str] = {1: "Oca", 2: "Şub", 3: "Mar", 4: "Nis", 5: "May", 6: "Haz", 7: "Tem", 8: "Ağu", 9: "Eyl", 10: "Eki", 11: "Kas", 12: "Ara"}
 
 COMPONENT_NAMES = {
     "canlilik": "Canlılık",
@@ -40,6 +43,10 @@ class ScoreConfig:
     caution_min: int
     component_normal_min: int
     component_low_max: int
+    band_min_years: int
+    band_high_years: int
+    deviation_normal: float
+    deviation_zero: float
     tolerance_share: float
     zero_share: float
     alert_points: dict[str, int]
@@ -70,6 +77,10 @@ class ScoreConfig:
             caution_min=tiers.dikkat_min,
             component_normal_min=tiers.bilesen_normal_min,
             component_low_max=tiers.bilesen_belirgin_dusuk_max,
+            band_min_years=load_catalog().normal_bant.asgari_yil_ceyrek,
+            band_high_years=load_catalog().normal_bant.asgari_yil_onluk,
+            deviation_normal=load_catalog().normal_bant.sapma_normal,
+            deviation_zero=load_catalog().normal_bant.sapma_sifir,
             tolerance_share=s.score_tolerance_share,
             zero_share=s.score_zero_share,
             alert_points={"sari": s.score_alert_points_yellow, "kirmizi": s.score_alert_points_red},
@@ -84,6 +95,17 @@ class ScoreConfig:
             stale_image_days=s.score_stale_image_days,
             aging_image_days=s.score_aging_image_days,
         )
+
+
+@dataclass(frozen=True)
+class BandRef:
+    """Bahçenin takvim ayı normal bandı (acquisitions/normal_bands): ortanca ve MAD (yıl değerlerinden), bantta kullanılan yıllar."""
+
+    ay: int
+    yil_sayisi: int
+    yillar: list[int]
+    median: float
+    mad: float  # yıl değerlerinin ortancadan mutlak sapmasının ortancası (ham, ölçeklenmemiş)
 
 
 @dataclass(frozen=True)
@@ -146,6 +168,7 @@ class Skor:
     cipler: list[Cip]
     kademe_nedeni: str
     dusuren: str | None  # kademeyi en çok düşüren çipin kodu (agac_gucu | su | risk); düşüren yoksa None
+    cumleler: list[str] = field(default_factory=list)  # «Nasıl hesaplandı?»: en fazla 3 kısa cümle
 
 
 Series = list[tuple[date, float]]
@@ -188,18 +211,40 @@ def _percent_text(latest: float, base: float) -> str:
     return f"%{round(pct)}"
 
 
+def band_points(value: float, band: BandRef, cfg: ScoreConfig) -> int:
+    """Normal banda göre puan (0–100): z = (değer − ortanca)/(1,4826·MAD); yalnız ortancanın ALTI cezalandırılır."""
+    scale = max(1.4826 * band.mad, 1e-3)
+    z = (value - band.median) / scale
+    if z >= -cfg.deviation_normal:
+        return 100
+    if z <= -cfg.deviation_zero:
+        return 0
+    return round(100 * (cfg.deviation_zero + z) / (cfg.deviation_zero - cfg.deviation_normal))
+
+
+def usable_band(band: BandRef | None, month: int, cfg: ScoreConfig) -> BandRef | None:
+    return band if band is not None and band.ay == month and band.yil_sayisi >= cfg.band_min_years else None
+
+
 def index_component(
     code: str,
     series: Series,
     span: float,
     latest_date: date | None,
     cfg: ScoreConfig,
+    band: BandRef | None = None,
 ) -> Bilesen:
     name = COMPONENT_NAMES[code]
     weight = cfg.weights[code]
     if not series or latest_date is None:
         return Bilesen(code, name, None, weight, False, f"{name} için uydu verisi yok.")
     latest = next(v for d, v in reversed(series) if d <= latest_date)
+    ref = usable_band(band, latest_date.month, cfg)
+    if ref is not None:  # karar bahçenin kendi normal bandına göre (ADR 0015)
+        points = band_points(latest, ref, cfg)
+        month = AY_ADLARI[ref.ay]
+        reason = f"{name}, {month} bandı ile uyumlu." if points == 100 else f"{name}, {month} bandının ortancasının altında."
+        return Bilesen(code, name, points, weight, True, reason)
     base = baseline([(d, v) for d, v in series if d < latest_date], latest_date, cfg)
     if base is None:
         return Bilesen(code, name, None, weight, False, f"{name}: kendi normunu hesaplamak için yeterli geçmiş görüntü yok.")
@@ -291,6 +336,14 @@ def derive_status(
     return "izle" if (severities or risk_level) else "iyi"
 
 
+def band_confidence(band: BandRef, image_age_days: int | None, history_days: int, cfg: ScoreConfig) -> Guven:
+    """Güven normal banda göre anlatılır: «Ekim bandı: 9 yıl, 2016–2024.» ≥8 yıl yüksek, 5–7 yıl orta; eski görüntü güveni bir kademe düşürür."""
+    level: GuvenSeviyesi = "yuksek" if band.yil_sayisi >= cfg.band_high_years else "orta"
+    if image_age_days is not None and image_age_days > cfg.aging_image_days:
+        level = "orta" if level == "yuksek" else "dusuk"
+    return Guven(level, f"{AY_ADLARI[band.ay]} bandı: {band.yil_sayisi} yıl, {min(band.yillar)}–{max(band.yillar)}.", history_days, image_age_days)
+
+
 def confidence(
     base: Baseline | None, history_days: int, image_age_days: int | None, cfg: ScoreConfig
 ) -> Guven:
@@ -353,23 +406,33 @@ def build_chips(components: list[Bilesen], cfg: ScoreConfig, risks: list[AktifRi
 
 
 def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool, risks: list[AktifRisk] | None = None) -> tuple[str, str | None]:
-    """«Nasıl hesaplandı?»: hangi bileşenin kademeyi düşürdüğü (sayı yok). Dönüş: (metin, düşüren çip kodu)."""
+    """Kademenin KISA nedeni (sayı yok); aynı risk bir kez anılır. Dönüş: (metin, düşüren çip kodu)."""
     if durum == "veri_yok":
         return "Kademe için yeterli veri yok.", None
     order: dict[str, int] = {"belirgin_dusuk": 0, "normalin_alti": 1, "normal": 2}
     worst = min((c for c in chips if c.seviye is not None), key=lambda c: order[c.seviye or "normal"], default=None)
     lowered = worst if worst is not None and worst.seviye != "normal" else None
     name = KADEME_ADLARI[durum]
+    risk_text = ", ".join(r.metin for r in risks or [])
     parts: list[str] = []
-    if lowered is not None:
+    if risk_capped and risks:
+        ceiling = "Dikkat" if any(r.seviye == "yuksek" for r in risks) else "İzle"
+        parts.append(f"Aktif risk ({risk_text}) olduğu için kademe en fazla {ceiling}.")
+    elif lowered is not None and lowered.kod == "risk":
+        parts.append(f"Risk {lowered.etiket or SEVIYE_ADLARI[lowered.seviye or 'normal']}: {risk_text or lowered.aciklama}. Bu yüzden kademe {name}.")
+    if lowered is not None and lowered.kod != "risk":
         parts.append(f"{lowered.ad} {SEVIYE_ADLARI[lowered.seviye or 'normal']}: {lowered.aciklama} Bu yüzden kademe {name}.")
-    if risk_capped:
-        names = f" ({', '.join(r.metin for r in risks)})" if risks else ""
-        ceiling = "Dikkat" if risks and any(r.seviye == "yuksek" for r in risks) else "İzle"
-        parts.append(f"Aktif risk{names} olduğu için kademe en fazla {ceiling} olabilir.")
     if not parts:
         parts.append("Ağaç gücü, su ve risk normal; kademe İyi." if durum == "iyi" else f"Kademe {name}.")
     return " ".join(parts), (lowered.kod if lowered is not None else None)
+
+
+def how_computed(reason: str, trust: Guven, latest: date | None) -> list[str]:
+    """«Nasıl hesaplandı?»: en fazla 3 kısa cümle — neden · güven (banda göre) · son görüntü ve ön değer notu."""
+    out = [reason, trust.aciklama.rstrip(".") + "."]
+    if latest is not None and len(out) < 3:
+        out.append(f"Son net görüntü {latest.day} {AY_KISA[latest.month]}; eşikler ön değer (v1).")
+    return [c for c in out if c][:3]
 
 
 @dataclass(frozen=True)
@@ -390,6 +453,7 @@ def assess(
     cfg: ScoreConfig | None = None,
     extra_components: list[Bilesen] | None = None,
     active_risks: list[AktifRisk] | None = None,
+    bands: dict[str, BandRef] | None = None,
 ) -> Skor:
     """Skor ve dökümü üretir. `scenes` bulutsuz sahnelerdir (tarih sıralı olması gerekmez)."""
     cfg = cfg or ScoreConfig.from_settings()
@@ -403,7 +467,7 @@ def assess(
         chips = build_chips(components, cfg, risks)
         capped = score is not None and durum in ("izle", "dikkat") and label_from_score(score, severities_all, cfg, risk_level=None) != durum  # kademeyi risk sınırladı
         text, lowered = explain_tier(durum, chips, capped, risks)
-        return Skor(durum, score, components, trust, summary_sentence(durum), sufficient, reason, chips, text, lowered)
+        return Skor(durum, score, components, trust, summary_sentence(durum), sufficient, reason, chips, text, lowered, how_computed(text, trust, ordered[-1].tarih if ordered else None))
 
     if not ordered:
         comps = [
@@ -421,14 +485,21 @@ def assess(
     history_days = (latest - ordered[0].tarih).days
     series = {code: sorted((s.tarih, s.degerler[idx]) for s in ordered if idx in s.degerler) for code, idx in (("canlilik", "ndvi"), ("yaprak_suyu", "ndmi"))}
 
-    vigor = index_component("canlilik", series["canlilik"], spans["ndvi"], latest, cfg)
-    water = index_component("yaprak_suyu", series["yaprak_suyu"], spans["ndmi"], latest, cfg)
+    band_map = bands or {}
+    vigor = index_component("canlilik", series["canlilik"], spans["ndvi"], latest, cfg, band_map.get("ndvi"))
+    water = index_component("yaprak_suyu", series["yaprak_suyu"], spans["ndmi"], latest, cfg, band_map.get("ndmi"))
     alerts = alerts_component(sat_severities, cfg, has_data=True)
     weather = weather_component(weather_severities, cfg, risks)
     components = [vigor, water, alerts, weather, *(extra_components or [])]
 
     base = baseline([(d, v) for d, v in series["canlilik"] if d < latest], latest, cfg)
-    trust = confidence(base, history_days, image_age, cfg)
+    ndvi_band = band_map.get("ndvi")
+    if usable_band(ndvi_band, latest.month, cfg) is not None and ndvi_band is not None:
+        trust = band_confidence(ndvi_band, image_age, history_days, cfg)
+    else:
+        trust = confidence(base, history_days, image_age, cfg)
+        if ndvi_band is not None and ndvi_band.ay == latest.month:  # band var ama yıl sayısı yetersiz: nedeni söylenir
+            trust = Guven(trust.seviye, f"Yetersiz geçmiş ({ndvi_band.yil_sayisi} yıl): " + trust.aciklama[0].lower() + trust.aciklama[1:], trust.gecmis_gun, trust.son_goruntu_yasi_gun)
     severities = severities_all
 
     stale = image_age > cfg.stale_image_days

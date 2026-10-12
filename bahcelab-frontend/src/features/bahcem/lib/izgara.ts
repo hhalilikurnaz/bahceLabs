@@ -3,7 +3,7 @@
  * aynı fonksiyonları kullanır: değer → renk, kontur, vurgulu aralık, boylam/enlem → piksel.
  */
 import { contours } from 'd3-contour'
-import { rampColor, type Stops } from './paletler'
+import { rampColor, ZEMIN, type Stops } from './paletler'
 
 export interface PGrid {
   values: Float32Array
@@ -120,6 +120,8 @@ export interface PaintOptions {
   clip?: number[][] | null
   /** Vurgulu aralık: dışındaki pikseller soluk (histogram hover) */
   highlight?: [number, number] | null
+  /** Görsel dil: sürekli renk (varsayılan), orantılı kareler (LAI) ya da toprak zemin + tepe daireleri (MSAVI) */
+  gorunum?: 'rampa' | 'kareler' | 'daireler'
 }
 
 const toCanvas = (g: PGrid, scale: number, [lng, lat]: number[]): [number, number] => {
@@ -127,8 +129,45 @@ const toCanvas = (g: PGrid, scale: number, [lng, lat]: number[]): [number, numbe
   return [c * scale, r * scale]
 }
 
+/**
+ * Orantılı şekiller: her piksel hücresinde değere göre büyüyen bir şekil.
+ * - kareler (LAI): nötr zemin üzerinde, kenar uzunluğu değerle orantılı koyu yeşil kareler (alan = değer).
+ * - daireler (MSAVI): toprak tonlu zemin üzerinde, yarıçapı değerle orantılı ağaç tepesi daireleri (alan = değer).
+ * Veri yok (NaN) hücre boş kalır (uydurma yok). Histogram vurgusu dışındaki şekiller soluk çizilir.
+ */
+function paintShapes(
+  ctx: CanvasRenderingContext2D,
+  g: PGrid,
+  { ramp, domain, scale, highlight, gorunum }: { ramp: Stops; domain: [number, number]; scale: number; highlight: [number, number] | null; gorunum: 'kareler' | 'daireler' },
+): void {
+  const span = domain[1] - domain[0] || 1
+  ctx.fillStyle = gorunum === 'daireler' ? ZEMIN.toprak : ZEMIN.notr
+  ctx.fillRect(0, 0, g.cols * scale, g.rows * scale)
+  for (let r = 0; r < g.rows; r++) {
+    for (let c = 0; c < g.cols; c++) {
+      const v = g.values[r * g.cols + c]
+      if (!Number.isFinite(v)) continue
+      const t = Math.min(1, Math.max(0, (v - domain[0]) / span))
+      const dim = highlight !== null && (v < highlight[0] || v > highlight[1])
+      const [cr, cg, cb] = rampColor(ramp, gorunum === 'kareler' ? 0.85 : t)
+      ctx.fillStyle = `rgba(${cr},${cg},${cb},${dim ? 0.18 : 1})`
+      const cx = (c + 0.5) * scale
+      const cy = (r + 0.5) * scale
+      if (gorunum === 'kareler') {
+        const side = scale * (0.12 + 0.88 * t) // kenar ∝ değer (en küçük değer de görünür kalır)
+        ctx.fillRect(cx - side / 2, cy - side / 2, side, side)
+      } else {
+        const radius = (scale / 2) * (0.18 + 0.82 * Math.sqrt(t)) // alan ∝ değer
+        ctx.beginPath()
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+  }
+}
+
 /** Izgarayı tuvale boyar (bahçe dışı saydam). Kontur etiketleri çakışmasız yerleştirilir (çakışan etiket atlanır). */
-export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null }: PaintOptions): HTMLCanvasElement {
+export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null, gorunum = 'rampa' }: PaintOptions): HTMLCanvasElement {
   const small = document.createElement('canvas')
   small.width = g.cols
   small.height = g.rows
@@ -157,6 +196,10 @@ export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, c
     })
     ctx.closePath()
     ctx.clip()
+  }
+  if (gorunum !== 'rampa') {
+    paintShapes(ctx, g, { ramp, domain, scale, highlight, gorunum })
+    return out
   }
   ctx.drawImage(small, 0, 0, out.width, out.height)
 

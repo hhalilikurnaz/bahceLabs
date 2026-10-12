@@ -131,6 +131,7 @@ class NasilHesaplandi(BaseModel):
     guven: GuvenYanit
     dusuren_bilesen: Literal["agac_gucu", "su", "risk"] | None
     kademe_nedeni: str
+    cumleler: list[str]  # «Nasıl hesaplandı?»: en fazla 3 kısa cümle (neden · güven banda göre · son görüntü)
     esik_durumu: str  # «ön değer · v1» (katalogdan)
     formul_notu: str
 

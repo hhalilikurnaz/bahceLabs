@@ -58,10 +58,10 @@ varsayilan_narenciye: &narenciye
     ay_baslangic: 6
     ay_bitis: 9
     indeks: ndvi
-    # Yeterlilik eşikleri de ön değerdir (mühendis onayı bekliyor): pencerede en az 3 farklı günde net sahne ve 10 günlük dönemlerin
-    # en az yarısında net sahne. Sentinel-2 arşivi 13 Ağu 2015'te başlar; ilk yıllar bu yüzden «yetersiz veri» çıkabilir.
+    # Yeterlilik eşikleri de ön değerdir (mühendis onayı bekliyor): pencerede en az 3 farklı günde net sahne ve ayların en az
+    # %75'inde (4 aydan 3'ü) net sahne. Sentinel-2 arşivi 13 Ağu 2015'te başlar; ilk yıllar bu yüzden «yetersiz veri» çıkabilir.
     en_az_net_sahne: 3
-    en_az_donem_kapsami: 0.5
+    en_az_ay_kapsami: 0.75
   tipik_bantlar:
     ndvi:
       durum: dogrulanmadi
@@ -80,6 +80,9 @@ normal_bant:
   asgari_yil_ceyrek: 5
   asgari_yil_onluk: 8
   ilk_yil: 2015
+  # Çiplerin kararı (ön değer): z = (değer − ortanca)/(1,4826·MAD); z ≥ −1 normal, −2 ≈ belirgin düşük, −3 ve altı sıfır puan.
+  sapma_normal: 1.0
+  sapma_sifir: 3.0
 
 urunler:
   limon:

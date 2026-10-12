@@ -21,7 +21,11 @@ export interface MultiyearYear {
   yetersiz_veri: boolean
   yetersiz_nedeni: string | null
   net_gun_sayisi: number | null
+  /** Penceredeki ayların net sahnesi olan payı (0–1) */
   donem_kapsami: number | null
+  /** TÜM aylardaki net sahne (yılda ~22) ve elenen bulutlu sahne */
+  yil_net_sahne: number
+  yil_bulutlu: number
   aday_sayisi: number
 }
 export interface MultiyearZone {

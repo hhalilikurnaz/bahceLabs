@@ -10,8 +10,9 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from bahcelab_backend.api.deps import get_imagery, get_year_queue
+from bahcelab_backend.api.deps import get_imagery, get_month_queue
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.acquisitions.backfill import BackfillRunner, ImmediateMonthQueue
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.multiyear import composite, grid
 from bahcelab_backend.domain.multiyear.models import (
@@ -19,8 +20,6 @@ from bahcelab_backend.domain.multiyear.models import (
     MultiyearYearModel,
     MultiyearZoneModel,
 )
-from bahcelab_backend.domain.multiyear.processor import process_year
-from bahcelab_backend.domain.multiyear.runner import ImmediateYearQueue, YearRunner
 from bahcelab_backend.domain.multiyear.service import (
     describe_zones,
     last_complete_year,
@@ -53,11 +52,12 @@ async def user_client(client: AsyncClient, cleanup_users):
 
 @pytest.fixture
 def fake(app, factory):
+    """Uydu kaynağı sahte (ağ yok): çok yıllık analiz TEK VERİ HATTINDAN (geçmiş doldurma → edinimler) beslenir."""
     provider = FakeImageryProvider(GEOMETRY)
+    settings = get_settings().model_copy(update={"acq_start": "2018-01-01"})
+    runner = BackfillRunner(factory, provider, get_storage(), settings)
     app.dependency_overrides[get_imagery] = lambda: provider
-    app.dependency_overrides[get_year_queue] = lambda: ImmediateYearQueue(
-        YearRunner(factory, provider, get_storage())
-    )
+    app.dependency_overrides[get_month_queue] = lambda: ImmediateMonthQueue(runner)
     return provider
 
 
@@ -200,12 +200,10 @@ async def test_start_is_idempotent_and_never_rereads_finished_years(
 ):
     garden = await new_garden(user_client)
     await user_client.post(url(garden["id"]))
-    reads, searches = len(fake.read_calls), len(fake.search_calls)
+    reads = len(fake.read_calls)
     again = await user_client.post(url(garden["id"]))
     assert again.status_code == 202 and again.json()["durum"] == "tamam"
-    assert (
-        len(fake.read_calls) == reads and len(fake.search_calls) == searches
-    )  # tamam yıllar yeniden işlenmedi
+    assert len(fake.read_calls) == reads  # tamam aylar/yıllar yeniden işlenmedi
     async with factory() as session:
         rows = (
             await session.execute(
@@ -219,34 +217,19 @@ async def test_start_is_idempotent_and_never_rereads_finished_years(
 
 async def test_failed_year_resumes_where_it_stopped(user_client: AsyncClient, fake):
     garden = await new_garden(user_client)
-    fake.fail_years = {2021}
+    fake.fail_years = {2021}  # o yılın tüm aylarında arama hatası
     first = (await user_client.post(url(garden["id"]))).json()
     broken = next(y for y in first["yillar"] if y["yil"] == 2021)
-    assert broken["durum"] == "hata" and "ulaşılamadı" in broken["hata_mesaji"]
-    assert (
-        first["durum"] == "tamam" and "1 yıl işlenemedi" in first["mesaj"]
-    )  # diğer yıllar tamam; hata özetlendi
-    searches_before = list(fake.search_calls)
+    assert broken["durum"] == "hata" and "çekilemedi" in broken["hata_mesaji"]
+    assert first["durum"] == "tamam" and "1 yıl işlenemedi" in first["mesaj"]  # diğer yıllar tamam; hata özetlendi
+    reads_before = len(fake.read_calls)
 
     fake.fail_years = set()
     second = (await user_client.post(url(garden["id"]))).json()
     assert second["durum"] == "tamam" and all(y["durum"] == "tamam" for y in second["yillar"])
-    assert fake.search_calls[len(searches_before) :] == [
-        2021
-    ]  # yalnızca hatalı yıl yeniden çalıştı
+    assert 0 < len(fake.read_calls) - reads_before < 60 and all(d.year == 2021 for d in fake.read_calls[reads_before:])  # yalnız hatalı yıl yeniden çalıştı
     result = (await user_client.get(url(garden["id"], "/sonuc"))).json()
     assert result["durum"] == "hazir" and 2021 in [y["yil"] for y in result["yillar"] if y["dahil"]]
-
-
-async def test_year_task_is_claimed_by_a_single_worker(user_client: AsyncClient, fake, factory):
-    garden = await new_garden(user_client)
-    await user_client.post(url(garden["id"]))
-    gid = uuid.UUID(garden["id"])
-    reads = len(fake.read_calls)
-    outcome = await process_year(
-        factory, fake, get_storage(), gid, 2020, window=parse_window(window_tag("ndvi", 6, 9))
-    )
-    assert outcome == "atlandi" and len(fake.read_calls) == reads  # tamam yıl ikinci kez alınmaz
 
 
 async def test_year_without_enough_net_scenes_is_flagged_not_guessed(
@@ -441,28 +424,22 @@ async def test_year_image_is_a_png_and_missing_year_is_404(user_client: AsyncCli
     assert (await user_client.get(url(garden["id"], "/yillar/1999/gorsel"))).status_code == 404
 
 
-async def test_changing_the_boundary_discards_old_composites(
-    user_client: AsyncClient, fake, factory
-):
+async def test_changing_the_boundary_discards_old_acquisitions_and_rebuilds(user_client: AsyncClient, fake, factory):
+    from bahcelab_backend.domain.acquisitions.models import AcquisitionModel
+
     garden = await new_garden(user_client)
     await user_client.post(url(garden["id"]))
     gid = uuid.UUID(garden["id"])
     async with factory() as session:
-        await session.execute(
-            MultiyearYearModel.__table__.update()
-            .where(MultiyearYearModel.garden_id == gid)
-            .values(durum="tamam")
-        )
-        from sqlalchemy import text
-
-        await session.execute(
-            text("UPDATE multiyear_runs SET geometry_hash = 'eski' WHERE garden_id = :g"),
-            {"g": gid},
-        )
-        await session.commit()
+        before = {a.scene_id for a in (await session.execute(select(AcquisitionModel).where(AcquisitionModel.garden_id == gid))).scalars()}
+    moved = square(400, LNG + 0.0004, LAT)
+    assert (await user_client.patch(f"/gardens/{garden['id']}", json={"geometry": moved})).status_code == 200
     reads = len(fake.read_calls)
     await user_client.post(url(garden["id"]))
-    assert len(fake.read_calls) > reads  # sınır özeti değişti: tüm yıllar yeniden işlendi
+    assert len(fake.read_calls) > reads  # sınır değişti: edinimler silindi ve yeniden okundu
+    async with factory() as session:
+        count = (await session.execute(select(func.count()).select_from(AcquisitionModel).where(AcquisitionModel.garden_id == gid))).scalar_one()
+    assert count >= len(before) // 2  # yeni sınırla yeniden dolduruldu
 
 
 async def test_completion_notification_is_published_once(user_client: AsyncClient, fake):
@@ -587,77 +564,6 @@ def test_comment_text_is_plain_and_mentions_direction():
         "Bahçe büyük ölçüde homojen: kesimler arasında ağaç gücü farkı küçük."
     ]
     assert timedelta(days=1) > timedelta(0)
-
-
-# ----------------------------------------------------------------------------- kuyruk taşıyıcıları ve hız sınırı
-async def test_arq_queue_uses_stable_job_ids_so_a_year_is_never_queued_twice():
-    from bahcelab_backend.domain.multiyear.runner import ArqYearQueue
-
-    class Pool:
-        def __init__(self):
-            self.calls = []
-
-        async def enqueue_job(self, name, *args, **kwargs):
-            self.calls.append((name, args, kwargs))
-
-    pool = Pool()
-    queue = ArqYearQueue(pool)
-    gid = uuid.uuid4()
-    await queue.enqueue_year(gid, 2021)
-    await queue.enqueue_year(gid, 2021)
-    assert (
-        pool.calls[0]
-        == pool.calls[1]
-        == ("process_garden_year", (str(gid), 2021), {"_job_id": f"year-{gid}-2021"})
-    )
-
-
-async def test_inline_queue_runs_in_the_background_with_a_shared_parallel_limit():
-    import asyncio
-
-    from bahcelab_backend.domain.multiyear.runner import _TASKS, InlineYearQueue
-
-    class Runner:
-        settings = get_settings().model_copy(update={"multiyear_parallel_years": 2})
-
-        def __init__(self):
-            self.active = self.peak = 0
-            self.done: list[int] = []
-
-        async def run_year(self, garden_id, year):
-            self.active += 1
-            self.peak = max(self.peak, self.active)
-            await asyncio.sleep(0.05)
-            self.active -= 1
-            self.done.append(year)
-
-    runner = Runner()
-    queue = InlineYearQueue(runner)  # type: ignore[arg-type]
-    gid = uuid.uuid4()
-    for year in range(2018, 2024):
-        await queue.enqueue_year(gid, year)
-    assert runner.done == []  # istek bekletilmez: görevler arka planda
-    await asyncio.gather(*list(_TASKS))
-    assert (
-        sorted(runner.done) == list(range(2018, 2024)) and runner.peak == 2
-    )  # ortak eşzamanlılık sınırı
-
-
-async def test_rate_limiter_spaces_requests():
-    import time
-
-    from bahcelab_backend.domain.multiyear.processor import RateLimiter
-
-    limiter = RateLimiter(0.05)
-    started = time.monotonic()
-    for _ in range(4):
-        await limiter.wait()
-    assert time.monotonic() - started >= 0.15  # 4 istek arası en az 3 × 50 ms
-    free = RateLimiter(0.0)
-    started = time.monotonic()
-    for _ in range(50):
-        await free.wait()
-    assert time.monotonic() - started < 0.05
 
 
 async def test_year_values_expose_the_composite_grid_inside_the_garden_only(

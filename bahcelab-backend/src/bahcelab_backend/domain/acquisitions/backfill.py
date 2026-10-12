@@ -50,6 +50,9 @@ class BackfillRunner:
     async def run_month(self, garden_id: uuid.UUID, month: date, *, force: bool = False) -> str:
         outcome = await process_month(self.factory, self.provider, self.storage, garden_id, month, settings=self.settings, force=force)
         await self.finalize(garden_id)
+        from bahcelab_backend.domain.multiyear.finalize import after_month
+
+        await after_month(self.factory, self.storage, garden_id, month, self.settings)  # çok yıllık yıl kompozitleri bu verilerden kurulur
         return outcome
 
     async def finalize(self, garden_id: uuid.UUID) -> None:

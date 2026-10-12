@@ -96,6 +96,7 @@ export interface ApiDurum {
     guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmis_gun: number; son_goruntu_yasi_gun: number | null }
     dusuren_bilesen: 'agac_gucu' | 'su' | 'risk' | null
     kademe_nedeni: string
+    cumleler: string[]
     esik_durumu: string
     formul_notu: string
   }

@@ -46,6 +46,12 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
     ['-m', 'tests.support.seed_scenes', gardenId, ...(options.flat ? ['--flat'] : [])],
     { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' },
   )
+  seedAcquisitions(gardenId) // harita, sezon eğrisi ve normal bantlar TEK veri hattından (edinimler) beslenir
+}
+
+/** Test aracı: bahçeye 2017'den bugüne ay başına 2 net edinim + normal bantlar (sentetik desen; gerçek depolama ve bant hesabı). */
+export function seedAcquisitions(gardenId: string): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_acquisitions', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
 }
 
 /** Test aracı: bahçenin hava önbelleğini kayıtlı örnek veriyle doldurur (ağsız; gerçek hava servisi ve risk motoru çalışır). */

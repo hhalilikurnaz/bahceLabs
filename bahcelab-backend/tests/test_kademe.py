@@ -102,3 +102,62 @@ def test_medium_pest_risk_names_the_pest_caps_the_tier_and_explains_it() -> None
 def test_no_data_has_no_tier_chips_or_reason_numbers() -> None:
     result = assess([], spans=SPANS, sat_severities=[], weather_severities=[], today=date(2026, 10, 10), cfg=CFG)
     assert result.durum == "veri_yok" and all(c.seviye is None for c in result.cipler if c.kod != "risk")
+
+
+# ----------------------------------------------------------------------------- normal banda göre karar (ortanca/MAD sapması)
+from bahcelab_backend.domain.agro.score import AY_ADLARI, BandRef  # noqa: E402
+
+
+def band(month: int = 10, median: float = 0.60, mad: float = 0.02, years: int = 9) -> BandRef:
+    return BandRef(ay=month, yil_sayisi=years, yillar=list(range(2016, 2016 + years)), median=median, mad=mad)
+
+
+def october_scenes(ndvi_last: float) -> list[SceneValue]:
+    return [SceneValue(date(2026, 8, 1) + timedelta(days=i * 5), {"ndvi": ndvi_last, "ndmi": 0.2}) for i in range(12)]  # son sahne Eki 1 civarı
+
+
+def test_tree_vigor_chip_follows_the_normal_band_not_the_recent_weeks() -> None:
+    scenes = october_scenes(0.60)
+    today = scenes[-1].tarih
+    bands = {"ndvi": band(month=today.month)}
+    normal = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands=bands)
+    assert next(c for c in normal.cipler if c.kod == "agac_gucu").seviye == "normal"
+    # sabit 0,50: kendi son haftalarına göre «normal» görünürdü; banda göre ortancanın çok altında
+    low = [SceneValue(s.tarih, {"ndvi": 0.50, "ndmi": 0.2}) for s in scenes]
+    result = assess(low, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands=bands)
+    chip = next(c for c in result.cipler if c.kod == "agac_gucu")
+    assert chip.seviye == "belirgin_dusuk" and result.durum != "iyi" and result.dusuren == "agac_gucu"
+    assert "bandı" in chip.aciklama and "altında" in chip.aciklama
+
+
+def test_band_only_penalises_values_below_the_median() -> None:
+    scenes = october_scenes(0.72)  # ortancanın çok üstünde
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG, bands={"ndvi": band(month=scenes[-1].tarih.month)})
+    assert next(c for c in result.cipler if c.kod == "agac_gucu").seviye == "normal"
+
+
+def test_confidence_is_told_in_terms_of_the_band_and_its_years() -> None:
+    scenes = october_scenes(0.60)
+    today = scenes[-1].tarih
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": band(month=today.month)})
+    assert f"{AY_ADLARI[today.month]} bandı: 9 yıl, 2016–2024" in result.guven.aciklama and result.guven.seviye == "yuksek"
+    few = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": band(month=today.month, years=5)})
+    assert few.guven.seviye == "orta"  # 5–7 yıl: orta güven
+
+
+def test_insufficient_band_falls_back_to_own_history_and_says_so() -> None:
+    scenes = october_scenes(0.60)
+    today = scenes[-1].tarih
+    short = BandRef(ay=today.month, yil_sayisi=3, yillar=[2023, 2024, 2025], median=0.6, mad=0.02)
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": short})
+    assert "yetersiz geçmiş" in result.guven.aciklama.lower()
+
+
+def test_how_computed_text_is_at_most_three_short_sentences_and_names_a_risk_once() -> None:
+    scenes = october_scenes(0.60)
+    today = scenes[-1].tarih
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=today, cfg=CFG, bands={"ndvi": band(month=today.month)}, active_risks=[AktifRisk("Meyve sineği", "orta")])
+    assert 1 <= len(result.cumleler) <= 3 and all(len(c) < 140 for c in result.cumleler)
+    text = " ".join(result.cumleler)
+    assert text.count("Meyve sineği") == 1 and "normalin altı" not in text  # aynı risk iki kez sayılmaz; seviye yazılır
+    assert "orta" in text and "en fazla İzle" in text and f"{AY_ADLARI[today.month]} bandı" in text

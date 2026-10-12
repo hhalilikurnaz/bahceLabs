@@ -72,7 +72,7 @@ class AnalizPenceresi(KuralBlok):
     indeks: str = "ndvi"
     # Yıl veri yeterliliği (ön değer): eşik altındaki yıl «yetersiz veri» olur; kompozitte görünür ama analize girmez
     en_az_net_sahne: int = Field(default=3, ge=1)
-    en_az_donem_kapsami: float = Field(default=0.5, ge=0, le=1)  # net sahne olan 10 günlük dönemlerin payı
+    en_az_ay_kapsami: float = Field(default=0.75, ge=0, le=1)  # penceredeki ayların en az bu payında net sahne olmalı
 
     @model_validator(mode="after")
     def _ordered(self) -> AnalizPenceresi:
@@ -140,6 +140,9 @@ class NormalBant(KuralBlok):
     asgari_yil_ceyrek: int = Field(ge=2)  # p25–p75 (ve ortanca)
     asgari_yil_onluk: int = Field(ge=2)  # p10–p90
     ilk_yil: int = 2015
+    # Normal banda göre karar: z = (değer − ortanca) / (1,4826·MAD). z ≥ −sapma_normal → tam puan; z ≤ −sapma_sifir → sıfır puan (yalnız ortancanın ALTI cezalandırılır)
+    sapma_normal: float = 1.0
+    sapma_sifir: float = 3.0
 
     @model_validator(mode="after")
     def _ordered(self) -> NormalBant:

@@ -29,11 +29,13 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
       return
     }
     const started = performance.now()
+    const konturAcik = kontur && view.tanim.id !== 'degisim' && view.tanim.gorunum === 'rampa'
     const canvas = paintGrid(view.izgara, {
       ramp: view.ramp,
       domain: view.alan,
-      scale: olcek(view.izgara.cols, view.izgara.rows, kontur && view.tanim.id !== 'degisim'),
-      contour: kontur && view.tanim.id !== 'degisim' ? contourStep(view.alan) : null,
+      scale: olcek(view.izgara.cols, view.izgara.rows, konturAcik),
+      contour: konturAcik ? contourStep(view.alan) : null,
+      gorunum: view.tanim.gorunum,
       clip: ring,
       highlight: vurgu,
     })

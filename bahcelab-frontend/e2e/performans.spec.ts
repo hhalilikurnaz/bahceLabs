@@ -23,9 +23,9 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   // 1) Katman değişimi: tıklama → ilk karede boyanmış katman. Canlılık ↔ Yaprak suyu ↔ Değişim, birkaç tur.
   const menu = page.getByTestId('katman-menusu')
   const sureler: number[] = []
-  const sirasi = ['yaprakSuyu', 'degisim', 'canlilik', 'yaprakSuyu', 'canlilik', 'degisim', 'canlilik'] as const
+  const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'tacToprak', 'degisim', 'canlilik', 'yaprakAlani', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
   for (const hedef of sirasi) {
-    await menu.getByRole('button', { name: /Canlılık|Yaprak suyu|Bölgeler|Değişim/ }).first().click()
+    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Bölgeler|Değişim/ }).first().click()
     await page.evaluate(() => {
       performance.clearMarks('katman-boyandi')
       ;(window as unknown as { __t0: number }).__t0 = performance.now()

@@ -48,7 +48,9 @@ class YilBilgisi(BaseModel):
     yetersiz_veri: bool = False  # net sahne/dönem kapsamı eşiğin altında: kompozitte görünür, analize girmez, uyumsuzluk sorulmaz
     yetersiz_nedeni: str | None = None
     net_gun_sayisi: int | None = None
-    donem_kapsami: float | None = None  # net sahne olan 10 günlük dönemlerin payı (0–1)
+    donem_kapsami: float | None = None  # penceredeki ayların net sahnesi olan payı (0–1)
+    yil_net_sahne: int = 0  # TÜM aylardaki net sahne (yılda ~22): yıl tablosu bunu gösterir
+    yil_bulutlu: int = 0  # elenen bulutlu sahne sayısı
     aday_sayisi: int = 0
     dahil: bool  # sonuçta kullanıldı mı
     elle: bool | None  # kullanıcı seçimi (None = otomatik)

@@ -231,3 +231,34 @@ async def test_backfill_endpoints_require_login_and_report_progress(user_client:
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as anon:
         assert (await anon.get(f"/gardens/{gid}/gecmis-doldurma")).status_code == 401
+
+
+async def test_acquisition_list_and_grid_endpoints(user_client: AsyncClient, factory, app):
+    from bahcelab_backend.api.deps import (
+        get_data_foundation_service,
+        get_db_session,
+        get_imagery,
+        get_month_queue,
+        get_workspace_id,
+    )
+    from bahcelab_backend.domain.acquisitions.service import DataFoundationService
+
+    gid = await new_garden(user_client)
+    provider, runner, settings = make(factory, "2024-01-01")
+    app.dependency_overrides[get_imagery] = lambda: provider
+    app.dependency_overrides[get_month_queue] = lambda: ImmediateMonthQueue(runner)
+
+    async def service(session=Depends(get_db_session), workspace_id=Depends(get_workspace_id)):
+        return DataFoundationService(session, workspace_id, BackfillService(session, provider, get_storage(), ImmediateMonthQueue(runner), settings))
+
+    app.dependency_overrides[get_data_foundation_service] = service
+    await user_client.post(f"/gardens/{gid}/gecmis-doldurma")
+    data = (await user_client.get(f"/gardens/{gid}/edinimler")).json()
+    assert data["net_sayisi"] >= 6 and data["izgara"]["satir"] > 10 and len(data["izgara"]["koordinatlar"]) == 4
+    first = data["edinimler"][0]
+    assert {"ndvi", "ndmi", "ndre", "msavi"} <= set(first["gostergeler"]) and first["gostergeler"]["ndvi"]["p10"] <= first["gostergeler"]["ndvi"]["p90"]
+    raw = await user_client.get(f"/gardens/{gid}/edinimler/{first['tarih']}/ndvi/izgara")
+    values = np.frombuffer(raw.content, dtype="<f4")
+    assert raw.status_code == 200 and values.size == data["izgara"]["satir"] * data["izgara"]["sutun"] and np.isfinite(values).sum() > 0
+    assert (await user_client.get(f"/gardens/{gid}/edinimler/2001-01-01/ndvi/izgara")).status_code == 404
+    assert (await user_client.get(f"/gardens/{gid}/edinimler/{first['tarih']}/yok/izgara")).status_code == 404

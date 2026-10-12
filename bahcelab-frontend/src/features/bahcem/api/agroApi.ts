@@ -83,6 +83,8 @@ export interface GardenStatus {
     guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmisGun: number; sonGoruntuYasiGun: number | null }
     dusurenBilesen: StatusChip['kod'] | null
     kademeNedeni: string
+    /** «Nasıl hesaplandı?»: en fazla 3 kısa cümle (neden · güven banda göre · son görüntü) */
+    cumleler: string[]
     esikDurumu: string
     formulNotu: string
   }
@@ -164,6 +166,7 @@ export const agroApi = {
         guven: { seviye: raw.nasil.guven.seviye, aciklama: raw.nasil.guven.aciklama, gecmisGun: raw.nasil.guven.gecmis_gun, sonGoruntuYasiGun: raw.nasil.guven.son_goruntu_yasi_gun },
         dusurenBilesen: raw.nasil.dusuren_bilesen,
         kademeNedeni: raw.nasil.kademe_nedeni,
+        cumleler: raw.nasil.cumleler,
         esikDurumu: raw.nasil.esik_durumu,
         formulNotu: raw.nasil.formul_notu,
       },

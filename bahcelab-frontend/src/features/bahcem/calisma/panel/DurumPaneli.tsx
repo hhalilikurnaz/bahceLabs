@@ -2,9 +2,10 @@ import type { Garden } from '../../api/types'
 import { useGardenStatus } from '../../api/agroApi'
 import { ErrorState, Skeleton } from '@/components/ui'
 import { TodayCard } from '../../components/garden-page/TodayCard'
-import { BosDurum } from '../../kabuk/BosDurum'
 import { KADEME_META, SEVIYE_META, type Kademe } from '../../lib/kademe'
 import { GecmisCekiliyor } from './GecmisCekiliyor'
+import { GostergeCubuklari } from './GostergeCubuklari'
+import { SezonEgrisi } from './SezonEgrisi'
 import { KademeSeridi } from './KademeSeridi'
 import { NasilHesaplandi } from './NasilHesaplandi'
 
@@ -55,9 +56,8 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
         </section>
       )}
       <TodayCard gardenId={garden.id} />
-      <section aria-label="Sezon bandı" className="rounded-md border border-dashed border-app-border" data-testid="sezon-bandi-bos">
-        <BosDurum gravur="kesit" baslik="Çok yıllık sezon bandı" fayda="Bu sezonun bahçenin kendi geçmişi yanında nerede durduğu burada görünecek." adim="Çok yıllık veri 9C’de çekiliyor" />
-      </section>
+      <SezonEgrisi gardenId={garden.id} />
+      <GostergeCubuklari gardenId={garden.id} />
     </div>
   )
 }

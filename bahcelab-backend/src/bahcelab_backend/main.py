@@ -41,9 +41,6 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     if get_settings().ndvi_enabled:
         try:
             from bahcelab_backend.database import async_session_factory
-            from bahcelab_backend.domain.multiyear.runner import fail_stale_years
-
-            await fail_stale_years(async_session_factory)  # yarım kalan yıl görevleri «Yeniden dene» ile sürdürülebilir
             from bahcelab_backend.domain.acquisitions.backfill import (
                 BackfillRunner,
                 fail_stale_months,

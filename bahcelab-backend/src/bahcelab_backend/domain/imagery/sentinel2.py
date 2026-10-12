@@ -140,26 +140,45 @@ def _baseline(item: Item) -> float | None:
         return None
 
 
-_ANGLES_CACHE: dict[str, SceneAngles] = {}
+_VIEW_CACHE: dict[str, tuple[float, float]] = {}
 
 
-def _angles(item: Item) -> SceneAngles | None:
-    """LAI için sahne geometrisi: granül meta verisi (MTD_TL.xml). Okunamazsa None (LAI üretilmez, diğer göstergeler etkilenmez)."""
-    cached = _ANGLES_CACHE.get(item.id)
-    if cached is not None:
-        return cached
+def _view_key(item: Item) -> str | None:
+    tile, orbit = item.properties.get("s2:mgrs_tile"), item.properties.get("sat:relative_orbit")
+    return f"{tile}_{orbit}" if tile and orbit is not None else None
+
+
+def _fetch_view_angles(item: Item) -> tuple[float, float] | None:
+    """Granül meta verisinden (MTD_TL.xml) bantlar ortalaması görüş açıları. Ağ hatasında None."""
     asset = item.assets.get("granule-metadata")
     if asset is None:
         return None
     try:
         response = httpx.get(planetary_computer.sign(asset.href), timeout=get_settings().imagery_metadata_timeout_seconds)
         response.raise_for_status()
-        result = parse_granule_angles(response.text)
+        angles = parse_granule_angles(response.text)
     except (httpx.HTTPError, ValueError) as exc:
-        logger.warning("Sahne açıları okunamadı (sahne=%s): %s", item.id, exc)
+        logger.warning("Görüş açıları okunamadı (sahne=%s): %s", item.id, exc)
         return None
-    _ANGLES_CACHE[item.id] = result
-    return result
+    return angles.view_zenith, angles.view_azimuth
+
+
+def _angles(item: Item) -> SceneAngles | None:
+    """LAI için sahne geometrisi. Güneş açıları STAC kaydından (granül meta verisiyle birebir aynı, fark 0). STAC'ta görüş açısı YOK: aynı
+    karo ve göreli yörüngedeki sahnelerde görüş açıları pratikte sabittir (zenit 6,1–6,2°, azimut 283–285°; LAI farkı < 0,001), bu yüzden
+    (karo, yörünge) başına YALNIZ BİR KEZ granül meta verisi okunur ve önbelleğe alınır; sahne başına ek indirme yoktur."""
+    props = item.properties
+    if "s2:mean_solar_zenith" not in props or "s2:mean_solar_azimuth" not in props:
+        return None
+    key = _view_key(item)
+    view = _VIEW_CACHE.get(key) if key else None
+    if view is None:
+        view = _fetch_view_angles(item)
+        if view is None:
+            return None
+        if key:
+            _VIEW_CACHE[key] = view
+    return SceneAngles(float(props["s2:mean_solar_zenith"]), float(props["s2:mean_solar_azimuth"]), view[0], view[1])
 
 
 def _radiometry(item: Item) -> Radiometry:

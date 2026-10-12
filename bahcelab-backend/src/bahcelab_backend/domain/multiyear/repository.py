@@ -66,22 +66,6 @@ class MultiyearRepository:
         year.sahne_tarihleri, year.yetersiz_veri = None, False
         await self.session.flush()
 
-    async def claim_year(self, garden_id: uuid.UUID, yil: int) -> bool:
-        """Görevi tek işçinin alması için: yalnızca bekleyen/hatalı yıl «işleniyor» olur (tamam/işleniyor yeniden alınmaz)."""
-        result = await self.session.execute(
-            update(MultiyearYearModel)
-            .where(MultiyearYearModel.garden_id == garden_id, MultiyearYearModel.yil == yil, MultiyearYearModel.durum.in_(("bekliyor", "hata")))
-            .values(durum="isleniyor", baslangic=datetime.now(UTC), hata_mesaji=None)
-        )
-        return bool(getattr(result, "rowcount", 0))
-
-    async def fail_stale(self, message: str) -> int:
-        """Açılışta: önceki süreçte yarıda kalan «işleniyor» yıllar hataya çekilir (yeniden başlatılabilir)."""
-        result = await self.session.execute(
-            update(MultiyearYearModel).where(MultiyearYearModel.durum == "isleniyor").values(durum="hata", hata_mesaji=message, bitis=datetime.now(UTC))
-        )
-        return int(getattr(result, "rowcount", 0) or 0)
-
     async def geometry_hash(self, garden_id: uuid.UUID) -> str | None:
         result = await self.session.execute(text("SELECT md5(ST_AsText(geom)) FROM gardens WHERE id = :id"), {"id": garden_id})
         return result.scalar_one_or_none()

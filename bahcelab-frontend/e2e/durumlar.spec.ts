@@ -18,7 +18,7 @@ test('uydu verisi alınamazsa anlaşılır hata ve «Tekrar dene» gösterilir; 
   const garden = await createGarden(page.request, { ad: 'Hata Durumu', lng: 27.71, lat: 38.71, sideM: 200 })
   seedScenes(garden.id)
   let fail = true
-  await page.route('**/api/gardens/*/indeks', async (route) => {
+  await page.route('**/api/gardens/*/edinimler', async (route) => {
     if (route.request().method() === 'GET' && fail) return route.abort()
     return route.continue()
   })

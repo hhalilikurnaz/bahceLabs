@@ -6,12 +6,13 @@ import asyncio
 import math
 import uuid
 from datetime import UTC, date, datetime
-from typing import Any, Literal, Protocol
+from typing import Any, Literal
 
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.config import Settings, get_settings
+from bahcelab_backend.domain.acquisitions.backfill import BackfillService
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
@@ -23,7 +24,7 @@ from bahcelab_backend.domain.multiyear.models import (
     MultiyearRunModel,
     MultiyearYearModel,
 )
-from bahcelab_backend.domain.multiyear.processor import composite_key, decode_array
+from bahcelab_backend.domain.multiyear.processor_io import composite_key, decode_array
 from bahcelab_backend.domain.multiyear.repository import MultiyearRepository
 from bahcelab_backend.domain.multiyear.schemas import (
     BolgeOzeti,
@@ -35,10 +36,10 @@ from bahcelab_backend.domain.multiyear.schemas import (
     YillarGuncelle,
 )
 from bahcelab_backend.domain.multiyear.sufficiency import (
-    PERIOD_DAYS,
     Sufficiency,
     assess_sufficiency,
 )
+from bahcelab_backend.domain.multiyear.sync import sync_year, year_counts
 from bahcelab_backend.domain.multiyear.vector import class_polygons
 from bahcelab_backend.domain.multiyear.zoning import (
     YearMap,
@@ -55,10 +56,6 @@ NOTE = "Bölgeler ağaç gücünü gösterir; hasat kayıtlarıyla (Adım 11) ve
 ZONE_NAMES = {3: ["Zayıf", "Orta", "Güçlü"], 5: ["En zayıf", "Zayıf", "Orta", "Güçlü", "En güçlü"]}
 STABILITY_NAMES = {1: "dusuk", 2: "orta", 3: "yuksek"}
 DIRECTIONS = ["kuzey", "kuzeydoğu", "doğu", "güneydoğu", "güney", "güneybatı", "batı", "kuzeybatı"]
-
-
-class YearQueue(Protocol):
-    async def enqueue_year(self, garden_id: uuid.UUID, year: int) -> None: ...
 
 
 def zoning_config(settings: Settings) -> ZoningConfig:
@@ -120,15 +117,15 @@ class MultiyearService:
         self,
         session: AsyncSession,
         workspace_id: uuid.UUID,
-        provider: ImageryProvider,
+        provider: ImageryProvider | None,
         storage: StorageBackend,
-        queue: YearQueue,
+        backfill: BackfillService | None,
         settings: Settings | None = None,
     ) -> None:
         self.session = session
         self.gardens = GardenRepository(session, workspace_id)
         self.repo = MultiyearRepository(session)
-        self.provider, self.storage, self.queue = provider, storage, queue
+        self.provider, self.storage, self.backfill = provider, storage, backfill
         self.settings = settings or get_settings()
         self.workspace_id = workspace_id
 
@@ -140,6 +137,8 @@ class MultiyearService:
 
     # ------------------------------------------------------------------ başlat
     async def start(self, garden_id: uuid.UUID) -> CokYillikDurum:
+        if self.provider is None:
+            raise AppError(500, AppErrorCode.INTERNAL_ERROR, "Uydu kaynağı yapılandırılmadı.")
         garden, geometry = await self._garden(garden_id)
         window = cat.load_catalog().urun(garden.urun)
         rule = window.analiz_penceresi if window else None
@@ -169,20 +168,35 @@ class MultiyearService:
             )
         )
         window_start, _ = window_dates(first_year, rule.ay_baslangic, rule.ay_bitis)
-        to_run: list[int] = []
         for year in range(first_year, last_year + 1):
             partial = year == first_year and first > window_start
             row = await self.repo.ensure_year(garden_id, year, partial)
             if changed and row.durum != "bekliyor":
                 self.storage.delete(composite_key(garden_id, year))
                 await self.repo.reset_year(row, partial)
-            if row.durum in ("bekliyor", "hata"):
-                to_run.append(year)
         await self.session.commit()
-        for year in to_run:  # kaldığı yerden devam: yalnızca tamamlanmamış yıllar kuyruğa girer
-            await self.queue.enqueue_year(garden_id, year)
-        self.session.expire_all()  # kuyruk (ayrı oturumlarda) durumu değiştirmiş olabilir: bayat nesneler okunmasın
+        # TEK VERİ HATTI: yıl kompozitleri geçmiş doldurmanın saklı edinimlerinden kurulur (ADR 0015). Doldurma eksikse başlatılır /
+        # sürdürülür; her ay görevinden sonra `multiyear.finalize.after_month` yılları eşitler, hepsi bitince bölgeleri hesaplar.
+        if self.backfill is not None:
+            await self.backfill.start(garden_id)
+        self.session.expire_all()  # görevler (ayrı oturumlarda) yıl satırlarını değiştirmiş olabilir: bayat nesneler okunmasın
+        await self.sync_years(garden_id)
+        self.session.expire_all()
         return await self.status(garden_id)
+
+    async def sync_years(self, garden_id: uuid.UUID) -> None:
+        """Penceresi tamamlanmış yılların kompozitlerini edinimlerden kurar; hepsi sonuçlandıysa bölgeleri hesaplar (idempotent)."""
+        garden, _ = await self._garden(garden_id)
+        rule = self._rule(garden)
+        years = await self.repo.list_years(garden_id)
+        changed = False
+        for y in years:
+            changed = (await sync_year(self.session, self.storage, garden_id, y, rule))[1] or changed
+        await self.session.commit()
+        years = await self.repo.list_years(garden_id)
+        if years and not any(y.durum == "bekliyor" for y in years) and any(y.durum == "tamam" for y in years) and (changed or await self.repo.active_result(garden_id, 3) is None):
+            for k in self.settings.multiyear_zone_counts:
+                await self.compute(garden_id, k)
 
     # ------------------------------------------------------------------ ilerleme
     async def status(self, garden_id: uuid.UUID) -> CokYillikDurum:
@@ -214,15 +228,12 @@ class MultiyearService:
 
     # ------------------------------------------------------------------ hesaplama
     def _sufficiency(self, y: MultiyearYearModel, rule: Any) -> Sufficiency | None:
-        """Yılın veri yeterliliği (katalogdaki ön değer eşikleriyle). Tarihi kayıtlı olmayan eski satırda yalnız sahne sayısı sınanır."""
+        """Yılın veri yeterliliği (katalogdaki ön değer eşikleriyle): net sahne sayısı ve AY kapsamı."""
         if y.durum != "tamam":
             return None
         first, last = window_dates(y.yil, rule.ay_baslangic, rule.ay_bitis)
         dates = [date.fromisoformat(d) for d in (y.sahne_tarihleri or [])]
-        if y.sahne_tarihleri is None:  # tarihler yazılmamış (eski satır): yalnız sahne sayısı sınanır, dönem kapsamı bilinmez
-            low = y.sahne_sayisi < rule.en_az_net_sahne
-            return Sufficiency(y.sahne_sayisi, y.sahne_sayisi, 0, 0, 0.0, low, f"Yetersiz veri: {y.sahne_sayisi} net sahne (en az {rule.en_az_net_sahne} gerekir)" if low else None)
-        return assess_sufficiency(dates, first, last, min_scenes=rule.en_az_net_sahne, min_period_coverage=rule.en_az_donem_kapsami, period_days=PERIOD_DAYS)
+        return assess_sufficiency(dates, first, last, min_scenes=rule.en_az_net_sahne, min_month_coverage=rule.en_az_ay_kapsami)
 
     def _rule(self, garden: GardenModel) -> Any:
         urun = cat.load_catalog().urun(garden.urun)
@@ -312,6 +323,7 @@ class MultiyearService:
         garden, _ = await self._garden(garden_id)
         rule = self._rule(garden)
         out: list[YilBilgisi] = []
+        counts = await year_counts(self.session, garden_id)
         for y in await self.repo.list_years(garden_id):
             s = self._sufficiency(y, rule)
             out.append(
@@ -321,6 +333,7 @@ class MultiyearService:
                     yetersiz_nedeni=y.uyumsuz_nedeni if y.yetersiz_veri else None,
                     net_gun_sayisi=s.net_days if s and y.sahne_tarihleri is not None else None,
                     donem_kapsami=s.period_coverage if s and y.sahne_tarihleri is not None else None, aday_sayisi=y.aday_sayisi,
+                    yil_net_sahne=counts.get(y.yil, (0, 0))[0], yil_bulutlu=counts.get(y.yil, (0, 0))[1],
                     dahil=(y.yil in used) if used is not None else False, elle=y.dahil_elle,
                     karar_bekliyor=y.uyumsuz and y.dahil_elle is None, varsayilan_dahil=y.korumali or not y.uyumsuz, karar_zamani=y.karar_zamani, karar_notu=y.karar_notu,
                 )

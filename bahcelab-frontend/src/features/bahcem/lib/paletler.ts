@@ -15,8 +15,17 @@ export const RAMPS = {
   canlilik: stops(['#eef3e4', '#cfe3b9', '#93c08a', '#4e8f5c', '#1e5235']),
   yaprakSuyu: stops(['#eef3f7', '#c9dcea', '#8cb4d2', '#4c7fa8', '#1f4766']),
   degisim: stops(['#8c510a', '#d8b365', '#f1efe9', '#90c48a', '#1b7837']),
+  /** Klorofil (NDRE): sarı → yeşil */
+  klorofil: stops(['#f6efb0', '#e3dc7a', '#b4cf6a', '#6fae5e', '#2a7048']),
+  /** Yaprak alanı (LAI): kare dolgusu tek ton koyu yeşil (kare büyüklüğü değeri taşır); lejant bu ton skalasıyla boyanır */
+  yaprakAlani: stops(['#dfe9d4', '#b6d1a2', '#82b073', '#4e8750', '#255a3a']),
+  /** Taç ve toprak (MSAVI): taç daireleri açık → koyu yeşil */
+  tacToprak: stops(['#c9dca4', '#9cc774', '#62a255', '#357a43', '#1b5232']),
 } as const
 export type RampId = keyof typeof RAMPS
+
+/** MSAVI/LAI görsel dili için zemin tonları: toprak (taç ve toprak) ve nötr kâğıt (yaprak alanı kareleri) */
+export const ZEMIN = { toprak: '#b79b78', notr: '#efece4' } as const
 
 /** Bölge sınıfı (1 = zayıf … 3 = güçlü) → aynı tonun dereceleri */
 export const ZONE_SHADES: Record<number, string> = { 1: '#dbe6d3', 2: '#8fb383', 3: '#3a6b46' }

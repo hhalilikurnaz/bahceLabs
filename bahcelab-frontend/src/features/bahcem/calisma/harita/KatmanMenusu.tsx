@@ -1,17 +1,32 @@
 import { ChevronDown, Layers } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useMultiyear } from '../../api/multiyearApi'
-import { useIndices } from '../../api/indeksApi'
+import { useEdinimler } from '../../api/edinimApi'
+import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { gunAy, kaynakSatiri } from '../../lib/format'
-import { RAMPS, ZONE_SHADES, rampGradient } from '../../lib/paletler'
-import { isUsable } from '../../lib/scenes'
+import { RAMPS, ZEMIN, ZONE_SHADES, rampGradient } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
-import { KATMANLAR, KATMAN_SIRASI, type KatmanId } from '../katmanlar'
+import { KATMANLAR, KATMAN_GRUPLARI, KATMAN_SIRASI, type KatmanId } from '../katmanlar'
 
+/** Katman örneği: sürekli renk şeridi; LAI için orantılı kareler; MSAVI için toprak zemin üzerinde tepe daireleri. */
 function Ornek({ id }: { id: KatmanId }) {
   const t = KATMANLAR[id]
+  if (t.gorunum === 'kareler') {
+    return (
+      <svg aria-hidden width="32" height="14" viewBox="0 0 32 14" className="shrink-0 rounded-[3px] border border-black/10" style={{ background: ZEMIN.notr }}>
+        {[3, 5, 7, 9].map((w, i) => <rect key={w} x={2 + i * 7.5} y={7 - w / 2} width={w} height={w} fill="#4e8750" />)}
+      </svg>
+    )
+  }
+  if (t.gorunum === 'daireler') {
+    return (
+      <svg aria-hidden width="32" height="14" viewBox="0 0 32 14" className="shrink-0 rounded-[3px] border border-black/10" style={{ background: ZEMIN.toprak }}>
+        {[2, 3, 4.2, 5.4].map((r, i) => <circle key={r} cx={5 + i * 7.5} cy={7} r={r} fill="#357a43" />)}
+      </svg>
+    )
+  }
   const bg = t.ramp ? rampGradient(RAMPS[t.ramp]) : `linear-gradient(90deg, ${ZONE_SHADES[1]} 0 33%, ${ZONE_SHADES[2]} 33% 66%, ${ZONE_SHADES[3]} 66%)`
-  return <span aria-hidden className="block h-3 w-8 shrink-0 rounded-[3px] border border-black/10" style={{ background: bg }} />
+  return <span aria-hidden className="block h-3.5 w-8 shrink-0 rounded-[3px] border border-black/10" style={{ background: bg }} />
 }
 
 /** Sol üst: gruplu katman menüsü (kaynak, çözünürlük, tarih, durum) + eş değer çizgisi + opaklık. */
@@ -19,7 +34,8 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik } = useCalismaStore()
-  const { data } = useIndices(gardenId)
+  const { data } = useEdinimler(gardenId)
+  const gecmis = useGecmisDoldurma(gardenId).data
   const multi = useMultiyear(gardenId).data
   const aktif = KATMANLAR[katman]
 
@@ -41,9 +57,9 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
       const ok = multi?.durum === 'hazir'
       return { tarih: null, hazir: ok, not: ok ? (multi?.yil_araligi ?? '') : multi?.durum === 'islem_suruyor' ? 'işleniyor' : 'analiz yok' }
     }
-    const usable = (data?.gozlemler ?? []).filter((s) => t.indeks && isUsable(s, t.indeks))
+    const usable = (data?.edinimler ?? []).filter((e) => t.gosterge !== null && e.gostergeler[t.gosterge])
     const son = usable[usable.length - 1]
-    return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : data?.isleme ? 'işleniyor' : 'görüntü yok' }
+    return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : gecmis?.durum === 'isleniyor' ? 'veri çekiliyor' : 'görüntü yok' }
   }
 
   return (
@@ -53,7 +69,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
           <Layers className="h-4 w-4 text-app-text-muted" aria-hidden />
           <Ornek id={katman} />
           <span className="leading-tight">
-            <b className="block text-[13px] font-bold">{aktif.ad}</b>
+            <b className="block text-[13px] font-bold">{aktif.ad}{aktif.deneysel ? ' · deneysel' : ''}</b>
             <span className="num block text-[10.5px] text-app-text-muted">{kaynakSatiri([aktif.kaynak, aktif.cozunurluk])}</span>
           </span>
           <ChevronDown className={`h-4 w-4 text-app-text-muted transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
@@ -73,7 +89,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
       </div>
       {open && (
         <div role="listbox" aria-label="Katmanlar" className="glass absolute left-0 top-[52px] z-30 w-[380px] max-w-[calc(100vw-40px)] p-1.5">
-          {(['Bitki', 'Analiz'] as const).map((grup) => (
+          {KATMAN_GRUPLARI.map((grup) => (
             <div key={grup}>
               <div className="px-2 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{grup}</div>
               {KATMAN_SIRASI.filter((id) => KATMANLAR[id].grup === grup).map((id) => {
@@ -93,7 +109,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
                   >
                     <Ornek id={id} />
                     <span className="min-w-0">
-                      <b className="block text-[13px]">{t.ad}</b>
+                      <b className="block text-[13px]">{t.ad}{t.deneysel && <span className="ml-1.5 rounded-[2px] border border-app-border px-1 text-[9.5px] font-medium text-app-text-dim">deneysel</span>}</b>
                       <span className="block text-[11.5px] leading-snug text-app-text-muted">{t.anlam}</span>
                     </span>
                     <span className="num text-right text-[10px] leading-[1.35] text-app-text-muted">
