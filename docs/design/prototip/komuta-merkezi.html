@@ -1,0 +1,1400 @@
+<title>BahçeLab Komuta Merkezi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: üst gezinme + bahçe çubuğu; altında ikiye bölünmüş çalışma alanı — solda harita ve zaman şeridi, sağda sekmeli bahçe paneli. */
+:root{
+  --paper:#F6F5F0; --sheet:#FFFFFF; --ink:#17201B; --graphite:#58615A; --muted:#8B9189;
+  --rule:#D9D6CC; --rule-soft:#ECEAE3; --lemon:#E5BC2F; --lemon-ink:#1A1A12; --lemon-soft:#FBF3D3;
+  --brand:#1E4B35; --good:#2D6A4A; --watch:#9C7A12; --warn:#A24F1B; --water:#4A7491;
+  --map-paper:#ECE9DE; --map-line:#CFC4AA; --map-sym:#C5BCA4; --glass:rgba(255,255,255,.94);
+  --shadow:0 1px 0 rgba(23,32,27,.04),0 6px 24px -12px rgba(23,32,27,.25);
+  --f-display:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-ui:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-data:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --r:8px;
+}
+/* Saha Defteri: ayrı sayfa, defter dili yalnız burada */
+.notebook{--f-display:'Newsreader',Georgia,'Times New Roman',serif;--f-ui:'IBM Plex Sans',system-ui,sans-serif;--f-data:'IBM Plex Mono',ui-monospace,Menlo,monospace;--r:0px;font-family:var(--f-ui)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111512; --sheet:#181D19; --ink:#E9ECE6; --graphite:#A6AEA6; --muted:#7D857D;
+  --rule:#323A34; --rule-soft:#232A25; --lemon:#E5BC2F; --lemon-ink:#1A1A12; --lemon-soft:#3A3416;
+  --brand:#8CC3A2; --good:#7FC09A; --watch:#D7B24A; --warn:#E5915A; --water:#86AECB;
+  --map-paper:#1E231F; --map-line:#3C453E; --map-sym:#3A433C; --glass:rgba(24,29,25,.94);
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 8px 28px -12px rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111512; --sheet:#181D19; --ink:#E9ECE6; --graphite:#A6AEA6; --muted:#7D857D;
+  --rule:#323A34; --rule-soft:#232A25; --lemon:#E5BC2F; --lemon-ink:#1A1A12; --lemon-soft:#3A3416;
+  --brand:#8CC3A2; --good:#7FC09A; --watch:#D7B24A; --warn:#E5915A; --water:#86AECB;
+  --map-paper:#1E231F; --map-line:#3C453E; --map-sym:#3A433C; --glass:rgba(24,29,25,.94);
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 8px 28px -12px rgba(0,0,0,.7); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font:400 14px/1.45 var(--f-ui);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--lemon);outline-offset:2px}
+.mono{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.eyebrow{font:600 10.5px/1.2 var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--graphite)}
+.app{height:100%;display:flex;flex-direction:column;min-height:640px}
+
+/* Üst gezinme */
+.topnav{display:flex;align-items:center;gap:20px;padding:0 20px;height:56px;background:var(--sheet);border-bottom:1px solid var(--rule);flex:0 0 auto}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:600 16px var(--f-ui);letter-spacing:-.01em;white-space:nowrap}
+.logo-mark{width:30px;height:30px;display:grid;place-items:center;background:var(--brand);border-radius:3px}
+.primary{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.primary button{border:0;background:none;padding:0 12px;height:56px;color:var(--graphite);font-weight:500;position:relative;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.primary button[aria-current="page"]{color:var(--ink)}
+.primary button[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;background:var(--lemon)}
+.primary button .soon{font:500 9.5px var(--f-data);color:var(--muted);border:1px solid var(--rule);padding:1px 4px;border-radius:2px}
+.spacer{flex:1}
+.cmdk{display:flex;align-items:center;gap:10px;height:36px;width:300px;max-width:32vw;padding:0 10px;border:1px solid var(--rule);background:var(--paper);border-radius:3px;color:var(--graphite);text-align:left}
+.cmdk span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+kbd{font:500 10.5px var(--f-data);border:1px solid var(--rule);background:var(--sheet);padding:1px 5px;border-radius:2px;color:var(--graphite)}
+.iconbtn{width:36px;height:36px;display:grid;place-items:center;border:1px solid transparent;background:none;border-radius:3px;position:relative;color:var(--ink)}
+.iconbtn:hover{border-color:var(--rule)}
+.badge{position:absolute;top:3px;right:3px;min-width:15px;height:15px;border-radius:8px;background:var(--warn);color:#fff;font:600 9.5px/15px var(--f-data);text-align:center;padding:0 3px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--rule-soft);display:grid;place-items:center;font:600 12px var(--f-ui)}
+
+/* Bahçe çubuğu */
+.gardenbar{display:flex;align-items:center;gap:18px;padding:0 20px;height:52px;border-bottom:1px solid var(--rule);background:var(--sheet);flex:0 0 auto;overflow-x:auto;scrollbar-width:none}
+.gpick{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;white-space:nowrap}
+.gpick .name{font:700 19px/1 var(--f-display);letter-spacing:-.02em}
+.gpick .meta{font-size:12px;color:var(--graphite)}
+.tabs{display:flex;gap:2px;height:52px}
+.tabs button{border:0;background:none;padding:0 12px;color:var(--graphite);font-weight:500;position:relative;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;background:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;flex:0 0 auto}
+.seg button{border:0;background:var(--sheet);padding:0 12px;height:32px;font-size:12.5px;font-weight:500;color:var(--graphite);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.notebook .seg{border-color:var(--ink)}
+.seg.soft{border-color:var(--rule)}
+.seg.soft button[aria-pressed="true"]{background:var(--rule-soft);color:var(--ink)}
+
+/* Çalışma alanı */
+.work{flex:1;display:flex;min-height:0}
+.left{flex:1 1 66%;min-width:320px;display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--rule)}
+.divider{flex:0 0 8px;cursor:col-resize;background:transparent;position:relative;margin:0 -4px;z-index:5;border:0;padding:0}
+.divider::after{content:"";position:absolute;top:50%;left:50%;width:2px;height:36px;transform:translate(-50%,-50%);background:var(--rule);border-radius:1px}
+.divider:hover::after,.divider:focus-visible::after{background:var(--lemon)}
+.right{flex:1 1 34%;min-width:360px;max-width:560px;background:var(--sheet);overflow-y:auto;min-height:0}
+.map{position:relative;flex:1;min-height:340px;overflow:hidden;background:var(--map-paper)}
+.map canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.ov{position:absolute;z-index:2}
+.glass{background:var(--glass);border:1px solid var(--rule);border-radius:calc(var(--r) + 2px);box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+.karto .glass{border-color:var(--ink);box-shadow:none;border-radius:0}
+.layerbar{top:14px;left:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:calc(100% - 28px)}
+.layerbar .seg{border-color:var(--rule)}
+.karto .layerbar .seg{border-color:var(--ink);border-radius:0}
+.chip{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 10px;font-size:12.5px;font-weight:500}
+.chip input[type=range]{width:86px;accent-color:var(--ink)}
+.switch{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 10px;font-size:12.5px;font-weight:500;cursor:pointer;user-select:none}
+.switch input{accent-color:var(--ink);width:15px;height:15px;margin:0}
+.legend{left:14px;bottom:14px;width:286px;padding:12px 14px 10px}
+.legend .hist{display:block;width:100%;height:64px}
+.legend .row{display:flex;justify-content:space-between;font:400 11px var(--f-data);color:var(--graphite);margin-top:3px}
+.inspect{width:244px;padding:12px 14px}
+.inspect .v{font:600 28px/1 var(--f-data)}
+.inspect .x{position:absolute;top:6px;right:6px}
+.pin{border:1px solid var(--ink);background:var(--sheet);color:var(--ink);padding:6px 9px;font-size:12px;text-align:left;border-radius:0;transform:translate(14px,-50%);white-space:nowrap}
+.pin b{font:600 12px var(--f-data);color:var(--warn)}
+.pin::before{content:"";position:absolute;left:-15px;top:50%;width:14px;height:1px;background:var(--ink)}
+.pindot{width:12px;height:12px;border-radius:50%;background:var(--sheet);border:2.5px solid var(--warn);transform:translate(-50%,-50%);pointer-events:none}
+.yearbadge{top:62px;left:14px;padding:6px 8px 6px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px}
+.scale{right:14px;bottom:14px;padding:8px 10px;display:flex;align-items:flex-end;gap:14px}
+.scale svg{display:block}
+.timepill{right:14px;top:14px;display:flex;align-items:center;gap:4px;padding:4px}
+.timepill .iconbtn{width:30px;height:30px;font-size:18px;line-height:1}
+.timepill .iconbtn:disabled{opacity:.3;cursor:default}
+.timepill .btn{height:30px;margin-left:4px}
+.tp-t{display:flex;flex-direction:column;padding:0 6px;line-height:1.25;white-space:nowrap}
+.tp-t b{font:600 13px var(--f-data)}
+.tp-t span{font:400 10.5px var(--f-data);color:var(--graphite)}
+.layerbar{max-width:calc(100% - 400px)!important}
+.lp{position:relative}
+.lp-btn{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px 0 8px;color:var(--ink);text-align:left}
+.lp-sw{display:block;width:30px;height:12px;border-radius:3px;flex:0 0 auto;border:1px solid rgba(0,0,0,.12)}
+.lp-n{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.lp-n b{font-size:13px;font-weight:700} .lp-n b em{font:500 10.5px var(--f-data);color:var(--muted);font-style:normal;margin-left:4px}
+.lp-n > span{font:400 10.5px var(--f-data);color:var(--graphite)}
+.lp-pop{position:absolute;top:46px;left:0;width:380px;max-width:calc(100vw - 40px);padding:6px;z-index:6;max-height:70vh;overflow-y:auto}
+.lp-g{font:600 10px var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 8px 4px}
+.lp-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto 8px;gap:10px;align-items:center;width:100%;border:0;background:none;padding:7px 8px;border-radius:var(--r);text-align:left;color:var(--ink)}
+.lp-row:hover{background:var(--rule-soft)} .lp-row[aria-checked="true"]{background:color-mix(in srgb,var(--lemon) 18%,transparent)}
+.lp-row.off{opacity:.55}
+.lp-m{font:400 10px/1.35 var(--f-data);color:var(--graphite);text-align:right}
+.live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 18%,transparent)}
+.srcline{display:flex;align-items:center;gap:7px;margin-top:8px;padding-top:7px;border-top:1px solid var(--rule-soft);font:400 10.5px var(--f-data);color:var(--graphite)}
+.lst-cmp{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--graphite)} .lst-cmp b{color:var(--ink);font-family:var(--f-data)}
+.nb-leg{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:12px}
+.nb-leg span{display:flex;align-items:center;gap:8px}
+.notebook .legend{width:auto}
+
+/* Zaman şeridi */
+.dock{flex:0 0 auto;background:var(--sheet);border-top:1px solid var(--rule);padding:10px 16px 8px}
+.dock-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dock-h .readout{margin-left:auto;display:flex;align-items:baseline;gap:10px}
+.dock-h .readout .big{font:600 22px var(--f-data)}
+.playbtn{width:32px;height:32px;border:1px solid var(--rule);background:var(--sheet);border-radius:3px;display:grid;place-items:center}
+#dockSvg{display:block;width:100%;margin-top:6px}
+.dock{padding:8px 16px 6px}
+
+/* Sağ panel */
+:root{--band-90:color-mix(in srgb,var(--good) 10%,transparent);--band-50:color-mix(in srgb,var(--good) 22%,transparent)}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.linkbtn{border:0;background:none;padding:0;font-weight:600;font-size:12.5px;color:var(--ink);border-bottom:1px solid var(--ink)}
+.warnt{color:var(--warn);font-weight:600}
+.score-head{display:flex;gap:18px;align-items:center}
+.score-n{display:flex;align-items:baseline;flex:0 0 auto}
+.score-n b{font:700 54px/1 var(--f-data);letter-spacing:-.04em}
+.score-n span{font:500 14px var(--f-data);color:var(--muted);margin-left:3px}
+.scorebar{display:flex;height:10px;background:var(--rule-soft);border-radius:5px;overflow:hidden}
+.scorebar i{display:block;height:100%;background:var(--good)}
+.scorebar i.ded{background:repeating-linear-gradient(45deg,var(--warn) 0 2px,transparent 2px 5px);background-color:color-mix(in srgb,var(--warn) 12%,transparent);border-left:2px solid var(--sheet)}
+.sb-legend,.sc-legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:11.5px;color:var(--graphite)}
+.sb-legend span,.sc-legend span{display:inline-flex;align-items:center;gap:6px}
+.sb-legend .warn{color:var(--warn)}
+.lg{display:inline-block;width:14px;height:10px;border-radius:2px}
+.lg.sgood{background:var(--good)} .lg.sded{background:repeating-linear-gradient(45deg,var(--warn) 0 2px,transparent 2px 5px);border:1px solid var(--warn)}
+.lg.b90{background:var(--band-90);border:1px solid var(--rule)} .lg.b50{background:var(--band-50)}
+.lg.med{height:0;border-top:1.5px dashed var(--graphite);border-radius:0} .lg.now{height:0;border-top:2.5px solid var(--ink);border-radius:0}
+.buls{display:flex;flex-direction:column;gap:2px}
+.bul{display:grid;grid-template-columns:96px minmax(0,1fr) 118px;gap:14px;align-items:center;width:100%;border:0;background:none;padding:10px 8px;border-radius:var(--r);text-align:left;color:var(--ink)}
+.bul:hover{background:var(--rule-soft)}
+.bul.on{background:color-mix(in srgb,var(--lemon) 16%,transparent)}
+.bl-n{display:flex;flex-direction:column;gap:1px}
+.bl-n b{font-weight:700;font-size:13.5px}
+.bl-n span{font:400 10.5px var(--f-data);color:var(--muted)}
+.bl-track{position:relative;height:24px}
+.bl-track i{position:absolute;top:50%;transform:translateY(-50%);display:block}
+.bl-track .r90{height:8px;background:var(--band-90);border:1px solid var(--rule);border-radius:4px}
+.bl-track .r50{height:8px;background:var(--band-50);border-radius:4px}
+.bl-track .med{width:2px;height:16px;background:var(--graphite);margin-left:-1px}
+.bl-track .dot{width:13px;height:13px;border-radius:50%;margin-left:-6.5px;border:2px solid var(--sheet);box-shadow:0 0 0 1.2px var(--ink);background:var(--ink)}
+.bl-track .dot.low{background:var(--warn)} .bl-track .dot.hi{background:var(--good)}
+.bl-v{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.bl-v b{font:700 17px var(--f-data)}
+.bl-v span{font-size:11px;color:var(--graphite);text-align:right}
+.bl-v span.low{color:var(--warn);font-weight:600}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fact{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--rule-soft);border-radius:var(--r);background:none;padding:12px 14px;color:var(--ink)}
+.fact:hover{border-color:var(--rule)}
+.fact b{font:700 20px var(--f-data)} .fact b small{font-size:12px;font-weight:500;color:var(--graphite)}
+.hist-cta{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:16px;align-items:center;width:100%;text-align:left;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);padding:14px 16px;color:var(--ink)}
+.hist-cta:hover{border-color:var(--ink)}
+.hist-cta > span:first-child{display:flex;flex-direction:column;gap:3px}
+.hist-cta b{font-size:16px}
+.hist-cta .arr{font-size:18px}
+.srcchip{display:inline-flex;align-items:center;gap:7px;font:400 10.5px var(--f-data);color:var(--graphite);align-self:flex-start;border:1px solid var(--rule-soft);padding:3px 8px 3px 6px;border-radius:20px}
+.smapwrap{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:start}
+.smapwrap .srcchip{margin-top:10px}
+/* Geçmiş sayfası */
+.hp{flex:1;overflow-y:auto;background:var(--paper);min-height:0}
+.hp-head{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 24px;background:var(--sheet);border-bottom:1px solid var(--rule)}
+.hp-title{margin:2px 0 0;font:700 22px/1.1 var(--f-display);letter-spacing:-.02em}
+.hp-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:20px 24px 40px;max-width:1480px;margin:0 auto}
+.hp-card{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.hp-card.wide{grid-column:1/-1}
+.hp-card header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.multiples.big{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+/* Saha turu */
+.tour{display:flex;flex-direction:column;gap:10px}
+.tour .no,.plate .no{font:500 10.5px var(--f-data);letter-spacing:.09em;color:var(--graphite)}
+.nb-h{margin:0;font:500 28px/1.15 var(--f-display);letter-spacing:-.01em}
+.tour p{margin:0;font:400 15px/1.45 var(--f-display)}
+.tour-acts{display:flex;gap:8px;flex-wrap:wrap}
+.prog{display:flex;align-items:center;gap:10px;font:400 11px var(--f-data);color:var(--graphite)}
+.prog .bar{flex:1;height:4px;background:var(--rule)} .prog .bar i{display:block;height:100%;background:var(--ink)}
+.stops{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.stop{border-bottom:1px solid var(--rule)}
+.stop-h{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:12px;align-items:start;width:100%;border:0;background:none;padding:12px 0;text-align:left;color:var(--ink)}
+.stop .no{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;font:600 12px var(--f-data);background:var(--paper)}
+.stop.on .no{background:var(--lemon);color:#17201B}
+.stop.done .no{background:var(--ink);color:var(--paper)}
+.stop.done .stop-h b{text-decoration:line-through;text-decoration-thickness:1px;color:var(--graphite)}
+.stop-h b{display:block;font:500 17px/1.25 var(--f-display)}
+.why{display:block;font-size:12.5px;color:var(--graphite);margin-top:2px}
+.stop-b{padding:0 0 16px 42px;display:flex;flex-direction:column;gap:9px}
+.ck{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.ck input[type=checkbox]{width:17px;height:17px;accent-color:var(--ink);margin:0}
+.trapin input,.traps input{width:70px;height:32px;border:1px solid var(--ink);background:var(--sheet);padding:0 8px;font:500 13px var(--f-data);color:var(--ink)}
+.stop-b textarea{min-height:66px;border:1px solid var(--rule);background:var(--sheet);padding:8px 10px;font:400 14.5px/1.4 var(--f-display);resize:vertical;color:var(--ink)}
+.row-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+table.traps{width:100%;border-collapse:collapse;font-size:13px}
+table.traps th{font:500 10px var(--f-data);letter-spacing:.07em;color:var(--graphite);text-align:left;padding:6px 0;border-bottom:1px solid var(--ink)}
+table.traps td{padding:8px 0;border-bottom:1px solid var(--rule-soft);vertical-align:middle}
+@media print{ .topnav,.gardenbar,.layerbar,.timepill,.tour-acts,.row-acts,.toast,.nb-head .btn{display:none!important} .app{height:auto!important} .nb-body{flex-direction:column!important} .nb-body .map{height:120mm!important;flex:none} .nb-col{overflow:visible!important;max-width:none!important} }
+.pane{padding:22px 24px 32px;display:flex;flex-direction:column;gap:22px}
+.sec{display:flex;flex-direction:column;gap:12px}
+.sec + .sec{border-top:1px solid var(--rule-soft);padding-top:20px}
+h2.title{margin:0;font:700 22px/1.25 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
+h3.st{margin:0;font:700 15px/1.3 var(--f-display)}
+.notebook h2.title{font:500 30px/1.15 var(--f-display)} .notebook h3.st{font:500 19px/1.2 var(--f-display)}
+.lede{margin:0;font:500 15px/1.5 var(--f-display);color:var(--ink);max-width:56ch}
+.small{font-size:12.5px;color:var(--graphite)}
+.status-row{display:flex;gap:20px;align-items:center}
+.gauge{position:relative;width:118px;height:118px;flex:0 0 118px}
+.gauge .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .n b{font:600 34px/1 var(--f-data)}
+.gauge .n span{font:400 10.5px var(--f-data);color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 8px 2px 6px;border-radius:2px}
+.pill i{width:7px;height:7px;border-radius:50%;display:block}
+.pill.good{color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)} .pill.good i{background:var(--good)}
+.pill.watch{color:var(--watch);background:color-mix(in srgb,var(--watch) 14%,transparent)} .pill.watch i{background:var(--watch)}
+.pill.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)} .pill.warn i{background:var(--warn)}
+.reason{font:400 11.5px var(--f-data);color:var(--warn)}
+.todo{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--rule-soft)}
+.todo:last-child{border-bottom:0}
+.todo .t{font-weight:600}
+.todo .d{font-size:12.5px;color:var(--graphite)}
+.btn{display:inline-flex;align-items:center;justify-content:center;align-self:center;height:34px;padding:0 12px;border:1px solid var(--ink);background:var(--sheet);border-radius:var(--r);font-size:12.5px;font-weight:500;white-space:nowrap}
+.btn.primary{background:var(--lemon);border-color:var(--lemon);color:var(--lemon-ink);font-weight:600}
+.btn.ghost{border-color:var(--rule)}
+.btn:hover{filter:brightness(.97)}
+.wheelwrap{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;align-items:center}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{border:1px solid var(--rule-soft);border-radius:var(--r);padding:12px 14px!important;border-left:1px solid var(--rule-soft)!important}
+.notebook .metric{border:0;border-radius:0}
+.metric{padding:12px 12px 12px 0;border-bottom:1px solid var(--rule-soft)}
+.metric:nth-child(2n){padding-left:14px;padding-right:0;border-left:1px solid var(--rule-soft)}
+.metric .val{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:4px}
+.metric .val b{font:600 22px var(--f-data)}
+.metric .val b small{font-size:12px;font-weight:400;color:var(--graphite)}
+.metric .sub{font:400 11.5px var(--f-data);color:var(--graphite)}
+.links{display:flex;flex-wrap:wrap;gap:6px 18px}
+.links button{border:0;background:none;padding:6px 0;border-bottom:1px solid var(--ink);font-weight:600;font-size:13px}
+table.zones{width:100%;border-collapse:collapse;font-size:13px}
+table.zones th{font:500 10px var(--f-data);letter-spacing:.07em;color:var(--graphite);text-align:right;padding:8px 0;border-bottom:1px solid var(--ink)}
+table.zones th:first-child,table.zones td:first-child{text-align:left}
+table.zones td{padding:10px 0;border-bottom:1px solid var(--rule-soft);text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums}
+table.zones td:first-child{font-family:var(--f-ui)}
+table.zones tr{cursor:pointer}
+table.zones tr:hover td{background:var(--rule-soft)}
+.sw{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-right:8px;border:1px solid var(--ink)}
+.callout{border:1px solid var(--watch);background:var(--lemon-soft);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.callout .acts{display:flex;gap:8px;flex-wrap:wrap}
+.multiples{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.multiples button{border:1px solid var(--rule);background:var(--sheet);padding:0;text-align:left;border-radius:2px}
+.multiples button.odd{border:1px dashed var(--watch)}
+.multiples button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px}
+.multiples canvas{display:block;width:100%;aspect-ratio:1}
+.multiples .cap{display:flex;justify-content:space-between;padding:3px 6px 4px;font:500 10.5px var(--f-data)}
+.heat{display:grid;grid-template-columns:40px repeat(14,minmax(0,1fr));gap:2px;font:400 10px var(--f-data);color:var(--graphite);align-items:center}
+.heat .c{height:22px;border-radius:2px}
+.heat .c.ok{background:var(--water)}
+.heat .c.mid{background:repeating-linear-gradient(45deg,var(--watch) 0 2px,transparent 2px 5px);border:1px solid var(--watch)}
+.heat .c.no{background:radial-gradient(circle,var(--muted) 1px,transparent 1.5px) 0 0/5px 5px;background-color:var(--rule-soft)}
+.heat .c.night{background:var(--rule-soft)}
+.heatlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--graphite)}
+.heatlegend span{display:inline-flex;align-items:center;gap:6px}
+.heatlegend i{width:14px;height:10px;display:inline-block}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--ink)}
+.day{padding:10px 6px;border-right:1px solid var(--rule-soft);text-align:center}
+.day:last-child{border-right:0}
+.day b{display:block;font:600 16px var(--f-data)}
+.day .lo{font:400 11px var(--f-data);color:var(--graphite)}
+.day .bar{height:28px;display:flex;align-items:flex-end;justify-content:center;margin:6px 0 2px}
+.day .bar i{display:block;width:14px;background:var(--water)}
+.risk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--rule-soft)}
+.risk:last-child{border-bottom:0}
+.lvl{display:flex;align-items:center;gap:8px;font:500 11.5px var(--f-data)}
+.lvl i{width:12px;height:6px;display:block;background:var(--rule)}
+.empty{border:1px solid var(--rule);background:var(--paper);padding:22px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:20px;align-items:center}
+.preview-list{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.preview-list div{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule-soft);align-items:center}
+.tag{font:500 10px var(--f-data);border:1px solid var(--rule);padding:1px 6px;color:var(--graphite);border-radius:2px;white-space:nowrap}
+
+/* Asistan ve diğer sayfalar */
+.page{flex:1;display:grid;grid-template-columns:260px minmax(0,1fr) 300px;min-height:0;background:var(--paper)}
+.page aside{border-right:1px solid var(--rule);background:var(--sheet);padding:18px;overflow-y:auto}
+.page aside.ctx{border-right:0;border-left:1px solid var(--rule)}
+.hist-item{display:block;width:100%;text-align:left;border:0;border-left:2px solid transparent;background:none;padding:8px 10px;font-size:13px;color:var(--graphite)}
+.hist-item[aria-current="true"]{border-left-color:var(--lemon);color:var(--ink);background:var(--paper)}
+.chat{display:flex;flex-direction:column;min-height:0}
+.thread{flex:1;overflow-y:auto;padding:28px clamp(16px,4vw,56px);display:flex;flex-direction:column;gap:20px}
+.msg-u{align-self:flex-end;background:var(--ink);color:var(--paper);padding:10px 14px;max-width:70%;border-radius:3px}
+.msg-a{max-width:680px;display:flex;flex-direction:column;gap:12px}
+.msg-a p{margin:0;font:500 15px/1.6 var(--f-display)}
+.blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.block{border:1px solid var(--rule);background:var(--sheet);padding:12px}
+.srcs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.composer{border-top:1px solid var(--rule);background:var(--sheet);padding:14px clamp(16px,4vw,56px) 18px;display:flex;flex-direction:column;gap:10px}
+.sugs{display:flex;gap:8px;flex-wrap:wrap}
+.sugs button{border:1px solid var(--rule);background:var(--paper);padding:6px 10px;font-size:12.5px;border-radius:3px}
+.inputrow{display:flex;gap:8px}
+.inputrow input{flex:1;height:44px;border:1px solid var(--ink);background:var(--sheet);padding:0 12px;border-radius:3px}
+.soonpage{flex:1;display:grid;place-items:center;padding:40px 16px;background:var(--paper)}
+.soonpage .card{max-width:620px;display:grid;grid-template-columns:170px minmax(0,1fr);gap:28px;align-items:center}
+
+/* Saha Defteri sayfası */
+.nb{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--paper)}
+.nb-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 24px;border-bottom:1px solid var(--ink);background:var(--paper)}
+.nb-head h1{margin:0;font:500 30px/1 var(--f-display);letter-spacing:-.01em}
+.nb-head .meta{font:400 11px var(--f-data);color:var(--graphite)}
+.nb-body{flex:1;display:flex;min-height:0}
+.nb-body .left{border-right:1px solid var(--ink)}
+.nb-col{flex:1 1 40%;min-width:360px;max-width:600px;overflow-y:auto;padding:24px 28px 40px;display:flex;flex-direction:column;gap:28px;background:var(--paper)}
+.plate{border-top:1px solid var(--ink);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.plate .no{font:500 10.5px var(--f-data);letter-spacing:.09em;color:var(--graphite)}
+.plate p{margin:0;font:400 15px/1.45 var(--f-display)}
+.defter-btn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);font-size:12.5px;font-weight:600;white-space:nowrap}
+.defter-btn em{font:italic 500 14px 'Newsreader',Georgia,serif}
+@media (max-width: 980px){.nb-body{flex-direction:column}.nb-col{min-width:0;overflow:visible}}
+
+/* Komut paleti */
+.palette-bg{position:fixed;inset:0;background:rgba(17,21,18,.35);display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px;z-index:50}
+.palette{width:560px;max-width:100%;background:var(--sheet);border:1px solid var(--ink);box-shadow:var(--shadow)}
+.palette input{width:100%;height:52px;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:0 16px;font-size:15px;outline:none}
+.palette ul{list-style:none;margin:0;padding:6px}
+.palette li button{width:100%;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;border:0;background:none;padding:10px;text-align:left;border-radius:2px}
+.palette li button[aria-selected="true"],.palette li button:hover{background:var(--rule-soft)}
+.palette .hint{font:400 11px var(--f-data);color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;font-size:13px;z-index:60;border-radius:3px}
+.foot{font:400 10.5px var(--f-data);color:var(--muted);padding:0 24px 16px}
+
+@media (max-width: 980px){
+  .hp-body{grid-template-columns:minmax(0,1fr);padding:16px}
+  .app{height:auto}
+  .work{flex-direction:column}
+  .left{min-width:0;border-right:0}
+  .map{min-height:62vh}
+  .divider{display:none}
+  .right{min-width:0;overflow:visible}
+  .cmdk{width:44px;max-width:none}
+  .cmdk span,.cmdk kbd{display:none}
+  .page{grid-template-columns:minmax(0,1fr)}
+  .page aside{display:none}
+  .wheelwrap{grid-template-columns:minmax(0,1fr)}
+  .legend{width:236px}
+  .inspect{width:220px}
+}
+@media (max-width: 560px){
+  .topnav{gap:10px;padding:0 12px}
+  .gardenbar{flex-wrap:wrap;height:auto;padding:10px 12px 0;row-gap:4px}
+  .gardenbar .gpick .meta{display:none}
+  .gardenbar .spacer{display:none}
+  .gardenbar .defter-btn{margin-left:auto;height:30px}
+  .gardenbar .tabs{order:3;width:100%;overflow-x:auto;height:44px;scrollbar-width:none}
+  .map{min-height:58vh}
+  .logo span{display:none}
+  .gardenbar{gap:12px;padding:0 12px}
+  .pane{padding:18px 16px 28px}
+  .multiples{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .empty,.soonpage .card{grid-template-columns:minmax(0,1fr)}
+  .legend{display:none}
+  .heat{grid-template-columns:36px repeat(14,minmax(0,1fr));gap:1px}
+  .timepill{top:auto;right:auto;bottom:14px;left:50%;transform:translateX(-50%)}
+  .layerbar{max-width:calc(100% - 28px)!important}
+  .scale{display:none}
+  .multiples.big{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bul{grid-template-columns:84px minmax(0,1fr) 92px;gap:10px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="topnav">
+    <a class="logo" href="#" aria-label="BahçeLab">
+      <span class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="#E5BC2F" stroke-width="1.6"/><path d="M12 4V20M4 12H20M6.3 6.3L17.7 17.7M17.7 6.3L6.3 17.7" stroke="#E5BC2F" stroke-width="1.1"/></svg></span>
+      <span>BahçeLab</span>
+    </a>
+    <nav class="primary" aria-label="Ana gezinme" id="primaryNav"></nav>
+    <div class="spacer"></div>
+    <button class="cmdk" id="openCmd" type="button" aria-label="Ara veya sor"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15L20 20" stroke="currentColor" stroke-width="1.8"/></svg><span>Ara veya sor — “zayıf bölgeleri göster”</span><kbd>⌘K</kbd></button>
+    <button class="iconbtn" type="button" aria-label="Bildirimler, 2 okunmamış"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11C6 7.5 8.5 5 12 5S18 7.5 18 11V16L19.5 18H4.5ZM10 20.5H14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="badge">2</span></button>
+    <button class="iconbtn" type="button" aria-label="Açık / koyu tema" id="themeBtn"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3V6M12 18V21M3 12H6M18 12H21M5.6 5.6L7.8 7.8M16.2 16.2L18.4 18.4M5.6 18.4L7.8 16.2M16.2 7.8L18.4 5.6" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <div class="avatar" aria-label="Hesap: TK">TK</div>
+  </header>
+  <div id="main" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+</div>
+<div id="layer"></div>
+
+<script>
+(() => {
+/* ---------- Veri (temsili; ürün gerçek API verisini kullanır) ---------- */
+const M = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const MF = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const NDVI = [.46,.47,.49,.52,.51,.48,.45,.44,.45,.43,.45,.46];
+const NDVI_PREV = [.45,.46,.48,.50,.50,.47,.45,.45,.46,.44,.45,.45];
+const NDMI = [.24,.25,.24,.23,.22,.2,.17,.16,.17,.18,.2,.23];
+const NDRE = [.29,.30,.31,.33,.33,.31,.29,.28,.29,.30,.30,.30];
+// 2015–2025 aynı ay dağılımı (temsili): [p10,p25,ortanca,p75,p90]
+const envOf=(arr,sd)=>arr.map((v,m)=>{ const c=v+.004*Math.sin(m*1.3); return [c-2*sd,c-sd,c,c+sd,c+2*sd]; });
+const LAI=[3.3,3.3,3.4,3.7,3.9,3.8,3.6,3.5,3.5,3.4,3.4,3.3];
+const MSAVI=[.43,.44,.46,.49,.48,.45,.42,.41,.42,.40,.42,.43];
+const VH=[-12.6,-12.9,-13.4,-14.0,-14.6,-15.2,-15.7,-15.8,-15.3,-13.9,-13.1,-12.7];
+const LSTM=[14.2,15.1,18.4,22.6,27.3,31.8,35.2,35.6,33.4,31.4,22.1,16.4];
+const ENV={ lai:envOf(LAI.map(v=>v+.05),.12), msavi:envOf(MSAVI.map(v=>v+.008),.012), vh:envOf(VH.map(v=>v-.6),.5), lst:envOf(LSTM.map(v=>v-.8),.9), ndvi:envOf(NDVI_PREV.map(v=>v+.006),.014), ndmi:envOf(NDMI.map(v=>v+.012),.012), ndre:envOf(NDRE.map(v=>v+.004),.01) };
+const SER={ ndvi:NDVI, ndmi:NDMI, ndre:NDRE, lai:LAI, msavi:MSAVI, vh:VH, lst:LSTM };
+const LNAME={ ndvi:['Canlılık','NDVI · 10 m'], ndre:['Klorofil','NDRE · 20 m'], lai:['Yaprak alanı','LAI · 20 m'], msavi:['Taç ve toprak','MSAVI · 10 m'], ndmi:['Yaprak suyu','NDMI · 20 m'], vh:['Radar nemi','S1 VH · 10 m'], lst:['Yüzey sıcaklığı','LST · 100 m'] };
+const LASTM=9;
+function grad(r){ return 'linear-gradient(90deg,'+r.map(q=>q[1]+' '+(q[0]*100)+'%').join(',')+')'; }
+function band(k,m){ const e=ENV[k][m], v=SER[k][m];
+  if(v<e[0]) return ['low','son 11 yılın en düşüğü']; if(v<e[1]) return ['low','normalin alt kısmı']; if(v<=e[3]) return ['ok','normal aralıkta']; if(v<=e[4]) return ['hi','normalin üstü']; return ['hi','son 11 yılın en yükseği']; }
+const RAIN = [112,91,69,42,28,11,3,4,21,57,83,119];
+const PHEN = [[349,365,'Dinlenme','#DDD8CA'],[0,46,'Dinlenme','#DDD8CA'],[46,73,'Tomurcuk','#D7E0C2'],[73,120,'Çiçek','#F1E6B8'],[120,166,'Tutum','#CFDCB0'],[166,273,'Büyüme','#BFD3A2'],[273,349,'Olgunlaşma','#EAD49A']];
+const YEARS = [[2015,.59],[2016,.63],[2017,.70],[2018,.67],[2019,.60],[2020,.74],[2021,.47],[2022,.80],[2023,.78],[2024,.67],[2025,.63],[2026,.43]];
+const ODD = y => y===2021 || y===2026;
+const NI = 10, NJ = 15, CELL = 24, ROT = -26*Math.PI/180;
+
+const S = { pt:0, done:{}, ck:{}, notes:{}, trapToday:{}, hIdx:'ndvi', nav:'bahce', tab:'durum', mode:'uydu', layer:'ndvi', contours:true, opacity:.88, month:9, year:null, inspect:null, hoverBin:null, focusWeak:false, playing:false, answered:null, chat:0, dockOpen:false };
+try{ S.dockOpen = localStorage.getItem('bl-dock')==='1'; }catch(e){}
+
+const fmt = (n,d=2) => n.toFixed(d).replace('.',',');
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+function pattern(i,j){
+  return .55*Math.sin(i*.9+1) + .45*Math.cos(j*.55)
+    - 1.25*Math.exp(-((i-2)**2+(j-11)**2)/6)
+    + 1.05*Math.exp(-((i-7)**2+(j-2)**2)/5)
+    + .18*((((i*7+j*13)%5)-2)/2);
+}
+function cellVal(i,j){
+  const p = pattern(i,j);
+  if(S.year!=null){
+    const y=S.year;
+    if(ODD(y)) return .44 + .05*Math.sin(j*.7+i*.4+y) - .03*Math.cos(i*1.3);
+    return .455 + .045*p + .012*Math.sin((i+y)*1.7+j*.9);
+  }
+  if(S.layer==='ndmi') return NDMI[S.month] + .03*p + .006*Math.sin(i*1.3+S.month);
+  if(S.layer==='lai') return LAI[S.month] + .45*p + .04*Math.sin(i*1.7+j);
+  if(S.layer==='msavi') return MSAVI[S.month] + .04*p + .006*Math.sin(i+j*1.3);
+  if(S.layer==='vh') return VH[S.month] + .9*p + .25*Math.sin(i*2.1+j*1.7);
+  if(S.layer==='lst') return LSTM[S.month] - 1.2*p;
+  if(S.layer==='ndre') return NDRE[S.month] + .026*p + .005*Math.sin(i*.9+j*.4+S.month);
+  return NDVI[S.month] + .045*p + .008*Math.sin(i*1.1+j*.7+S.month*1.9);
+}
+function prevVal(i,j){ const m=(S.month+11)%12; return NDVI[m] + .045*pattern(i,j) + .008*Math.sin(i*1.1+j*.7+m*1.9); }
+function zoneOf(i,j){ const p=pattern(i,j); return p>.55?'g':p<-.35?'w':'o'; }
+function grid(){
+  const g=[]; for(let i=0;i<NI;i++){ g.push([]); for(let j=0;j<NJ;j++) g[i].push(cellVal(i,j)); } return g;
+}
+const hex = h => [1,3,5].map(k=>parseInt(h.slice(k,k+2),16));
+function ramp(t,stops){
+  t=clamp(t,0,1);
+  for(let k=0;k<stops.length-1;k++){ const a=stops[k],b=stops[k+1];
+    if(t<=b[0]){ const u=(t-a[0])/(b[0]-a[0]),A=hex(a[1]),B=hex(b[1]); return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*u)).join(',')+')'; } }
+  return stops[stops.length-1][1];
+}
+const VEG=[[0,'#F3ECCD'],[.25,'#D9DD9C'],[.5,'#A3C477'],[.75,'#5B9955'],[1,'#1F5A3C']];
+const WAT=[[0,'#F1ECDD'],[.3,'#C9DCE4'],[.6,'#7FA9C3'],[1,'#2B5873']];
+const DIV=[[0,'#8C4F20'],[.35,'#D9BF95'],[.5,'#F4F1E8'],[.65,'#A9C79A'],[1,'#2C6A48']];
+const CHL=[[0,'#F5E7C4'],[.3,'#E2CF7A'],[.6,'#8DB25A'],[1,'#2E6B4F']];
+const LAIR=[[0,'#E7E9D6'],[.5,'#7FA866'],[1,'#1E4F37']];
+const SOILR=[[0,'#A97C52'],[.5,'#CDAE84'],[1,'#E8DCC4']];
+const RADR=[[0,'#23272E'],[.45,'#66758A'],[1,'#D3E0EE']];
+const HEAT=[[0,'#3B6C8F'],[.35,'#E9D9A6'],[.7,'#E39A4C'],[1,'#B3412A']];
+const f2=v=>fmt(v), f1=v=>fmt(v,1);
+const LM={
+  ndvi:{name:'Canlılık',code:'NDVI',grp:'Bitki',src:'Sentinel-2 L2A',res:'10 m',date:'9 Eki',ramp:null,f:f2,lo:'zayıf',hi:'güçlü',what:'Genel ağaç gücü'},
+  ndre:{name:'Klorofil',code:'NDRE',grp:'Bitki',src:'Sentinel-2 red-edge',res:'20 m',date:'9 Eki',ramp:null,f:f2,lo:'düşük',hi:'yüksek',what:'Azot, sararma'},
+  lai:{name:'Yaprak alanı',code:'LAI',grp:'Bitki',src:'Sentinel-2 + biyofizik model',res:'20 m',date:'9 Eki',ramp:null,f:f1,unit:'m²/m²',lo:'seyrek',hi:'sık',what:'Taç yoğunluğu, budama'},
+  msavi:{name:'Taç ve toprak',code:'MSAVI',grp:'Bitki',src:'Sentinel-2 L2A',res:'10 m',date:'9 Eki',ramp:null,f:f2,lo:'toprak',hi:'taç',what:'Genç bahçe, boşluklar'},
+  ndmi:{name:'Yaprak suyu',code:'NDMI',grp:'Su',src:'Sentinel-2 SWIR',res:'20 m',date:'9 Eki',ramp:null,f:f2,lo:'kuru',hi:'nemli',what:'Su stresi'},
+  vh:{name:'Radar nemi',code:'S1 VH',grp:'Su',src:'Sentinel-1 RTC · bulut geçirmez',res:'10 m',date:'11 Eki',ramp:null,f:v=>fmt(v,1)+' dB',lo:'kuru',hi:'nemli',what:'Bulutta da görür'},
+  lst:{name:'Yüzey sıcaklığı',code:'LST',grp:'Sıcaklık',src:'Landsat 9 termal',res:'100 m (30 m örnek)',date:'4 Eki',ramp:null,f:v=>fmt(v,1)+' °C',lo:'serin',hi:'sıcak',what:'Isı stresi, don cebi'},
+  zones:{name:'Bölgeler',code:'12 yaz',grp:'Analiz',src:'Sentinel-2 · 2015–2026',res:'10 m',date:'Eyl 2026',ramp:null,f:f2,what:'Kalıcı güçlü / zayıf'},
+  change:{name:'Değişim',code:'önceki ay',grp:'Analiz',src:'Sentinel-2 L2A',res:'10 m',date:'9 Eki',ramp:null,f:f2,what:'Son ayda ne değişti'}
+};
+const SCL={ndvi:.045,ndre:.026,ndmi:.03,lai:.45,msavi:.04,vh:.9,lst:-1.2,zones:.045,change:.045};
+const CONT=l=>['ndvi','ndre','ndmi','lai','msavi','vh'].includes(l);
+const IDX=l=>l==='ndvi'||l==='ndmi'||l==='ndre';
+const RAMPOF=l=>l==='ndmi'?WAT:l==='ndre'?CHL:VEG;
+const HR=l=>l==='vh'?RADR:l==='lai'?LAIR:l==='lst'?HEAT:RAMPOF(l);
+const ZC={g:'#2F6A5E',o:'#CDBE8E',w:'#C26A3C'};
+
+/* ---------- Kabuk ---------- */
+const NAV=[['bahce','Bahçeler'],['asistan','Asistan'],['isler','İşlerim','Faz 1.5'],['hizmet','Hizmetler','Faz 1.5'],['pazar','Pazar','Adım 17']];
+const TABS=[['durum','Durum'],['analiz','Analiz'],['su','Su'],['hava','Hava'],['gunluk','Günlük'],['rapor','Rapor']];
+const $=s=>document.querySelector(s);
+function renderNav(){
+  $('#primaryNav').innerHTML = NAV.map(n=>`<button type="button" data-nav="${n[0]}" ${(S.nav===n[0]||((S.nav==='defter'||S.nav==='gecmis')&&n[0]==='bahce'))?'aria-current="page"':''}>${n[1]}${n[2]?` <span class="soon">${n[2]}</span>`:''}</button>`).join('');
+}
+$('#primaryNav').addEventListener('click',e=>{const b=e.target.closest('[data-nav]'); if(!b) return; S.nav=b.dataset.nav; renderAll();});
+
+function renderAll(){
+  renderNav();
+  const main=$('#main');
+  if(S.nav==='bahce'){ if(main.dataset.view!=='bahce') buildWorkspace(); renderGardenBar(); renderPane(); resizeMap(); }
+  else if(S.nav==='defter'){ main.dataset.view='defter'; main.innerHTML=notebookPage(); bindMap(); resizeMap(); }
+  else if(S.nav==='gecmis'){ main.dataset.view='gecmis'; main.innerHTML=historyPage(); paintMultiples(); }
+  else if(S.nav==='asistan'){ main.dataset.view='asistan'; main.innerHTML=assistantPage(); bindAssistant(); }
+  else { main.dataset.view=S.nav; main.innerHTML=soonPage(S.nav); }
+}
+
+function buildWorkspace(){
+  $('#main').dataset.view='bahce';
+  $('#main').innerHTML = `
+  <div class="gardenbar" id="gardenbar"></div>
+  <div class="work" id="work">
+    <section class="left" id="left" aria-label="Harita">
+      <div class="map" id="map">
+        <canvas id="cv" aria-label="Bahçe haritası. Bir noktaya tıklayarak o noktayı inceleyin."></canvas>
+        <div class="ov layerbar" id="layerbar"></div>
+        <div class="ov glass timepill" id="timepill"></div>
+        <div class="ov glass legend" id="legend"></div>
+        <div class="ov glass scale" id="scale"></div>
+        <div id="pins"></div>
+        <div id="inspectHost"></div>
+        <div id="yearHost"></div>
+      </div>
+    </section>
+    <button class="divider" id="divider" type="button" aria-label="Panel genişliğini ayarla"></button>
+    <section class="right" id="right" aria-label="Bahçe paneli"></section>
+  </div>`;
+  bindMap(); bindDivider();
+}
+
+function renderGardenBar(){
+  $('#gardenbar').innerHTML = `
+    <button class="gpick" type="button" aria-label="Bahçe seç"><span class="name">jlnnlk</span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4L6 8L10 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span class="meta">Limon · 15,1 da · Erdemli, Mersin</span></button>
+    <div class="tabs" role="tablist" aria-label="Bahçe sekmeleri">${TABS.map(t=>`<button role="tab" type="button" data-tab="${t[0]}" aria-selected="${S.tab===t[0]}">${t[1]}</button>`).join('')}</div>
+    <div class="spacer"></div>
+    <button class="defter-btn" type="button" data-go="defter"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4H17A2 2 0 0 1 19 6V20H7A2 2 0 0 1 5 18ZM5 18A2 2 0 0 1 7 16H19M9 8H15" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span>Saha Defteri</span><em>↗</em></button>`;
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]'); if(t){ S.tab=t.dataset.tab; renderGardenBar(); renderPane(); return; }
+  const g=e.target.closest('[data-go]'); if(g){ S.nav=g.dataset.go; if(S.nav==='defter') S.year=null; S.inspect=null; renderAll(); window.scrollTo(0,0); return; }
+});
+
+/* ---------- Harita ---------- */
+let cv,ctx,W=0,H=0,DPR=1,K=1,CX=0,CY=0,baseKarto=null,baseUydu=null;
+function bindMap(){
+  cv=$('#cv'); ctx=cv.getContext('2d');
+  new ResizeObserver(()=>resizeMap()).observe($('#map'));
+  cv.addEventListener('click',e=>{
+    const r=cv.getBoundingClientRect();
+    if(S.nav==='defter'){ const k=hitPt(e.clientX-r.left,e.clientY-r.top); if(k>=0){ selectPt(k); return; } }
+    const hit=toCell(e.clientX-r.left,e.clientY-r.top);
+    if(hit){ S.inspect=hit; } else S.inspect=null;
+    drawMap();
+  });
+  cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect(); cv.style.cursor = toCell(e.clientX-r.left,e.clientY-r.top)?'crosshair':'default'; });
+}
+function resizeMap(){
+  const el=$('#map'); if(!el) return;
+  const r=el.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1);
+  W=Math.max(1,r.width); H=Math.max(1,r.height);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  const bw=240*Math.cos(-ROT)+360*Math.sin(-ROT), bh=240*Math.sin(-ROT)+360*Math.cos(-ROT);
+  K=Math.min(W*.84/bw,(H-96)*.94/bh); CX=W*.5; CY=H*.5+14;
+  baseKarto=null; baseUydu=null;
+  drawMap(); renderDock();
+}
+function toScreen(lx,ly){ const c=Math.cos(ROT),s=Math.sin(ROT); return [CX+(lx*c-ly*s)*K, CY+(lx*s+ly*c)*K]; }
+function toLocal(x,y){ const dx=(x-CX)/K, dy=(y-CY)/K, c=Math.cos(-ROT), s=Math.sin(-ROT); return [dx*c-dy*s, dx*s+dy*c]; }
+function toCell(x,y){ const [lx,ly]=toLocal(x,y); const i=Math.floor((lx+120)/CELL), j=Math.floor((ly+180)/CELL); return (i>=0&&i<NI&&j>=0&&j<NJ)?{i,j}:null; }
+
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function makeBase(kind){
+  const c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height; const g=c.getContext('2d'); g.scale(DPR,DPR);
+  let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const roadA=[[W*.18,-20],[W*.2,H*.4],[W*.17,H*.62],[W*.26,H+20]], roadB=[[W*.17,H*.62],[W*.5,H*.7],[W+20,H*.6]];
+  const curve=(pts)=>{ g.beginPath(); g.moveTo(pts[0][0],pts[0][1]); for(let k=1;k<pts.length;k++){ const p=pts[k-1],q=pts[k]; g.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2);} g.lineTo(pts[pts.length-1][0],pts[pts.length-1][1]); };
+  if(kind==='karto'){
+    g.fillStyle=css('--map-paper'); g.fillRect(0,0,W,H);
+    g.strokeStyle=css('--map-line'); g.lineWidth=.8;
+    for(let k=0;k<7;k++){ g.beginPath(); for(let x=-10;x<=W+10;x+=12){ const y=H*(.08+k*.15)+Math.sin(x/90+k)*14+Math.cos(x/37+k*2)*5; x<0?g.moveTo(x,y):g.lineTo(x,y);} g.stroke(); }
+    g.save(); g.translate(CX,CY); g.rotate(ROT);
+    g.fillStyle=css('--map-sym');
+    for(let y=-H; y<H; y+=13) for(let x=-W; x<W; x+=13){ if(Math.abs(x)<130*K && Math.abs(y)<190*K) continue; if(((x*3+y*7)|0)%5===0) continue; g.beginPath(); g.arc(x,y,1.9,0,7); g.fill(); }
+    g.restore();
+    g.lineCap='round';
+    [roadA,roadB].forEach((r,ix)=>{ curve(r); g.strokeStyle=css('--map-line'); g.lineWidth=ix?8:11; g.stroke(); curve(r); g.strokeStyle=css('--map-paper'); g.lineWidth=ix?5:8; g.stroke(); });
+    g.fillStyle=css('--map-paper'); g.strokeStyle=css('--map-line'); g.lineWidth=1;
+    [[.08,.5,22,16],[.06,.56,16,20],[.25,.3,18,14],[.27,.36,22,18],[.6,.12,20,16],[.72,.86,24,16]].forEach(b=>{ g.fillRect(W*b[0],H*b[1],b[2],b[3]); g.strokeRect(W*b[0]+.5,H*b[1]+.5,b[2],b[3]); });
+  } else {
+    g.fillStyle='#2D3A2B'; g.fillRect(0,0,W,H);
+    for(let k=0;k<1400;k++){ g.fillStyle=`rgba(${120+rnd()*60|0},${110+rnd()*50|0},${80+rnd()*40|0},${.10+rnd()*.12})`; g.fillRect(rnd()*W,rnd()*H,2+rnd()*10,2+rnd()*10); }
+    g.save(); g.translate(CX,CY); g.rotate(ROT);
+    for(let y=-H*1.2; y<H*1.2; y+=10.5) for(let x=-W*1.2; x<W*1.2; x+=9.5){
+      if(rnd()<.08) continue; const r=3.2+rnd()*1.9, xx=x+rnd()*2, yy=y+rnd()*2;
+      g.fillStyle=`rgb(${30+rnd()*20|0},${62+rnd()*28|0},${34+rnd()*16|0})`; g.beginPath(); g.arc(xx,yy,r,0,7); g.fill();
+      g.fillStyle='rgba(170,200,120,.18)'; g.beginPath(); g.arc(xx-1,yy-1,r*.45,0,7); g.fill();
+    }
+    g.restore();
+    g.lineCap='round';
+    [roadA,roadB].forEach((r,ix)=>{ curve(r); g.strokeStyle='#B7AD94'; g.lineWidth=ix?6:9; g.stroke(); });
+    [[.08,.5,22,16],[.06,.56,16,20],[.25,.3,18,14],[.27,.36,22,18],[.6,.12,20,16],[.72,.86,24,16]].forEach((b,ix)=>{ g.fillStyle=ix%2?'rgba(150,92,70,.55)':'rgba(205,198,182,.5)'; g.fillRect(W*b[0],H*b[1],b[2]*.8,b[3]*.8); });
+  }
+  return c;
+}
+let hatchPat=null;
+function hatch(color){
+  const p=document.createElement('canvas'); p.width=p.height=8; const g=p.getContext('2d');
+  g.strokeStyle=color; g.lineWidth=1.3; g.beginPath(); g.moveTo(0,8); g.lineTo(8,0); g.moveTo(-2,2); g.lineTo(2,-2); g.moveTo(6,10); g.lineTo(10,6); g.stroke();
+  return ctx.createPattern(p,'repeat');
+}
+function contours(gv,levels){
+  // Hücre merkezleri üzerinde iki doğrusal ara değerle 4x sık ızgara + marching squares
+  const F=4, nx=NI*F, ny=NJ*F, val=(x,y)=>{
+    const fx=clamp((x+.5)/F-.5,0,NI-1), fy=clamp((y+.5)/F-.5,0,NJ-1), i0=Math.floor(fx), j0=Math.floor(fy), i1=Math.min(NI-1,i0+1), j1=Math.min(NJ-1,j0+1), u=fx-i0, w=fy-j0;
+    return gv[i0][j0]*(1-u)*(1-w)+gv[i1][j0]*u*(1-w)+gv[i0][j1]*(1-u)*w+gv[i1][j1]*u*w; };
+  const z=[]; for(let x=0;x<=nx;x++){ z.push([]); for(let y=0;y<=ny;y++) z[x].push(val(x-.5,y-.5)); }
+  const sx=CELL/F, ox=-120, oy=-180, out=[];
+  levels.forEach(L=>{ const segs=[];
+    for(let x=0;x<nx;x++) for(let y=0;y<ny;y++){
+      const a=z[x][y],b=z[x+1][y],c=z[x+1][y+1],d=z[x][y+1];
+      const P=[]; const e=(p,q,v1,v2)=>{ const t=(L-v1)/(v2-v1); return [p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]; };
+      const A=[x,y],B=[x+1,y],C=[x+1,y+1],D=[x,y+1];
+      if((a<L)!==(b<L)) P.push(e(A,B,a,b)); if((b<L)!==(c<L)) P.push(e(B,C,b,c)); if((c<L)!==(d<L)) P.push(e(C,D,c,d)); if((d<L)!==(a<L)) P.push(e(D,A,d,a));
+      for(let k=0;k+1<P.length;k+=2) segs.push([[ox+P[k][0]*sx,oy+P[k][1]*sx],[ox+P[k+1][0]*sx,oy+P[k+1][1]*sx]]);
+    }
+    out.push({L,segs}); });
+  return out;
+}
+function drawMap(){
+  if(!ctx) return;
+  const karto=S.nav==='defter'; $('#map').classList.toggle('karto',karto);
+  if(karto && !baseKarto) baseKarto=makeBase('karto'); if(!karto && !baseUydu) baseUydu=makeBase('uydu');
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height); ctx.drawImage(karto?baseKarto:baseUydu,0,0);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const gv=grid(); let mn=Infinity,mx=-Infinity; gv.flat().forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v)});
+  S._range=[mn,mx]; S._grid=gv;
+  // Landsat yüzey sıcaklığı: kuzeye hizalı 30 m pikseller (100 m termal)
+  if(S.layer==='lst' && S.year==null){ const pxm=CELL/10*K, bs=30*pxm, ox=((CX%bs)+bs)%bs, oy=((CY%bs)+bs)%bs;
+    for(let x=ox-bs;x<W;x+=bs) for(let y=oy-bs;y<H;y+=bs){ const mx_=(x+bs/2-CX)/pxm, my_=(y+bs/2-CY)/pxm, a=Math.floor(mx_/100), b=Math.floor(my_/100);
+      let t=LSTM[S.month]+1.8+1.3*Math.sin(a*1.3+.5)+1.0*Math.cos(b*.9)+.45*Math.sin((mx_+my_)/70); if(toCell(x+bs/2,y+bs/2)) t-=2.6;
+      ctx.globalAlpha=.82*S.opacity; ctx.fillStyle=ramp((t-26)/12,HEAT); ctx.fillRect(x,y,bs+.6,bs+.6); }
+    ctx.globalAlpha=.5; ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; const b100=100*pxm, ox2=((CX%b100)+b100)%b100, oy2=((CY%b100)+b100)%b100; ctx.beginPath();
+    for(let x=ox2;x<W;x+=b100){ctx.moveTo(x,0);ctx.lineTo(x,H);} for(let y=oy2;y<H;y+=b100){ctx.moveTo(0,y);ctx.lineTo(W,y);} ctx.stroke(); ctx.globalAlpha=1; }
+  ctx.save(); ctx.translate(CX,CY); ctx.rotate(ROT); ctx.scale(K,K);
+  // Komşu parsel
+  ctx.setLineDash([5/K,4/K]); ctx.lineWidth=1.2/K; ctx.strokeStyle=karto?css('--graphite'):'rgba(240,236,220,.75)'; ctx.strokeRect(124,-180,170,360); ctx.setLineDash([]);
+  ctx.fillStyle=karto?css('--graphite'):'rgba(240,236,220,.9)'; ctx.font=`500 ${11/K}px 'IBM Plex Sans',sans-serif`; ctx.textAlign='center'; ctx.fillText('soğuk hava deposu',209,0);
+  // Hücreler
+  const bins=18;
+  const Ly=S.year!=null?'ndvi':S.layer, hash=(a,b)=>{ const h=Math.sin(a*127.1+b*311.7)*43758.5453; return h-Math.floor(h); };
+  const dim=(v)=>{ if(S.hoverBin==null||!CONT(Ly)) return 1; const b=clamp(Math.floor((v-mn)/((mx-mn)||1)*bins),0,bins-1); return b===S.hoverBin?1:.18; };
+  if(Ly!=='lst') for(let i=0;i<NI;i++) for(let j=0;j<NJ;j++){
+    const v=gv[i][j], t=(v-mn)/((mx-mn)||1), x0=-120+i*CELL, y0=-180+j*CELL; let a=S.opacity*dim(v);
+    if(Ly==='lai'){ // orantılı kareler
+      ctx.globalAlpha=.9; ctx.fillStyle=karto?css('--map-paper'):'rgba(244,241,232,.92)'; ctx.fillRect(x0,y0,CELL+.4,CELL+.4);
+      const sz=CELL*(.28+.64*t); ctx.globalAlpha=a; ctx.fillStyle=ramp(.25+.75*t,LAIR); ctx.fillRect(x0+(CELL-sz)/2,y0+(CELL-sz)/2,sz,sz);
+    } else if(Ly==='msavi'){ ctx.globalAlpha=a; ctx.fillStyle=ramp(.15+.7*t,SOILR); ctx.fillRect(x0,y0,CELL+.4,CELL+.4);
+    } else if(Ly==='vh'){ for(let u=0;u<3;u++) for(let w=0;w<3;w++){ const n=(hash(i*3+u,j*3+w)-.5)*.5; ctx.globalAlpha=a; ctx.fillStyle=ramp(clamp(t+n,0,1),RADR); ctx.fillRect(x0+u*CELL/3,y0+w*CELL/3,CELL/3+.3,CELL/3+.3); }
+    } else { let col;
+      if(Ly==='zones') col=ZC[zoneOf(i,j)]; else if(Ly==='change') col=ramp((v-prevVal(i,j)+.04)/.08,DIV); else col=ramp(t, RAMPOF(Ly));
+      ctx.globalAlpha=a; ctx.fillStyle=col; ctx.fillRect(x0,y0,CELL+.4,CELL+.4); }
+  }
+  if(Ly==='msavi'){ // ağaç tepeleri: 6 m sıra arası
+    for(let ty=-180+7;ty<180;ty+=14.4) for(let tx=-120+7;tx<120;tx+=14.4){ const i=clamp(Math.floor((tx+120)/CELL),0,NI-1), j=clamp(Math.floor((ty+180)/CELL),0,NJ-1), t=(gv[i][j]-mn)/((mx-mn)||1);
+      ctx.globalAlpha=S.opacity*dim(gv[i][j]); ctx.beginPath(); ctx.arc(tx,ty,2.6+4.2*t,0,7); ctx.fillStyle=ramp(.45+.55*t,VEG); ctx.fill(); ctx.lineWidth=.8/K; ctx.strokeStyle='rgba(20,40,25,.6)'; ctx.stroke(); } }
+  ctx.globalAlpha=1;
+  // Zayıf kesim taraması
+  if(karto || S.focusWeak || S.layer==='zones'){
+    ctx.fillStyle=hatch(S.layer==='zones'?'#6B2F12':css('--warn')); ctx.globalAlpha=S.layer==='zones'?.55:.6;
+    for(let i=0;i<NI;i++) for(let j=0;j<NJ;j++) if(zoneOf(i,j)==='w') ctx.fillRect(-120+i*CELL,-180+j*CELL,CELL,CELL);
+    ctx.globalAlpha=1;
+  }
+  // Konturlar
+  if(S.contours && IDX(S.layer)){
+    const step=.02, levels=[]; for(let L=Math.ceil(mn/step)*step; L<mx; L+=step) levels.push(+L.toFixed(2));
+    const cs=contours(gv,levels);
+    ctx.strokeStyle=karto?css('--ink'):'rgba(255,255,255,.85)'; ctx.lineWidth=(karto?1:1.1)/K;
+    cs.forEach(c=>{ ctx.beginPath(); c.segs.forEach(s=>{ctx.moveTo(s[0][0],s[0][1]);ctx.lineTo(s[1][0],s[1][1]);}); ctx.stroke(); });
+    ctx.font=`600 ${10/K}px ${karto?"'IBM Plex Mono',monospace":"Manrope,sans-serif"}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const placed=[];
+    cs.forEach(c=>{ if(!c.segs.length) return; let s=null;
+      for(const f of [.45,.2,.7,.1,.85]){ const q=c.segs[Math.floor(c.segs.length*f)], qx=(q[0][0]+q[1][0])/2, qy=(q[0][1]+q[1][1])/2;
+        if(Math.abs(qx)<108&&Math.abs(qy)<168&&placed.every(p=>Math.hypot(p[0]-qx,p[1]-qy)>46/K)){ s=q; placed.push([qx,qy]); break; } }
+      if(!s) return; const x=(s[0][0]+s[1][0])/2, y=(s[0][1]+s[1][1])/2; const t=fmt(c.L);
+      const w=ctx.measureText(t).width+6/K; ctx.fillStyle=karto?css('--map-paper'):'rgba(20,28,22,.85)'; ctx.fillRect(x-w/2,y-7/K,w,14/K); ctx.fillStyle=karto?css('--ink'):'#fff'; ctx.fillText(t,x,y); });
+  }
+  // Sınır
+  ctx.lineWidth=5/K; ctx.strokeStyle=karto?css('--sheet'):'rgba(0,0,0,.35)'; ctx.strokeRect(-120,-180,240,360);
+  ctx.lineWidth=(karto?1.7:2.2)/K; ctx.strokeStyle=karto?css('--ink'):'#E5BC2F'; ctx.strokeRect(-120,-180,240,360);
+  // Saha turu rotası
+  if(karto){ const pts=[GATE,...PTS.map(p=>p.c)].map(c=>[-120+(c[0]+.5)*CELL,-180+(c[1]+.5)*CELL]);
+    ctx.setLineDash([7/K,5/K]); ctx.lineWidth=1.8/K; ctx.strokeStyle=css('--ink'); ctx.beginPath(); pts.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=css('--ink'); ctx.fillRect(pts[0][0]-5/K,pts[0][1]-5/K,10/K,10/K); }
+  // İnceleme işareti
+  if(S.inspect){ const x=-120+(S.inspect.i+.5)*CELL, y=-180+(S.inspect.j+.5)*CELL;
+    ctx.lineWidth=2/K; ctx.strokeStyle='#17201B'; ctx.fillStyle='#E5BC2F'; ctx.beginPath(); ctx.arc(x,y,6/K,0,7); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=karto?css('--ink'):'#fff'; ctx.lineWidth=1/K; ctx.strokeRect(-120+S.inspect.i*CELL,-180+S.inspect.j*CELL,CELL,CELL); }
+  ctx.restore();
+  // Kenar koordinatları (kartografi)
+  if(karto){ ctx.strokeStyle=css('--map-line'); ctx.fillStyle=css('--graphite'); ctx.font="400 10px 'IBM Plex Mono',monospace"; ctx.lineWidth=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.beginPath(); ctx.moveTo(0,8.5); ctx.lineTo(W,8.5); ctx.moveTo(8.5,0); ctx.lineTo(8.5,H); ctx.stroke();
+    ['34°18′20″','34°18′30″','34°18′40″'].forEach((t,k)=>{ const x=W*(.3+k*.22); ctx.beginPath(); ctx.moveTo(x,2); ctx.lineTo(x,15); ctx.stroke(); ctx.fillText(t,x+4,24); });
+    ['36°37′15″','36°37′05″'].forEach((t,k)=>{ const y=H*(.3+k*.32); ctx.beginPath(); ctx.moveTo(2,y); ctx.lineTo(15,y); ctx.stroke(); ctx.fillText(t,18,y+3); }); }
+  if(karto){ PTS.forEach((p,k)=>{ const [x,y]=ptScreen(k), on=k===S.pt, dn=!!S.done[k];
+      ctx.beginPath(); ctx.arc(x,y,on?14:11,0,7); ctx.fillStyle=dn?css('--ink'):on?css('--lemon'):css('--paper'); ctx.fill(); ctx.lineWidth=1.6; ctx.strokeStyle=css('--ink'); ctx.stroke();
+      ctx.fillStyle=dn?css('--paper'):css('--ink'); ctx.font="600 12px 'IBM Plex Mono',monospace"; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(dn?'✓':String(k+1),x,y+.5); });
+    const [gx,gy]=toScreen(-120+(GATE[0]+.5)*CELL,-180+(GATE[1]+.5)*CELL); ctx.fillStyle=css('--ink'); ctx.font="500 11px 'IBM Plex Mono',monospace"; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText('GİRİŞ',gx-10,gy); }
+  renderOverlays();
+}
+function ptScreen(k){ const c=PTS[k].c; return toScreen(-120+(c[0]+.5)*CELL,-180+(c[1]+.5)*CELL); }
+function hitPt(x,y){ let b=-1,bd=18; PTS.forEach((_,k)=>{ const [px,py]=ptScreen(k), d=Math.hypot(px-x,py-y); if(d<bd){bd=d;b=k;} }); return b; }
+function renderOverlays(){
+  const karto=S.nav==='defter', [mn,mx]=S._range;
+  const LY=S.layer, cur=LM[LY], rOf=l=>l==='zones'?[[0,ZC.w],[.5,ZC.o],[1,ZC.g]]:l==='change'?DIV:HR(l);
+  const groups=[['Bitki · bahçe içi',['ndvi','ndre','lai','msavi']],['Su · bahçe içi',['ndmi','vh']],['Sıcaklık',['lst']],['Analiz',['zones','change']]];
+  $('#layerbar').innerHTML = `
+    <div class="lp">
+      <button type="button" class="glass lp-btn" id="lpBtn" aria-expanded="${!!S.lp}" aria-haspopup="true"><i class="lp-sw" style="background:${grad(rOf(LY))}"></i><span class="lp-n"><b>${cur.name}</b><span>${cur.code} · ${cur.res.split(' ')[0]} m</span></span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4L6 8L10 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      ${S.lp?`<div class="glass lp-pop" role="menu" aria-label="Katmanlar">
+        ${groups.map(g=>`<div class="lp-g">${g[0]}</div>${g[1].map(l=>`<button type="button" role="menuitemradio" aria-checked="${LY===l}" class="lp-row" data-layer="${l}"><i class="lp-sw" style="background:${grad(rOf(l))}"></i><span class="lp-n"><b>${LM[l].name} <em>${LM[l].code}</em></b><span>${LM[l].what}</span></span><span class="lp-m">${LM[l].src.split(' ·')[0]}<br>${LM[l].res.split(' (')[0]} · ${LM[l].date}</span><i class="live" title="çalışıyor"></i></button>`).join('')}`).join('')}
+        <div class="lp-g">Sonraki faz</div><div class="lp-row off"><i class="lp-sw" style="background:repeating-linear-gradient(45deg,var(--rule) 0 3px,transparent 3px 6px)"></i><span class="lp-n"><b>Yüksek çözünürlük <em>3 m</em></b><span>PlanetScope · günlük · hibe sonrası</span></span><span class="lp-m">Faz 2</span></div>
+      </div>`:''}
+    </div>
+    <label class="switch glass"><input type="checkbox" id="ctr" ${S.contours?'checked':''}> Eş değer çizgileri</label>
+    <label class="chip glass" for="op">Opaklık <input id="op" type="range" min="30" max="100" value="${Math.round(S.opacity*100)}"></label>`;
+  const bins=18, counts=new Array(bins).fill(0); S._grid.flat().forEach(v=>counts[clamp(Math.floor((v-mn)/((mx-mn)||1)*bins),0,bins-1)]++);
+  const cm=Math.max(...counts), med=S._grid.flat().sort((a,b)=>a-b)[75];
+  const isIdx=CONT(S.layer)&&S.year==null; const LF=LM[S.layer].f;
+  const ttl={ndre:'Klorofil · NDRE',ndvi:'Canlılık · NDVI',ndmi:'Yaprak suyu · NDMI',zones:'Ağaç gücü bölgeleri',change:'Değişim · önceki aya göre'}[S.layer];
+  const when=S.year!=null?`${S.year} yaz kompoziti`:`${MF[S.month]} 2026`;
+  let body='';
+  if(isIdx){
+    body=`<svg class="hist" viewBox="0 0 270 68" role="img" aria-label="Bahçe içi değer dağılımı; bir çubuğun üzerine gelince haritada o aralık vurgulanır">
+      ${counts.map((c,k)=>{const h=Math.max(1,c/cm*44);return `<rect data-bin="${k}" x="${k*15}" y="${48-h}" width="13" height="${h}" fill="${ramp(S.layer==='lai'?.25+.75*(k+.5)/bins:S.layer==='msavi'?.15+.7*(k+.5)/bins:(k+.5)/bins,S.layer==='msavi'?SOILR:HR(S.layer))}" stroke="var(--ink)" stroke-width=".5" style="cursor:pointer"/>`}).join('')}
+      <line x1="0" y1="48.5" x2="270" y2="48.5" stroke="var(--ink)"/>
+      ${S.layer==='ndvi'?`<path d="M${clamp((.38-mn)/(mx-mn),0,1)*270} 54V59H${clamp((.52-mn)/(mx-mn),0,1)*270}V54" fill="none" stroke="var(--watch)"/><text x="${clamp((.45-mn)/(mx-mn),.15,.85)*270}" y="63" font-size="9" font-family="var(--f-data)" style="font-family:var(--f-data)" dy="3" fill="var(--watch)" text-anchor="middle">limon için tipik aralık · ön değer</text>`:''}
+    </svg>
+    <div class="row"><span>${LF(mn)} ${LM[S.layer].lo}</span><span>ortanca ${LF(med)}</span><span>${LF(mx)} ${LM[S.layer].hi}</span></div>
+    ${S.layer==='msavi'?`<div class="small" style="margin-top:6px">Daire: ağaç tepesi (6 m aralık) · zemin rengi: açıkta kalan toprak</div>`:S.layer==='lai'?`<div class="small" style="margin-top:6px">Kare büyüklüğü = yaprak alanı (${LM.lai.unit})</div>`:S.layer==='vh'?`<div class="small" style="margin-top:6px">Radar dokusu gerçek görüntüde de karlıdır (speckle)</div>`:''}`;
+  } else if(S.layer==='lst' && S.year==null){
+    const gt=S._grid.flat().reduce((a,b)=>a+b,0)/150, air=27.2;
+    body=`<div style="height:12px;margin-top:10px;background:${grad(HEAT)}"></div><div class="row"><span>26 °C</span><span>32</span><span>38 °C</span></div>
+      <div class="lst-cmp"><span><b>${fmt(gt,1)} °C</b> bahçe yüzeyi</span><span><b>${fmt(air,1)} °C</b> hava (ERA5)</span><span class="${gt-air>5?'warnt':''}"><b>+${fmt(gt-air,1)}</b> fark</span></div>
+      <div class="small" style="margin-top:4px">Kare = 30 m piksel; beyaz çizgiler 100 m termal ızgara. Bahçe içi ayrıntı vermez.</div>`;
+  } else if(S.layer==='zones'){
+    body=`<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:12.5px">
+      <span><i class="sw" style="background:${ZC.g}"></i>Güçlü · +8,5%</span><span><i class="sw" style="background:${ZC.o}"></i>Orta · +1,4%</span><span><i class="sw" style="background:${ZC.w};background-image:repeating-linear-gradient(45deg,#6B2F12 0 1px,transparent 1px 4px)"></i>Zayıf · −4,6% · taralı</span></div>`;
+  } else {
+    body=`<div style="height:12px;margin-top:10px;background:linear-gradient(90deg,#8C4F20,#D9BF95,#F4F1E8,#A9C79A,#2C6A48)"></div><div class="row"><span>−0,04 düşüş</span><span>sabit</span><span>+0,04 artış</span></div>
+      <div class="small" style="margin-top:6px">Mevsimsel değişim normal olabilir.</div>`;
+  }
+  $('#legend').innerHTML= karto ? `<div class="eyebrow">Lejant · saha turu</div><div class="nb-leg">
+      <span><svg width="22" height="16" aria-hidden="true"><circle cx="11" cy="8" r="7" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.4"/><text x="11" y="11" font-size="9" text-anchor="middle" font-family="IBM Plex Mono,monospace" fill="var(--ink)">1</text></svg>kontrol noktası</span>
+      <span><svg width="22" height="16" aria-hidden="true"><path d="M1 8H21" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="5 3"/></svg>yürüme sırası</span>
+      <span><svg width="22" height="16" aria-hidden="true"><rect x="2" y="2" width="18" height="12" fill="url(#lh)" stroke="var(--warn)"/><defs><pattern id="lh" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V4" stroke="var(--warn)"/></pattern></defs></svg>zayıf kesim · 12 yaz</span>
+      <span><svg width="22" height="16" aria-hidden="true"><path d="M2 4V14M20 4V14" stroke="var(--ink)"/>${''}<path d="M2 9H20" stroke="var(--ink)" stroke-width=".8"/></svg>eş değer çizgisi · ${ttl.split(' · ')[0].toLocaleLowerCase('tr')}</span></div>`
+    : `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="eyebrow">${LM[S.layer].name} · ${LM[S.layer].code}</span><span class="small">${when}</span></div>${body}<div class="srcline"><i class="live"></i>${LM[S.layer].src} · ${LM[S.layer].res}</div>`;
+  // Ölçek ve kuzey
+  const pxPerM=CELL/10*K, len=50*pxPerM;
+  $('#scale').innerHTML=`<svg width="${Math.round(len)+30}" height="26" aria-label="Ölçek 50 metre" role="img"><rect x="0" y="16" width="${len/2}" height="5" fill="var(--ink)"/><rect x="${len/2}" y="16" width="${len/2}" height="5" fill="var(--sheet)" stroke="var(--ink)" stroke-width=".8"/><text x="0" y="11" font-size="9.5" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--ink)">0</text><text x="${len/2-6}" y="11" font-size="9.5" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--ink)">25</text><text x="${len-6}" y="11" font-size="9.5" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--ink)">50 m</text></svg>
+    <svg width="18" height="30" viewBox="0 0 18 30" role="img" aria-label="Kuzey"><path d="M9 0L17 22L9 17L1 22Z" fill="var(--ink)"/><path d="M9 0L9 17L1 22Z" fill="var(--sheet)" stroke="var(--ink)" stroke-width=".8"/><text x="9" y="30" font-size="8" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--ink)">K</text></svg>`;
+  // Zayıf kesim iğnesi
+  let wi=0,wj=0,wn=0; for(let i=0;i<NI;i++) for(let j=0;j<NJ;j++) if(zoneOf(i,j)==='w'){wi+=i;wj+=j;wn++;}
+  const [px,py]=toScreen(-120+(wi/wn+.5)*CELL,-180+(wj/wn+.5)*CELL);
+  const tx=Math.min(px, W-200);
+  $('#pins').innerHTML= karto ? '' : `<div class="ov pindot" style="left:${px}px;top:${py}px"></div>
+    <button type="button" class="ov pin" id="weakPin" style="left:${tx}px;top:${py}px"><b>−14% · 2,3 da</b><br>Zayıf kesim · yerinde bakın</button>`;
+  // Nokta inceleme
+  if(S.inspect){
+    const {i,j}=S.inspect, v=S._grid[i][j], all=S._grid.flat(), pct=Math.round(all.filter(x=>x<v).length/all.length*100);
+    const [sx,sy]=toScreen(-120+(i+.5)*CELL,-180+(j+.5)*CELL);
+    const left=sx+20+244>W? sx-264 : sx+20, top=clamp(sy-80,60,H-210);
+    const kk=SER[S.layer]?S.layer:'ndvi', ser=M.map((_,m)=>SER[kk][m]+SCL[kk]*pattern(i,j)+.008*Math.sin(i*1.1+j*.7+m*1.9));
+    const zn={g:'güçlü bölge',o:'orta bölge',w:'zayıf bölge'}[zoneOf(i,j)];
+    $('#inspectHost').innerHTML=`<div class="ov glass inspect" style="left:${left}px;top:${top}px">
+      <button class="iconbtn x" type="button" id="closeInspect" aria-label="İncelemeyi kapat"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      <div class="eyebrow">Nokta inceleme · ${LM[S.layer].name.toLocaleLowerCase('tr')}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="v">${(LM[S.layer]||LM.ndvi).f(v)}</span><span class="pill ${zoneOf(i,j)==='w'?'warn':zoneOf(i,j)==='g'?'good':'watch'}"><i></i>${zn}</span></div>
+      <div class="small" style="margin-top:4px;color:var(--ink)">Bahçenin <b>%${pct}</b>'sinden ${pct>=50?'daha canlı':'daha zayıf'}</div>
+      ${spark(ser,214,42,true)}
+      <div class="row mono" style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--graphite)"><span>Oca</span><span>12 ay · bu nokta</span><span>Ara</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px"><button class="btn ghost" type="button" data-toast="Gözlem görevi taslağı oluşturuldu (örnek)">Gözlem görevi</button><button class="btn ghost" type="button" data-nav-tab="analiz">Bölge geçmişi</button></div>
+    </div>`;
+  } else $('#inspectHost').innerHTML='';
+  $('#yearHost').innerHTML = ''; const _unused = S.year!=null?`<div class="ov glass yearbadge"><span class="eyebrow" style="color:var(--ink)">${S.year} · Haz–Eyl kompoziti</span><button class="iconbtn" type="button" id="clearYear" aria-label="Güncel görüntüye dön"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5"/></svg></button></div>`:'';
+  const X12='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5"/></svg>';
+  $('#timepill').innerHTML = S.year!=null
+    ? `<div class="tp-t"><b>${S.year} · yaz kompoziti</b><span>Haz–Eyl ortancası · ${ODD(S.year)?'uyumsuz yıl':'net sahneler'}</span></div><button class="iconbtn" type="button" id="clearYear" aria-label="Güncel görüntüye dön">${X12}</button>`
+    : `<button class="iconbtn" type="button" data-step="-1" aria-label="Önceki görüntü" ${S.month<=0?'disabled':''}>‹</button><div class="tp-t"><b>${S.month===9?LM[S.layer].date.split(' ')[0]:'15'} ${MF[S.month]} 2026</b><span>${LM[S.layer].src.split(' ·')[0]} · ${LM[S.layer].res.split(' (')[0]}</span></div><button class="iconbtn" type="button" data-step="1" aria-label="Sonraki görüntü" ${S.month>=LASTM?'disabled':''}>›</button>${karto?'':`<button class="btn ghost" type="button" data-go="gecmis">Geçmiş ↗</button>`}`;
+}
+function spark(vals,w,h,end){
+  const mn=Math.min(...vals),mx=Math.max(...vals); const pts=vals.map((v,k)=>[k*(w-6)/(vals.length-1)+3, h-4-(v-mn)/((mx-mn)||1)*(h-10)]);
+  const d=pts.map((p,k)=>(k?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
+  const last=pts[pts.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true" style="display:block;margin-top:6px"><path d="${d}L${last[0]} ${h} L3 ${h}Z" fill="var(--rule-soft)"/><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="1.4"/>${end?`<circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(--lemon)" stroke="var(--ink)"/>`:''}</svg>`;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#lpBtn')){ S.lp=!S.lp; drawMap(); return; }
+  const l=e.target.closest('[data-layer]'); if(l){ S.layer=l.dataset.layer; S.lp=false; drawMap(); if(S.nav==='bahce') renderPane(); return; }
+  if(S.lp && !e.target.closest('.lp')){ S.lp=false; drawMap(); }
+  const st=e.target.closest('[data-step]'); if(st&&!st.disabled){ S.month=clamp(S.month+ +st.dataset.step,0,LASTM); S.year=null; drawMap(); if(S.nav==='bahce') renderPane(); else if(S.nav==='defter') refreshNotebook(); return; }
+  if(e.target.closest('#closeInspect')){ S.inspect=null; drawMap(); return; }
+  if(e.target.closest('#clearYear')){ S.year=null; drawMap(); if(S.nav==='defter') refreshNotebook(); else renderPane(); return; }
+  if(e.target.closest('#weakPin')){ S.focusWeak=true; S.tab='analiz'; renderGardenBar(); renderPane(); drawMap(); return; }
+  const nt=e.target.closest('[data-nav-tab]'); if(nt){ S.tab=nt.dataset.navTab; renderGardenBar(); renderPane(); return; }
+  const ts=e.target.closest('[data-toast]'); if(ts){ toast(ts.dataset.toast); return; }
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='op'){ S.opacity=e.target.value/100; drawMap(); }
+});
+document.addEventListener('change',e=>{ if(e.target.id==='ctr'){ S.contours=e.target.checked; drawMap(); } });
+document.addEventListener('mouseover',e=>{ const b=e.target.closest('[data-bin]'); if(b){ S.hoverBin=+b.dataset.bin; drawMapLite(); } });
+document.addEventListener('mouseout',e=>{ if(e.target.closest('[data-bin]')){ S.hoverBin=null; drawMapLite(); } });
+let rafLite=0; function drawMapLite(){ cancelAnimationFrame(rafLite); rafLite=requestAnimationFrame(()=>{ const keep=$('#legend').innerHTML; drawMap(); }); }
+
+/* ---------- Zaman şeridi ---------- */
+function renderDock(){
+  const el=$('#dock'); if(!el) return;
+  const big=S.dockOpen, w=Math.max(300,el.clientWidth-32), h=big?132:58, x0=36, x1=w-8, xm=m=>x0+(m+.5)*(x1-x0)/12, yv=big?(v=>96-(v-.40)/.14*72):(v=>44-(v-.40)/.14*26);
+  const doyx=d=>x0+d/365*(x1-x0);
+  const line=(arr)=>arr.map((v,m)=>(m?'L':'M')+xm(m).toFixed(1)+' '+yv(v).toFixed(1)).join('');
+  el.innerHTML=`<div class="dock-h">
+      <button class="playbtn" type="button" id="play" aria-label="${S.playing?'Durdur':'Aylar boyunca oynat'}">${S.playing?'<svg width="12" height="12" aria-hidden="true"><rect x="1" y="1" width="3.5" height="10" fill="currentColor"/><rect x="7.5" y="1" width="3.5" height="10" fill="currentColor"/></svg>':'<svg width="12" height="12" aria-hidden="true"><path d="M2 1L11 6L2 11Z" fill="currentColor"/></svg>'}</button>
+      <div class="seg soft" role="group" aria-label="Dönem"><button type="button" aria-pressed="true">2026</button><button type="button" data-toast="Çok yıllık görünüm Analiz sekmesinde">Çok yıllık</button></div>
+      <button class="btn ghost" type="button" id="dockToggle" aria-expanded="${big}">${big?'Grafiği küçült ▾':'Yağış ve geçen yıl ▴'}</button>
+      <div class="readout"><span class="eyebrow">${MF[S.month]} 2026 · ${S.layer==='ndmi'?'Yaprak suyu':'Canlılık'}</span><span class="big">${fmt(S.layer==='ndmi'?NDMI[S.month]:NDVI[S.month])}</span></div>
+    </div>
+    <svg id="dockSvg" viewBox="0 0 ${w} ${h}" style="height:${h}px" role="img" aria-label="2026 aylık canlılık, geçen yıl, fenoloji evreleri ve aylık yağış">
+      ${PHEN.map(p=>`<rect x="${doyx(p[0])}" y="0" width="${doyx(p[1])-doyx(p[0])}" height="14" fill="${p[3]}" stroke="var(--sheet)"/>${doyx(p[1])-doyx(p[0])>p[2].length*6.2+8?`<text x="${doyx(p[0])+5}" y="10" font-size="8.5" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="#17201B" letter-spacing=".5">${p[2].toUpperCase()}</text>`:''}`).join('')}
+      ${!big?'':[.44,.48,.52].map(v=>`<line x1="${x0}" x2="${x1}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule-soft)"/><text x="${x0-6}" y="${yv(v)+3}" font-size="9" text-anchor="end" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--muted)">${fmt(v)}</text>`).join('')}
+      ${!big?'':RAIN.map((r,m)=>`<rect x="${xm(m)-7}" y="${116-r*.18}" width="14" height="${r*.18}" fill="var(--water)" opacity=".75"/>`).join('')}
+      ${!big?'':`<line x1="${x0}" x2="${x1}" y1="116.5" y2="116.5" stroke="var(--ink)" stroke-width=".8"/>`}
+      <text ${big?'':'display="none"'} x="${x0-6}" y="115" font-size="9" text-anchor="end" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--muted)">mm</text>
+      <path d="${line(NDVI_PREV)}" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <path d="${line(NDVI.slice(0,10))}" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+      <path d="${'M'+xm(9).toFixed(1)+' '+yv(NDVI[9]).toFixed(1)+line(NDVI).slice(line(NDVI.slice(0,10)).length)}" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="1 3" opacity=".5"/>
+      <text x="${xm(9)+10}" y="${yv(NDVI[9])-6}" font-size="9.5" font-family="var(--f-ui)" style="font-family:var(--f-ui)" fill="var(--ink)" font-weight="600">2026</text>
+      <text ${big?'':'display="none"'} x="${xm(11)-2}" y="${yv(NDVI_PREV[11])-6}" font-size="9.5" font-family="var(--f-ui)" style="font-family:var(--f-ui)" fill="var(--muted)" text-anchor="end">2025</text>
+      <line x1="${xm(2)}" x2="${xm(2)}" y1="16" y2="${big?116:48}" stroke="var(--ink)" stroke-dasharray="2 2" stroke-width=".7"/><text x="${xm(2)+4}" y="26" font-size="9" font-family="var(--f-ui)" style="font-family:var(--f-ui)" fill="var(--ink)" ${big?'':'display="none"'}>Budama · saha notu</text>
+      <line x1="${xm(S.month)}" x2="${xm(S.month)}" y1="16" y2="${big?117:48}" stroke="var(--lemon)" stroke-width="2"/>
+      <circle cx="${xm(S.month)}" cy="${yv(NDVI[S.month])}" r="4.5" fill="var(--lemon)" stroke="var(--ink)" stroke-width="1.3"/>
+      ${M.map((m,k)=>`<text x="${xm(k)}" y="${h-3}" font-size="9.5" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="${k===S.month?'var(--ink)':'var(--graphite)'}" font-weight="${k===S.month?600:400}">${m}</text><rect data-month="${k}" x="${xm(k)-(x1-x0)/24}" y="0" width="${(x1-x0)/12}" height="${h}" fill="transparent" style="cursor:pointer"><title>${MF[k]}</title></rect>`).join('')}
+    </svg>`;
+}
+let playTimer=null;
+document.addEventListener('click',e=>{
+  const mm=e.target.closest('[data-month]'); if(mm){ S.month=Math.min(LASTM,+mm.dataset.month); if(S.nav==='gecmis'){ S.year=null; S.nav='bahce'; S.tab='durum'; renderAll(); return; } S.year=null; drawMap(); renderDock(); if(S.nav==='defter') refreshNotebook(); else if(S.tab==='durum') renderPane(); return; }
+  if(e.target.closest('#dockToggle')){ S.dockOpen=!S.dockOpen; try{localStorage.setItem('bl-dock',S.dockOpen?'1':'0')}catch(_){} renderDock(); resizeMap(); return; }
+  if(e.target.closest('#play')){ S.playing=!S.playing; clearInterval(playTimer);
+    if(S.playing){ S.year=null; playTimer=setInterval(()=>{ S.month=(S.month+1)%12; drawMap(); renderDock(); },900); }
+    renderDock(); return; }
+});
+
+/* ---------- Bölücü ---------- */
+function bindDivider(){
+  const d=$('#divider'), left=$('#left'), work=$('#work');
+  let drag=false;
+  const set=f=>{ f=clamp(f,.45,.8); left.style.flex=`1 1 ${f*100}%`; $('#right').style.flex=`1 1 ${(1-f)*100}%`; try{localStorage.setItem('bl-split2',f)}catch(_){} resizeMap(); };
+  try{ const f=parseFloat(localStorage.getItem('bl-split2')); if(f) set(f); }catch(_){}
+  d.addEventListener('pointerdown',e=>{drag=true; d.setPointerCapture(e.pointerId);});
+  d.addEventListener('pointermove',e=>{ if(!drag) return; const r=work.getBoundingClientRect(); set((e.clientX-r.left)/r.width); });
+  d.addEventListener('pointerup',()=>drag=false);
+  d.addEventListener('keydown',e=>{ const r=work.getBoundingClientRect(), cur=left.getBoundingClientRect().width/r.width; if(e.key==='ArrowLeft') set(cur-.03); if(e.key==='ArrowRight') set(cur+.03); });
+}
+
+/* ---------- Sağ panel ---------- */
+function gauge(score){
+  let s=''; for(let k=0;k<60;k++){ const a=(k*6-90)*Math.PI/180, on=k<score*.6, r1=on?45:47, r2=56;
+    s+=`<line x1="${(60+r1*Math.cos(a)).toFixed(2)}" y1="${(60+r1*Math.sin(a)).toFixed(2)}" x2="${(60+r2*Math.cos(a)).toFixed(2)}" y2="${(60+r2*Math.sin(a)).toFixed(2)}" stroke="${on?'var(--ink)':'var(--rule)'}" stroke-width="${k%5===0?2.2:1.2}"/>`; }
+  return `<div class="gauge"><svg viewBox="0 0 120 120" width="118" height="118" role="img" aria-label="Bahçe durumu ${score} / 100">${s}</svg><div class="n"><b>${score}</b><span>/ 100</span></div></div>`;
+}
+function wheel(){
+  const cx=95,cy=95,P=(r,deg)=>{const a=(deg-90)*Math.PI/180;return [cx+r*Math.cos(a),cy+r*Math.sin(a)]};
+  const arc=(r1,r2,a0,a1)=>{const L=(a1-a0)>180?1:0,p=(r,a)=>P(r,a).map(n=>n.toFixed(2)).join(' ');return `M${p(r2,a0)}A${r2} ${r2} 0 ${L} 1 ${p(r2,a1)}L${p(r1,a1)}A${r1} ${r1} 0 ${L} 0 ${p(r1,a0)}Z`;};
+  const deg=d=>d/365*360;
+  let s=PHEN.map(p=>`<path d="${arc(64,76,deg(p[0]),deg(p[1]))}" fill="${p[3]}" stroke="var(--sheet)"/>`).join('');
+  s+=`<circle cx="${cx}" cy="${cy}" r="60" fill="none" stroke="var(--rule-soft)"/>`;
+  s+=RAIN.map((r,k)=>{const a=(k+.5)*30,p1=P(22,a),p2=P(22+r/120*20,a);return `<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="var(--water)" stroke-width="6" opacity=".8"/>`}).join('');
+  let d=''; for(let k=0;k<=12;k++){const p=P(46+(NDVI[k%12]-.43)*160,(k+.5)*30); d+=(k?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2);} s+=`<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="1.4"/>`;
+  s+=M.map((m,k)=>{const p=P(86,(k+.5)*30); const on=k===S.month; return `<g data-month="${k}" style="cursor:pointer"><circle cx="${p[0]}" cy="${p[1]}" r="9" fill="${on?'var(--lemon)':'transparent'}"/><text x="${p[0]}" y="${p[1]+3}" font-size="8" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="${on?'#17201B':'var(--graphite)'}" font-weight="${on?600:400}">${m}</text></g>`}).join('');
+  const t=P(78,(S.month+.37)*30); s+=`<line x1="${cx}" y1="${cy}" x2="${t[0]}" y2="${t[1]}" stroke="var(--watch)" stroke-width="1.4"/><circle cx="${cx}" cy="${cy}" r="2.2" fill="var(--ink)"/>`;
+  return `<svg viewBox="0 0 190 190" width="190" height="190" role="img" aria-label="Limon yılı çarkı: dış halka fenoloji evreleri, çizgi canlılık, çubuklar aylık yağış. Bir ay seçin.">${s}</svg>`;
+}
+function phaseOf(m){ const doy=m*30.4+15; const p=PHEN.find(p=>doy>=p[0]&&doy<p[1]); return p?p[2]:'Dinlenme'; }
+
+function seasonChart(k,w,h,big){
+  const E=ENV[k], cur=SER[k];
+  let lo=Math.min(...E.map(e=>e[0]),...cur), hi=Math.max(...E.map(e=>e[4]),...cur); const pad=(hi-lo)*.12; lo-=pad; hi+=pad;
+  const L=36, R=w-14, T=14, B=h-(big?44:40);
+  const x=m=>L+(m+.5)*(R-L)/12, y=v=>B-(v-lo)/(hi-lo)*(B-T), dx=d=>L+d/365*(R-L);
+  const path=a=>E.map((e,m)=>(m?'L':'M')+x(m).toFixed(1)+' '+y(e[a]).toFixed(1)).join('');
+  const area=(a,b)=>path(a)+E.slice().reverse().map((e,q)=>'L'+x(11-q).toFixed(1)+' '+y(e[b]).toFixed(1)).join('')+'Z';
+  const now=cur.slice(0,LASTM+1).map((v,m)=>(m?'L':'M')+x(m).toFixed(1)+' '+y(v).toFixed(1)).join('');
+  const tick=[.2,.5,.8].map(t=>+(lo+(hi-lo)*t).toFixed(2));
+  const sm=S.month, sv=cur[sm], [cls]=band(k,sm);
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="${LNAME[k][0]}: 2026 eğrisi, 2015–2025 aynı ay aralığı içinde">
+    ${tick.map(t=>`<line x1="${L}" x2="${R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--rule-soft)"/><text x="${L-6}" y="${y(t)+3}" font-size="9.5" text-anchor="end" ${F} fill="var(--muted)">${k==='lai'||k==='vh'?fmt(t,1):k==='lst'?fmt(t,0):fmt(t)}</text>`).join('')}
+    <path d="${area(0,4)}" fill="var(--band-90)"/>
+    <path d="${area(1,3)}" fill="var(--band-50)"/>
+    <path d="${path(2)}" fill="none" stroke="var(--graphite)" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="${x(sm)}" x2="${x(sm)}" y1="${T-6}" y2="${B}" stroke="var(--lemon)" stroke-width="2"/>
+    <path d="${now}" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linejoin="round"/>
+    ${cur.slice(0,LASTM+1).map((v,m)=>`<circle cx="${x(m)}" cy="${y(v)}" r="${m===sm?5:2.2}" fill="${m===sm?(cls==='low'?'var(--warn)':'var(--lemon)'):'var(--ink)'}" stroke="${m===sm?'var(--ink)':'none'}" stroke-width="1.4"/>`).join('')}
+    <text x="${x(LASTM)+8}" y="${y(cur[LASTM])+4}" font-size="11" ${F} font-weight="600" fill="var(--ink)">2026</text>
+    ${PHEN.map(p=>`<rect x="${dx(p[0])}" y="${B+6}" width="${Math.max(0,dx(p[1])-dx(p[0]))}" height="9" fill="${p[3]}"/>`).join('')}
+    ${PHEN.filter(p=>p[2]!=='Dinlenme'||p[0]===0).map(p=>dx(p[1])-dx(p[0])>p[2].length*5.6+6?`<text x="${dx(p[0])+3}" y="${B+13.5}" font-size="7.5" ${F} fill="#2A2E2A" letter-spacing=".4">${p[2].toLocaleUpperCase('tr')}</text>`:'').join('')}
+    ${M.map((m,q)=>`<text x="${x(q)}" y="${B+(big?30:28)}" font-size="${big?10.5:9.5}" text-anchor="middle" ${F} fill="${q===sm?'var(--ink)':q>LASTM?'var(--muted)':'var(--graphite)'}" font-weight="${q===sm?700:400}">${m}</text>`).join('')}
+    ${M.map((m,q)=>q>LASTM?'':`<rect data-month="${q}" x="${x(q)-(R-L)/24}" y="0" width="${(R-L)/12}" height="${h}" fill="transparent" style="cursor:pointer"><title>${MF[q]}: ${fmt(cur[q])}</title></rect>`).join('')}
+  </svg>`;
+}
+function scLegend(){ return `<div class="sc-legend"><span><i class="lg b90"></i>11 sezonun 8'i</span><span><i class="lg b50"></i>yarısı</span><span><i class="lg med"></i>ortanca</span><span><i class="lg now"></i>2026</span></div>`; }
+function bullets(){
+  return ['ndvi','ndre','lai','ndmi','vh'].map(k=>{ const e=ENV[k][S.month], v=SER[k][S.month], pd=(e[4]-e[0])*.3, lo=Math.min(e[0],v)-pd, hi=Math.max(e[4],v)+pd, X=t=>+((t-lo)/(hi-lo)*100).toFixed(1); const [c,txt]=band(k,S.month);
+    return `<button type="button" class="bul ${S.layer===k?'on':''}" data-didx="${k}" aria-pressed="${S.layer===k}">
+      <span class="bl-n"><b>${LNAME[k][0]}</b><span>${LNAME[k][1]}</span></span>
+      <span class="bl-track" aria-hidden="true"><i class="r90" style="left:${X(e[0])}%;width:${X(e[4])-X(e[0])}%"></i><i class="r50" style="left:${X(e[1])}%;width:${X(e[3])-X(e[1])}%"></i><i class="med" style="left:${X(e[2])}%"></i><i class="dot ${c}" style="left:${X(v)}%"></i></span>
+      <span class="bl-v"><b>${LM[k].f(v)}</b><span class="${c}">${txt}</span></span></button>`; }).join('');
+}
+function paneDurum(){
+  const k=SER[S.layer]?S.layer:'ndvi', [c,txt]=band(k,S.month);
+  return `<div class="pane">
+    <div class="sec">
+      <div class="score-head"><div class="score-n"><b>90</b><span>/100</span></div>
+        <div style="min-width:0"><span class="pill good"><i></i>İyi</span><p class="lede" style="margin-top:6px">Bahçe bu dönemin kendi normuna göre iyi durumda.</p></div></div>
+      <div class="scorebar" role="img" aria-label="Skor 90; meyve sineği riski 10 puan düşürdü"><i style="width:90%"></i><i class="ded" style="width:10%"></i></div>
+      <div class="sb-legend"><span><i class="lg sgood"></i>kendi normu · güven yüksek, 8 görüntü</span><span class="warn"><i class="lg sded"></i>−10 meyve sineği riski</span></div>
+    </div>
+    <div class="sec">
+      <div class="eyebrow">Bugün · 3 iş</div>
+      <div>
+        <div class="todo"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H16L15 9H9ZM9 9L7 20H17L15 9M10 14H14" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <div><div class="t">Meyve sineği · orta</div><div class="d">Koşullar uygun. Tuzakları bu hafta kontrol edin.</div></div>
+          <button class="btn" type="button" data-go="defter">Saha turuna ekle</button></div>
+        <div class="todo"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9H13V20H7ZM9 9V5H11V9M15 7L18 5M15 10H19M15 13L18 15" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <div><div class="t">İlaçlama penceresi</div><div class="d mono">bugün 06:46–09:00 · yarın 08:00–09:00</div></div>
+          <button class="btn primary" type="button" data-toast="Takvime eklendi (örnek)">Takvime ekle</button></div>
+        <div class="todo"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18C6 12 12 6 19 5C18 12 12 18 6 18ZM9 15L12 12M12 15L14 13" fill="none" stroke="var(--warn)" stroke-width="1.5"/></svg>
+          <div><div class="t">Kuruma hastalığı · orta</div><div class="d">15 Ekim'de yağış ve rüzgâr bekleniyor.</div></div>
+          <button class="btn ghost" type="button" data-nav-tab="hava">Hava</button></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sechead"><h3 class="st">Bu sezon, kendi geçmişine göre</h3><button class="linkbtn" type="button" data-go="gecmis">12 yıl ↗</button></div>
+      <p class="small" style="margin:0;color:var(--ink)">${LNAME[k][0]} · ${MF[S.month]}: <b class="mono">${LM[k].f(SER[k][S.month])}</b> — <span class="${c==='low'?'warnt':''}">${txt}</span>. ${phaseOf(S.month)} dönemi.</p>
+      ${scLegend()}
+      ${seasonChart(k,430,210,false)}
+    </div>
+    <div class="sec">
+      <div class="sechead"><h3 class="st">Beş gösterge, ${MF[S.month].toLocaleLowerCase('tr')} normaline göre</h3><span class="small">dokun → haritada</span></div>
+      <div class="buls">${bullets()}</div>
+      <div class="mono" style="font-size:10.5px;color:var(--muted)">bant: 2015–2025 aynı ay · çizgi: ortanca · nokta: bugün</div>
+    </div>
+    <div class="sec">
+      <div class="facts">
+        <button type="button" class="fact" data-nav-tab="hava"><span class="eyebrow">7 gün yağış</span><b>31,9 <small>mm</small></b><span class="small">Sulama gerekmiyor</span></button>
+        <button type="button" class="fact" data-nav-tab="hava"><span class="eyebrow">En iyi ilaçlama</span><b>Sal 06:47</b><span class="small">→ 18:09 · rüzgâr 11 km/s</span></button>
+      </div>
+    </div>
+  </div>`;
+}
+function ridgeline(){
+  const w=520,h=330,x=v=>60+(v-.30)/.30*420;
+  let s='';
+  YEARS.forEach((y,k)=>{ const base=40+k*24, mu=ODD(y[0])?.43:.44+(y[1]-.6)*.08, sd=ODD(y[0])?.05:.036;
+    let d=`M60 ${base}`; for(let q=0;q<=60;q++){const v=.30+q*.005; d+=` L${x(v).toFixed(1)} ${(base-Math.exp(-((v-mu)**2)/(2*sd*sd))*40).toFixed(1)}`;} d+=` L480 ${base} Z`;
+    const sel=S.year===y[0];
+    s+=`<g data-year="${y[0]}" style="cursor:pointer"><path d="${d}" fill="${ODD(y[0])?'url(#rh)':ramp((mu-.42)/.06,VEG)}" fill-opacity="${ODD(y[0])?1:.9}"/><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="${sel?2:1}"/>
+      <line x1="${x(mu)}" x2="${x(mu)}" y1="${base-42}" y2="${base}" stroke="var(--ink)" stroke-width="1.1"/>
+      <text x="52" y="${base-2}" font-size="10" text-anchor="end" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--ink)" font-weight="${sel?600:400}">${y[0]}</text>
+      <text x="${w-6}" y="${base-2}" font-size="10" text-anchor="end" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="${ODD(y[0])?'var(--watch)':'var(--graphite)'}">${ODD(y[0])?'? ':''}r ${fmt(y[1])}</text></g>`; });
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="2015–2026 yıllarının bahçe içi canlılık dağılımları; uyumsuz yıllar taralı">
+    <defs><pattern id="rh" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--lemon-soft)"/><path d="M0 0V5" stroke="var(--watch)" stroke-width="1"/></pattern></defs>${s}
+    <line x1="60" x2="480" y1="${h-12}" y2="${h-12}" stroke="var(--ink)" stroke-width=".8"/>
+    <text x="60" y="${h-1}" font-size="9" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">0,30</text><text x="270" y="${h-1}" font-size="9" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">0,45</text><text x="480" y="${h-1}" font-size="9" text-anchor="end" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">0,60</text>
+  </svg>`;
+}
+function paneAnaliz(){
+  const ans = S.answered;
+  return `<div class="pane">
+    <div class="sec">
+      <div class="eyebrow">Ağaç gücü · 2015–2026 · 12 yaz</div>
+      <h2 class="title">Kuzey kesim yıllardır bahçenin en güçlü kısmı. Güney-batı köşe her yıl geride kalıyor.</h2>
+      <div style="display:flex;gap:28px;flex-wrap:wrap" class="mono"><div><div class="eyebrow">Kullanılan yıl</div><b style="font-size:22px">${ans==='no'?12:10}</b><span class="small">/12</span></div><div><div class="eyebrow">İstikrar</div><b style="font-size:22px">yüksek</b></div><div><div class="eyebrow">Bölge</div><b style="font-size:22px">3</b></div></div>
+    </div>
+    ${ans?`<div class="sec"><div class="small">Kaydedildi: ${ans==='no'?'2021 ve 2026 dahil edildi.':'Bahçe geçmişine "budama / sulama değişikliği" notu eklendi; yıllar hariç tutuldu.'} <button class="btn ghost" type="button" id="undoAns" style="margin-left:6px">Geri al</button></div></div>`:
+    `<div class="callout"><div><b>2021 ve 2026</b> diğer yıllara benzemiyor. Bu yıllarda bahçede budama, söküm, yeni dikim ya da sulama değişikliği oldu mu?</div>
+      <div class="acts"><button class="btn primary" type="button" data-ans="yes">Evet, değişiklik oldu</button><button class="btn" type="button" data-ans="no">Hayır, yılları dahil et</button></div></div>`}
+    <div class="sec">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="st">Bölgeler</h3><span class="small">satıra dokun → haritada göster</span></div>
+      <table class="zones"><thead><tr><th>Bölge</th><th>Alan</th><th>Pay</th><th>Ort. farkı</th><th>12 yılda aynı</th></tr></thead><tbody>
+        <tr data-zone="1"><td><i class="sw" style="background:${ZC.g}"></i>Güçlü</td><td>2,7 da</td><td>%18</td><td style="color:var(--good)">+8,5%</td><td>%82</td></tr>
+        <tr data-zone="1"><td><i class="sw" style="background:${ZC.o}"></i>Orta</td><td>5,8 da</td><td>%38</td><td>+1,4%</td><td>%61</td></tr>
+        <tr data-zone="1"><td><i class="sw" style="background:${ZC.w};background-image:repeating-linear-gradient(45deg,#6B2F12 0 1px,transparent 1px 4px)"></i>Zayıf</td><td>6,7 da</td><td>%44</td><td style="color:var(--warn)">−4,6%</td><td>%79</td></tr>
+      </tbody></table>
+      <p class="small" style="margin:0">Bölgeler ağaç gücünü gösterir. Hasat kayıtları girildikçe verim potansiyeli olarak doğrulanacak.</p>
+    </div>
+    <div class="sec">
+      <button type="button" class="hist-cta" data-go="gecmis">
+        <span><span class="eyebrow">Geçmiş · ayrı sayfa</span><b>12 yılın tamamı</b><span class="small">Yıl yıl harita, sezon eğrileri, dağılımlar ve yağış takvimi</span></span>
+        <svg viewBox="0 0 120 44" width="120" height="44" aria-hidden="true">${YEARS.map((y,q)=>`<rect x="${q*10}" y="${44-(y[1]-.4)*100}" width="7" height="${(y[1]-.4)*100}" fill="${ODD(y[0])?'var(--watch)':'var(--ink)'}" opacity="${ODD(y[0])?.6:.85}"/>`).join('')}</svg>
+        <span class="arr">↗</span>
+      </button>
+    </div>
+  </div>`;
+}
+function paintMultiples(){
+  document.querySelectorAll('[data-yc]').forEach(c=>{
+    const y=+c.dataset.yc, g=c.getContext('2d'), Z=c.width; g.clearRect(0,0,Z,Z); g.fillStyle=css('--paper'); g.fillRect(0,0,Z,Z);
+    g.save(); g.translate(Z/2,Z/2); g.rotate(ROT); g.scale(.27*Z/120,.27*Z/120);
+    const vals=[]; for(let i=0;i<NI;i++) for(let j=0;j<NJ;j++){ const v=ODD(y)?.04*Math.sin(j*.7+i*.4+y)-.02*Math.cos(i*1.3):.045*pattern(i,j)+.012*Math.sin((i+y)*1.7+j*.9); vals.push([i,j,v]); }
+    const mn=Math.min(...vals.map(v=>v[2])), mx=Math.max(...vals.map(v=>v[2]));
+    vals.forEach(([i,j,v])=>{ g.fillStyle=ramp((v-mn)/(mx-mn),VEG); g.fillRect(-120+i*CELL,-180+j*CELL,CELL+.5,CELL+.5); });
+    g.lineWidth=3; g.strokeStyle=css('--ink'); g.strokeRect(-120,-180,240,360); g.restore();
+  });
+}
+function historyPage(){
+  const k=S.hIdx;
+  return `<div class="hp">
+    <div class="hp-head">
+      <button class="btn" type="button" data-go="bahce">← Çalışma alanı</button>
+      <div><div class="eyebrow">jlnnlk · Limon · 15,1 da</div><h1 class="hp-title">Geçmiş · 2015–2026</h1></div>
+      <div class="spacer"></div>
+      <div class="seg" role="group" aria-label="Gösterge">${['ndvi','ndre','lai','msavi','ndmi','vh','lst'].map(q=>`<button type="button" data-hidx="${q}" aria-pressed="${k===q}">${LNAME[q][0]}</button>`).join('')}</div>
+    </div>
+    <div class="hp-body">
+      <section class="hp-card wide"><header><div><h3 class="st">Bu sezon, önceki 11 sezonun içinde</h3><p class="small" style="margin:4px 0 0">${LNAME[k][0]} ${MF[LASTM].toLocaleLowerCase('tr')} ayında ${band(k,LASTM)[1]}. Bir aya dokunun, harita o aya açılır.</p></div>${scLegend()}</header>${seasonChart(k,1100,300,true)}</section>
+      <section class="hp-card wide"><header><div><h3 class="st">Veri akışı · son 90 gün</h3><p class="small" style="margin:4px 0 0">Beş kaynak, hepsi otomatik çekiliyor. Gri alanlar bulutlu dönemler: optik uydu göremezken radar ve iklim verisi kesintisiz.</p></div><div class="sc-legend"><span><i class="lg" style="background:var(--ink);border-radius:50%;width:10px"></i>net görüntü</span><span><i class="lg" style="border:1.2px solid var(--ink);border-radius:50%;width:10px"></i>bulutlu</span><span><i class="lg" style="background:var(--water);width:10px"></i>radar</span></div></header>${dataFlow()}</section>
+      <section class="hp-card wide"><header><div><h3 class="st">Aynı bahçe, on iki yaz</h3><p class="small" style="margin:4px 0 0">Her kare Haziran–Eylül ortancası. Kesikli çerçeve: diğer yıllara benzemeyen yıl. Bir yıla dokunun, haritada açılır.</p></div></header>
+        <div class="multiples big">${YEARS.map(y=>`<button type="button" data-year="${y[0]}" class="${ODD(y[0])?'odd':''}"><canvas width="240" height="240" data-yc="${y[0]}"></canvas><span class="cap"><span>${y[0]}</span><span style="color:${ODD(y[0])?'var(--watch)':'var(--graphite)'}">${ODD(y[0])?'? ':''}r ${fmt(y[1])}</span></span></button>`).join('')}</div></section>
+      <section class="hp-card"><header><h3 class="st">Yıl yıl bahçe içi dağılım</h3><span class="small">dar tepe = düzgün bahçe</span></header>${ridgeline()}</section>
+      <section class="hp-card"><header><h3 class="st">Bu sezon, geçen sezona karşı · 11 Ekim</h3></header>${slope()}
+        <header style="margin-top:12px"><h3 class="st">2026 yağış takvimi</h3><span class="small">kare = gün · nokta = net uydu günü</span></header>${calendar()}</section>
+      <section class="hp-card wide"><header><h3 class="st">Ortalama limon yılı</h3><span class="small">evre tarihleri ön değer · mühendis onayı bekliyor</span></header>
+        <div class="wheelwrap" style="grid-template-columns:200px minmax(0,1fr)">${wheel()}<p class="lede">Halka fenoloji evrelerini, iç çizgi aylık canlılığı, mavi çubuklar aylık yağışı gösterir. Ekim, olgunlaşma döneminin ortası; canlılığın yılın en düşük düzeyinde olması bu dönemde normaldir.</p></div></section>
+    </div>
+  </div>`;
+}
+const SRC=(t)=>`<div class="srcchip"><i class="live"></i>${t}</div>`;
+function soilProfile(){
+  const w=430,h=250,L=78,R=w-40,T=30,B=h-34, x=v=>L+v/45*(R-L), yd=d=>T+Math.sqrt(d/289)*(B-T), WP=12, FC=34;
+  const LY=[[0,7,29,14],[7,28,31,19],[28,100,27,23],[100,289,24,24]];
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  let s=`<rect x="${x(WP)}" y="${T}" width="${x(FC)-x(WP)}" height="${B-T}" fill="color-mix(in srgb,var(--water) 9%,transparent)"/>
+    <line x1="${x(WP)}" x2="${x(WP)}" y1="${T-4}" y2="${B}" stroke="var(--warn)" stroke-dasharray="3 3"/><line x1="${x(FC)}" x2="${x(FC)}" y1="${T-4}" y2="${B}" stroke="var(--water)" stroke-dasharray="3 3"/>
+    <text x="${x(WP)}" y="${T-8}" font-size="9.5" text-anchor="middle" ${F} fill="var(--warn)">solma</text><text x="${x(FC)}" y="${T-8}" font-size="9.5" text-anchor="middle" ${F} fill="var(--water)">tarla kapasitesi</text>`;
+  LY.forEach((l,q)=>{ const y0=yd(l[0]), y1=yd(l[1]);
+    s+=`<rect x="${L}" y="${y0}" width="${R-L}" height="${y1-y0}" fill="${q%2?'transparent':'color-mix(in srgb,#A97C52 7%,transparent)'}"/><line x1="${L-6}" x2="${R}" y1="${y1}" y2="${y1}" stroke="var(--rule)"/>
+      <text x="${L-8}" y="${(y0+y1)/2+3}" font-size="10" text-anchor="end" ${F} fill="var(--graphite)">${l[0]}–${l[1]} cm</text>
+      <rect x="${L}" y="${y0+2}" width="${x(l[2])-L}" height="${y1-y0-4}" fill="var(--water)" opacity=".38"/>
+      <line x1="${x(l[2])}" x2="${x(l[2])}" y1="${y0+1}" y2="${y1-1}" stroke="var(--water)" stroke-width="2.4"/>
+      <line x1="${x(l[3])}" x2="${x(l[3])}" y1="${y0+1}" y2="${y1-1}" stroke="var(--graphite)" stroke-width="1.4" stroke-dasharray="2 2"/>
+      <text x="${x(l[2])+5}" y="${(y0+y1)/2+4}" font-size="11" font-weight="600" ${F} fill="var(--ink)">%${l[2]}</text>`; });
+  s+=`<line x1="${L}" x2="${R}" y1="${T}" y2="${T}" stroke="var(--ink)" stroke-width="1.4"/>${[0,10,20,30,40].map(v=>`<text x="${x(v)}" y="${B+14}" font-size="9.5" text-anchor="middle" ${F} fill="var(--muted)">${v}</text>`).join('')}<text x="${(L+R)/2}" y="${B+28}" font-size="9.5" text-anchor="middle" ${F} fill="var(--graphite)">% hacimce nem</text>`;
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Toprak nem profili, dört derinlik; mavi bugün, kesikli 30 gün önce">${s}</svg>`;
+}
+function waterBalance(){
+  const w=430,h=210,L=30,R=w-34,T=12,B=h-26, n=37, x=d=>L+(d+.5)*(R-L)/n, y0=(T+B)/2+8, sc=3.4;
+  const rain=Array(n).fill(0); [[5,4.6],[14,18.2],[21,9.0],[28,.3],[32,10.2],[33,14.8],[34,3.9],[36,.6]].forEach(r=>rain[r[0]]=r[1]);
+  const et=Array.from({length:n},(_,d)=>3.5-d*.025+.3*Math.sin(d*.9));
+  let cum=0; const cp=et.map((e,d)=>{cum+=rain[d]-e; return cum;}); const cy=v=>y0-v*.9;
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  let s=`<rect x="${x(30)-(R-L)/n/2}" y="${T}" width="${R-x(30)+(R-L)/n/2}" height="${B-T}" fill="var(--rule-soft)" opacity=".6"/><text x="${R-2}" y="${T+10}" font-size="9.5" text-anchor="end" ${F} fill="var(--graphite)">7 gün tahmin</text>`;
+  s+=rain.map((r,d)=>r?`<rect x="${x(d)-3.5}" y="${y0-r*sc}" width="7" height="${r*sc}" fill="var(--water)" opacity="${d>=30?.5:1}"/>`:'').join('');
+  s+=et.map((e,d)=>`<rect x="${x(d)-3.5}" y="${y0}" width="7" height="${e*sc}" fill="var(--warn)" opacity="${d>=30?.3:.55}"/>`).join('');
+  s+=`<line x1="${L}" x2="${R}" y1="${y0}" y2="${y0}" stroke="var(--ink)"/>`;
+  s+=`<path d="${cp.map((v,d)=>(d?'L':'M')+x(d).toFixed(1)+' '+cy(v).toFixed(1)).join('')}" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-dasharray="${''}"/><circle cx="${x(29)}" cy="${cy(cp[29])}" r="3.5" fill="var(--lemon)" stroke="var(--ink)"/><text x="${x(29)-4}" y="${cy(cp[29])-8}" font-size="10.5" text-anchor="end" ${F} fill="var(--ink)" font-weight="600">denge ${fmt(cp[29],0)} mm</text>`;
+  s+=`<text x="${L}" y="${y0-50}" font-size="9.5" ${F} fill="var(--water)">yağış ↑</text><text x="${L}" y="${y0+24}" font-size="9.5" ${F} fill="var(--warn)">buharlaşma ↓</text>`;
+  s+=[[0,'13 Eyl'],[15,'28 Eyl'],[29,'12 Eki'],[36,'19 Eki']].map(t=>`<text x="${x(t[0])}" y="${B+16}" font-size="9.5" text-anchor="middle" ${F} fill="${t[0]===29?'var(--ink)':'var(--muted)'}">${t[1]}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="30 günlük su dengesi: yağış yukarı, buharlaşma aşağı, çizgi birikimli denge">${s}</svg>`;
+}
+function radarLanes(){
+  const w=430,h=170,L=96,R=w-10,n=60,x=d=>L+d/n*(R-L);
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  const cloudy=[[14,27],[44,53]]; const s2=Array.from({length:12},(_,k)=>3+k*5); const s1=Array.from({length:10},(_,k)=>1+k*6);
+  const isC=d=>cloudy.some(c=>d>=c[0]&&d<=c[1]);
+  const mi=d=>.42-.004*d+(d>46?.12*Math.exp(-(d-47)/9):0)+(d>20&&d<26?.05:0);
+  let s=cloudy.map(c=>`<rect x="${x(c[0])}" y="8" width="${x(c[1])-x(c[0])}" height="${h-30}" fill="var(--rule-soft)"/><text x="${(x(c[0])+x(c[1]))/2}" y="18" font-size="9" text-anchor="middle" ${F} fill="var(--graphite)">bulut</text>`).join('');
+  s+=`<text x="${L-8}" y="40" font-size="10" text-anchor="end" fill="var(--ink)">Sentinel-2 optik</text><text x="${L-8}" y="68" font-size="10" text-anchor="end" fill="var(--ink)">Sentinel-1 radar</text><text x="${L-8}" y="116" font-size="10" text-anchor="end" fill="var(--ink)">Radar nemi</text>`;
+  s+=`<line x1="${L}" x2="${R}" y1="36" y2="36" stroke="var(--rule)"/><line x1="${L}" x2="${R}" y1="64" y2="64" stroke="var(--rule)"/>`;
+  s+=s2.map(d=>`<circle cx="${x(d)}" cy="36" r="4.5" fill="${isC(d)?'var(--sheet)':'var(--ink)'}" stroke="var(--ink)" stroke-width="1.2"/>`).join('');
+  s+=s1.map(d=>`<rect x="${x(d)-4}" y="60" width="8" height="8" fill="var(--water)" stroke="${isC(d)?'var(--ink)':'none'}" stroke-width="1.4"/>`).join('');
+  const ym=v=>140-(v-.2)/.3*50;
+  s+=`<path d="${s1.map((d,k)=>(k?'L':'M')+x(d).toFixed(1)+' '+ym(mi(d)).toFixed(1)).join('')}" fill="none" stroke="var(--water)" stroke-width="2"/>`+s1.map(d=>`<circle cx="${x(d)}" cy="${ym(mi(d))}" r="2.6" fill="var(--water)"/>`).join('');
+  s+=[[0,'13 Ağu'],[30,'12 Eyl'],[59,'11 Eki']].map(t=>`<text x="${x(t[0])}" y="${h-4}" font-size="9.5" text-anchor="${t[0]?t[0]>50?'end':'middle':'start'}" ${F} fill="var(--muted)">${t[1]}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Son 60 gün: optik uydu bulutlu dönemlerde göremedi, radar her 6 günde gördü">${s}</svg>`;
+}
+function lstDumbbell(){
+  const rows=[['4 Eki',27.2,31.4],['26 Eyl',29.1,33.0],['18 Eyl',30.4,36.2],['10 Eyl',31.0,35.1],['2 Eyl',32.2,38.9],['25 Ağu',33.0,37.0]];
+  const w=430,L=56,R=w-92,x=v=>L+(v-24)/16*(R-L),rh=26,h=rows.length*rh+30;
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  let s=[24,28,32,36,40].map(v=>`<line x1="${x(v)}" x2="${x(v)}" y1="6" y2="${h-22}" stroke="var(--rule-soft)"/><text x="${x(v)}" y="${h-8}" font-size="9.5" text-anchor="middle" ${F} fill="var(--muted)">${v}°</text>`).join('');
+  s+=rows.map((r,q)=>{ const y=16+q*rh, d=r[2]-r[1], st=d>5; return `<text x="${L-10}" y="${y+4}" font-size="10.5" text-anchor="end" ${F} fill="var(--graphite)">${r[0]}</text>
+    <line x1="${x(r[1])}" x2="${x(r[2])}" y1="${y}" y2="${y}" stroke="${st?'var(--warn)':'var(--rule)'}" stroke-width="3"/>
+    <circle cx="${x(r[1])}" cy="${y}" r="5" fill="var(--sheet)" stroke="var(--graphite)" stroke-width="1.6"/><circle cx="${x(r[2])}" cy="${y}" r="5.5" fill="${ramp((r[2]-26)/12,HEAT)}" stroke="var(--ink)"/>
+    <text x="${R+14}" y="${y+4}" font-size="11" ${F} font-weight="${st?700:500}" fill="${st?'var(--warn)':'var(--ink)'}">+${fmt(d,1)}${st?' stres':''}</text>`; }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Son 6 Landsat geçişi: hava sıcaklığı ve bahçe yüzey sıcaklığı">${s}</svg>`;
+}
+function smapTile(){
+  const V=[[.21,.22,.24,.23,.22],[.23,.25,.27,.26,.24],[.25,.28,.31,.29,null],[.27,.30,.29,null,null],[null,null,null,null,null]];
+  const c=34; let s='';
+  V.forEach((row,r)=>row.forEach((v,q)=>{ s+= v==null?`<rect x="${q*c}" y="${r*c}" width="${c-2}" height="${c-2}" fill="url(#sea)"/>`:`<rect x="${q*c}" y="${r*c}" width="${c-2}" height="${c-2}" fill="${ramp((v-.18)/.15,WAT)}"><title>${fmt(v)} m³/m³</title></rect>`; }));
+  s+=`<rect x="${2*c-1}" y="${2*c-1}" width="${c}" height="${c}" fill="none" stroke="var(--ink)" stroke-width="2.2"/><circle cx="${2*c+c/2-1}" cy="${2*c+c/2-1}" r="3" fill="var(--lemon)" stroke="var(--ink)"/>`;
+  s+=`<text x="${3.3*c}" y="${4.6*c}" font-size="10" font-style="italic" fill="var(--graphite)">Akdeniz</text>`;
+  return `<svg viewBox="0 0 ${5*c} ${5*c}" width="170" height="170" role="img" aria-label="SMAP 9 km bölge haritası; çerçeveli kare bahçenin bulunduğu piksel"><defs><pattern id="sea" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3Q1.5 1 3 3T6 3" fill="none" stroke="var(--rule)"/></pattern></defs>${s}</svg>`;
+}
+function paneSu(){
+  return `<div class="pane">
+    <div class="sec"><div class="eyebrow">Su ve toprak · bahçe geneli</div>
+      <h2 class="title">Kök bölgesi nemli. Önümüzdeki 7 gün sulama gerekmiyor.</h2>
+      <p class="small" style="margin:0">Bu sekmedeki veriler 100 m–9 km çözünürlükte; bahçenin içini değil, bütününü anlatır. Bahçe içi su için haritada <button class="linkbtn" type="button" data-layer="ndmi">Yaprak suyu</button> ve <button class="linkbtn" type="button" data-layer="vh">Radar nemi</button> katmanları var.</p></div>
+    <div class="sec"><div class="sechead"><h3 class="st">Toprak nem profili</h3><span class="small">mavi bugün · kesikli 30 gün önce</span></div>
+      ${soilProfile()}
+      <p class="small" style="margin:0;color:var(--ink)">Kök bölgesinde (0–100 cm) kullanılabilir suyun <b>%72</b>’si dolu. Üst katman 28 Eylül yağışıyla doldu.</p>
+      ${SRC('ERA5-Land · 4 derinlik · saatlik · ~9 km')}</div>
+    <div class="sec"><div class="sechead"><h3 class="st">Su dengesi · 30 gün + 7 gün tahmin</h3></div>
+      ${waterBalance()}
+      <p class="small" style="margin:0;color:var(--ink)">Son 30 günde yağış 32 mm, buharlaşma 96 mm. Açık 15 Ekim yağışıyla büyük ölçüde kapanıyor.</p>
+      ${SRC('ERA5-Land ET₀ + yağış · Open-Meteo tahmin')}</div>
+    <div class="sec"><div class="sechead"><h3 class="st">Bulut altında da gören radar</h3></div>
+      ${radarLanes()}
+      <p class="small" style="margin:0;color:var(--ink)">İki bulutlu dönemde optik uydu bahçeyi göremedi; radar bu sürede 4 kez gördü. 28 Eylül yağışı radar neminde net görünüyor.</p>
+      ${SRC('Sentinel-1 RTC · VV/VH · 6 günde bir · 10 m')}</div>
+    <div class="sec"><div class="sechead"><h3 class="st">Yaprak yüzeyi, havadan ne kadar sıcak?</h3><span class="small">○ hava · ● bahçe yüzeyi</span></div>
+      ${lstDumbbell()}
+      <p class="small" style="margin:0;color:var(--ink)">Fark 5 °C’yi geçtiğinde ağaçlar yeterince terlemiyor olabilir. Eylül başındaki iki geçişte stres var; ekimde fark normale döndü.</p>
+      ${SRC('Landsat 8/9 yüzey sıcaklığı · 8 günde bir · 100 m')}<div class="mono" style="font-size:10.5px;color:var(--watch)">5 °C eşiği ön değer · mühendis onayı bekliyor</div></div>
+    <div class="sec"><div class="sechead"><h3 class="st">Bölgede toprak nemi</h3></div>
+      <div class="smapwrap">${smapTile()}<div><p class="small" style="margin:0;color:var(--ink)">Bahçenin bulunduğu 9 km’lik kare <b>0,31 m³/m³</b>; çevresinin biraz üstünde. Kıyıya yakın kareler son yağışı daha çok aldı.</p><div class="sc-legend" style="margin-top:10px"><span><i class="lg" style="background:${grad(WAT)};width:60px"></i>kuru → nemli</span></div>${SRC('SMAP L3 · 9 km · 2–3 günde bir')}</div></div></div>
+  </div>`;
+}
+function dataFlow(){
+  const w=1100,L=150,R=w-90,n=90,x=d=>L+d/n*(R-L),rh=30,rows=[
+    ['Sentinel-2 · optik','5 gün',Array.from({length:18},(_,k)=>2+k*5),'c'],['Sentinel-1 · radar','6 gün',Array.from({length:15},(_,k)=>1+k*6),'s'],
+    ['Landsat 8/9 · termal','8 gün',Array.from({length:11},(_,k)=>4+k*8),'t'],['SMAP · toprak nemi','2–3 gün',Array.from({length:34},(_,k)=>Math.round(k*2.65)),'m'],['ERA5-Land · iklim','saatlik',null,'e']];
+  const cloudy=[[44,57],[74,83]], isC=d=>cloudy.some(c=>d>=c[0]&&d<=c[1]), h=rows.length*rh+34;
+  const F='font-family="var(--f-data)" style="font-family:var(--f-data)"';
+  let s=cloudy.map(c=>`<rect x="${x(c[0])}" y="2" width="${x(c[1])-x(c[0])}" height="${h-30}" fill="var(--rule-soft)"/>`).join('');
+  rows.forEach((r,q)=>{ const y=18+q*rh; s+=`<text x="${L-12}" y="${y+4}" font-size="11.5" text-anchor="end" fill="var(--ink)">${r[0]}</text><line x1="${L}" x2="${R}" y1="${y}" y2="${y}" stroke="var(--rule)"/>`;
+    let net=0, all=0;
+    if(r[3]==='e'){ s+=`<rect x="${L}" y="${y-4}" width="${x(85)-L}" height="8" fill="var(--graphite)" opacity=".55"/><rect x="${x(85)}" y="${y-4}" width="${R-x(85)}" height="8" fill="url(#lagp)"/>`; s+=`<text x="${R+10}" y="${y+4}" font-size="10.5" ${F} fill="var(--graphite)">5 gün gecikme</text>`; return; }
+    r[2].forEach(d=>{ if(d>=n) return; all++; const c=(r[3]==='c'||r[3]==='t')&&isC(d); if(!c) net++;
+      s+= r[3]==='s'?`<rect x="${x(d)-4}" y="${y-4}" width="8" height="8" fill="var(--water)"/>` : r[3]==='m'?`<circle cx="${x(d)}" cy="${y}" r="2.6" fill="var(--water)" opacity=".7"/>` :
+          `<circle cx="${x(d)}" cy="${y}" r="5" fill="${c?'var(--sheet)':r[3]==='t'?ramp(.75,HEAT):'var(--ink)'}" stroke="${r[3]==='t'?'#B3412A':'var(--ink)'}" stroke-width="1.2"/>`; });
+    s+=`<text x="${R+10}" y="${y+4}" font-size="10.5" ${F} fill="var(--graphite)">${net}/${all} net</text>`; });
+  s+=[[0,'14 Tem'],[30,'13 Ağu'],[60,'12 Eyl'],[89,'11 Eki']].map(t=>`<text x="${x(t[0])}" y="${h-6}" font-size="10" text-anchor="${t[0]>80?'end':t[0]?'middle':'start'}" ${F} fill="var(--muted)">${t[1]}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Son 90 günde beş veri kaynağının bahçeyi gördüğü günler"><defs><pattern id="lagp" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V5" stroke="var(--graphite)"/></pattern></defs>${s}</svg>`;
+}
+function paneHava(){
+  const days=['Bugün','Pzt','Sal','Çar','Per','Cum','Cmt'];
+  const plan=['nnnnnnn ooommmmnnnnmm nnnnn','nnnnnnn noommnnmnnnnn nnnnn','nnnnnnn oooooooooooo nnnnn','nnnnnnn oonnonnnnnnn nnnnn','nnnnnnn nnnnnnnnnnnn nnnnn','nnnnnnn nnnnnnnnnnnn nnnnn','nnnnnnn oooooonnnooo nnnnn'];
+  const HRS=Array.from({length:14},(_,k)=>k+6); // 06–19; gece tek sütunla özetlenir
+  const cells=plan.map(p=>{ const day=p.split(' ')[1].slice(0,12).split(''); return HRS.map(h=>h<7||h>=19?'n':day[h-7]); });
+  let heat=`<span></span>${HRS.map(h=>`<span style="text-align:center">${h%3===0?String(h).padStart(2,'0'):''}</span>`).join('')}`;
+  cells.forEach((row,d)=>{ heat+=`<span>${days[d]}</span>`+row.map((c,k)=>{ const h=HRS[k]; const night=h<7||h>=19; const cls=night?'night':c==='o'?'ok':c==='m'?'mid':'no'; return `<span class="c ${cls}" title="${days[d]} ${String(h).padStart(2,'0')}:00 · ${night?'gece':cls==='ok'?'uygun':cls==='mid'?'sınırda':'uygun değil'}"></span>`; }).join(''); });
+  const fc=[[31,25,.3],[25,21,1.6],[25,19,.5],[25,20,10.2],[22,19,14.8],[22,18,3.9],[23,20,.6]];
+  return `<div class="pane">
+    <div class="sec"><div class="eyebrow">Bu hafta ilaçlama için en iyi zaman</div><h2 class="title mono" style="font-family:var(--f-data);font-weight:600">Salı 06:47–18:09</h2><p class="small" style="margin:0">Rüzgâr 15 km/s altı, yağış yok, sıcaklık 10–28 °C. Yalnız gün doğumu ile batımı arası. Ürün etiketindeki koşullar esastır.</p></div>
+    <div class="sec"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><h3 class="st">Saat saat uygunluk</h3><span class="small">06–19 arası · gece gizli</span></div>
+      <div class="heat">${heat}</div>
+      <div class="heatlegend"><span><i style="background:var(--water)"></i>Uygun</span><span><i style="background:repeating-linear-gradient(45deg,var(--watch) 0 2px,transparent 2px 5px);border:1px solid var(--watch)"></i>Sınırda</span><span><i style="background:radial-gradient(circle,var(--muted) 1px,transparent 1.5px) 0 0/5px 5px;background-color:var(--rule-soft)"></i>Uygun değil</span><span><i style="background:var(--rule-soft)"></i>Gece</span></div>
+    </div>
+    <div class="sec"><h3 class="st">7 gün</h3><div class="days">${fc.map((f,k)=>`<div class="day"><span class="eyebrow">${days[k]}</span><b>${f[0]}°</b><span class="lo">${f[1]}°</span><div class="bar"><i style="height:${Math.max(2,f[2]*1.8)}px"></i></div><span class="lo">${fmt(f[2],1)} mm</span></div>`).join('')}</div></div>
+    <div class="sec"><h3 class="st">Sulama</h3><p class="lede" style="margin:0">Yağış ihtiyacı karşılıyor. Önümüzdeki 7 günde sulama gerekmiyor.</p><div class="mono small">son 7 gün açık 4,6 mm · önümüzdeki 7 gün +12,2 mm fazla · ön değer</div></div>
+    <div class="sec"><h3 class="st">Zararlı ve hastalık riski</h3>
+      ${[['Akdeniz meyve sineği','Orta','Koşullar uygun; tuzak sayımı girilince kesinleşir.',2,'var(--watch)'],['Kırmızı örümcek','Düşük','Art arda sıcak ve kuru gün yok.',1,'var(--good)'],['Kuruma hastalığı','Orta','15 Eki yağış + rüzgâr; 3 gün risk penceresi.',2,'var(--watch)']].map(r=>`<div class="risk"><div><b>${r[0]}</b><div class="small">${r[2]}</div></div><div class="lvl">${[1,2,3].map(k=>`<i style="background:${k<=r[3]?r[4]:'var(--rule)'}"></i>`).join('')}<span>${r[1]}</span></div></div>`).join('')}
+      <div class="mono" style="font-size:10.5px;color:var(--watch)">risk tahminidir, teşhis değildir · ön değer · mühendis onayı bekliyor</div>
+    </div>
+  </div>`;
+}
+const BOT=`<svg viewBox="0 0 160 190" width="150" height="178" aria-hidden="true"><path d="M20 182C45 140 70 110 85 80C98 55 112 30 140 12" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M85 80C68 72 55 58 52 40C68 42 80 56 85 80Z" fill="none" stroke="var(--ink)" stroke-width="1"/><path d="M85 80L56 44M70 62L66 52" stroke="var(--ink)" stroke-width=".6"/><path d="M104 52C118 42 134 40 150 48C138 59 120 61 104 52Z" fill="none" stroke="var(--ink)" stroke-width="1"/><path d="M104 52L146 49" stroke="var(--ink)" stroke-width=".6"/><path d="M85 80C96 90 100 100 98 112" fill="none" stroke="var(--ink)" stroke-width="1.2"/><ellipse cx="100" cy="140" rx="26" ry="31" fill="#F1E3A0" stroke="var(--ink)" stroke-width="1.2"/><path d="M84 124C83 136 85 150 91 160M92 118C90 132 92 150 99 164M116 122C118 134 118 150 113 160" fill="none" stroke="var(--ink)" stroke-width=".5"/><path d="M100 171C99 174 101 176 100 179" fill="none" stroke="var(--ink)"/></svg>`;
+function paneGunluk(){
+  return `<div class="pane">
+    <div class="empty">${BOT}<div><div class="eyebrow">Günlük · Adım 11–13</div><h2 class="title" style="margin-top:6px">Bahçenin defteri burada tutulacak.</h2><p class="small" style="margin:8px 0 12px">Gözlem, hasat, ilaç ve masraf kayıtları uydu verisiyle yan yana durur. İlk kasanızı girdiğinizde bölgelerle karşılaştırırız.</p><button class="btn primary" type="button" data-toast="Gözlem kaydı Adım 11 ile açılıyor">Gözlem ekle</button></div></div>
+    <div class="sec"><div class="eyebrow">Neler gelecek</div><div class="preview-list">
+      ${[['Gözlemler','Fotoğraf ve not, haritada konumuyla','Adım 11'],['Hasat','Blok blok kg / kasa, bölgelerle karşılaştırma','Adım 11'],['İlaç defteri','Bekleme süresi ve kalıntı uyarısı','Adım 12'],['Masraf ve yevmiye','Dekar başına maliyet ve kâr','Adım 13'],['Kayıt dosyası','İTU / GlobalG.A.P. için hazır dosya','Adım 13B']].map(r=>`<div><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" fill="none" stroke="var(--graphite)" stroke-width="1.5"/><path d="M8 9H16M8 13H16M8 17H13" stroke="var(--graphite)" stroke-width="1.3"/></svg><span><b>${r[0]}</b><br><span class="small">${r[1]}</span></span><span class="tag">${r[2]}</span></div>`).join('')}
+    </div></div></div>`;
+}
+function paneRapor(){
+  return `<div class="pane">
+    <div class="empty">${BOT}<div><div class="eyebrow">Rapor · Adım 16</div><h2 class="title" style="margin-top:6px">Sezon raporu, tek sayfa saha levhası olarak.</h2><p class="small" style="margin:8px 0 12px">Harita, limon yılı çarkı, bölgeler ve kayıtlar; tüccara, bankaya ya da danışmana paylaşım bağlantısıyla.</p><span class="tag">Yakında</span></div></div>
+  </div>`;
+}
+function renderPane(){
+  const r=$('#right'); if(!r) return;
+  r.innerHTML = ({su:paneSu,durum:paneDurum,analiz:paneAnaliz,hava:paneHava,gunluk:paneGunluk,rapor:paneRapor}[S.tab])() + `<div class="foot">Tasarım prototipi · değerler temsilîdir; ürün gerçek bahçe verisini kullanır.</div>`;
+  if(S.tab==='analiz') paintMultiples();
+}
+document.addEventListener('click',e=>{
+  const y=e.target.closest('[data-year]'); if(y){ const v=+y.dataset.year; if(S.nav==='gecmis'){ S.year=v; S.nav='bahce'; S.tab='analiz'; renderAll(); toast(v+' yazı haritada'); return; } S.year = S.year===v?null:v; S.inspect=null; if(S.nav==='bahce'||S.nav==='defter'){ drawMap(); if(S.nav==='bahce') renderPane(); else refreshNotebook(); } return; }
+  const a=e.target.closest('[data-ans]'); if(a){ S.answered=a.dataset.ans; renderPane(); toast('Bahçe geçmişine kaydedildi'); return; }
+  if(e.target.closest('#undoAns')){ S.answered=null; renderPane(); return; }
+  const di=e.target.closest('[data-didx]'); if(di){ S.layer=di.dataset.didx; drawMap(); renderPane(); return; }
+  const hi=e.target.closest('[data-hidx]'); if(hi){ S.hIdx=hi.dataset.hidx; renderAll(); return; }
+  if(e.target.closest('[data-zone]')){ S.layer='zones'; drawMap(); return; }
+});
+
+/* ---------- Saha Defteri ---------- */
+function calendar(){
+  let s='', sat='';
+  for(let w=0;w<52;w++) for(let d=0;d<7;d++){ const day=w*7+d, season=Math.cos((day-15)/365*2*Math.PI), p=((day*37+11)%17)/17;
+    const mm=season>.15&&p>.6?(p-.58)*60*season:(p>.94?3:0);
+    s+=`<rect x="${(26+w*8.6).toFixed(1)}" y="${6+d*12}" width="7.2" height="10.5" fill="${mm<=0?'var(--rule-soft)':ramp(mm/22,WAT)}"><title>${Math.round(mm)} mm</title></rect>`;
+    if((day*13)%5===0&&mm<6) sat+=`<circle cx="${(26+w*8.6+3.6).toFixed(1)}" cy="${6+d*12+5.2}" r="1.3" fill="var(--ink)"/>`; }
+  const ml=M.map((m,k)=>`<text x="${26+k*4.33*8.6}" y="102" font-size="9" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">${m}</text>`).join('');
+  return `<svg viewBox="0 0 480 110" style="width:100%;height:auto;display:block" role="img" aria-label="2026 günlük yağış takvimi; nokta net uydu günü">${s}${sat}${ml}</svg>`;
+}
+function slope(){
+  return `<svg viewBox="0 0 480 170" style="width:100%;height:auto;display:block" role="img" aria-label="Eğim grafiği: bu sezon ve geçen sezon">
+    <text x="150" y="14" font-size="9" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">GEÇEN SEZON</text><text x="330" y="14" font-size="9" text-anchor="middle" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="var(--graphite)">BU SEZON</text>
+    <line x1="150" x2="150" y1="22" y2="160" stroke="var(--rule)"/><line x1="330" x2="330" y1="22" y2="160" stroke="var(--rule)"/>
+    ${[['Canlılık','0,44','0,43',50,58,'var(--ink)'],['Yaprak suyu','0,20','0,18 ▾',82,104,'var(--warn)'],['Klorofil','0,31','0,30',120,126,'var(--ink)'],['Sezon yağışı','13 mm','50 mm ▴',152,34,'var(--water)']].map(r=>`<line x1="150" x2="330" y1="${r[3]}" y2="${r[4]}" stroke="${r[5]}" stroke-width="1.6"/><circle cx="150" cy="${r[3]}" r="3" fill="${r[5]}"/><circle cx="330" cy="${r[4]}" r="3" fill="${r[5]}"/><text x="142" y="${r[3]+3}" font-size="10.5" text-anchor="end" font-family="var(--f-ui)" style="font-family:var(--f-ui)" fill="var(--ink)">${r[0]} ${r[1]}</text><text x="338" y="${r[4]+3}" font-size="10.5" font-family="var(--f-data)" style="font-family:var(--f-data)" fill="${r[5]}">${r[2]}</text>`).join('')}
+  </svg>`;
+}
+const GATE=[-1.2,12.4];
+const PTS=[
+  {c:[2,13], t:'Zayıf kesim · yol kenarı', why:'Zayıf bölgenin sınırı. 12 yazın 10’unda bahçenin gerisinde.', chk:['Yaprak rengi, sararma','Damlatıcılar çalışıyor mu','Toprak nemi (elle)']},
+  {c:[2,10], t:'Zayıf kesim merkezi', why:'Canlılık bahçe ortalamasından %14 düşük.', chk:['Kök boğazı ve gövde yarası','Yaprakta leke ya da dökülme','Toprak örneği (0–30 cm)']},
+  {c:[5,7],  t:'Tuzak T2', why:'Meyve sineği riski orta. Haftalık sayım.', chk:['Meyvede iğne izi','Yere düşmüş meyve'], trap:'T2'},
+  {c:[8,10], t:'Değişim noktası', why:'Son ayda −0,03. Komşularından hızlı düştü.', chk:['Budama ya da kesim izi','Sulama hattında kaçak','Zararlı belirtisi']},
+  {c:[7,2],  t:'Güçlü referans ağaç', why:'Karşılaştırma için sağlıklı ağaç. Her turda aynı açıdan fotoğraf.', chk:['Referans fotoğrafı','5 meyvede iriliğe bakış']}
+];
+const TRAPS=[['T1','Kuzey sıra',[2,3,3,5,4,6]],['T2','Orta · nokta 3',[1,2,4,4,6,7]],['T3','Yol kenarı',[0,1,1,2,3,3]]];
+function legs(){ const c=[GATE,...PTS.map(p=>p.c)]; return PTS.map((_,k)=>Math.round(Math.hypot(c[k+1][0]-c[k][0],c[k+1][1]-c[k][1])*10)); }
+function selectPt(k){ S.pt=k; drawMap(); refreshNotebook(); const el=document.querySelector('.stop.on'); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+function notebookCol(){
+  const L=legs(), dist=L.reduce((a,b)=>a+b,0), n=Object.values(S.done).filter(Boolean).length;
+  const sp=v=>{ const w=64,h=18,mx=8; return `<svg width="${w}" height="${h}" aria-hidden="true"><path d="${v.map((q,i)=>(i?'L':'M')+(i*(w-4)/(v.length-1)+2).toFixed(1)+' '+(h-2-q/mx*(h-4)).toFixed(1)).join('')}" fill="none" stroke="var(--ink)" stroke-width="1.3"/><line x1="0" x2="${w}" y1="${h-2-7/mx*(h-4)}" y2="${h-2-7/mx*(h-4)}" stroke="var(--warn)" stroke-dasharray="2 2"/></svg>`; };
+  return `
+    <div class="tour">
+      <span class="no">BUGÜNKÜ SAHA TURU · 12 EKİM 2026</span>
+      <h2 class="nb-h">5 nokta · ${dist} m · yaklaşık ${Math.round(dist/40)+5*4} dakika</h2>
+      <p>Noktalar zayıf kesimden, açık risklerden ve bir referans ağaçtan seçildi. Girişten başlayıp sırayla yürüyün; her noktada kısa bir kontrol listesi var.</p>
+      <div class="tour-acts"><button class="btn" type="button" id="printNb">Yazdır · A4</button><button class="btn ghost" type="button" data-toast="Tur telefona gönderildi (örnek). İnternetsiz açılır.">Telefona gönder</button><button class="btn ghost" type="button" data-toast="Haritaya dokunarak nokta eklenir (Adım 11)">+ Nokta ekle</button></div>
+      <div class="prog"><span>${n}/5 tamam</span><span class="bar"><i style="width:${n/5*100}%"></i></span></div>
+    </div>
+    <ol class="stops">${PTS.map((p,k)=>`<li class="stop ${k===S.pt?'on':''} ${S.done[k]?'done':''}">
+      <button type="button" class="stop-h" data-pt="${k}" aria-expanded="${k===S.pt}"><span class="no">${S.done[k]?'✓':k+1}</span><span><b>${p.t}</b><span class="why">${p.why}</span></span><span class="mono small">+${L[k]} m</span></button>
+      ${k===S.pt?`<div class="stop-b">
+        ${p.chk.map((c,q)=>`<label class="ck"><input type="checkbox" data-ck="${k}-${q}" ${S.ck[k+'-'+q]?'checked':''}> ${c}</label>`).join('')}
+        ${p.trap?`<label class="ck trapin">Tuzaktaki sinek sayısı <input type="number" min="0" inputmode="numeric" data-trap="${p.trap}" value="${S.trapToday[p.trap]??''}" placeholder="—"></label>`:''}
+        <label class="vh" for="note${k}">Not</label><textarea id="note${k}" data-note="${k}" placeholder="Ne gördünüz? Kısa not…">${S.notes[k]||''}</textarea>
+        <div class="row-acts"><button class="btn ghost" type="button" data-toast="Konumlu fotoğraf Adım 11 ile">Fotoğraf</button><button class="btn primary" type="button" data-donept="${k}">${S.done[k]?'Geri al':(k<4?'Tamam · sonraki nokta':'Tamam · turu bitir')}</button></div>
+      </div>`:''}
+    </li>`).join('')}</ol>
+    <div class="plate"><span class="no">TUZAK DEFTERİ · AKDENİZ MEYVE SİNEĞİ</span>
+      <table class="traps"><thead><tr><th>Tuzak</th><th>Son 6 hafta</th><th>Geçen</th><th>Bu hafta</th></tr></thead><tbody>
+        ${TRAPS.map(t=>`<tr><td><b>${t[0]}</b> <span class="small">${t[1]}</span></td><td>${sp(t[2])}</td><td class="mono">${t[2][5]}</td><td><input type="number" min="0" inputmode="numeric" aria-label="${t[0]} bu hafta" data-trap="${t[0]}" value="${S.trapToday[t[0]]??''}" placeholder="—"></td></tr>`).join('')}
+      </tbody></table>
+      <div class="mono" style="font-size:10.5px;color:var(--watch)">kesikli çizgi: 7 sinek / tuzak / hafta · eşik ön değer, mühendis onayı bekliyor</div></div>
+    <div class="plate"><span class="no">ÇIKMADAN ÖNCE</span>
+      <p>Son net görüntü 9 Ekim. Bugün 06:46–09:00 ilaçlama penceresi açık; 15 Ekim’de yağış ve rüzgâr bekleniyor.</p></div>
+    <div class="foot" style="padding:0">Notlar ve sayımlar Günlük’e konumuyla kaydedilir (Adım 11–12). Prototip değerleri temsilîdir.</div>`;
+}
+function refreshNotebook(){ const c=$('#nbcol'); if(c) c.innerHTML=notebookCol(); }
+document.addEventListener('click',e=>{
+  const pt=e.target.closest('[data-pt]'); if(pt){ selectPt(+pt.dataset.pt); return; }
+  const dn=e.target.closest('[data-donept]'); if(dn){ const k=+dn.dataset.donept; S.done[k]=!S.done[k];
+    if(S.done[k]){ const nx=PTS.findIndex((_,q)=>q>k&&!S.done[q]); toast(nx>=0?`Nokta ${k+1} tamam · sıradaki ${nx+1}`:'Tur tamamlandı · Günlük’e kaydedildi (örnek)'); if(nx>=0) S.pt=nx; }
+    drawMap(); refreshNotebook(); return; }
+  if(e.target.closest('#printNb')){ window.print(); return; }
+});
+document.addEventListener('change',e=>{ const c=e.target.closest('[data-ck]'); if(c) S.ck[c.dataset.ck]=c.checked; });
+document.addEventListener('input',e=>{ const n=e.target.closest('[data-note]'); if(n) S.notes[n.dataset.note]=n.value; const t=e.target.closest('[data-trap]'); if(t){ S.trapToday[t.dataset.trap]=t.value; document.querySelectorAll(`[data-trap="${t.dataset.trap}"]`).forEach(o=>{ if(o!==t) o.value=t.value; }); } });
+function notebookPage(){
+  return `<div class="nb notebook">
+    <div class="nb-head">
+      <button class="btn" type="button" data-go="bahce">← Çalışma alanı</button>
+      <h1>Saha Defteri</h1>
+      <span class="meta">jlnnlk · Limon · 15,1 da · Erdemli · tur 1</span>
+      <div class="spacer"></div>
+      <span class="meta">sahaya çıkarken · yazdırılabilir · internetsiz</span>
+    </div>
+    <div class="nb-body">
+      <section class="left" aria-label="Saha turu haritası">
+        <div class="map" id="map">
+          <canvas id="cv" aria-label="Kartografik bahçe haritası; numaralı kontrol noktalarına dokunun."></canvas>
+          <div class="ov layerbar" id="layerbar"></div>
+          <div class="ov glass timepill" id="timepill"></div>
+          <div class="ov glass legend" id="legend"></div>
+          <div class="ov glass scale" id="scale"></div>
+          <div id="pins"></div><div id="inspectHost"></div><div id="yearHost"></div>
+        </div>
+      </section>
+      <section class="nb-col" id="nbcol" aria-label="Saha turu">${notebookCol()}</section>
+    </div>
+  </div>`;
+}
+
+/* ---------- Asistan ---------- */
+const QA=[
+  ['Bahçem son iki haftada nasıl?','Canlılık 0,43; iki hafta öncesine göre %5,9 düşük. Bu düşüş ekim ayının mevsim normali içinde. Yaprak suyu %11,9 düştü ve izleniyor; 15 Ekim yağışı bunu toparlayabilir.'],
+  ['Zayıf bölge neden zayıf?','Güney-batı köşe 12 yazın 10\'unda bahçe ortalamasının altında kaldı, yani geçici değil. Uydu nedeni söyleyemez: toprak, sulama dağılımı veya ağaç yaşı olabilir. Önce yerinde bakmanızı ve toprak örneği almanızı öneririm.'],
+  ['Bu hafta ilaçlama için en iyi gün?','Salı 06:47–18:09 en uzun uygun aralık. Perşembe ve cuma yağış nedeniyle uygun değil.']
+];
+function assistantPage(){
+  const turns=QA.slice(0,S.chat+1);
+  return `<div class="page">
+    <aside><button class="btn primary" type="button" id="newChat" style="width:100%">Yeni sohbet</button>
+      <div class="eyebrow" style="margin:18px 0 6px">jlnnlk</div>${QA.map((q,k)=>`<button class="hist-item" type="button" data-q="${k}" aria-current="${k===S.chat}">${q[0]}</button>`).join('')}
+      <div class="eyebrow" style="margin:18px 0 6px">Genel</div><button class="hist-item" type="button" data-toast="Hibe ajanı Faz 1.5'te">Hibe başvurusu için neler gerekir?</button></aside>
+    <section class="chat" aria-label="Sohbet">
+      <div class="thread">
+        <div class="mono small" style="border:1px dashed var(--rule);padding:8px 12px">Önizleme · Asistan Adım 16'da açılır. Aşağıdaki cevaplar bu bahçenin verisinden örnek bloklardır.</div>
+        ${turns.map((t,k)=>`<div class="msg-u">${t[0]}</div><div class="msg-a"><p>${t[1]}</p>
+          ${k===0?`<div class="blocks"><div class="block"><div class="eyebrow">Canlılık · 12 ay</div>${spark(NDVI,240,46,true)}</div><div class="block"><div class="eyebrow">Durum</div><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="mono" style="font-size:28px">90</b><span class="pill good"><i></i>İyi</span></div><div class="reason">−10 · meyve sineği orta</div></div></div>`:''}
+          ${k===1?`<div class="blocks"><div class="block"><div class="eyebrow">Zayıf bölge</div><div class="mono" style="font-size:22px;margin-top:4px;color:var(--warn)">−4,6%</div><div class="small">6,7 da · %79 istikrar</div></div><div class="block" style="display:flex;flex-direction:column;justify-content:space-between"><div class="eyebrow">Eylem</div><button class="btn" type="button" data-cmd="weak">Haritada göster</button></div></div>`:''}
+          <div class="srcs"><span class="eyebrow">Dayandığı veri</span><span class="tag">Sentinel-2 · 9 Eki</span><span class="tag">Open-Meteo · 7 gün</span><span class="tag">Kural: ön değer</span></div></div>`).join('')}
+      </div>
+      <div class="composer"><div class="sugs">${QA.map((q,k)=>`<button type="button" data-q="${k}">${q[0]}</button>`).join('')}<button type="button" data-cmd="weak">Zayıf bölgeleri göster</button></div>
+        <form class="inputrow" id="ask"><label for="askIn" style="position:absolute;width:1px;height:1px;overflow:hidden">Sorunuz</label><input id="askIn" placeholder="Bahçeniz hakkında sorun…" autocomplete="off"><button class="btn primary" type="submit">Sor</button></form></div>
+    </section>
+    <aside class="ctx"><div class="eyebrow">Seçili bahçe</div>
+      <div style="display:flex;gap:12px;align-items:center;margin:10px 0 18px">${gauge(90).replace('width="118" height="118"','width="64" height="64"').replace('class="gauge"','class="gauge" style="width:64px;height:64px;flex:0 0 64px"').replace('<b>90</b>','<b style="font-size:18px">90</b>').replace('<span>/ 100</span>','')}<div><div style="font:500 20px var(--f-display)">jlnnlk</div><div class="small">Limon · 15,1 da</div></div></div>
+      <div class="eyebrow">Cevabın dayandığı veri</div>
+      <div style="display:flex;flex-direction:column;margin-top:8px;border-top:1px solid var(--rule)">${[['Canlılık serisi','78 net görüntü'],['Hava','Open-Meteo · 7 gün'],['Bölgeler','12 yaz · 2015–2026'],['Bahçe kuralları','ön değer']].map(r=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--rule-soft);font-size:12.5px"><span>${r[0]}</span><span class="mono small">${r[1]}</span></div>`).join('')}</div>
+    </aside></div>`;
+}
+function bindAssistant(){
+  $('#ask').addEventListener('submit',e=>{ e.preventDefault(); toast('Serbest soru Adım 16 ile açılıyor'); });
+}
+document.addEventListener('click',e=>{
+  const q=e.target.closest('[data-q]'); if(q){ S.chat=+q.dataset.q; $('#main').innerHTML=assistantPage(); bindAssistant(); return; }
+  if(e.target.closest('#newChat')){ S.chat=0; $('#main').innerHTML=assistantPage(); bindAssistant(); return; }
+  const c=e.target.closest('[data-cmd]'); if(c){ runCmd(c.dataset.cmd); return; }
+});
+
+function soonPage(k){
+  const info={isler:['İşlerim','Ajanlar süreci baştan sona yürütür: hibe dosyası, kalıntı uyumu, sertifika, sigorta ve kredi.','Faz 1.5'],hizmet:['Hizmetler','Drone ilaçlama, budama ve hasat ekibi, laboratuvar analizi ve ziraat mühendisi tek yerden.','Faz 1.5'],pazar:['Pazar','Günlük limon fiyatı, soğuk depo stoku ve satış; girdi ve finansman ortaklarla.','Adım 17']}[k];
+  return `<div class="soonpage"><div class="card">${BOT}<div><div class="eyebrow">${info[2]}</div><h2 class="title" style="margin-top:6px">${info[0]}</h2><p class="lede" style="margin-top:10px">${info[1]}</p><button class="btn" type="button" style="margin-top:16px" data-back>Bahçelere dön</button></div></div></div>`;
+}
+document.addEventListener('click',e=>{ if(e.target.closest('[data-back]')){ S.nav='bahce'; renderAll(); } });
+
+/* ---------- Komut paleti ---------- */
+const CMDS=[
+  ['weak','Zayıf bölgeleri göster','Haritada taralı kesim + Analiz'],
+  ['compare','Geçmişi aç','12 yıl · sezon eğrisi · yıl yıl harita'],
+  ['spray','İlaçlama zamanı','Hava · saat saat uygunluk'],
+  ['defter','Saha turunu aç','Saha Defteri · kontrol noktaları, tuzaklar'],
+  ['change','Değişim haritası','Önceki aya göre fark'],
+  ['ask','Asistana sor','Sohbet sayfası']
+];
+let palIdx=0;
+function openPalette(){
+  $('#layer').innerHTML=`<div class="palette-bg" id="palBg"><div class="palette" role="dialog" aria-label="Komutlar"><label for="palIn" style="position:absolute;width:1px;height:1px;overflow:hidden">Komut ara</label><input id="palIn" placeholder="Ne yapmak istersiniz? Örn. zayıf bölgeleri göster" autocomplete="off"><ul id="palList"></ul></div></div>`;
+  palIdx=0; renderPal(''); $('#palIn').focus();
+  $('#palIn').addEventListener('input',e=>{palIdx=0; renderPal(e.target.value)});
+  $('#palIn').addEventListener('keydown',e=>{ const items=[...document.querySelectorAll('#palList button')];
+    if(e.key==='ArrowDown'){palIdx=Math.min(items.length-1,palIdx+1);renderPal($('#palIn').value);e.preventDefault();}
+    if(e.key==='ArrowUp'){palIdx=Math.max(0,palIdx-1);renderPal($('#palIn').value);e.preventDefault();}
+    if(e.key==='Enter'&&items[palIdx]){items[palIdx].click();}
+    if(e.key==='Escape') closePalette(); });
+  $('#palBg').addEventListener('click',e=>{ if(e.target.id==='palBg') closePalette(); });
+}
+function renderPal(q){
+  const n=q.toLocaleLowerCase('tr'); const list=CMDS.filter(c=>c[1].toLocaleLowerCase('tr').includes(n)||c[2].toLocaleLowerCase('tr').includes(n));
+  $('#palList').innerHTML=list.map((c,k)=>`<li><button type="button" data-cmd="${c[0]}" aria-selected="${k===palIdx}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12H19M13 6L19 12L13 18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>${c[1]}</span><span class="hint">${c[2]}</span></button></li>`).join('') || `<li class="small" style="padding:12px">Komut bulunamadı. Asistana sormak için Enter.</li>`;
+}
+function closePalette(){ $('#layer').innerHTML=''; }
+function runCmd(c){
+  closePalette();
+  const toBahce=()=>{ if(S.nav!=='bahce'){ S.nav='bahce'; renderAll(); } };
+  if(c==='weak'){ toBahce(); S.focusWeak=true; S.layer='ndvi'; S.tab='analiz'; renderGardenBar(); renderPane(); drawMap(); toast('Zayıf kesim haritada taralı gösteriliyor'); }
+  if(c==='compare'){ S.nav='gecmis'; renderAll(); }
+  if(c==='spray'){ toBahce(); S.tab='hava'; renderGardenBar(); renderPane(); }
+  if(c==='defter'){ S.nav='defter'; renderAll(); }
+  if(c==='change'){ toBahce(); S.layer='change'; drawMap(); }
+  if(c==='ask'){ S.nav='asistan'; renderAll(); }
+}
+$('#openCmd').addEventListener('click',openPalette);
+document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); openPalette(); } });
+
+/* ---------- Tema ---------- */
+$('#themeBtn').addEventListener('click',()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; baseKarto=null; baseUydu=null; if(S.nav==='bahce'||S.nav==='defter'){ drawMap(); renderDock(); if(S.nav==='bahce') renderPane(); else refreshNotebook(); } if(S.nav==='gecmis') renderAll(); toast(dark?'Açık tema':'Koyu tema'); });
+
+let toastT=0; function toast(t){ clearTimeout(toastT); let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el);} el.textContent=t; toastT=setTimeout(()=>el.remove(),2200); }
+window.addEventListener('resize',()=>{ if(S.nav==='bahce'||S.nav==='defter') renderDock(); });
+
+renderAll();
+})();
+</script>
