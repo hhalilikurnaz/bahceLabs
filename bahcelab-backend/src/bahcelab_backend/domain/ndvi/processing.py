@@ -48,6 +48,10 @@ class SceneBands:
     transform: Affine
     crs: CRS
     radiometri: str | None = None  # yansıtım dönüşümünün kaynağı (urun-metaverisi | raster-bands | surum-kurali)
+    acilar: Any = None  # SceneAngles (LAI girdisi; yalnız istendiğinde okunur)
+    parite: tuple[int, int] = (0, 0)  # pencerenin (satır, sütun) ofsetinin 2'ye göre kalanı: 20 m blokların hizası
+    isleme_surumu: str | None = None  # s2:processing_baseline (ör. 05.13)
+    sahne_kimligi: str | None = None
 
     @property
     def shape(self) -> tuple[int, int]:

@@ -14,6 +14,9 @@ class Band(StrEnum):
     NIR = "nir"  # geniş yakın kızılötesi (B08, 10 m)
     NIR_NARROW = "nir_narrow"  # dar yakın kızılötesi (B8A, 20 m)
     SWIR1 = "swir1"  # kısa dalga kızılötesi (B11, 20 m)
+    REDEDGE2 = "rededge2"  # kırmızı kenar 2 (B06, 20 m) — LAI girdisi
+    REDEDGE3 = "rededge3"  # kırmızı kenar 3 (B07, 20 m) — LAI girdisi
+    SWIR2 = "swir2"  # kısa dalga kızılötesi 2 (B12, 20 m) — LAI girdisi
 
 
 ALL_ROLES: tuple[str, ...] = tuple(b.value for b in Band)

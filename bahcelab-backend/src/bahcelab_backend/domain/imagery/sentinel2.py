@@ -24,6 +24,7 @@ from rasterio.windows import bounds as window_bounds
 from shapely.geometry import shape
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.imagery.angles import SceneAngles, parse_granule_angles
 from bahcelab_backend.domain.imagery.masks import scl_valid_mask
 from bahcelab_backend.domain.imagery.provider import (
     Capabilities,
@@ -50,7 +51,7 @@ logger = logging.getLogger(__name__)
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 COLLECTION = "sentinel-2-l2a"
 
-# Rol → Sentinel-2 bandı. 10 m: B02 B03 B04 B08 · 20 m (bilinear ile 10 m'ye): B05 B8A B11
+# Rol → Sentinel-2 bandı. 10 m: B02 B03 B04 B08 · 20 m (en yakın komşuyla 10 m ızgarada 2×2 blok): B05 B06 B07 B8A B11 B12
 ROLE_TO_BAND: dict[str, str] = {
     Band.BLUE: "B02",
     Band.GREEN: "B03",
@@ -59,6 +60,9 @@ ROLE_TO_BAND: dict[str, str] = {
     Band.NIR: "B08",
     Band.NIR_NARROW: "B8A",
     Band.SWIR1: "B11",
+    Band.REDEDGE2: "B06",
+    Band.REDEDGE3: "B07",
+    Band.SWIR2: "B12",
 }
 BANDS_10M = ("B02", "B03", "B04", "B08")
 BAND_SCL = "SCL"
@@ -134,6 +138,28 @@ def _baseline(item: Item) -> float | None:
         return float(str(item.properties.get("s2:processing_baseline", "")))
     except ValueError:
         return None
+
+
+_ANGLES_CACHE: dict[str, SceneAngles] = {}
+
+
+def _angles(item: Item) -> SceneAngles | None:
+    """LAI için sahne geometrisi: granül meta verisi (MTD_TL.xml). Okunamazsa None (LAI üretilmez, diğer göstergeler etkilenmez)."""
+    cached = _ANGLES_CACHE.get(item.id)
+    if cached is not None:
+        return cached
+    asset = item.assets.get("granule-metadata")
+    if asset is None:
+        return None
+    try:
+        response = httpx.get(planetary_computer.sign(asset.href), timeout=get_settings().imagery_metadata_timeout_seconds)
+        response.raise_for_status()
+        result = parse_granule_angles(response.text)
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Sahne açıları okunamadı (sahne=%s): %s", item.id, exc)
+        return None
+    _ANGLES_CACHE[item.id] = result
+    return result
 
 
 def _radiometry(item: Item) -> Radiometry:
@@ -252,6 +278,10 @@ def _read_scene(scene: SceneRef, geometry: dict[str, Any], roles: set[str]) -> S
         transform=ref.transform,
         crs=ref.crs,
         radiometri=radiometry.kaynak,
+        acilar=_angles(item) if Band.REDEDGE2 in roles else None,
+        parite=(int(ref.window.row_off) % 2, int(ref.window.col_off) % 2),
+        isleme_surumu=str(item.properties.get("s2:processing_baseline", "")) or None,
+        sahne_kimligi=item.id,
     )
 
 

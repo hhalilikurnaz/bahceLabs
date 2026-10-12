@@ -1,0 +1,60 @@
+<n1:Level-2A_Tile_ID><n1:Geometric_Info><Tile_Angles>
+<Mean_Sun_Angle>
+        <ZENITH_ANGLE unit="deg">44.3382818694258</ZENITH_ANGLE>
+        <AZIMUTH_ANGLE unit="deg">162.672049678164</AZIMUTH_ANGLE>
+      </Mean_Sun_Angle>
+<Mean_Viewing_Incidence_Angle_List>
+        <Mean_Viewing_Incidence_Angle bandId="0">
+          <ZENITH_ANGLE unit="deg">6.31160351165999</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">283.29970704669</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="1">
+          <ZENITH_ANGLE unit="deg">6.00770206800585</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.190678644022</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="2">
+          <ZENITH_ANGLE unit="deg">6.04267904966273</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.400064893843</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="3">
+          <ZENITH_ANGLE unit="deg">6.09517651440722</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.637393390425</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="4">
+          <ZENITH_ANGLE unit="deg">6.12925672085462</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.750787766731</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="5">
+          <ZENITH_ANGLE unit="deg">6.17349435555159</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.851270625037</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="6">
+          <ZENITH_ANGLE unit="deg">6.21035004885117</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">283.023118245592</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="7">
+          <ZENITH_ANGLE unit="deg">6.02640877874366</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.291671034986</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="8">
+          <ZENITH_ANGLE unit="deg">6.25711933412758</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">283.200250355131</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="9">
+          <ZENITH_ANGLE unit="deg">6.36287146382406</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">283.451117983009</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="10">
+          <ZENITH_ANGLE unit="deg">6.09312314630485</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.42589175467</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="11">
+          <ZENITH_ANGLE unit="deg">6.16427639259241</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">282.748940244108</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+        <Mean_Viewing_Incidence_Angle bandId="12">
+          <ZENITH_ANGLE unit="deg">6.2677996258264</ZENITH_ANGLE>
+          <AZIMUTH_ANGLE unit="deg">283.127852048299</AZIMUTH_ANGLE>
+        </Mean_Viewing_Incidence_Angle>
+      </Mean_Viewing_Incidence_Angle_List>
+</Tile_Angles></n1:Geometric_Info></n1:Level-2A_Tile_ID>
