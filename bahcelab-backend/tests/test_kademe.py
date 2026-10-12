@@ -8,6 +8,7 @@ import pytest
 from bahcelab_backend.config import Settings
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro.score import (
+    AktifRisk,
     SceneValue,
     ScoreConfig,
     assess,
@@ -69,10 +70,28 @@ def test_sudden_vigor_drop_names_the_component_that_lowered_the_tier() -> None:
 
 def test_risk_chip_and_cap_explain_themselves() -> None:
     scenes = series(date(2026, 6, 1), [0.62] * 20)
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG, risk_high_count=1)
+    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG, active_risks=[AktifRisk("Meyve sineği", "yuksek")])
     assert result.durum == "izle"  # skor yüksek ama aktif risk var
-    assert next(c for c in result.cipler if c.kod == "risk").seviye != "normal"
+    assert next(c for c in result.cipler if c.kod == "risk").seviye == "belirgin_dusuk"
     assert "risk" in result.kademe_nedeni.lower() and "en fazla" in result.kademe_nedeni
+
+
+def test_medium_pest_risk_names_the_pest_caps_the_tier_and_explains_it() -> None:
+    """Hava sekmesinde meyve sineği «orta» iken Risk çipi «normal», kademe «İyi» kalamaz."""
+    scenes = series(date(2026, 6, 1), [0.62] * 20)
+    kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
+    plain = assess(scenes, **kwargs)
+    result = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "orta")])
+    assert plain.durum == "iyi" and result.durum == "izle"
+    risk = next(c for c in result.cipler if c.kod == "risk")
+    assert risk.seviye == "normalin_alti" and "Meyve sineği · orta" in risk.aciklama
+    assert result.dusuren == "risk"
+    assert "Meyve sineği · orta" in result.kademe_nedeni and "en fazla İzle" in result.kademe_nedeni
+    # düşük risk kademeyi etkilemez; iki risk birlikte adlanır
+    assert assess(scenes, **kwargs, active_risks=[]).durum == "iyi"
+    both = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "orta"), AktifRisk("Kırmızı örümcek", "yuksek")])
+    assert next(c for c in both.cipler if c.kod == "risk").seviye == "belirgin_dusuk"
+    assert "Kırmızı örümcek · yüksek" in both.kademe_nedeni
 
 
 def test_no_data_has_no_tier_chips_or_reason_numbers() -> None:

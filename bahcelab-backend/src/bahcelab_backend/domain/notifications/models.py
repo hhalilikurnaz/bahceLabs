@@ -12,7 +12,7 @@ from sqlalchemy import (
     func,
     true,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bahcelab_backend.database import Base
@@ -59,4 +59,5 @@ class RiskSnapshotModel(Base):
 
     garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
     yuksek_sayisi: Mapped[int] = mapped_column(nullable=False, default=0)
+    aktif: Mapped[list[dict[str, str]]] = mapped_column(JSONB, nullable=False, server_default="[]", default=list)  # [{ad, seviye}] orta ve yüksek riskler
     hesaplama_zamani: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

@@ -45,7 +45,13 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
     sinirlarUste(map)
     const src = map.getSource(SRC) as CanvasSource
     src.play()
-    requestAnimationFrame(() => requestAnimationFrame(() => src.pause()))
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        src.pause()
+        // Performans ölçümü (e2e/performans.spec.ts okur): katman değişiminin ilk karede görünür olduğu an
+        performance.mark('katman-boyandi', { detail: { katman: view.tanim.id, boyamaMs: Math.round(performance.now() - started) } })
+      }),
+    )
     if (import.meta.env.DEV) console.debug(`[harita] katman çizimi ${Math.round(performance.now() - started)} ms`)
   }, [map, styleVersion, view.izgara, view.ramp, view.alan, view.tanim.id, kontur, vurgu, ring]) // eslint-disable-line react-hooks/exhaustive-deps
 

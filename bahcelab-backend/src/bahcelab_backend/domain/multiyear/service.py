@@ -322,7 +322,7 @@ class MultiyearService:
                     net_gun_sayisi=s.net_days if s and y.sahne_tarihleri is not None else None,
                     donem_kapsami=s.period_coverage if s and y.sahne_tarihleri is not None else None, aday_sayisi=y.aday_sayisi,
                     dahil=(y.yil in used) if used is not None else False, elle=y.dahil_elle,
-                    karar_bekliyor=y.uyumsuz and y.dahil_elle is None, varsayilan_dahil=y.korumali or not y.uyumsuz, karar_zamani=y.karar_zamani,
+                    karar_bekliyor=y.uyumsuz and y.dahil_elle is None, varsayilan_dahil=y.korumali or not y.uyumsuz, karar_zamani=y.karar_zamani, karar_notu=y.karar_notu,
                 )
             )
         return out
@@ -394,6 +394,10 @@ class MultiyearService:
                 raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"{choice.yil} yılı yetersiz veri nedeniyle analize eklenemez.")
             years[choice.yil].dahil_elle = choice.dahil
             years[choice.yil].karar_zamani = datetime.now(UTC) if choice.dahil is not None else None  # geri alınca (None) karar silinir
+            if choice.olay_notu is not None:
+                years[choice.yil].karar_notu = choice.olay_notu.strip() or None
+            if choice.dahil is None and choice.olay_notu is None:
+                years[choice.yil].karar_notu = None
         await self.session.commit()
         if (await self.status(garden_id)).durum == "isleniyor":
             return await self.result(garden_id, body.bolge_sayisi)

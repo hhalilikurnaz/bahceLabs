@@ -71,7 +71,7 @@ export function AnalizPaneli({ garden }: { garden: Garden }) {
 
       {sorular.length > 0 && (
         <section aria-label="Uyumsuz yıllar" className="grid gap-2">
-          <h3 className="text-[13px] font-semibold">Karar verilmesi gereken yıllar</h3>
+          <h3 className="text-[13px] font-semibold">Uyumsuz yıllar</h3>
           <ul className="grid gap-2">{sorular.map((y) => <YilSorusu key={y.yil} gardenId={garden.id} yil={y} />)}</ul>
         </section>
       )}

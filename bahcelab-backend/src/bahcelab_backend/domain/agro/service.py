@@ -48,6 +48,7 @@ from bahcelab_backend.domain.agro.score import (
     ScoreConfig,
     Seviye,
     Skor,
+    active_risks_of,
     assess,
 )
 from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
@@ -434,7 +435,7 @@ class AgroService:
         result = assess(
             scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
             weather_severities=weather_levels, today=today, cfg=ScoreConfig.from_settings(self.settings),
-            risk_high_count=sum(1 for r, _, _ in risks if r.seviye == "yuksek" and r.veri_yeterli),
+            active_risks=active_risks_of(risks),
         )
         return result, scenes, weather, risks, irrigation
 

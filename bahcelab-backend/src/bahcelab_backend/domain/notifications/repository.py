@@ -127,17 +127,19 @@ class RiskSnapshotRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def save(self, garden_id: uuid.UUID, high_count: int) -> None:
+    async def save(self, garden_id: uuid.UUID, active: list[dict[str, str]]) -> None:
+        """`active`: [{ad, seviye}] — orta ve yüksek riskler (liste özeti kademeyi bununla hesaplar)."""
         now = datetime.now(UTC)
+        high = sum(1 for r in active if r["seviye"] == "yuksek")
         stmt = (
             insert(RiskSnapshotModel)
-            .values(garden_id=garden_id, yuksek_sayisi=high_count, hesaplama_zamani=now)
-            .on_conflict_do_update(index_elements=["garden_id"], set_={"yuksek_sayisi": high_count, "hesaplama_zamani": now})
+            .values(garden_id=garden_id, yuksek_sayisi=high, aktif=active, hesaplama_zamani=now)
+            .on_conflict_do_update(index_elements=["garden_id"], set_={"yuksek_sayisi": high, "aktif": active, "hesaplama_zamani": now})
         )
         await self.session.execute(stmt)
 
-    async def high_counts(self, garden_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    async def active_risks(self, garden_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[dict[str, str]]]:
         if not garden_ids:
             return {}
         rows = (await self.session.execute(select(RiskSnapshotModel).where(RiskSnapshotModel.garden_id.in_(garden_ids)))).scalars()
-        return {r.garden_id: r.yuksek_sayisi for r in rows}
+        return {r.garden_id: list(r.aktif or []) for r in rows}

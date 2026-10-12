@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { createGarden, newUser } from './yardimcilar'
 
-test('Bugün kartı çiftçi dilinde: tek ilaçlama maddesi, teknik ayrıntı «Ayrıntı» açılırında', async ({ page }) => {
+test('Bugün kartı: ikon · başlık · kısa açıklama · sağda tek eylem', async ({ page }) => {
   await newUser(page)
   const garden = await createGarden(page.request, { ad: 'Bugün Bahçesi', lng: 27.7, lat: 38.7 })
   await page.route('**/api/gardens/*/bugun', (route) =>
@@ -26,11 +26,16 @@ test('Bugün kartı çiftçi dilinde: tek ilaçlama maddesi, teknik ayrıntı «
   const card = page.getByTestId('today-card')
   await expect(card.getByTestId('today-item')).toHaveCount(2)
   const risk = card.locator('[data-kind="zararli_riski"]')
+  await expect(risk).toContainText('Akdeniz meyve sineği')
   await expect(risk).toContainText('Meyve sineği için koşullar uygun – tuzakları kontrol edin.')
   await expect(risk).not.toContainText('GDD')
-  await expect(risk.getByText('kuşak')).toBeHidden() // ayrıntı kapalıyken görünmez
-  await risk.getByText('Ayrıntı').click()
-  await expect(risk.getByText('2. kuşak')).toBeVisible()
+  // Satır = ikon + başlık + kısa açıklama + sağda TEK eylem; «Ayrıntı» ve tekrarlayan «… sekmesine git» bağlantıları yok
+  await expect(risk.getByTestId('today-action')).toHaveCount(1)
+  await expect(risk.getByTestId('today-action')).toHaveText('Hava')
+  await expect(card.getByText('Ayrıntı')).toHaveCount(0)
+  await expect(card.getByText(/sekmesine git/)).toHaveCount(0)
   await expect(card.locator('[data-kind="ilaclama"]')).toContainText('İlaçlama: bugün 07:30–10:00, yarın 07:15–09:00')
-  await expect(card.locator('[data-kind="ilaclama"]').getByTestId('today-detail')).toHaveCount(0)
+  await expect(card.getByTestId('today-action')).toHaveCount(2)
+  await risk.getByTestId('today-action').click()
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}/hava$`))
 })

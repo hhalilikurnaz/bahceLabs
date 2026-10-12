@@ -29,6 +29,39 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     await expect(page.getByTestId('sezon-bandi-bos')).toContainText('9C')
   })
 
+  test('orta zararlı riski varken Risk çipi riski adlandırır, kademe en fazla İzle olur ve neden açıklanır', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Riskli Bahçe', lng: 27.97, lat: 38.97, sideM: 200 })
+    // Arka uç sözleşmesi (pytest: test_medium_pest_risk_on_the_weather_tab_caps_the_tier_and_is_named) ile aynı yanıt biçimi
+    await page.route('**/api/gardens/*/durum', (route) =>
+      route.fulfill({
+        json: {
+          durum: 'izle', etiket: 'İzle', ozet: 'Bahçenizde takip edilmesi gereken bir değişim var.', veri_yeterli: true, veri_yetersiz_nedeni: null,
+          cipler: [
+            { kod: 'agac_gucu', ad: 'Ağaç gücü (NDVI)', seviye: 'normal', aciklama: 'Canlılık, bu dönemin kendi normu ile uyumlu.' },
+            { kod: 'su', ad: 'Su (NDMI)', seviye: 'normal', aciklama: 'Yaprak suyu, bu dönemin kendi normu ile uyumlu.' },
+            { kod: 'risk', ad: 'Risk', seviye: 'normalin_alti', aciklama: 'Zararlı/hastalık risk tahmini: Meyve sineği · orta (teşhis değil, risk tahmini).' },
+          ],
+          nasil: {
+            veri: ['Canlılık (NDVI) · Sentinel-2 10 m'], son_goruntu_tarihi: '2026-10-09',
+            guven: { seviye: 'yuksek', aciklama: 'Geçen yılla karşılaştırıldı.', gecmis_gun: 300, son_goruntu_yasi_gun: 3 },
+            dusuren_bilesen: 'risk', kademe_nedeni: 'Risk normalin altı: Zararlı/hastalık risk tahmini: Meyve sineği · orta. Bu yüzden kademe İzle. Aktif risk (Meyve sineği · orta) olduğu için kademe en fazla İzle olabilir.',
+            esik_durumu: 'ön değer · v1', formul_notu: 'v1: tam formül 9F’de.',
+          },
+          hesaplama_tarihi: '2026-10-12',
+        },
+      }),
+    )
+    await page.goto(`/bahceler/${garden.id}`)
+    const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
+    await expect(risk).toContainText('Meyve sineği · orta')
+    await expect(risk).toHaveAttribute('data-seviye', 'normalin_alti')
+    await expect(page.getByTestId('kademe-ad')).toContainText('İzle')
+    await page.getByText('Nasıl hesaplandı?').click()
+    await expect(page.getByTestId('kademe-nedeni')).toContainText('Meyve sineği · orta')
+    await expect(page.getByTestId('kademe-nedeni')).toContainText('en fazla İzle')
+  })
+
   test('görüntüsü olmayan bahçede «Veri yetersiz» ve nedeni gösterilir', async ({ page }) => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'Boş Durum', lng: 27.91, lat: 38.91 })
@@ -40,7 +73,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
 
 const yil = (y: number, o: Record<string, unknown> = {}) => ({
   yil: y, sahne_sayisi: 12, kismi: false, kapsam: 1, korelasyon: 0.8, uyumsuz: false, uyumsuz_nedeni: null, dahil: true, elle: null,
-  karar_bekliyor: false, varsayilan_dahil: true, karar_zamani: null, yetersiz_veri: false, yetersiz_nedeni: null, net_gun_sayisi: 12, donem_kapsami: 0.92, aday_sayisi: 20, ...o,
+  karar_bekliyor: false, varsayilan_dahil: true, karar_zamani: null, karar_notu: null, yetersiz_veri: false, yetersiz_nedeni: null, net_gun_sayisi: 12, donem_kapsami: 0.92, aday_sayisi: 20, ...o,
 })
 const bolge = (sinif: number, ad: string, extra: Record<string, unknown> = {}) => ({ sinif, ad, alan_m2: 3000 * sinif, alan_dekar: 3 * sinif, pay: sinif / 6, fark_yuzde: (sinif - 2) * 10, istikrar: 0.8, istikrar_sinifi: 'yuksek', kontrol_onerisi: false, ...extra })
 
@@ -48,13 +81,13 @@ test.describe('Analiz sekmesi', () => {
   test('bulgu cümlesi, bölge tablosu, uyumsuz yıl sorusu (karar ve geri al), yetersiz yıl sorulmaz', async ({ page }) => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'Analiz Bahçesi', lng: 27.92, lat: 38.92 })
-    const state = { karar: null as boolean | null }
+    const state = { karar: null as boolean | null, not: null as string | null }
     const result = () => ({
       durum: 'hazir', mesaj: null, bolge_sayisi: 3, versiyon: 1, hesaplama: '2026-10-12T10:00:00Z', yil_araligi: '2017–2026',
       yillar: [
         yil(2015, { sahne_sayisi: 4, kismi: true, yetersiz_veri: true, yetersiz_nedeni: 'Yetersiz veri: 4 net sahne', dahil: false, donem_kapsami: 0.31 }),
         yil(2017), yil(2018),
-        yil(2021, { uyumsuz: true, uyumsuz_nedeni: 'uyumsuz', korelasyon: 0.4, karar_bekliyor: state.karar === null, elle: state.karar, dahil: state.karar ?? false, varsayilan_dahil: false, karar_zamani: state.karar === null ? null : '2026-10-12T10:05:00Z' }),
+        yil(2021, { uyumsuz: true, uyumsuz_nedeni: 'uyumsuz', korelasyon: 0.4, karar_bekliyor: state.karar === null, elle: state.karar, dahil: state.karar ?? false, varsayilan_dahil: false, karar_zamani: state.karar === null ? null : '2026-10-12T10:05:00Z', karar_notu: state.not }),
       ],
       bolgeler: { type: 'FeatureCollection', features: [] },
       ozet: [bolge(1, 'Zayıf', { kontrol_onerisi: true }), bolge(2, 'Orta'), bolge(3, 'Güçlü')],
@@ -62,7 +95,10 @@ test.describe('Analiz sekmesi', () => {
     })
     await page.route('**/bolgeler/cok-yillik/sonuc*', (route) => route.fulfill({ json: result() }))
     await page.route('**/bolgeler/cok-yillik/yillar', async (route) => {
-      state.karar = (route.request().postDataJSON() as { yillar: { dahil: boolean | null }[] }).yillar[0].dahil
+      const secim = (route.request().postDataJSON() as { yillar: { dahil: boolean | null; olay_notu?: string }[] }).yillar[0]
+      state.karar = secim.dahil
+      if (secim.olay_notu !== undefined) state.not = secim.olay_notu || null
+      if (secim.dahil === null) state.not = null
       await route.fulfill({ json: result() })
     })
     await page.goto(`/bahceler/${garden.id}/analiz`)
@@ -82,10 +118,21 @@ test.describe('Analiz sekmesi', () => {
     await expect(y2015).toContainText('kısmi yıl')
     await expect(y2015).toContainText('yetersiz veri')
 
-    await sorular.getByRole('button', { name: 'Hariç tut' }).click()
-    await expect(sorular).toContainText('analizden hariç tutuldu')
+    // Yıl zaten analiz dışında: «Hariç tut» yok; mevcut durum yazılı + tek değiştirme eylemi
+    await expect(sorular.getByTestId('yil-durumu')).toHaveText('analiz dışında')
+    await expect(sorular.getByRole('button', { name: 'Hariç tut' })).toHaveCount(0)
+    await sorular.getByTestId('yil-degistir').click()
+    await expect(sorular.getByTestId('yil-durumu')).toHaveText('analizde')
+    await expect(sorular.getByTestId('yil-degistir')).toHaveText('Analizden çıkar')
+
+    // isteğe bağlı olay notu
+    await sorular.getByRole('button', { name: 'Olay notu ekle' }).click()
+    await sorular.getByLabel('2021 olay notu').fill('Mart’ta sel')
+    await sorular.getByRole('button', { name: 'Kaydet' }).click()
+    await expect(sorular.getByTestId('yil-notu')).toContainText('Mart’ta sel')
+
     await sorular.getByRole('button', { name: 'Geri al' }).click()
-    await expect(sorular).toContainText('Analize dahil edilsin mi?')
+    await expect(sorular.getByTestId('yil-durumu')).toHaveText('analiz dışında')
 
     await expect(page.getByTestId('tum-yillar')).toContainText('4 yılın tamamı')
     await page.getByTestId('tum-yillar').click()

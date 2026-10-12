@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.agro.score import ScoreConfig, assess
+from bahcelab_backend.domain.agro.score import AktifRisk, ScoreConfig, assess
 from bahcelab_backend.domain.agro.service import satellite_severities, scene_values, score_spans
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
@@ -55,12 +55,12 @@ class GardenOverviewService:
         ids = [row.garden.id for row in rows]
         scenes = await self.ndvi.list_scenes_bulk(ids)
         weather_by_garden = await self._cached_weather(ids)
-        risk_high = await self.snapshots.high_counts(ids) if self.snapshots else {}
+        risk_active = await self.snapshots.active_risks(ids) if self.snapshots else {}
 
         now_utc = datetime.now(UTC)
         local = now_utc.astimezone(ZoneInfo(TIMEZONE))
         items = [
-            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_high.get(row.garden.id, 0))
+            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_active.get(row.garden.id, []))
             for row in rows
         ]
         totals = Toplamlar(
@@ -93,7 +93,7 @@ class GardenOverviewService:
         weather: tuple[Forecast, datetime] | None,
         now_utc: datetime,
         local: datetime,
-        high_risks: int = 0,
+        active_risks: list[dict[str, str]] | None = None,
     ) -> BahceOzeti:
         garden = row.garden
         series = index_series(scenes, indeks)
@@ -142,7 +142,7 @@ class GardenOverviewService:
 
         result = assess(
             scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
-            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg, risk_high_count=high_risks,
+            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg, active_risks=[AktifRisk(r["ad"], r["seviye"]) for r in (active_risks or [])],  # type: ignore[arg-type]
         )
         status = result.durum if last_image is not None or result.durum == "dikkat" else "veri_yok"
         return BahceOzeti(

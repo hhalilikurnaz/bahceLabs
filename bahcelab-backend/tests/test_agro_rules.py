@@ -7,6 +7,7 @@ import pytest
 from bahcelab_backend.config import Settings
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro.score import (
+    AktifRisk,
     SceneValue,
     ScoreConfig,
     assess,
@@ -235,8 +236,8 @@ def test_high_pest_risk_lowers_points_and_caps_the_tier_at_watch():
     scenes = series(date(2026, 6, 1), [0.62] * 20)
     kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
     plain = assess(scenes, **kwargs)
-    risky = assess(scenes, **kwargs, risk_high_count=1)
-    heavy = assess(scenes, **kwargs, risk_high_count=9)  # alt sınır 0
+    risky = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "yuksek")])
+    heavy = assess(scenes, **kwargs, active_risks=[AktifRisk(f"Risk {i}", "yuksek") for i in range(9)])  # alt sınır 0
     assert plain.skor == 100 and risky.skor is not None and risky.skor < plain.skor
     weather = next(b for b in risky.bilesenler if b.kod == "hava")
     assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden

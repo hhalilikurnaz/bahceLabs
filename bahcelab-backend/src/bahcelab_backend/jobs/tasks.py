@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.domain.agro.repository import AgroRepository
+from bahcelab_backend.domain.agro.score import active_risks_of
 from bahcelab_backend.domain.agro.service import AgroService
 from bahcelab_backend.domain.auth.models import WorkspaceModel
 from bahcelab_backend.domain.gardens.models import GardenModel
@@ -83,7 +84,7 @@ async def generate_notifications(factory: SessionFactory, provider: WeatherProvi
                     today=agro.current_date(),
                 )
                 created = await NotificationService(NotificationRepository(session, workspace_id)).publish(candidates)
-                await RiskSnapshotRepository(session).save(garden_id, sum(1 for r, _, _ in risks if r.seviye == "yuksek" and r.veri_yeterli))
+                await RiskSnapshotRepository(session).save(garden_id, [{"ad": r.ad, "seviye": r.seviye} for r in active_risks_of(risks)])
                 await session.commit()
             result.isler += 1
             result.uretilen += len(created)

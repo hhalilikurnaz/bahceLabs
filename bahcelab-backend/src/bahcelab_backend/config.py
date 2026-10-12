@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     multiyear_stability_high: float = 0.75
     multiyear_stability_mid: float = 0.5
     multiyear_weak_zone_diff_percent: float = 8.0
-    multiyear_simplify_m: float = 3.0
-    multiyear_smooth_m: float = 4.0
+    multiyear_simplify_m: float = 0.0  # 0 = sadeleştirme yok: bölge çizimi 10 m piksel kenarlarını izler (net piksel ilkesi)
+    multiyear_smooth_m: float = 0.0  # 0 = köşe yumuşatma yok
     multiyear_zone_counts: tuple[int, ...] = (3, 5)
 
     # Hava durumu (Open-Meteo). Ticari kullanımda ücretli plan anahtarı buraya; sağlayıcı değişimi domain/weather/provider.py
@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     score_zero_share: float = 0.30  # bu paydan fazla düşüş 0 puan
     score_alert_points_yellow: int = 50
     score_alert_points_red: int = 0
+    score_risk_penalty_per_medium: int = 10  # orta zararlı/hastalık riski başına hava bileşeninden düşülen puan
     score_risk_penalty_per_high: int = 25  # yüksek zararlı/hastalık riski başına hava bileşeninden düşülen puan (etiketi doğrudan düşürmez)
     score_period_half_window_days: int = 15  # "aynı dönem": geçen yılın ±bu kadar günü
     score_period_min_points: int = 3

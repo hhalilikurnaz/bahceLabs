@@ -149,3 +149,36 @@ test.describe('harita görünümü (9B düzeltmeleri)', () => {
     if (corner && attrib) expect(corner.y + corner.height).toBeLessThanOrEqual(attrib.y + 1) // köşe kutusu telifin altına girmez
   })
 })
+
+test.describe('Bahçeler sayfası', () => {
+  test('haritada tüm bahçeler + liste (ad · ürün · dekar · kademe) + «+ Bahçe ekle»; seçici listesi ve en altta «+ Bahçe ekle»', async ({ page }) => {
+    await newUser(page)
+    const a = await createGarden(page.request, { ad: 'Kuzey Bahçe', lng: 27.8, lat: 38.8, sideM: 150 })
+    await createGarden(page.request, { ad: 'Güney Bahçe', lng: 27.802, lat: 38.798, sideM: 120 })
+    await page.goto('/bahceler')
+    await expect(page.getByTestId('tum-bahceler-harita')).toBeVisible()
+    const rows = page.getByTestId('bahce-satiri')
+    await expect(rows).toHaveCount(2)
+    await expect(rows.first()).toContainText('Limon')
+    await expect(rows.first()).toContainText('da') // dekar
+    await expect(rows.first().getByTestId('bahce-kademe')).toHaveText(/İyi|İzle|Dikkat|Sorun|Veri yok/)
+    await expect(page.getByTestId('komsu-etiketi').first()).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('bahce-ekle')).toHaveText('+ Bahçe ekle')
+
+    await page.getByTestId('bahce-ekle').click()
+    await expect(page).toHaveURL(/\/bahceler\/yeni$/)
+
+    await page.goto(`/bahceler/${a.id}`)
+    await page.getByTestId('bahce-secici').click()
+    const list = page.getByRole('listbox', { name: 'Bahçeler' })
+    await expect(list.getByRole('option')).toHaveCount(2)
+    const last = list.locator('> *').last()
+    await expect(last).toHaveText(/Bahçe ekle/) // en altta
+  })
+
+  test('bahçe yokken mevcut boş durum gösterilir', async ({ page }) => {
+    await newUser(page)
+    await page.goto('/bahceler')
+    await expect(page.getByTestId('bahce-yok')).toContainText('İlk bahçenizi ekleyin')
+  })
+})

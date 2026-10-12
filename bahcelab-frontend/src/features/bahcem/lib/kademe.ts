@@ -16,3 +16,6 @@ export const SEVIYE_META = {
   belirgin_dusuk: { ad: 'belirgin düşük', isaret: '■', renk: 'var(--color-app-danger)' },
 } as const
 export type SeviyeKodu = keyof typeof SEVIYE_META
+
+/** Harita çokgen dolguları için sabit renkler (MapLibre CSS değişkeni okumaz); `KADEME_META.renk` ile aynı tonlar. */
+export const KADEME_HEX: Record<Kademe | 'veri_yok', string> = { iyi: '#2d6a4a', izle: '#8a6a0c', dikkat: '#a24f1b', sorun: '#a8322a', veri_yok: '#687068' }

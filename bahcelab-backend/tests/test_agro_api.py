@@ -194,7 +194,13 @@ async def test_status_without_images_is_insufficient_data(user_client: AsyncClie
     assert data["nasil"]["guven"]["seviye"] == "dusuk" and data["nasil"]["son_goruntu_tarihi"] is None
 
 
-async def test_status_scores_against_the_gardens_own_history(user_client: AsyncClient, factory, provider):
+async def test_status_scores_against_the_gardens_own_history(user_client: AsyncClient, factory, provider, monkeypatch):
+    from bahcelab_backend.domain.agro.service import AgroService
+
+    async def no_risks(self, garden_row, history, weather, today):
+        return []  # aktif risk yok: kademe yalnız bahçenin kendi geçmişine bakar
+
+    monkeypatch.setattr(AgroService, "_compute_risks", no_risks)
     garden = await new_garden(user_client)
     await seed_scenes(factory, garden["id"])
     data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
@@ -258,3 +264,31 @@ async def test_today_survives_weather_outage(user_client: AsyncClient, factory, 
     provider.offline = True
     response = await user_client.get(f"/gardens/{garden['id']}/bugun")
     assert response.status_code == 200 and response.json()["maddeler"]
+
+
+async def test_medium_pest_risk_on_the_weather_tab_caps_the_tier_and_is_named(user_client: AsyncClient, factory, provider, monkeypatch):
+    """Hava'da meyve sineği «orta» iken Risk çipi «normal», kademe «İyi» kalmaz; neden açıkça yazılır."""
+    from datetime import timedelta
+
+    from bahcelab_backend.domain.agro.risks import RiskSonucu
+    from bahcelab_backend.domain.agro.service import AgroService
+
+    async def no_risks(self, garden_row, history, weather, today):
+        return []
+
+    monkeypatch.setattr(AgroService, "_compute_risks", no_risks)
+    garden = await new_garden(user_client)
+    await seed_scenes(factory, garden["id"])
+    before = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
+    assert before["durum"] == "iyi"
+
+    async def medium_risk(self, garden_row, history, weather, today):
+        result = RiskSonucu("akdeniz_meyve_sinegi", "Meyve sineği", "orta", "gerekçe", today, today + timedelta(days=7), True)
+        return [(result, None, None)]
+
+    monkeypatch.setattr(AgroService, "_compute_risks", medium_risk)
+    after = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
+    risk = next(c for c in after["cipler"] if c["kod"] == "risk")
+    assert after["durum"] == "izle" and risk["seviye"] == "normalin_alti" and "Meyve sineği · orta" in risk["aciklama"]
+    assert after["nasil"]["dusuren_bilesen"] == "risk" and "en fazla İzle" in after["nasil"]["kademe_nedeni"]
+    assert "skor" not in after

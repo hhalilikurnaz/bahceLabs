@@ -101,6 +101,11 @@ test('Hava sekmesi: sulama ve zararlı riski kartları ön değer uyarısı ile 
   await expect(irrigation).toBeVisible()
   await expect(irrigation).toContainText('reçetesi değildir')
   await expect(irrigation.getByTestId('rule-badge').first()).toContainText(/ön değer/i)
+  // sıfır ve boş değerler gösterilmez; sistem seçilmediyse tek eylem
+  await expect(irrigation).not.toContainText('0 ton')
+  await expect(irrigation).not.toContainText('Sistem verimliliği')
+  await expect(irrigation.getByTestId('irrigation-sentence')).toBeVisible()
+  await expect(irrigation.getByRole('button', { name: 'Sulama sistemi seçin' })).toBeVisible()
 
   const risks = page.getByTestId('risks-card')
   await expect(risks).toBeVisible()

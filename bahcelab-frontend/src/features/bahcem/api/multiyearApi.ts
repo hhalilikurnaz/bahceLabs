@@ -16,6 +16,7 @@ export interface MultiyearYear {
   /** Karar verilmezse analizde olur mu (son iki yıl: evet) */
   varsayilan_dahil: boolean
   karar_zamani: string | null
+  karar_notu: string | null
   /** Net sahne/dönem kapsamı eşiğin altında: kompozitte görünür, analize girmez */
   yetersiz_veri: boolean
   yetersiz_nedeni: string | null
@@ -66,7 +67,7 @@ export function useMultiyear(gardenId: string | null) {
 export function useYearDecision(gardenId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (choice: { yil: number; dahil: boolean | null }) =>
+    mutationFn: (choice: { yil: number; dahil: boolean | null; olay_notu?: string }) =>
       apiRequest<MultiyearResult>(`/gardens/${gardenId}/bolgeler/cok-yillik/yillar`, { method: 'PATCH', body: JSON.stringify({ yillar: [choice], bolge_sayisi: 3 }) }),
     onSuccess: (result) => client.setQueryData(multiyearKey(gardenId), result),
   })

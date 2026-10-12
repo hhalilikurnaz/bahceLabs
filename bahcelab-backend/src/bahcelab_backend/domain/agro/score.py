@@ -9,12 +9,14 @@ türetilir; skor ARAYÜZE ÇIKMAZ. Aktif risk (uyarı ya da yüksek zararlı ris
 from __future__ import annotations
 
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
 
 from bahcelab_backend.config import Settings, get_settings
 from bahcelab_backend.domain.agro.catalog import load_catalog
+from bahcelab_backend.domain.agro.risks import RiskSonucu
 
 Durum = Literal["iyi", "izle", "dikkat", "sorun", "veri_yok"]
 BilesenSeviyesi = Literal["normal", "normalin_alti", "belirgin_dusuk"]
@@ -41,6 +43,7 @@ class ScoreConfig:
     tolerance_share: float
     zero_share: float
     alert_points: dict[str, int]
+    risk_penalty_per_medium: int
     risk_penalty_per_high: int
     period_half_window_days: int
     period_min_points: int
@@ -70,6 +73,7 @@ class ScoreConfig:
             tolerance_share=s.score_tolerance_share,
             zero_share=s.score_zero_share,
             alert_points={"sari": s.score_alert_points_yellow, "kirmizi": s.score_alert_points_red},
+            risk_penalty_per_medium=s.score_risk_penalty_per_medium,
             risk_penalty_per_high=s.score_risk_penalty_per_high,
             period_half_window_days=s.score_period_half_window_days,
             period_min_points=s.score_period_min_points,
@@ -105,6 +109,18 @@ class Guven:
     aciklama: str
     gecmis_gun: int
     son_goruntu_yasi_gun: int | None
+
+
+@dataclass(frozen=True)
+class AktifRisk:
+    """Zararlı/hastalık risk motorunun orta ya da yüksek çıkardığı risk (düşük riskler aktif sayılmaz)."""
+
+    ad: str
+    seviye: Literal["orta", "yuksek"]
+
+    @property
+    def metin(self) -> str:
+        return f"{self.ad} · {'yüksek' if self.seviye == 'yuksek' else 'orta'}"
 
 
 @dataclass(frozen=True)
@@ -210,9 +226,9 @@ def alerts_component(severities: list[Seviye], cfg: ScoreConfig, *, has_data: bo
     return Bilesen("uyarilar", name, cfg.alert_points[worst], weight, True, reason)
 
 
-def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risk_high: int = 0) -> Bilesen:
-    """Hava riskleri: don/sıcak uyarıları + yüksek zararlı/hastalık riski (risk başına puan düşer; etiketi doğrudan düşürmez).
-    `severities=None`: hava bilgisi alınamadı (bileşen dışarıda kalır)."""
+def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risks: list[AktifRisk] | None = None) -> Bilesen:
+    """Hava riskleri: don/sıcak uyarıları + zararlı/hastalık risk motoru (orta ve yüksek riskler puanı düşürür; kademeyi
+    «aktif risk» kuralı sınırlar). `severities=None`: hava bilgisi alınamadı (bileşen dışarıda kalır)."""
     name, weight = COMPONENT_NAMES["hava"], cfg.weights["hava"]
     if severities is None:
         return Bilesen("hava", name, None, weight, False, "Hava bilgisi alınamadığından değerlendirilemedi.")
@@ -222,11 +238,13 @@ def weather_component(severities: list[Seviye] | None, cfg: ScoreConfig, risk_hi
         worst: Seviye = "kirmizi" if "kirmizi" in severities else "sari"
         base = cfg.alert_points[worst]
         parts.append("Don ya da aşırı sıcak için kırmızı uyarı var." if worst == "kirmizi" else "Don ya da sıcak için sarı uyarı var.")
-    if risk_high > 0:
-        base = max(0, base - cfg.risk_penalty_per_high * risk_high)
-        parts.append(f"{risk_high} zararlı/hastalık için yüksek risk tahmini var (teşhis değil, risk tahmini).")
+    active = risks or []
+    if active:
+        penalty = sum(cfg.risk_penalty_per_high if r.seviye == "yuksek" else cfg.risk_penalty_per_medium for r in active)
+        base = max(0, base - penalty)
+        parts.append(f"Zararlı/hastalık risk tahmini: {', '.join(r.metin for r in active)} (teşhis değil, risk tahmini).")
     if not parts:
-        parts.append("Önümüzdeki günlerde don, aşırı sıcak ya da yüksek zararlı riski görünmüyor.")
+        parts.append("Önümüzdeki günlerde don, aşırı sıcak ya da zararlı/hastalık riski görünmüyor.")
     return Bilesen("hava", name, base, weight, True, " ".join(parts))
 
 
@@ -240,6 +258,11 @@ def label_from_score(score: int, severities: list[Seviye], cfg: ScoreConfig, *, 
     if (severities or risk_active) and label == "iyi":
         return "izle"
     return label
+
+
+def active_risks_of(risks: Sequence[tuple[RiskSonucu, object, object]]) -> list[AktifRisk]:
+    """Risk motoru çıktısından orta ve yüksek (veri yeterli) riskleri alır; düşük riskler aktif sayılmaz."""
+    return [AktifRisk(r.ad, r.seviye) for r, _, _ in risks if r.veri_yeterli and r.seviye in ("orta", "yuksek")]
 
 
 def derive_status(
@@ -302,20 +325,26 @@ def _level(points: int | None, cfg: ScoreConfig) -> BilesenSeviyesi | None:
     return "normal" if points >= cfg.component_normal_min else "belirgin_dusuk" if points <= cfg.component_low_max else "normalin_alti"
 
 
-def build_chips(components: list[Bilesen], cfg: ScoreConfig) -> list[Cip]:
+def build_chips(components: list[Bilesen], cfg: ScoreConfig, risks: list[AktifRisk]) -> list[Cip]:
     by = {c.kod: c for c in components}
-    risk_parts = [c for c in (by.get("uyarilar"), by.get("hava")) if c is not None and c.kullanilabilir and c.puan is not None]
-    risk_points = min((c.puan for c in risk_parts if c.puan is not None), default=None)
-    risk_reason = next((c.neden for c in sorted(risk_parts, key=lambda c: c.puan or 0)), "Uyarı ve risk değerlendirilemedi.")
     vigor, water = by.get("canlilik"), by.get("yaprak_suyu")
+    alert_parts = [c for c in (by.get("uyarilar"), by.get("hava")) if c is not None and c.kullanilabilir and c.puan is not None]
+    risk_points = min((c.puan for c in alert_parts if c.puan is not None), default=None)
+    reasons = [c.neden for c in sorted(alert_parts, key=lambda c: c.puan or 0) if (c.puan or 0) < 100]
+    risk_reason = " ".join(reasons) or next((c.neden for c in alert_parts), "Uyarı ve risk değerlendirilemedi.")
+    risk_level = _level(risk_points, cfg)
+    if risks:  # Risk çipi zararlı/hastalık motorunu da kapsar: «Meyve sineği · orta» (puandan bağımsız: orta ve üstü = normalin altı)
+        by_risk: BilesenSeviyesi = "belirgin_dusuk" if any(r.seviye == "yuksek" for r in risks) else "normalin_alti"
+        worse: dict[str | None, int] = {None: -1, "normal": 0, "normalin_alti": 1, "belirgin_dusuk": 2}
+        risk_level = by_risk if worse[by_risk] >= worse[risk_level] else risk_level
     return [
         Cip("agac_gucu", CIP_ADLARI["agac_gucu"], _level(vigor.puan if vigor and vigor.kullanilabilir else None, cfg), vigor.neden if vigor else ""),
         Cip("su", CIP_ADLARI["su"], _level(water.puan if water and water.kullanilabilir else None, cfg), water.neden if water else ""),
-        Cip("risk", CIP_ADLARI["risk"], _level(risk_points, cfg), risk_reason),
+        Cip("risk", CIP_ADLARI["risk"], risk_level, risk_reason),
     ]
 
 
-def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool) -> tuple[str, str | None]:
+def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool, risks: list[AktifRisk] | None = None) -> tuple[str, str | None]:
     """«Nasıl hesaplandı?»: hangi bileşenin kademeyi düşürdüğü (sayı yok). Dönüş: (metin, düşüren çip kodu)."""
     if durum == "veri_yok":
         return "Kademe için yeterli veri yok.", None
@@ -327,7 +356,8 @@ def explain_tier(durum: Durum, chips: list[Cip], risk_capped: bool) -> tuple[str
     if lowered is not None:
         parts.append(f"{lowered.ad} {SEVIYE_ADLARI[lowered.seviye or 'normal']}: {lowered.aciklama} Bu yüzden kademe {name}.")
     if risk_capped:
-        parts.append("Aktif risk olduğu için kademe en fazla İzle olabilir.")
+        names = f" ({', '.join(r.metin for r in risks)})" if risks else ""
+        parts.append(f"Aktif risk{names} olduğu için kademe en fazla İzle olabilir.")
     if not parts:
         parts.append("Ağaç gücü, su ve risk normal; kademe İyi." if durum == "iyi" else f"Kademe {name}.")
     return " ".join(parts), (lowered.kod if lowered is not None else None)
@@ -350,17 +380,18 @@ def assess(
     today: date,
     cfg: ScoreConfig | None = None,
     extra_components: list[Bilesen] | None = None,
-    risk_high_count: int = 0,
+    active_risks: list[AktifRisk] | None = None,
 ) -> Skor:
     """Skor ve dökümü üretir. `scenes` bulutsuz sahnelerdir (tarih sıralı olması gerekmez)."""
     cfg = cfg or ScoreConfig.from_settings()
     ordered = sorted(scenes, key=lambda s: s.tarih)
-    risk_active = risk_high_count > 0
+    risks = active_risks or []
+    risk_active = bool(risks)
 
     def result(durum: Durum, score: int | None, components: list[Bilesen], trust: Guven, sufficient: bool, reason: str | None) -> Skor:
-        chips = build_chips(components, cfg)
+        chips = build_chips(components, cfg, risks)
         capped = score is not None and durum == "izle" and label_from_score(score, [], cfg) == "iyi"  # kademeyi yalnız risk düşürdü
-        text, lowered = explain_tier(durum, chips, capped)
+        text, lowered = explain_tier(durum, chips, capped, risks)
         return Skor(durum, score, components, trust, summary_sentence(durum), sufficient, reason, chips, text, lowered)
 
     if not ordered:
@@ -382,7 +413,7 @@ def assess(
     vigor = index_component("canlilik", series["canlilik"], spans["ndvi"], latest, cfg)
     water = index_component("yaprak_suyu", series["yaprak_suyu"], spans["ndmi"], latest, cfg)
     alerts = alerts_component(sat_severities, cfg, has_data=True)
-    weather = weather_component(weather_severities, cfg, risk_high_count)
+    weather = weather_component(weather_severities, cfg, risks)
     components = [vigor, water, alerts, weather, *(extra_components or [])]
 
     base = baseline([(d, v) for d, v in series["canlilik"] if d < latest], latest, cfg)

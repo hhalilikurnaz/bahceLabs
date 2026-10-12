@@ -1,25 +1,12 @@
 import { useEffect } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Skeleton } from '@/components/ui'
 import { useGardens } from '../api/useGardens'
 import { useToast } from '../components/layout/toastContext'
-import { BosDurum } from '../kabuk/BosDurum'
-import { GARDEN_TAB_LABELS, NEW_GARDEN_PATH, gardenPath, isGardenPage, isGardenTab, type GardenPage } from '../lib/routes'
+import { GARDEN_TAB_LABELS, gardenPath, isGardenPage, isGardenTab, type GardenPage } from '../lib/routes'
 import { BahceCubugu } from './BahceCubugu'
 import { CalismaAlani } from './CalismaAlani'
 import { DefterSayfasi, GecmisSayfasi } from './TamSayfalar'
-
-/** `/bahceler`: ilk bahçeye yönlenir; bahçe yoksa ekleme davetiyesi. */
-export function BahcelerGiris() {
-  const { data, isLoading } = useGardens()
-  if (isLoading) return <Skeleton className="m-6 h-40" aria-label="Bahçeler yükleniyor" />
-  if (data && data.length > 0) return <Navigate to={gardenPath(data[0].id)} replace />
-  return (
-    <BosDurum gravur="agac" baslik="İlk bahçenizi ekleyin" fayda="Sınırı haritada çizin ya da KML/KMZ/GeoJSON dosyası yükleyin; uydu görüntüleri birkaç dakikada işlenir." testId="bahce-yok">
-      <Link to={NEW_GARDEN_PATH} className="inline-flex h-10 items-center rounded-md bg-app-primary px-4 text-[14px] font-semibold text-app-on-primary">Bahçe ekle</Link>
-    </BosDurum>
-  )
-}
 
 /** `/bahceler/:id[/:sekme|gecmis|defter]` */
 export function BahceSayfasi() {

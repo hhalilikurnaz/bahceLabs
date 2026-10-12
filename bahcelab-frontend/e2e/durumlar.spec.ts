@@ -5,7 +5,7 @@ test('ağ kesilince uyarı çıkar, bağlantı gelince kapanır', async ({ page,
   await newUser(page)
   await createGarden(page.request, { ad: 'Ağ Testi', lng: 27.7, lat: 38.7 })
   await page.goto('/bahceler')
-  await expect(page.getByTestId('bahce-secici')).toBeVisible()
+  await expect(page.getByTestId('tum-bahceler')).toBeVisible()
 
   await context.setOffline(true)
   await expect(page.getByTestId('offline-banner')).toContainText('İnternet bağlantısı yok')

@@ -307,6 +307,12 @@ async def test_incompatible_year_is_flagged_and_user_can_toggle_it(user_client: 
         and out["versiyon"] == 3
     )
 
+    # isteğe bağlı olay notu: karara eklenir, boş metin siler
+    noted = (await user_client.patch(url(garden["id"], "/yillar"), json={"yillar": [{"yil": 2021, "dahil": True, "olay_notu": "Sel oldu"}]})).json()
+    assert next(y for y in noted["yillar"] if y["yil"] == 2021)["karar_notu"] == "Sel oldu"
+    cleared = (await user_client.patch(url(garden["id"], "/yillar"), json={"yillar": [{"yil": 2021, "dahil": True, "olay_notu": " "}]})).json()
+    assert next(y for y in cleared["yillar"] if y["yil"] == 2021)["karar_notu"] is None
+
     # null = otomatiğe dön
     auto = (
         await user_client.patch(
@@ -471,6 +477,22 @@ async def test_completion_notification_is_published_once(user_client: AsyncClien
     assert (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()[
         "toplam"
     ] == 1
+
+
+async def test_reprocessing_the_same_analysis_does_not_notify_again(user_client: AsyncClient, fake, factory):
+    """Aynı bahçe ve aynı yıl aralığı için analiz yeniden kurulsa da «çok yıllık analiz hazır» tek kez görünür."""
+    from sqlalchemy import text
+
+    garden = await new_garden(user_client)
+    gid = uuid.UUID(garden["id"])
+    await user_client.post(url(garden["id"]))
+    for _ in range(2):  # sınır özeti değişir → tüm yıllar yeniden işlenir → analiz yeniden hazırlanır
+        async with factory() as session:
+            await session.execute(text("UPDATE multiyear_runs SET geometry_hash = 'eski', updated_at = now() WHERE garden_id = :g"), {"g": gid})
+            await session.commit()
+        await user_client.post(url(garden["id"]))
+    notes = (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()
+    assert notes["toplam"] == 1
 
 
 # ----------------------------------------------------------------------------- saf birimler

@@ -44,6 +44,7 @@ class YilBilgisi(BaseModel):
     karar_bekliyor: bool = False  # uyumsuz ve kullanıcı henüz karar vermedi
     varsayilan_dahil: bool = False  # karar verilmezse analizde olur mu (son iki yıl: evet)
     karar_zamani: datetime | None = None
+    karar_notu: str | None = None
     yetersiz_veri: bool = False  # net sahne/dönem kapsamı eşiğin altında: kompozitte görünür, analize girmez, uyumsuzluk sorulmaz
     yetersiz_nedeni: str | None = None
     net_gun_sayisi: int | None = None
@@ -85,6 +86,7 @@ class CokYillikSonuc(BaseModel):
 class YilSecimi(BaseModel):
     yil: int
     dahil: bool | None = Field(description="true/false = elle seçim, null = otomatiğe dön")
+    olay_notu: str | None = Field(default=None, max_length=300, description="İsteğe bağlı olay notu; verilmezse mevcut not korunur, boş metin notu siler")
 
 
 class YillarGuncelle(BaseModel):

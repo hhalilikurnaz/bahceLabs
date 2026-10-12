@@ -65,6 +65,7 @@ class MultiyearYearModel(Base):
     korelasyon: Mapped[float | None] = mapped_column(Float, nullable=True)
     uyumsuz_nedeni: Mapped[str | None] = mapped_column(Text, nullable=True)
     korumali: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # uyumsuz ama son iki yıldan: varsayılan olarak analizde kalır
+    karar_notu: Mapped[str | None] = mapped_column(Text, nullable=True)  # isteğe bağlı olay notu (sel, budama, söküm…)
     karar_zamani: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # kullanıcı dahil/hariç kararı verdiği an
     sahne_tarihleri: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)  # kompozite giren net sahnelerin tarihleri (ISO)
     yetersiz_veri: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # net sahne/dönem kapsamı eşiğin altında

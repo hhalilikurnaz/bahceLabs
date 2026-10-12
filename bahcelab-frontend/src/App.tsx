@@ -8,7 +8,7 @@ import { LandingPage } from '@/features/marketing/pages/LandingPage'
 // Rota bazlı kod bölme: harita çalışma alanı (MapLibre), planlama ve blog yalnızca açılınca yüklenir
 const uygulama = () => import('@/features/bahcem/BahcelerRotalari')
 const UygulamaKabugu = lazy(() => uygulama().then((m) => ({ default: m.UygulamaKabugu })))
-const BahcelerGiris = lazy(() => uygulama().then((m) => ({ default: m.BahcelerGiris })))
+const TumBahceler = lazy(() => uygulama().then((m) => ({ default: m.TumBahceler })))
 const BahceSayfasi = lazy(() => uygulama().then((m) => ({ default: m.BahceSayfasi })))
 const EklemeSayfasi = lazy(() => uygulama().then((m) => ({ default: m.EklemeSayfasi })))
 const AsistanSayfasi = lazy(() => uygulama().then((m) => ({ default: m.AsistanSayfasi })))
@@ -59,7 +59,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/bahceler" element={<BahcelerGiris />} />
+        <Route path="/bahceler" element={<TumBahceler />} />
         <Route path="/bahceler/yeni" element={<EklemeSayfasi />} />
         <Route path="/bahceler/:id" element={<BahceSayfasi />} />
         <Route path="/bahceler/:id/:sekme" element={<BahceSayfasi />} />

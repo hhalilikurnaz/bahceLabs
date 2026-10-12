@@ -8,7 +8,9 @@ test.beforeEach(async ({ page }) => {
 test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışır', async ({ page }) => {
   const garden = await createGarden(page.request, { ad: 'Rota Bahçesi', lng: 27.5, lat: 38.5 })
   await page.goto('/bahceler')
-  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`)) // ilk bahçeye yönlenir
+  await expect(page.getByTestId('tum-bahceler')).toBeVisible() // tüm bahçeler: harita + liste
+  await page.getByTestId('bahce-satiri').filter({ hasText: 'Rota Bahçesi' }).click()
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
   await expect(page.getByTestId('bahce-secici')).toContainText('Rota Bahçesi')
 
   await page.getByRole('tab', { name: 'Analiz' }).click()
@@ -52,7 +54,7 @@ test('eski /bahcem adresleri yeni rotalara yönlenir', async ({ page }) => {
   await page.goto(`/bahcem/${garden.id}/hava`)
   await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}/hava$`))
   await page.goto('/bahcem')
-  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
+  await expect(page).toHaveURL(/\/bahceler$/)
 })
 
 test('üst gezinme: «Faz 1.5 / Adım 17» bölümleri; planlama rotası kapalı; Copilot düğmesi yok; ayarlar', async ({ page }) => {

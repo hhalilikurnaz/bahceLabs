@@ -68,14 +68,15 @@ class YearRunner:
                 for k in self.settings.multiyear_zone_counts:
                     await service.compute(garden_id, k)
                 run = await repo.get_run(garden_id)
-                stamp = run.updated_at.isoformat(timespec="seconds") if run else ""
+                # Olay = «bu bahçenin bu yıl aralığı için analizi hazır»; yeniden işleme aynı bildirimi çoğaltmaz
+                scope = f"{run.baslangic_yili}-{run.bitis_yili}" if run else ""
                 used = sum(1 for y in years if y.durum == "tamam")
                 await NotificationService(NotificationRepository(session, workspace_id)).publish(
                     [
                         Candidate(
                             garden_id, "cok_yillik", "bilgi", f"{name}: çok yıllık analiz hazır",
                             f"{used} yılın uydu görüntüsüyle ağaç gücü bölgeleri çıkarıldı. Analiz sekmesinden bakın.", "analiz",
-                            f"cok-yillik:{garden_id}:{stamp}",
+                            f"cok-yillik:{garden_id}:{scope}",
                         )
                     ]
                 )
