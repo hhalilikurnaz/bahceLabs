@@ -36,7 +36,7 @@ async function audit(page: Page, options: { touch: boolean }): Promise<Issue[]> 
         const r = el.getBoundingClientRect()
         const inline = el.tagName === 'A' && el.closest('p,li,span') && getComputedStyle(el).display === 'inline'
         const sr = el.classList.contains('sr-only') || (el instanceof HTMLInputElement && el.type === 'checkbox')
-        const attribution = el.closest('[data-testid="map-attribution"]')
+        const attribution = el.closest('.maplibregl-ctrl-attrib')
         if (!inline && !sr && !attribution && (r.height < 43.5 || r.width < 43.5) && !(el.tagName === 'A' && r.height >= 43.5)) {
           issues.push({ kind: 'hedef-küçük', detail: `${describe(el)} ${Math.round(r.width)}×${Math.round(r.height)} "${nameOf(el).slice(0, 24)}"` })
         }
@@ -76,41 +76,39 @@ test('giriş sayfası: adlar, başlık, odak göstergesi', async ({ page }) => {
   expect(await focusIndicators(page, 8)).toEqual([])
 })
 
-test('bahçe ekranı (masaüstü): adlar, odak göstergesi, etiketli harita denetimleri', async ({ page }) => {
+test('çalışma alanı (masaüstü): adlar, odak göstergesi, etiketli harita denetimleri', async ({ page }) => {
   await newUser(page)
   const g = await createGarden(page.request, { ad: 'Erişim', lng: 27.5, lat: 38.5, sideM: 200 })
   seedScenes(g.id)
-  await page.goto(`/bahcem/${g.id}/durum`)
-  await expect(page.getByTestId('map-toolbar')).toBeVisible({ timeout: 30_000 })
-  for (const name of ['Yakınlaştır', 'Uzaklaştır', 'Konumuma git', 'Katmanlar', 'Görünüm ayarları', 'Copilot']) {
-    await expect(page.getByRole('button', { name })).toBeVisible()
+  await page.goto(`/bahceler/${g.id}`)
+  await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
+  for (const name of ['Yakınlaştır', 'Uzaklaştır', 'Bahçeye dön', 'Önceki görüntü', 'Katman opaklığı']) {
+    await expect(page.getByRole(name === 'Katman opaklığı' ? 'slider' : 'button', { name })).toBeVisible()
   }
   expect(await audit(page, { touch: false })).toEqual([])
   expect(await focusIndicators(page, 40)).toEqual([])
 })
 
-test('arşiv sayfası: adlar ve odak', async ({ page }) => {
+test('geçmiş ve saha defteri sayfaları: adlar ve odak', async ({ page }) => {
   await newUser(page)
-  const g = await createGarden(page.request, { ad: 'Erişim Arşiv', lng: 27.55, lat: 38.55, sideM: 200 })
-  seedScenes(g.id)
-  await page.goto(`/bahcem/${g.id}/arsiv?parametre=ndvi`)
-  await expect(page.getByTestId('archive-thumb').first()).toBeVisible({ timeout: 30_000 })
-  expect(await audit(page, { touch: false })).toEqual([])
-  expect(await focusIndicators(page, 30)).toEqual([])
+  const g = await createGarden(page.request, { ad: 'Erişim Sayfa', lng: 27.55, lat: 38.55, sideM: 200 })
+  for (const yol of ['gecmis', 'defter']) {
+    await page.goto(`/bahceler/${g.id}/${yol}`)
+    await expect(page.getByTestId(yol === 'gecmis' ? 'bos-gecmis' : 'bos-defter')).toBeVisible()
+    expect(await audit(page, { touch: false })).toEqual([])
+    expect(await focusIndicators(page, 20)).toEqual([])
+  }
 })
 
-test.describe('mobil 375 px', () => {
-  test.use({ viewport: { width: 375, height: 812 } })
+test.describe('mobil 390 px', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
 
-  test('dokunma hedefleri ≥ 44 px ve adlar tam (liste, bahçe, arşiv)', async ({ page }) => {
+  test('dokunma hedefleri ≥ 44 px ve adlar tam (çalışma alanı)', async ({ page }) => {
     await newUser(page)
     const g = await createGarden(page.request, { ad: 'Mobil Erişim', lng: 27.6, lat: 38.6, sideM: 200 })
     seedScenes(g.id)
-    await page.goto(`/bahcem/${g.id}/durum`)
-    await expect(page.getByTestId('summary-cards')).toBeVisible({ timeout: 30_000 })
-    expect(await audit(page, { touch: true })).toEqual([])
-    await page.goto(`/bahcem/${g.id}/arsiv?parametre=ndvi`)
-    await expect(page.getByTestId('archive-viewer')).toBeVisible({ timeout: 30_000 })
+    await page.goto(`/bahceler/${g.id}`)
+    await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
     expect(await audit(page, { touch: true })).toEqual([])
   })
 })

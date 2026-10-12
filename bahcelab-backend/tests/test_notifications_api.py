@@ -92,7 +92,7 @@ async def test_job_creates_notifications_and_a_second_run_creates_none(user_clie
     assert first.hata == 0 and first.uretilen >= 1
     data = await listing(user_client)
     frost = next(n for n in data["ogeler"] if n["tur"] == "hava_don")
-    assert frost["oncelik"] in ("kritik", "uyari") and frost["baglanti"] == f"/bahcem/{garden['id']}/hava"
+    assert frost["oncelik"] in ("kritik", "uyari") and frost["baglanti"] == f"/bahceler/{garden['id']}/hava"
     assert frost["baslik"].startswith("Bahçem:") and frost["tur_adi"] == "Don uyarısı" and frost["okundu"] is False
 
     second = await run_job(factory, provider, user_client)
@@ -128,7 +128,7 @@ async def test_satellite_alert_becomes_one_notification_per_event(user_client: A
     await seed_scenes(factory, garden["id"], last_ndvi=0.36, count=24)
     await run_job(factory, provider, user_client)
     sat = [n for n in (await listing(user_client, tur="indeks_dususu"))["ogeler"]]
-    assert all(n["baglanti"].endswith("/durum") for n in sat)
+    assert all(n["baglanti"] == f'/bahceler/{n["bahce_id"]}' for n in sat)
     again = await run_job(factory, provider, user_client)
     assert again.uretilen == 0 and len((await listing(user_client, tur="indeks_dususu"))["ogeler"]) == len(sat)
 

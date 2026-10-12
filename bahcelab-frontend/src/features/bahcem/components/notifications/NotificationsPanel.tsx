@@ -51,7 +51,7 @@ function Item({ item, gardenName, onOpen }: { item: AppNotification; gardenName:
 }
 
 /** Bildirim merkezi: filtre (tür, bahçe, yalnız okunmamış), sayfalı liste; tıklayınca okundu ve ilgili bahçe/sekme açılır. */
-export function NotificationsPanel() {
+export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   const navigate = useNavigate()
   const { data: gardens } = useGardens()
   const [filters, setFilters] = useState<NotificationFilters>({ tur: '', bahce: '', yalnizOkunmamis: false, sayfa: 1 })
@@ -64,6 +64,7 @@ export function NotificationsPanel() {
   function open(item: AppNotification) {
     if (!item.okundu) markRead.mutate(item.id)
     navigate(item.baglanti)
+    onNavigate?.()
   }
 
   return (

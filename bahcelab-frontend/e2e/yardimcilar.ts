@@ -69,13 +69,9 @@ export async function startAt(page: Page, lng: number, lat: number, zoom = 17): 
   )
 }
 
-/** Haritanın görünen (paneller arası) alanında, merkeze göre ofsetli ekran noktası. */
+/** Haritanın (tuvalin) merkezine göre ofsetli ekran noktası; çalışma alanında harita sol bölmeyi doldurur. */
 export async function mapPoint(page: Page, dx: number, dy: number): Promise<{ x: number; y: number }> {
   const box = await page.locator('.maplibregl-canvas').first().boundingBox()
   if (!box) throw new Error('Harita tuvali bulunamadı')
-  const free = await page.evaluate(() => {
-    const css = getComputedStyle(document.querySelector('[data-testid="left-panel"]')?.parentElement as HTMLElement)
-    return { left: parseFloat(css.getPropertyValue('--map-left')) || 0, right: parseFloat(css.getPropertyValue('--map-right')) || 0 }
-  })
-  return { x: (free.left + (box.width - free.right)) / 2 + dx, y: box.height / 2 + dy }
+  return { x: box.x + box.width / 2 + dx, y: box.y + box.height / 2 + dy }
 }

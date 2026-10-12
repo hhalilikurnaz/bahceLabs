@@ -1,11 +1,21 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { legacyRedirect } from '@/features/bahcem/lib/routes'
 import { BrandMark } from '@/components/ui'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { LandingPage } from '@/features/marketing/pages/LandingPage'
 
 // Rota bazlı kod bölme: harita çalışma alanı (MapLibre), planlama ve blog yalnızca açılınca yüklenir
-const BahcemPage = lazy(() => import('@/features/bahcem/pages/BahcemPage').then((m) => ({ default: m.BahcemPage })))
+const uygulama = () => import('@/features/bahcem/BahcelerRotalari')
+const UygulamaKabugu = lazy(() => uygulama().then((m) => ({ default: m.UygulamaKabugu })))
+const BahcelerGiris = lazy(() => uygulama().then((m) => ({ default: m.BahcelerGiris })))
+const BahceSayfasi = lazy(() => uygulama().then((m) => ({ default: m.BahceSayfasi })))
+const EklemeSayfasi = lazy(() => uygulama().then((m) => ({ default: m.EklemeSayfasi })))
+const AsistanSayfasi = lazy(() => uygulama().then((m) => ({ default: m.AsistanSayfasi })))
+const IslerimSayfasi = lazy(() => uygulama().then((m) => ({ default: m.IslerimSayfasi })))
+const HizmetlerSayfasi = lazy(() => uygulama().then((m) => ({ default: m.HizmetlerSayfasi })))
+const PazarSayfasi = lazy(() => uygulama().then((m) => ({ default: m.PazarSayfasi })))
+const AyarlarSayfasi = lazy(() => uygulama().then((m) => ({ default: m.AyarlarSayfasi })))
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const BlogPage = lazy(() => import('@/features/marketing/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
@@ -22,10 +32,10 @@ function PageFallback() {
   )
 }
 
-/** /bahcem/:id → /bahcem/:id/durum */
-function GardenIndexRedirect() {
-  const { id } = useParams()
-  return <Navigate to={id ? `/bahcem/${id}/durum` : '/bahcem'} replace />
+/** Eski `/bahcem/...` adresleri yeni rotalara (yer imleri, bildirim bağlantıları) */
+function EskiAdres() {
+  const { pathname, search } = useLocation()
+  return <Navigate to={legacyRedirect(pathname, search)} replace />
 }
 
 export default function App() {
@@ -36,31 +46,31 @@ export default function App() {
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       {TasarimOnizleme && (
-        <Route path="/tasarim-onizleme/:yon/:ekran" element={<ProtectedRoute><TasarimOnizleme /></ProtectedRoute>} />
+        <Route path="/tasarim-onizleme" element={<ProtectedRoute><TasarimOnizleme /></ProtectedRoute>} />
       )}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      {/* Bahçelerim, bölümler ve bahçe sayfası. Üst rota sabit kalır: harita sayfalar arasında yeniden kurulmaz.
-          /bahcem · /bahcem/islerim|hizmetler|pazar|bildirimler|ayarlar · /bahcem/:id → /durum · /bahcem/:id/:sekme */}
+      <Route path="/bahcem/*" element={<EskiAdres />} />
+      {/* Uygulama (giriş gerekli): /bahceler/:id[/sekme|gecmis|defter], /asistan, /islerim, /hizmetler, /pazar, /ayarlar */}
       <Route
-        path="/bahcem"
         element={
           <ProtectedRoute>
-            <BahcemPage />
+            <UygulamaKabugu />
           </ProtectedRoute>
         }
       >
-        <Route index element={null} />
-        <Route path="islerim" element={null} />
-        <Route path="hizmetler" element={null} />
-        <Route path="pazar" element={null} />
-        <Route path="bildirimler" element={null} />
-        <Route path="ayarlar" element={null} />
-        <Route path=":id" element={<GardenIndexRedirect />} />
-        <Route path=":id/:tab" element={null} />
+        <Route path="/bahceler" element={<BahcelerGiris />} />
+        <Route path="/bahceler/yeni" element={<EklemeSayfasi />} />
+        <Route path="/bahceler/:id" element={<BahceSayfasi />} />
+        <Route path="/bahceler/:id/:sekme" element={<BahceSayfasi />} />
+        <Route path="/asistan" element={<AsistanSayfasi />} />
+        <Route path="/islerim" element={<IslerimSayfasi />} />
+        <Route path="/hizmetler" element={<HizmetlerSayfasi />} />
+        <Route path="/pazar" element={<PazarSayfasi />} />
+        <Route path="/ayarlar" element={<AyarlarSayfasi />} />
       </Route>
       {/* Planlama simülasyonu arayüzden kaldırıldı (kod duruyor): docs/mimari/karar/0004 */}
-      <Route path="/planning/*" element={<Navigate to="/bahcem" replace />} />
+      <Route path="/planning/*" element={<Navigate to="/bahceler" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>

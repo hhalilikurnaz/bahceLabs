@@ -4,7 +4,6 @@ import { Crosshair, Loader2, MapPin, Search, X } from 'lucide-react'
 import { parseCoordinates, searchPlaces, type PlaceResult } from '../../map/geocoding'
 import { getMaptilerKey } from '../../map/mapStyles'
 import { useMap } from '../../map/useMap'
-import { TOP_AREA_CLASS } from './topArea'
 
 const DEBOUNCE_MS = 300
 
@@ -116,7 +115,7 @@ export function PlaceSearch() {
     : 'Koordinat ara (yer araması için MapTiler anahtarı gerekli)'
 
   return (
-    <div className={`${TOP_AREA_CLASS} top-3`}>
+    <div className="absolute left-3 right-3 top-3 z-20 flex justify-center">
       <div ref={rootRef} className="w-full max-w-[480px]">
       <div className="flex h-11 items-center gap-2 rounded-full border border-app-border bg-app-panel pl-4 pr-1 shadow-e2 transition-colors focus-within:border-app-accent">
         {isLoading ? (

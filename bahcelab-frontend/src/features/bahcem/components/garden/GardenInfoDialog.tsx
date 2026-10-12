@@ -45,7 +45,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-forest/60 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <form
         onSubmit={submit}
         noValidate

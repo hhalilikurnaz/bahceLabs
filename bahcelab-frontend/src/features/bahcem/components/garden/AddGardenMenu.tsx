@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileUp, PencilRuler, Plus } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { useGardenNav } from '../../hooks/useGardenNav'
 import { geometryBounds, unionBounds } from '../../lib/geo'
 import { ImportError, parseGardenFile } from '../../lib/importFile'
 import { useFocusPadding } from '../../map/useFocusGarden'
@@ -22,7 +21,6 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
   const startImportPick = useBahcemStore((s) => s.startImportPick)
   const openForm = useBahcemStore((s) => s.openForm)
   const busy = useBahcemStore((s) => s.mode !== 'idle')
-  const nav = useGardenNav()
 
   const [open, setOpen] = useState(false)
   const [reading, setReading] = useState(false)
@@ -92,7 +90,6 @@ export function AddGardenMenu({ variant = 'primary' }: AddGardenMenuProps) {
             className={item}
             onClick={() => {
               setOpen(false)
-              nav.close() // çizim, bahçe listesi görünümünde başlar
               startDrawing()
             }}
           >

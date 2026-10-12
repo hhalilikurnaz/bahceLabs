@@ -22,7 +22,7 @@ test('Bugün kartı çiftçi dilinde: tek ilaçlama maddesi, teknik ayrıntı «
       },
     }),
   )
-  await page.goto(`/bahcem/${garden.id}/durum`)
+  await page.goto(`/bahceler/${garden.id}`)
   const card = page.getByTestId('today-card')
   await expect(card.getByTestId('today-item')).toHaveCount(2)
   const risk = card.locator('[data-kind="zararli_riski"]')

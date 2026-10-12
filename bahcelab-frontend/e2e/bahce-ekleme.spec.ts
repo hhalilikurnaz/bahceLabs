@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   await newUser(page)
 })
 
-test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve silinir', async ({ page }) => {
+test('GeoJSON dosyasından bahçe eklenir, çubukta görünür, adı değiştirilir ve silinir', async ({ page }) => {
   const file = {
     name: 'bahce.geojson',
     mimeType: 'application/geo+json',
@@ -16,7 +16,7 @@ test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve
       }),
     ),
   }
-  await page.goto('/bahcem')
+  await page.goto('/bahceler/yeni')
   await page.getByRole('button', { name: 'Bahçe ekle' }).first().click()
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('menuitem', { name: /Dosya yükle/ }).click()
@@ -27,33 +27,28 @@ test('GeoJSON dosyasından bahçe eklenir, kart görünür, ad değiştirilir ve
   await expect(page.getByText(/dekar/).first()).toBeVisible() // alan sunucuda hesaplandı
   await page.getByRole('button', { name: 'Kaydet' }).click()
 
-  await expect(page).toHaveURL(/\/bahcem\/[0-9a-f-]{36}\/durum$/)
-  await expect(page.getByTestId('garden-page').getByRole('heading', { name: 'İçe aktarılan' })).toBeVisible()
+  await expect(page).toHaveURL(/\/bahceler\/[0-9a-f-]{36}$/)
 
-  // Liste: kart, durum etiketi (henüz görüntü yok → dürüst "Veri yok")
-  await page.getByRole('button', { name: 'Bahçe panelini kapat' }).click()
-  const card = page.getByTestId('garden-card')
-  await expect(card).toHaveCount(1)
-  await expect(card).toHaveAttribute('data-status', 'veri_yok')
-  await expect(page.getByTestId('list-summary')).toContainText('1')
+  // Bahçe çubuğu: ad, yeni bahçe için henüz görüntü yok (dürüst boş durum)
+  await expect(page.getByTestId('bahce-secici')).toContainText('İçe aktarılan')
+  await expect(page.getByTestId('tarih-kutusu')).toContainText('görüntü yok')
 
   // Ad değiştir
-  await page.getByTestId('garden-card').getByRole('button', { name: 'İçe aktarılan işlemleri' }).click()
+  await page.getByRole('button', { name: 'İçe aktarılan işlemleri' }).click()
   await page.getByRole('menuitem', { name: 'Adını düzenle' }).click()
   await page.getByLabel('Bahçe adı').fill('Yeni Ad')
   await page.keyboard.press('Enter')
-  await expect(page.getByTestId('garden-card').getByRole('heading', { name: 'Yeni Ad' })).toBeVisible()
+  await expect(page.getByTestId('bahce-secici')).toContainText('Yeni Ad')
 
   // Sil (onaylı)
-  await page.getByTestId('garden-card').getByRole('button', { name: 'Yeni Ad işlemleri' }).click()
+  await page.getByRole('button', { name: 'Yeni Ad işlemleri' }).click()
   await page.getByRole('menuitem', { name: 'Sil' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Sil' }).click()
-  await expect(page.getByTestId('garden-card')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'İlk bahçenizi ekleyin' })).toBeVisible()
 })
 
 test('bozuk dosya anlaşılır hata verir ve akış bozulmaz', async ({ page }) => {
-  await page.goto('/bahcem')
+  await page.goto('/bahceler/yeni')
   await page.getByRole('button', { name: 'Bahçe ekle' }).first().click()
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('menuitem', { name: /Dosya yükle/ }).click()

@@ -24,7 +24,7 @@ export function RegisterPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/bahcem', { replace: true })
+      navigate('/bahceler', { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -35,7 +35,7 @@ export function RegisterPage() {
 
     try {
       await register({ name, email, password })
-      navigate('/bahcem', { replace: true })
+      navigate('/bahceler', { replace: true })
     } catch (err) {
       setError(authErrorMessage(err, 'Kayıt olunamadı.'))
     } finally {

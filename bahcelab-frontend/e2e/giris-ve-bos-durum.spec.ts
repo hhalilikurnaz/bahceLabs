@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { newUser, PASSWORD } from './yardimcilar'
 
-test('giriş yapınca /bahcem açılır; bahçesi olmayan kullanıcı 3 adımlı yönlendirmeyi görür', async ({ page }) => {
+test('giriş yapınca /bahceler açılır; bahçesi olmayan kullanıcı ekleme davetiyesini görür', async ({ page }) => {
   const email = await newUser(page)
   await page.context().clearCookies()
 
@@ -10,17 +10,15 @@ test('giriş yapınca /bahcem açılır; bahçesi olmayan kullanıcı 3 adımlı
   await page.getByLabel('Şifre', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Giriş yap' }).click()
 
-  await expect(page).toHaveURL(/\/bahcem$/)
+  await expect(page).toHaveURL(/\/bahceler$/)
   await expect(page.getByRole('heading', { name: 'İlk bahçenizi ekleyin' })).toBeVisible()
-  await expect(page.getByTestId('onboarding').getByRole('listitem')).toHaveCount(3)
-  await expect(page.getByRole('button', { name: 'Bahçe ekle' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Bahçe ekle' })).toBeVisible()
 })
 
-test('oturum yoksa /bahcem girişe yönlendirir', async ({ page }) => {
-  await page.goto('/bahcem')
+test('oturum yoksa /bahceler girişe yönlendirir', async ({ page }) => {
+  await page.goto('/bahceler')
   await expect(page).toHaveURL(/\/login/)
 })
-
 test('yanlış şifre anlaşılır hata gösterir', async ({ page }) => {
   const email = await newUser(page)
   await page.context().clearCookies()

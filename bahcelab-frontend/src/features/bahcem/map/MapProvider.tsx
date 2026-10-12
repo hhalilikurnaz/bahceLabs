@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import '../bahcem.css'
 import { MapContext } from './MapContext'
@@ -15,6 +16,8 @@ import {
 import { loadView, saveView } from './viewStorage'
 
 interface MapProviderProps {
+  /** Verilirse harita bu öğenin içine çizilir (bağlam ise tüm çocuklara açık kalır) */
+  mount?: HTMLElement | null
   /** Konum ve altlık seçimi kullanıcı bazında saklanır */
   userId: string
   children: ReactNode
@@ -24,7 +27,7 @@ interface MapProviderProps {
  * Tek harita örneğini yönetir: kapsayıcıyı hemen çizer, MapLibre tembel yüklenir (panel haritayı beklemez).
  * Çocuklar `useMap()` ile haritaya katman ekler; harita hazır olana kadar `map` null'dır.
  */
-export function MapProvider({ userId, children }: MapProviderProps) {
+export function MapProvider({ userId, children, mount }: MapProviderProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const [initialView] = useState(() => loadView(userId))
@@ -62,7 +65,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
         style: buildStyle(view.basemap, view.provider ?? 'mapbox'),
         center: view.center,
         zoom: view.zoom,
-        attributionControl: false, // atıflar `MapAttribution` bileşeninde (logo + metin, mobilde de okunur)
+        attributionControl: { compact: true },
         // İndeks PNG'leri yetkili uç noktadan gelir: çerez (httpOnly oturum) her koşulda gönderilsin
         transformRequest: (url) =>
           url.includes(`${getApiBaseUrl()}/gardens/`) ? { url, credentials: 'include' } : undefined,
@@ -109,7 +112,7 @@ export function MapProvider({ userId, children }: MapProviderProps) {
       mapRef.current = null
       setMap(null)
     }
-  }, [userId, initialView])
+  }, [userId, initialView, mount])
 
   const setBasemap = useCallback(
     (next: BasemapId) => {
@@ -143,12 +146,16 @@ export function MapProvider({ userId, children }: MapProviderProps) {
     [map, basemap, setBasemap, provider, setProvider, providers, activeProvider, styleVersion, usingFallback],
   )
 
+  const mapDiv = (
+    <div className="absolute inset-0 bg-app-bg">
+      <div ref={containerRef} className="h-full w-full" />
+    </div>
+  )
+
   return (
     <MapContext.Provider value={value}>
       {/* maplibre-gl.css kapsayıcıya position:relative verir; bu yüzden yerleşimi dış sarmalayıcı yapar */}
-      <div className="surface-dark absolute inset-0 bg-app-bg">
-        <div ref={containerRef} className="h-full w-full" />
-      </div>
+      {mount ? createPortal(mapDiv, mount) : mapDiv}
       {children}
     </MapContext.Provider>
   )

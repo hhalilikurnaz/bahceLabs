@@ -55,7 +55,7 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
 
-  await page.goto(`/bahcem/${garden.id}/hava`)
+  await page.goto(`/bahceler/${garden.id}/hava`)
   await expect(page.getByTestId('best-spray')).toContainText('Bu hafta ilaçlama için en iyi zaman')
   await expect(page.getByTestId('best-spray-time')).toContainText('13:00–19:00')
   await expect(page.getByTestId('current-temp')).toContainText('20')
@@ -85,7 +85,7 @@ test('hava servisi hata verirse anlaşılır hata ve "Tekrar dene" gösterilir',
   await newUser(page)
   const garden = await createGarden(page.request, { ad: 'Hata Bahçesi', lng: 27.95, lat: 38.95 })
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ status: 503, json: { error: { code: 'INTERNAL_ERROR', message: 'Hava durumu şu an alınamıyor.' } } }))
-  await page.goto(`/bahcem/${garden.id}/hava`)
+  await page.goto(`/bahceler/${garden.id}/hava`)
   await expect(page.getByRole('heading', { name: 'Hava durumu alınamadı' })).toBeVisible({ timeout: 30_000 })
   await expect(page.getByRole('button', { name: 'Tekrar dene' })).toBeVisible()
 })
@@ -96,7 +96,7 @@ test('Hava sekmesi: sulama ve zararlı riski kartları ön değer uyarısı ile 
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
 
-  await page.goto(`/bahcem/${garden.id}/hava`)
+  await page.goto(`/bahceler/${garden.id}/hava`)
   const irrigation = page.getByTestId('irrigation-card')
   await expect(irrigation).toBeVisible()
   await expect(irrigation).toContainText('reçetesi değildir')

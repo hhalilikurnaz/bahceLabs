@@ -5,61 +5,77 @@ test.beforeEach(async ({ page }) => {
   await newUser(page)
 })
 
-test('bahçe açılınca URL, sekmeler, geri tuşu ve derin bağlantı çalışır', async ({ page }) => {
+test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışır', async ({ page }) => {
   const garden = await createGarden(page.request, { ad: 'Rota Bahçesi', lng: 27.5, lat: 38.5 })
-  await page.goto('/bahcem')
-  await page.getByRole('link', { name: 'Rota Bahçesi bahçesini aç' }).click()
-  await expect(page).toHaveURL(new RegExp(`/bahcem/${garden.id}/durum$`))
-  await expect(page.getByTestId('detail-column')).toHaveAttribute('data-open', 'true')
-  await expect(page.getByTestId('left-panel')).toHaveAttribute('data-open', 'false') // liste ikon şeridine daralır
+  await page.goto('/bahceler')
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`)) // ilk bahçeye yönlenir
+  await expect(page.getByTestId('bahce-secici')).toContainText('Rota Bahçesi')
 
   await page.getByRole('tab', { name: 'Analiz' }).click()
   await expect(page).toHaveURL(/\/analiz$/)
   await page.goBack()
-  await expect(page).toHaveURL(/\/durum$/)
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
 
-  await page.goto(`/bahcem/${garden.id}/gunluk`)
+  await page.goto(`/bahceler/${garden.id}/gunluk`)
   await expect(page.getByRole('tab', { name: 'Günlük', selected: true })).toBeVisible()
-  await expect(page.getByTestId('coming-soon').first()).toContainText('Adım')
+  await expect(page.getByTestId('panel-gunluk').getByRole('heading', { name: 'Günlük' })).toBeVisible()
+  await expect(page.getByText('Adım 11')).toBeVisible()
+
+  await page.goto(`/bahceler/${garden.id}/su`)
+  await expect(page.getByTestId('bos-su')).toContainText('9E')
+})
+
+test('tam sayfalar: Geçmiş ve Saha Defteri iskelet olarak açılır', async ({ page }) => {
+  const garden = await createGarden(page.request, { ad: 'Sayfa Bahçesi', lng: 27.51, lat: 38.51 })
+  await page.goto(`/bahceler/${garden.id}`)
+  await page.getByRole('link', { name: 'Geçmiş ↗' }).click()
+  await expect(page).toHaveURL(/\/gecmis$/)
+  await expect(page.getByTestId('bos-gecmis')).toContainText('9G')
+  await page.getByRole('link', { name: 'Saha Defteri ↗' }).click()
+  await expect(page).toHaveURL(/\/defter$/)
+  await expect(page.getByTestId('bos-defter')).toContainText('9G')
 })
 
 test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', async ({ page }) => {
   const garden = await createGarden(page.request, { ad: 'Yönlenen', lng: 27.6, lat: 38.6 })
-  await page.goto(`/bahcem/${garden.id}/yok`)
-  await expect(page).toHaveURL(/\/durum$/)
+  await page.goto(`/bahceler/${garden.id}/yok`)
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
 
-  await page.goto('/bahcem/00000000-0000-0000-0000-000000000000/durum')
-  await expect(page).toHaveURL(/\/bahcem$/)
+  await page.goto('/bahceler/00000000-0000-0000-0000-000000000000')
   await expect(page.getByText('Bu bahçe bulunamadı')).toBeVisible()
 })
 
-test('sol menü bölümleri "Yakında" gösterir; planlama rotası kapalı; Copilot çekmecesi açılır', async ({ page }) => {
+test('eski /bahcem adresleri yeni rotalara yönlenir', async ({ page }) => {
+  const garden = await createGarden(page.request, { ad: 'Eski Adres', lng: 27.61, lat: 38.61 })
+  await page.goto(`/bahcem/${garden.id}/durum`)
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
+  await page.goto(`/bahcem/${garden.id}/hava`)
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}/hava$`))
   await page.goto('/bahcem')
-  await expect(page.getByRole('link', { name: 'Ayarlar' })).toBeVisible()
-  const rail = await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
-  expect(rail).toEqual(['Bahçelerim', 'İşlerim', 'Hizmetler', 'Pazar', 'Bildirimler', 'Ayarlar'])
-  for (const [name, soon, sample] of [
-    ['İşlerim', 'Yakında – Faz 1.5', 'Hibe ve destek'],
-    ['Hizmetler', 'Yakında – Faz 1.5', 'Saha ekipleri'],
-    ['Pazar', 'Yakında – Adım 17', 'Girdi ve finansman'],
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
+})
+
+test('üst gezinme: «Faz 1.5 / Adım 17» bölümleri; planlama rotası kapalı; Copilot düğmesi yok; ayarlar', async ({ page }) => {
+  await page.goto('/bahceler')
+  await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').first()).toBeVisible()
+  const nav = await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').allInnerTexts()
+  expect(nav.map((t) => t.replace(/\s+/g, ' ').trim())).toEqual(['Bahçeler', 'Asistan', 'İşlerim Faz 1.5', 'Hizmetler Faz 1.5', 'Pazar Adım 17'])
+  for (const [name, soon] of [
+    ['İşlerim', 'Faz 1.5'],
+    ['Hizmetler', 'Faz 1.5'],
+    ['Pazar', 'Adım 17'],
   ] as const) {
-    await page.getByRole('link', { name, exact: true }).click()
-    await expect(page.getByText(soon).first()).toBeVisible()
-    await expect(page.getByTestId('coming-soon').filter({ hasText: sample })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link', { name: new RegExp(`^${name}`) }).click()
+    await expect(page.getByRole('heading', { name })).toBeVisible()
+    await expect(page.locator('section').getByText(soon, { exact: true })).toBeVisible()
   }
-  await page.getByRole('link', { name: 'Bildirimler', exact: true }).click()
-  await expect(page.getByTestId('notifications-panel')).toBeVisible()
-  await expect(page.getByText('Henüz bildirim yok')).toBeVisible()
-  await page.getByRole('link', { name: 'Ayarlar' }).click()
-  await expect(page.getByRole('button', { name: 'Çıkış yap' })).toBeVisible()
-  await expect(page.getByText('Planlama')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Copilot/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: /^Hesap:/ }).click()
+  await page.getByRole('menuitem', { name: 'Ayarlar' }).click()
+  await expect(page).toHaveURL(/\/ayarlar$/)
+  await expect(page.getByTestId('notification-preferences')).toBeVisible()
 
   await page.goto('/planning')
-  await expect(page).toHaveURL(/\/bahcem$/)
-
-  await page.getByRole('button', { name: /Copilot/ }).click()
-  await expect(page.getByRole('complementary', { name: 'Copilot' })).toBeVisible()
-  await expect(page.getByLabel('Mesajınız')).toBeDisabled()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('complementary', { name: 'Copilot' })).toBeHidden()
+  await expect(page).toHaveURL(/\/bahceler/)
 })

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useBahcemRoute } from '../../hooks/useBahcemRoute'
+import { useMatch } from 'react-router-dom'
 import { useGardenNav } from '../../hooks/useGardenNav'
 import { describeError } from '../../api/gardensApi'
 import type { Garden } from '../../api/types'
@@ -18,7 +18,7 @@ export function useGardenActions(): {
   const toast = useToast()
   const update = useUpdateGarden()
   const remove = useDeleteGarden()
-  const { gardenId: selectedId } = useBahcemRoute()
+  const selectedId = useMatch('/bahceler/:id/*')?.params.id ?? null
   const nav = useGardenNav()
   const startEditingBoundary = useBahcemStore((s) => s.startEditingBoundary)
 

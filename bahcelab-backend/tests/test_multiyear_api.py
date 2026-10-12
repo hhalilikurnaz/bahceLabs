@@ -455,7 +455,7 @@ async def test_completion_notification_is_published_once(user_client: AsyncClien
     await user_client.post(url(garden["id"]))
     notes = (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()
     assert (
-        notes["toplam"] == 1 and notes["ogeler"][0]["baglanti"] == f"/bahcem/{garden['id']}/analiz"
+        notes["toplam"] == 1 and notes["ogeler"][0]["baglanti"] == f"/bahceler/{garden['id']}/analiz"
     )
     assert "çok yıllık analiz hazır" in notes["ogeler"][0]["baslik"]
     await user_client.post(url(garden["id"]))  # tekrar başlatma: yeni bildirim üretmez

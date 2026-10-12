@@ -24,7 +24,7 @@ export function ConfirmDialog({ title, message, confirmLabel, pending = false, e
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-forest/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
       onPointerDown={(event) => event.target === event.currentTarget && onCancel()}
     >
       <div

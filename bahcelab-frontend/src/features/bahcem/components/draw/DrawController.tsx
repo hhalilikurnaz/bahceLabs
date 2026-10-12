@@ -24,6 +24,7 @@ import { circleStats, decimateRing, formatLength, nearestVertex, type LngLat } f
 import { cssColor } from '../../map/cssColor'
 import { useFocusPadding } from '../../map/useFocusGarden'
 import { useMap } from '../../map/useMap'
+import { useMapZoom } from '../../map/useMapZoom'
 import { useBahcemStore, type DrawShape } from '../../stores/bahcemStore'
 import { useToast } from '../layout/toastContext'
 import { TOP_AREA_CLASS } from '../layout/topArea'
@@ -94,7 +95,7 @@ function DrawSession() {
   const { map, styleVersion } = useMap()
   const mode = useBahcemStore((s) => s.mode)
   const editingId = useBahcemStore((s) => s.editingGardenId)
-  const mapZoom = useBahcemStore((s) => s.mapZoom)
+  const mapZoom = useMapZoom()
   const liveArea = useBahcemStore((s) => s.liveAreaDekar)
   const shape = useBahcemStore((s) => s.drawShape)
   const setShape = useBahcemStore((s) => s.setDrawShape)

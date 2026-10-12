@@ -1,21 +1,14 @@
 import { useCallback } from 'react'
 import type { Garden } from '../api/types'
 import { geometryBounds, unionBounds } from '../lib/geo'
-import { usePanelLayout } from '../hooks/usePanelLayout'
 import { FOCUS_PAD, MAP } from '../lib/config'
 import { useMap } from './useMap'
 
-/** Sol panel (ve açıksa Copilot) haritayı kapladığı için odaklarken görünen alanı (yerleşim sınırları) korur. */
+/** Harita artık panellerle örtülmez (çalışma alanı bölünmüş): odak payı sabittir. */
 export function useFocusPadding(selected = false) {
-  const { insets, desktop, sheetPx } = usePanelLayout()
   return useCallback(
-    () => ({
-      top: FOCUS_PAD.top,
-      bottom: desktop ? (selected ? FOCUS_PAD.bottomSelected : FOCUS_PAD.bottom) : Math.max(FOCUS_PAD.bottom, sheetPx + FOCUS_PAD.side),
-      left: insets.left + FOCUS_PAD.side,
-      right: insets.right + FOCUS_PAD.side,
-    }),
-    [insets.left, insets.right, selected, desktop, sheetPx],
+    () => ({ top: FOCUS_PAD.top, bottom: selected ? FOCUS_PAD.bottomSelected : FOCUS_PAD.bottom, left: FOCUS_PAD.side, right: FOCUS_PAD.side }),
+    [selected],
   )
 }
 

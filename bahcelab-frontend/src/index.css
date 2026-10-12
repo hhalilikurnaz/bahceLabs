@@ -276,3 +276,93 @@ h6 {
   background-image: radial-gradient(circle, rgb(255 255 255 / 0.6) 1.1px, transparent 1.3px);
   background-size: 5px 5px;
 }
+
+/*
+ * Uygulama kabuğu (Adım 9B, hibrit tasarım — docs/design/prototip/komuta-merkezi.html): açık tema, Manrope, köşe 8 px, sade.
+ * Aynı `app-*` token'ları bu kapsamda yeni değerlerle; koyu tema `html[data-theme="dark"]` ya da sistem tercihi (açık seçilmediyse).
+ * Tanıtım sayfaları (landing) bu kapsamın dışındadır. Kontrast (açık): metin/kart 16,2 · muted 6,4 · dim 5,1 (AA).
+ */
+.app-shell {
+  --font-heading: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --color-app-bg: #f6f5f0;
+  --color-app-panel: #ffffff;
+  --color-app-card: #ffffff;
+  --color-app-card-hover: #f1efe8;
+  --color-app-border: #d9d6cc;
+  --color-app-border-soft: #ecead3;
+  --color-app-border-strong: #858b83;
+  --color-app-text: #17201b;
+  --color-app-text-muted: #58615a;
+  --color-app-text-dim: #687068;
+  --color-app-accent: #1e4b35;
+  --color-app-accent-strong: #163a29;
+  --color-app-accent-soft: rgb(30 75 53 / 0.1);
+  --color-app-primary: #e5bc2f;
+  --color-app-primary-hover: #d8ae1f;
+  --color-app-on-primary: #1a1a12;
+  --color-app-success: #2d6a4a;
+  --color-app-watch: #8a6a0c;
+  --color-app-warn: #a24f1b;
+  --color-app-danger: #a8322a;
+  --color-app-water: #4a7491;
+  --glass: rgb(255 255 255 / 0.95);
+  /* Varlık bileşenleri (ikon, ölçek, kuzey oku, gravür) bu adlarla çizer */
+  --ink: var(--color-app-text);
+  --brand: #1e4b35;
+  --paper: var(--color-app-panel);
+  --paper-2: var(--color-app-bg);
+  --paper-3: var(--color-app-card-hover);
+  --rule: var(--color-app-border);
+  --rule-2: var(--color-app-border-strong);
+  --font-ui: var(--font-sans);
+  --font-mono: var(--font-sans);
+  --shadow-e1: 0 1px 0 rgb(23 32 27 / 0.04), 0 6px 24px -12px rgb(23 32 27 / 0.25);
+  --shadow-e2: 0 1px 0 rgb(23 32 27 / 0.04), 0 10px 30px -12px rgb(23 32 27 / 0.3);
+  --shadow-e3: 0 16px 40px -12px rgb(23 32 27 / 0.35);
+  background: var(--color-app-bg);
+  color: var(--color-app-text);
+  font-family: var(--font-sans);
+  color-scheme: light;
+}
+html[data-theme='dark'] .app-shell {
+  --color-app-bg: #111512;
+  --color-app-panel: #181d19;
+  --color-app-card: #1c221d;
+  --color-app-card-hover: #232a25;
+  --color-app-border: #323a34;
+  --color-app-border-soft: #232a25;
+  --color-app-border-strong: #6d766e;
+  --color-app-text: #e9ece6;
+  --color-app-text-muted: #a6aea6;
+  --color-app-text-dim: #929a92;
+  --color-app-accent: #8cc3a2;
+  --color-app-accent-strong: #a6d4b8;
+  --color-app-accent-soft: rgb(140 195 162 / 0.14);
+  --color-app-success: #7fc09a;
+  --color-app-watch: #d7b24a;
+  --color-app-warn: #e5915a;
+  --color-app-danger: #e57a6a;
+  --color-app-water: #86aecb;
+  --glass: rgb(24 29 25 / 0.95);
+  --shadow-e1: 0 1px 0 rgb(0 0 0 / 0.2), 0 8px 28px -12px rgb(0 0 0 / 0.7);
+  --shadow-e2: 0 1px 0 rgb(0 0 0 / 0.2), 0 10px 30px -12px rgb(0 0 0 / 0.75);
+  color-scheme: dark;
+}
+.app-shell :focus-visible {
+  outline: 2px solid var(--color-app-primary);
+  outline-offset: 2px;
+}
+.app-shell .glass {
+  background: var(--glass);
+  border: 1px solid var(--color-app-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-e1);
+  backdrop-filter: blur(6px);
+}
+.app-shell .num {
+  font-variant-numeric: tabular-nums;
+}

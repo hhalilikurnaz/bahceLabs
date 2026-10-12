@@ -30,4 +30,6 @@ class Candidate:
     dedupe_key: str
 
     def link(self) -> str:
-        return f"/bahcem/{self.garden_id}/{self.sekme}"
+        """Uygulama rotası (9B): Durum bahçenin kök adresidir; eski `/bahcem/...` kayıtları ön yüzde yönlenir."""
+        base = f"/bahceler/{self.garden_id}"
+        return base if self.sekme == "durum" else f"{base}/{self.sekme}"

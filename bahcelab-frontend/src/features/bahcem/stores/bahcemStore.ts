@@ -1,8 +1,5 @@
 import { create } from 'zustand'
 import type { GardenGeometry } from '../api/types'
-import type { LayerId } from '../lib/indices'
-import type { SheetState } from '../lib/layout'
-import { DEFAULT_VIEW, type RenderInfo, type Scale, type Smoothing } from '../lib/raster'
 
 /** Çizim şekli: serbest çokgen ya da daire (daire düzenlenebilir çokgene çevrilir) */
 export type DrawShape = 'polygon' | 'circle'
@@ -29,18 +26,6 @@ export interface Draft {
 }
 
 interface BahcemState {
-  leftPanelOpen: boolean
-  /** "Tam harita": bahçe sayfası paneli daraltılır, seçili bahçe dışı karartılır */
-  fullMap: boolean
-  copilotOpen: boolean
-  /** Bahçe seçilince liste ikon şeridine daralsın mı (kullanıcının son seçimi hatırlanır) */
-  listAutoCollapse: boolean
-  setListAutoCollapse: (collapse: boolean) => void
-  /** Kullanıcının sürükleyerek seçtiği sağ panel genişliği (px); null = varsayılan oran */
-  detailWidthPx: number | null
-  season: number
-
-  selectedGardenId: string | null
   mode: FlowMode
   draft: Draft | null
   imported: ImportedPolygon[]
@@ -50,95 +35,21 @@ interface BahcemState {
   /** Çizim sırasındaki canlı sınır (form önizlemesi için); yoksa null */
   liveGeometry: GardenGeometry | null
   drawShape: DrawShape
-  /** Mobil bahçe paneli (alt sayfa) yüksekliği */
-  sheet: SheetState
-  setSheet: (sheet: SheetState) => void
-  mapZoom: number
+  /** Kayıttan sonra uydu verisi işlenirken izlenen bahçe (bitince bildirim gösterilir) */
+  watched: { id: string; ad: string; ignoreJobId: string | null } | null
 
-
-  // --- indeks görselleştirme (ana harita her zaman en güncel geçerli görüntüyü gösterir; tarih seçimi Arşiv'dedir)
-  katman: LayerId
-  layerVisible: boolean
-  skala: Scale
-  cizim: Smoothing
-  renkKorlugu: boolean
-  verimlilik: boolean
-  verimlilikIndeksi: 'ndvi' | 'msavi'
-  renderInfo: RenderInfo | null
-
-  toggleLeftPanel: () => void
-  setFullMap: (fullMap: boolean) => void
-  setLeftPanelOpen: (open: boolean) => void
-  setCopilotOpen: (open: boolean) => void
-  setDetailWidth: (px: number | null) => void
-  setSeason: (season: number) => void
-  selectGarden: (id: string | null) => void
-  setMapZoom: (zoom: number) => void
   setLiveArea: (dekar: number | null) => void
   setLiveGeometry: (geometry: GardenGeometry | null) => void
   setDrawShape: (shape: DrawShape) => void
-  /** Kayıttan sonra uydu verisi işlenirken izlenen bahçe (bitince bildirim gösterilir) */
-  watched: { id: string; ad: string; ignoreJobId: string | null } | null
   /** `ignoreJobId`: sınır düzenlemesinde eski (bitmiş) işin kimliği; yalnızca yeni iş bitince bildirilir */
   watchProcessing: (id: string, ad: string, ignoreJobId?: string | null) => void
   clearWatched: () => void
-
-
-  setKatman: (katman: LayerId) => void
-  setLayerVisible: (visible: boolean) => void
-  setSkala: (skala: Scale) => void
-  setCizim: (cizim: Smoothing) => void
-  setRenkKorlugu: (acik: boolean) => void
-  setVerimlilik: (acik: boolean) => void
-  setVerimlilikIndeksi: (indeks: 'ndvi' | 'msavi') => void
-  setRenderInfo: (info: RenderInfo | null) => void
-
   startDrawing: () => void
   startImportPick: (polygons: ImportedPolygon[]) => void
   openForm: (draft: Draft) => void
   startEditingBoundary: (gardenId: string) => void
   /** Akışı bitirir ve taslağı temizler */
   resetFlow: () => void
-}
-
-const DETAIL_WIDTH_KEY = 'bahcelab.detailWidthPx'
-
-/** Sağ panel genişliği tarayıcıda saklanır (yalnızca kullanıcı kolaylığı; erişilemezse sessizce varsayılan). */
-function readDetailWidth(): number | null {
-  try {
-    const raw = window.localStorage.getItem(DETAIL_WIDTH_KEY)
-    const value = raw === null ? NaN : Number(raw)
-    return Number.isFinite(value) && value > 0 ? value : null
-  } catch {
-    return null
-  }
-}
-
-function writeDetailWidth(value: number | null): void {
-  try {
-    if (value === null) window.localStorage.removeItem(DETAIL_WIDTH_KEY)
-    else window.localStorage.setItem(DETAIL_WIDTH_KEY, String(Math.round(value)))
-  } catch {
-    /* saklama yoksa genişlik yalnızca oturum boyunca geçerli olur */
-  }
-}
-
-const LIST_COLLAPSE_KEY = 'bahcelab.listAutoCollapse'
-
-function readListAutoCollapse(): boolean {
-  try {
-    return window.localStorage.getItem(LIST_COLLAPSE_KEY) !== 'false'
-  } catch {
-    return true
-  }
-}
-
-function writeListAutoCollapse(value: boolean): void {
-  try {
-    window.localStorage.setItem(LIST_COLLAPSE_KEY, String(value))
-  } catch {
-    /* saklama yoksa tercih yalnızca oturum boyunca geçerli olur */
-  }
 }
 
 const flowReset = {
@@ -150,101 +61,19 @@ const flowReset = {
   liveGeometry: null,
 }
 
-/** Bahçe değişince geçici görünüm durumları sıfırlanır (parametre ve görünüm tercihleri korunur) */
-const viewReset = {
-  fullMap: false,
-  verimlilik: false,
-  renderInfo: null,
-}
-
-const VIEW_PREFS_KEY = 'bahcelab.viewPrefs'
-
-interface ViewPrefs {
-  skala: Scale
-  cizim: Smoothing
-  renkKorlugu: boolean
-}
-
-/** Görünüm tercihleri (skala, çizim, renk körlüğü) tarayıcıda saklanır; erişilemezse varsayılan. */
-function readViewPrefs(): ViewPrefs {
-  try {
-    const raw = JSON.parse(window.localStorage.getItem(VIEW_PREFS_KEY) ?? 'null') as Partial<ViewPrefs> | null
-    return {
-      skala: raw?.skala === 'genel' ? 'genel' : DEFAULT_VIEW.skala,
-      cizim: raw?.cizim === 'yumusak' ? 'yumusak' : DEFAULT_VIEW.cizim,
-      renkKorlugu: raw?.renkKorlugu === true,
-    }
-  } catch {
-    return { ...DEFAULT_VIEW }
-  }
-}
-
-function writeViewPrefs(prefs: ViewPrefs): void {
-  try {
-    window.localStorage.setItem(VIEW_PREFS_KEY, JSON.stringify(prefs))
-  } catch {
-    /* saklama yoksa tercih yalnızca oturum boyunca geçerli olur */
-  }
-}
-
+/** Bahçe ekleme / sınır düzenleme akışı ve işleme izleme (harita görünümü `calisma/calismaStore.ts`'tedir). */
 export const useBahcemStore = create<BahcemState>((set) => ({
-  // Liste her ekranda açık başlar (dar ekranda ayrı görünümdür; bahçe açılınca alt sayfaya yer açar)
-  leftPanelOpen: true,
-  copilotOpen: false,
-  detailWidthPx: readDetailWidth(),
-  listAutoCollapse: readListAutoCollapse(),
-  season: new Date().getFullYear(),
-
-  selectedGardenId: null,
   ...flowReset,
-  mapZoom: 0,
   drawShape: 'polygon',
-  sheet: 'half',
   watched: null,
-
-  katman: 'ndvi',
-  layerVisible: true,
-  ...readViewPrefs(),
-  verimlilikIndeksi: 'ndvi',
-  ...viewReset,
-
-  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
-  setFullMap: (fullMap) => set({ fullMap }),
-  setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
-  setCopilotOpen: (open) => set({ copilotOpen: open }),
-  setListAutoCollapse: (listAutoCollapse) => {
-    writeListAutoCollapse(listAutoCollapse)
-    set({ listAutoCollapse })
-  },
-  setDetailWidth: (detailWidthPx) => {
-    writeDetailWidth(detailWidthPx)
-    set({ detailWidthPx })
-  },
-  setSeason: (season) => set({ season }),
-  selectGarden: (id) => set((s) => (s.selectedGardenId === id ? s : { selectedGardenId: id, ...viewReset })),
-  setMapZoom: (mapZoom) => set({ mapZoom }),
   setLiveArea: (liveAreaDekar) => set({ liveAreaDekar }),
   setLiveGeometry: (liveGeometry) => set({ liveGeometry }),
   setDrawShape: (drawShape) => set({ drawShape }),
-  setSheet: (sheet) => set({ sheet }),
   watchProcessing: (id, ad, ignoreJobId = null) => set({ watched: { id, ad, ignoreJobId } }),
   clearWatched: () => set({ watched: null }),
-
-
-  setKatman: (katman) => set({ katman }),
-  setLayerVisible: (layerVisible) => set({ layerVisible }),
-  setSkala: (skala) => set((s) => (writeViewPrefs({ ...s, skala }), { skala })),
-  setCizim: (cizim) => set((s) => (writeViewPrefs({ ...s, cizim }), { cizim })),
-  setRenkKorlugu: (renkKorlugu) => set((s) => (writeViewPrefs({ ...s, renkKorlugu }), { renkKorlugu })),
-  setVerimlilik: (verimlilik) => set({ verimlilik }),
-  setVerimlilikIndeksi: (verimlilikIndeksi) => set({ verimlilikIndeksi }),
-  setRenderInfo: (renderInfo) => set({ renderInfo }),
-
-  startDrawing: () => set({ ...flowReset, mode: 'drawing', selectedGardenId: null, ...viewReset }),
-  startImportPick: (imported) =>
-    set({ ...flowReset, mode: 'import-pick', imported, leftPanelOpen: true, selectedGardenId: null, ...viewReset }),
-  openForm: (draft) => set({ mode: 'form', draft, imported: [], liveAreaDekar: null, leftPanelOpen: true }),
-  startEditingBoundary: (gardenId) =>
-    set({ ...flowReset, mode: 'editing-boundary', editingGardenId: gardenId, selectedGardenId: gardenId }),
+  startDrawing: () => set({ ...flowReset, mode: 'drawing' }),
+  startImportPick: (imported) => set({ ...flowReset, mode: 'import-pick', imported }),
+  openForm: (draft) => set({ mode: 'form', draft, imported: [], liveAreaDekar: null }),
+  startEditingBoundary: (gardenId) => set({ ...flowReset, mode: 'editing-boundary', editingGardenId: gardenId }),
   resetFlow: () => set({ ...flowReset }),
 }))

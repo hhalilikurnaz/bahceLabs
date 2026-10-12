@@ -5,7 +5,7 @@ const LNG = 27.4
 const LAT = 38.4
 
 async function openDraw(page: import('@playwright/test').Page) {
-  await page.goto('/bahcem')
+  await page.goto('/bahceler/yeni')
   await page.getByRole('button', { name: 'Bahçe ekle' }).click()
   await page.getByRole('menuitem', { name: /Haritada çiz/ }).click()
   await expect(page.getByRole('region', { name: 'Bahçeyi çiz' })).toBeVisible()
@@ -49,8 +49,7 @@ test('çokgen çiz → kenar uzunlukları ve canlı alan → doğrulama hatası 
   await page.getByLabel('Ağaç sayısı (isteğe bağlı)').fill('480')
   await page.getByRole('button', { name: 'Kaydet' }).click()
 
-  await expect(page).toHaveURL(/\/bahcem\/[0-9a-f-]{36}\/durum$/)
-  await expect(page.getByTestId('status-line')).toContainText('işleniyor')
+  await expect(page).toHaveURL(/\/bahceler\/[0-9a-f-]{36}$/)
   await expect(page.getByText('“Çizilen Bahçe” için uydu görüntüleri hazır.')).toBeVisible({ timeout: 30_000 })
 })
 

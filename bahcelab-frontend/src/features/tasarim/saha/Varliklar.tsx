@@ -1,5 +1,9 @@
-import { CoordTicks, HatchDefs, ICONS, ILLUSTRATIONS, Icon, Logo, NorthArrow, ScaleBar, type IconName } from './assets'
-import { INDEX_CSS, STATUS, ZONE_HEX, rampCss } from './palette'
+import { KADEMELER, KADEME_META } from '../../bahcem/lib/kademe'
+import { RAMPS, ZONE_LABEL, ZONE_SHADES, rampGradient } from '../../bahcem/lib/paletler'
+import { ICONS, type IconName } from '../../bahcem/varliklar/ikonYollari'
+import { CoordTicks, HatchDefs, IllAgac, IllCicek, IllKesit, IllLimonDali, IllYaprak, Icon, Logo, NorthArrow, ScaleBar } from '../../bahcem/varliklar/varliklar'
+
+const ILLUSTRATIONS = { dal: IllLimonDali, cicek: IllCicek, kesit: IllKesit, agac: IllAgac, yaprak: IllYaprak } as const
 
 const NAMES: Record<IconName, string> = { yaprak: 'Yaprak', limon: 'Meyve', tuzak: 'Tuzak', damla: 'Damla', don: 'Don', ilac: 'İlaç', budama: 'Budama', hasat: 'Hasat', toprak: 'Toprak', gunes: 'Güneş', ruzgar: 'Rüzgâr', bolge: 'Bölge', bahce: 'Bahçe', asistan: 'Asistan', defter: 'Defter', kontur: 'Kontur' }
 const ILL_NAMES: Record<string, string> = { dal: 'Limon dalı', cicek: 'Limon çiçeği', kesit: 'Meyve kesiti', agac: 'Ağaç silueti', yaprak: 'Yaprak levhası' }
@@ -74,9 +78,11 @@ export function Varliklar() {
 
       <Block n="4 · Renk" title="Renk yalnız veride" note="Arayüz mürekkep ve gri. Marka koyu yeşili yalnız logo ve «İyi» durumunda; limon sarısı yalnız birincil eylem ve seçili tarihte. İndeks, bölge ve durum paletleri ayrı; renk körü testinden geçirildi.">
         <div style={{ display: 'grid', gap: 18 }}>
-          <div><div className="eyebrow">İndeks skalası · algısal olarak düzgün, açıktan koyuya tek yönlü</div><div style={{ height: 22, background: INDEX_CSS, border: '1px solid var(--ink)', marginTop: 6 }} /><div style={{ display: 'flex', marginTop: 6 }}>{[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => <div key={t} style={{ flex: 1 }}><i style={{ display: 'block', height: 14, background: rampCss(t), border: '1px solid var(--rule-2)' }} /><span className="mono" style={{ fontSize: 10 }}>{t.toFixed(1)}</span></div>)}</div></div>
-          <div><div className="eyebrow">Bölge paleti · kategorik, renk körü testi geçti (ΔE ≥ 8 CVD, ≥ 15 normal)</div><div style={{ display: 'flex', marginTop: 6, gap: 0 }}>{ZONE_HEX.map((h, i) => <div key={h} style={{ flex: 1 }}><i style={{ display: 'block', height: 34, background: h, border: '1px solid var(--ink)' }} /><span className="mono" style={{ fontSize: 10.5 }}>{i + 1} · {h}</span></div>)}</div></div>
-          <div><div className="eyebrow">Durum · simge + etiketle birlikte</div><div style={{ display: 'flex', gap: 28, marginTop: 6, fontSize: 15, fontWeight: 700 }}>{(['iyi', 'izle', 'dikkat'] as const).map((k) => <span key={k} style={{ color: STATUS[k].color }}>{STATUS[k].mark} {STATUS[k].label} <span className="mono" style={{ fontSize: 11, fontWeight: 400 }}>{STATUS[k].color}</span></span>)}</div></div>
+          {([['canlilik', 'Canlılık · sıralı, tek ton (yeşil)'], ['yaprakSuyu', 'Yaprak suyu · sıralı, tek ton (mavi)'], ['degisim', 'Değişim · iki yönlü, ortası nötr']] as const).map(([id, label]) => (
+            <div key={id}><div className="eyebrow">{label}</div><div style={{ height: 18, background: rampGradient(RAMPS[id]), border: '1px solid var(--ink)', marginTop: 6 }} /></div>
+          ))}
+          <div><div className="eyebrow">Bölgeler · sıralı: tek tonun üç derecesi, zayıf ayrıca taramalı</div><div style={{ display: 'flex', marginTop: 6 }}>{[1, 2, 3].map((k) => <div key={k} style={{ flex: 1 }}><i style={{ display: 'block', height: 30, background: ZONE_SHADES[k], border: '1px solid var(--ink)', backgroundImage: k === 1 ? 'repeating-linear-gradient(45deg, rgba(23,32,27,.55) 0 1.2px, transparent 1.2px 6px)' : undefined }} /><span className="mono" style={{ fontSize: 10.5 }}>{ZONE_LABEL[k]} · {ZONE_SHADES[k]}</span></div>)}</div></div>
+          <div><div className="eyebrow">Durum kademesi · işaret + etiketle birlikte</div><div style={{ display: 'flex', gap: 28, marginTop: 6, fontSize: 15, fontWeight: 700 }}>{KADEMELER.map((k) => <span key={k} style={{ color: KADEME_META[k].renk }}>{KADEME_META[k].isaret} {KADEME_META[k].ad}</span>)}</div></div>
           <div style={{ display: 'flex', gap: 14 }}>
             {[['Kâğıt', 'var(--paper)'], ['Kâğıt 2', 'var(--paper-2)'], ['Kâğıt 3', 'var(--paper-3)'], ['Çizgi', 'var(--rule)'], ['Mürekkep', 'var(--ink)'], ['Grafit', 'var(--ink-2)'], ['Marka', 'var(--brand)'], ['Limon', 'var(--lemon)']].map(([n, c]) => <div key={n} style={{ flex: 1 }}><i style={{ display: 'block', height: 34, background: c, border: '1px solid var(--ink)' }} /><span className="eyebrow">{n}</span></div>)}
           </div>

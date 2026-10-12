@@ -15,7 +15,7 @@ export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/bahcem'
+  const from = (location.state as { from?: string } | null)?.from ?? '/bahceler'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

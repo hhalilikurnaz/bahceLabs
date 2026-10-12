@@ -13,7 +13,7 @@ interface MarketingNavbarProps {
 export function MarketingNavbar({ variant = 'over-hero' }: MarketingNavbarProps) {
   const { isAuthenticated } = useAuth()
   const [scrolled, setScrolled] = useState(false)
-  const logoTo = isAuthenticated ? '/bahcem' : '/'
+  const logoTo = isAuthenticated ? '/bahceler' : '/'
 
   useEffect(() => {
     if (variant !== 'over-hero') return
