@@ -6,7 +6,7 @@ import { Card, ErrorState, SelectField, Skeleton } from '@/components/ui'
 import { useIrrigation } from '../../api/agroApi'
 import { describeError } from '../../api/gardensApi'
 import { IRRIGATION_SYSTEMS, type Garden, type SulamaSistemi } from '../../api/types'
-import { gardenPagePath } from '../../lib/routes'
+import { gardenPath } from '../../lib/routes'
 import { RuleBadge } from '../garden-page/RuleBadge'
 import { useToast } from '../layout/toastContext'
 
@@ -57,7 +57,7 @@ export function IrrigationCard({ garden }: { garden: Garden }) {
             {data.cumle}
           </p>
           {data.kararKaynagi === 'su' ? (
-            <Link to={gardenPagePath(garden.id, 'su')} className="inline-flex min-h-11 items-center text-small font-semibold text-app-text underline underline-offset-2" data-testid="irrigation-su-link">
+            <Link to={gardenPath(garden.id, 'su')} className="inline-flex min-h-11 items-center text-small font-semibold text-app-text underline underline-offset-2" data-testid="irrigation-su-link">
               Gerekçesi Su sekmesinde: toprak nemi, su dengesi →
             </Link>
           ) : (
