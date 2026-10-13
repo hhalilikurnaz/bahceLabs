@@ -70,7 +70,7 @@ export function bulguCumlesi(s: Serit): string {
   if (s.adaylar.length === 0) return `${optik}; radar bu sürede ${kez(s.radarGordu)} gördü, anlamlı değişim yok.`
   const son = s.adaylar[0] // sunucu tarihe göre azalan sıralar
   const yon = son.isaret === 'azalis' ? 'azalma' : 'artış'
-  const islak = son.islaklik_olabilir ? ' (önceki 48 saatte yağış var: ıslaklık olabilir)' : ''
+  const islak = son.guven === 'dusuk' ? ' — düşük güven: önceki 48 saatte yağış var, ıslaklık olabilir' : ''
   return `${optik}; radar bu sürede ${kez(s.radarGordu)} gördü, ${gunAy(son.tarih)} geçişinde alanın %${Math.round(son.alan_orani * 100)}’inde ${yon} (${son.buyukluk_db > 0 ? '+' : ''}${son.buyukluk_db.toFixed(1)} dB, yörünge ${son.yorunge} · ${yonAdi(son.gecis_yonu)}) olay adayı${islak}.`
 }
 

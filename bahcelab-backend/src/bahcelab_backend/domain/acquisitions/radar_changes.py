@@ -15,6 +15,7 @@ from datetime import date
 import numpy as np
 from scipy.ndimage import uniform_filter
 
+PIXEL_M2 = 100.0  # 10 m piksel
 AZALIS, ARTIS = "azalis", "artis"
 ADAY, GURULTU = "aday", "gurultu"
 BANT_ALTI, BANT_USTU, BANT_ICI, BANT_YOK = "alt", "ust", "bant_ici", "bant_yok"
@@ -27,6 +28,8 @@ class ChangeRule:
     baseline_sahne: int
     art_arda_sahne: int
     yumusatma: int = 1  # piksel farkı bu boyutlu pencerede ortalanır (kumlanma gürültüsü eşiği yanlışlıkla aşmasın); 1 = kapalı
+    alan_min_m2: float = 0.0  # 0 = yalnız pay kuralı; >0: eşiği aşan alan en az bu kadar m² (1 da = 1000 m²)
+    birlesim: str = "veya"  # pay ile mutlak alan: veya | ve
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,7 @@ class ChangeResult:
     alan_pikseli: int
 
 
+
 def smooth_delta(delta: np.ndarray, window: int) -> np.ndarray:
     """Fark ızgarasını geçerli komşu ortalamasıyla yumuşatır (NaN'lar sayılmaz, NaN kalır). `window ≤ 1`: değişmez."""
     if window <= 1:
@@ -83,7 +87,13 @@ def pixel_change(current: np.ndarray, baseline: np.ndarray, rule: ChangeRule) ->
     down, up = valid & (delta <= -thr), valid & (delta >= thr)
     sign, mask = (AZALIS, down) if down.sum() >= up.sum() else (ARTIS, up)
     share = float(mask.sum()) / n
-    if share < rule.anlamli_alan_orani:
+    pay_tamam = share >= rule.anlamli_alan_orani
+    alan_tamam = rule.alan_min_m2 > 0 and float(mask.sum()) * PIXEL_M2 >= rule.alan_min_m2
+    if rule.alan_min_m2 <= 0:
+        gecerli = pay_tamam
+    else:
+        gecerli = (pay_tamam and alan_tamam) if rule.birlesim == "ve" else (pay_tamam or alan_tamam)
+    if not gecerli:
         return None
     return sign, share, float(np.median(delta[mask])), int(mask.sum())
 
@@ -137,3 +147,8 @@ def wet_note(daily_rain_mm: list[float | None], threshold_mm: float) -> tuple[bo
         return None, None
     total = round(sum(known), 1)
     return total >= threshold_mm, total
+
+
+def event_confidence(durum: str, islaklik_olabilir: bool | None) -> str:
+    """Olay adayının güveni: «ıslaklık olabilir» notlu aday düşük güvenlidir (9F bunu bildirime çevirmez); gürültü kaydında güven anlamsız (normal)."""
+    return "dusuk" if durum == ADAY and islaklik_olabilir else "normal"

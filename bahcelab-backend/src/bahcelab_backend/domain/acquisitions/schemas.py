@@ -112,6 +112,7 @@ class RadarDegisim(BaseModel):
     art_arda: bool
     islaklik_olabilir: bool | None  # null: yağış verisi yok
     yagis_mm: float | None
+    guven: Literal["normal", "dusuk"]  # dusuk: ıslaklık olabilir notlu aday (9F bildirime çevirmez)
 
 
 class RadarEdinim(BaseModel):
@@ -154,6 +155,6 @@ class RadarEdinimler(BaseModel):
 
 class RadarDegisimler(BaseModel):
     yorungeler: list[RadarYorunge]
-    esikler: dict[str, float]  # anlamlı değişim dB, alan payı, azami maske payı (katalog, ön değer)
+    esikler: dict[str, float]  # anlamlı değişim dB, alan payı, en az alan (da), azami maske payı (katalog, ön değer)
     esik_durumu: Literal["dogrulanmadi", "muhendis_onayli"]
     degisimler: list[RadarDegisim]

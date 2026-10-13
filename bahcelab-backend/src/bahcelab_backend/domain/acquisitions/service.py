@@ -98,7 +98,7 @@ class DataFoundationService:
         orbits = await self.repo.orbits(garden_id)
         return RadarDegisimler(
             yorungeler=[RadarYorunge(yorunge=o.yorunge, gecis_yonu=o.gecis_yonu, sahne_sayisi=o.sahne_sayisi, birincil=o.birincil) for o in orbits],
-            esikler={"anlamli_degisim_db": rule.anlamli_degisim_db, "anlamli_alan_orani": rule.anlamli_alan_orani, "azami_maske_orani": rule.azami_maske_orani},
+            esikler={"anlamli_degisim_db": rule.anlamli_degisim_db, "anlamli_alan_orani": rule.anlamli_alan_orani, "anlamli_alan_min_da": rule.anlamli_alan_min_da, "azami_maske_orani": rule.azami_maske_orani},
             esik_durumu=rule.durum,
             degisimler=[RadarDegisim.model_validate(e, from_attributes=True) for e in events],
         )

@@ -157,7 +157,9 @@ class RadarKurali(KuralBlok):
     lee_bakis: float = Field(default=4.4, gt=0)  # eşdeğer bakış sayısı (STAC: sar:looks_equivalent_number)
     azami_maske_orani: float = Field(default=0.30, ge=0, le=1)  # bahçenin bundan fazlası maskeliyse sahne değişim hesabına girmez
     anlamli_degisim_db: float = Field(default=2.0, gt=0)  # |Δ| eşiği
-    anlamli_alan_orani: float = Field(default=0.10, ge=0, le=1)  # alanın en az bu payı eşiği aşmalı
+    anlamli_alan_orani: float = Field(default=0.25, ge=0, le=1)  # alanın en az bu payı eşiği aşmalı
+    anlamli_alan_min_da: float = Field(default=2.0, gt=0)  # …ya da eşiği aşan alan en az bu kadar dönüm (büyük bahçede pay yerine mutlak alan)
+    alan_birlesim: Literal["veya", "ve"] = "veya"  # pay ile mutlak alan: «veya» = biri yeterli, «ve» = ikisi birden
     yagis_penceresi_saat: int = Field(default=48, ge=1)  # önceki bu kadar saatte yağış → «ıslaklık olabilir»
     yagis_esigi_mm: float = Field(default=1.0, ge=0)
     ani_baseline_sahne: int = Field(default=3, ge=2)  # ani değişim: son sahne, aynı yörüngedeki bu kadar önceki sahnenin ortancasıyla karşılaştırılır

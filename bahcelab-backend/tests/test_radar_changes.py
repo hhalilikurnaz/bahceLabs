@@ -93,3 +93,46 @@ def test_smoothing_removes_isolated_noise_pixels_but_keeps_a_real_patch() -> Non
     sign, share, size, _ = rc.pixel_change(patch, base, rc.ChangeRule(2.0, 0.10, 3, 2, 3))  # type: ignore[misc]
     assert sign == rc.AZALIS and share > 0.2 and size == pytest.approx(-4.0, abs=0.3)
     assert np.isnan(rc.smooth_delta(np.array([[np.nan, 1.0], [1.0, 1.0]]), 3)[0, 0])
+
+
+# ----------------------------------------------------------------------------- alan kuralı: pay (%25) VEYA mutlak alan (≥ 2 da)
+BASE_RULE = dict(anlamli_degisim_db=2.0, anlamli_alan_orani=0.25, baseline_sahne=3, art_arda_sahne=2, yumusatma=1)
+
+
+def patch(rows: int, cols: int, patch_px: int) -> tuple[np.ndarray, np.ndarray]:
+    base = np.full((rows, cols), -15.0)
+    cur = base.copy()
+    cur.reshape(-1)[:patch_px] -= 4.0  # tam piksel sayısı kadar düşüş
+    return cur, base
+
+
+def test_small_garden_needs_the_quarter_share_because_two_decares_would_be_most_of_it() -> None:
+    rule = rc.ChangeRule(**BASE_RULE, alan_min_m2=2000.0, birlesim="veya")  # 8×10 = 80 piksel = 8 da
+    cur, base = patch(8, 10, 16)  # 1,6 da, %20
+    assert rc.pixel_change(cur, base, rule) is None
+    cur, base = patch(8, 10, 21)  # 2,1 da, %26
+    assert rc.pixel_change(cur, base, rule) is not None
+
+
+def test_large_garden_is_decided_by_the_absolute_area_not_the_share() -> None:
+    rule = rc.ChangeRule(**BASE_RULE, alan_min_m2=2000.0, birlesim="veya")  # 30×40 = 1200 piksel = 120 da
+    cur, base = patch(30, 40, 36)  # %3 ama 3,6 da
+    result = rc.pixel_change(cur, base, rule)
+    assert result is not None and result[3] == 36
+    cur, base = patch(30, 40, 12)  # %1 ve 1,2 da
+    assert rc.pixel_change(cur, base, rule) is None
+
+
+def test_and_mode_needs_both_share_and_absolute_area() -> None:
+    rule = rc.ChangeRule(**BASE_RULE, alan_min_m2=2000.0, birlesim="ve")
+    cur, base = patch(30, 40, 36)
+    assert rc.pixel_change(cur, base, rule) is None  # %3 < %25
+    cur, base = patch(30, 40, 400)  # %33 ve 40 da
+    assert rc.pixel_change(cur, base, rule) is not None
+
+
+def test_wet_candidates_have_low_confidence_and_dry_or_unknown_do_not() -> None:
+    assert rc.event_confidence(rc.ADAY, True) == "dusuk"
+    assert rc.event_confidence(rc.ADAY, False) == "normal"
+    assert rc.event_confidence(rc.ADAY, None) == "normal"  # bilinmiyor: güven düşürülmez, not da yok
+    assert rc.event_confidence(rc.GURULTU, True) == "normal"

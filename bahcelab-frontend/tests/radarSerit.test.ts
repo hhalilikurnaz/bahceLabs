@@ -6,7 +6,7 @@ import { buildSerit, bulguCumlesi, eskiOptikSatiri } from '../src/features/bahce
 const BUGUN = '2026-10-12'
 const optik = (net: string[], bulutlu: string[]): Edinimler => ({ izgara: null, net_sayisi: net.length, bulutlu_sayisi: bulutlu.length, bulutlu_tarihler: bulutlu, edinimler: net.map((t) => ({ tarih: t, scene_id: t, bulut_orani: 3, gecerli_oran: 1, isleme_surumu: null, formul_surumu: null, gostergeler: {} })) })
 const radar = (t: string, o: Partial<RadarEdinim> = {}): RadarEdinim => ({ tarih: t, scene_id: `S-${t}`, yorunge: 167, gecis_yonu: 'inis', birincil: true, maskeli_oran: 0, izgara: true, vh_db: -15, rvi: 0.8, ...o })
-const olay = (t: string, o: Partial<RadarDegisim> = {}): RadarDegisim => ({ tarih: t, scene_id: `S-${t}`, yorunge: 167, gecis_yonu: 'inis', durum: 'aday', isaret: 'azalis', alan_orani: 0.28, alan_m2: 900, buyukluk_db: -3.1, bahce_delta_db: -2.5, kalici_sapma: 'alt', art_arda: true, islaklik_olabilir: false, yagis_mm: 0.2, ...o })
+const olay = (t: string, o: Partial<RadarDegisim> = {}): RadarDegisim => ({ tarih: t, scene_id: `S-${t}`, yorunge: 167, gecis_yonu: 'inis', durum: 'aday', guven: 'normal', isaret: 'azalis', alan_orani: 0.28, alan_m2: 900, buyukluk_db: -3.1, bahce_delta_db: -2.5, kalici_sapma: 'alt', art_arda: true, islaklik_olabilir: false, yagis_mm: 0.2, ...o })
 
 describe('bulut altında görüş şeridi', () => {
   it('yalnız son 90 günü alır, bulutlu geçişler tek bulutlu döneme birleşir', () => {
@@ -24,11 +24,12 @@ describe('bulut altında görüş şeridi', () => {
   })
 
   it('aday varsa cümle yönü, alanı, yörüngeyi ve (gerekiyorsa) ıslaklık notunu söyler; gürültü sayılmaz', () => {
-    const s = buildSerit(BUGUN, optik(['2026-10-01'], []), [radar('2026-10-06')], [olay('2026-10-06', { islaklik_olabilir: true }), olay('2026-09-20', { durum: 'gurultu' })])
+    const s = buildSerit(BUGUN, optik(['2026-10-01'], []), [radar('2026-10-06')], [olay('2026-10-06', { islaklik_olabilir: true, guven: 'dusuk' }), olay('2026-09-20', { durum: 'gurultu' })])
     const c = bulguCumlesi(s)
     expect(s.adaylar).toHaveLength(1)
     expect(c).toContain('alanın %28’inde azalma')
     expect(c).toContain('yörünge 167 · iniş')
+    expect(c).toContain('düşük güven')
     expect(c).toContain('ıslaklık olabilir')
     expect(s.radar[0].aday).not.toBeNull()
   })

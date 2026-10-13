@@ -40,10 +40,12 @@ export interface RadarDegisim {
   art_arda: boolean
   islaklik_olabilir: boolean | null
   yagis_mm: number | null
+  /** dusuk: «ıslaklık olabilir» notlu aday (9F bildirime çevirmez) */
+  guven: 'normal' | 'dusuk'
 }
 export interface RadarDegisimler {
   yorungeler: RadarYorunge[]
-  esikler: { anlamli_degisim_db: number; anlamli_alan_orani: number; azami_maske_orani: number }
+  esikler: { anlamli_degisim_db: number; anlamli_alan_orani: number; anlamli_alan_min_da: number; azami_maske_orani: number }
   esik_durumu: 'dogrulanmadi' | 'muhendis_onayli'
   degisimler: RadarDegisim[]
 }

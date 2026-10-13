@@ -98,7 +98,10 @@ async def compute_change_events_for(session: AsyncSession, storage: StorageBacke
     if primary is None:
         return 0
     radar_rule = cat.load_catalog().radar
-    rule = rc.ChangeRule(radar_rule.anlamli_degisim_db, radar_rule.anlamli_alan_orani, radar_rule.ani_baseline_sahne, radar_rule.art_arda_sahne, radar_rule.delta_yumusatma)
+    rule = rc.ChangeRule(
+        radar_rule.anlamli_degisim_db, radar_rule.anlamli_alan_orani, radar_rule.ani_baseline_sahne, radar_rule.art_arda_sahne,
+        alan_min_m2=radar_rule.anlamli_alan_min_da * 1000.0, birlesim=radar_rule.alan_birlesim, yumusatma=radar_rule.delta_yumusatma,
+    )
     limits = band_limits([b for b in await repo.bands(garden_id, RADAR_SOURCE) if b.indeks == "vh_db"])
     samples: list[rc.SceneSample] = []
     for acq, mean_db in acquisitions:
@@ -120,6 +123,7 @@ async def compute_change_events_for(session: AsyncSession, storage: StorageBacke
                 garden_id=garden_id, source_id=RADAR_SOURCE, scene_id=r.scene_id, tarih=r.tarih, yorunge=primary[0], gecis_yonu=primary[1], durum=r.durum, isaret=r.isaret,
                 alan_orani=r.alan_orani, alan_m2=round(r.alan_pikseli * PIXEL_M2, 1), buyukluk_db=r.buyukluk_db, bahce_delta_db=None if np.isnan(r.bahce_delta_db) else r.bahce_delta_db,
                 kalici_sapma=r.kalici_sapma, art_arda=r.art_arda, islaklik_olabilir=wet, yagis_mm=rain, formul_surumu=rm.FORMULA_VERSION,
+                guven=rc.event_confidence(r.durum, wet),
             )
         )
     await repo.replace_change_events(garden_id, RADAR_SOURCE, rows)

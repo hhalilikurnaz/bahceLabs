@@ -221,6 +221,8 @@ async def test_changes_are_recorded_as_candidate_or_noise_with_a_wet_note_from_r
     assert events[single.isoformat()]["durum"] == "gurultu"  # tek sahne: aday değil
     assert events[first.isoformat()]["durum"] == "gurultu" and events[second.isoformat()]["durum"] == "aday" and events[second.isoformat()]["art_arda"]
     assert events[second.isoformat()]["islaklik_olabilir"] is True and events[second.isoformat()]["yagis_mm"] == 6.0
+    assert events[second.isoformat()]["guven"] == "dusuk"  # ıslaklık olabilir notlu aday düşük güvenli (9F bildirime çevirmez)
+    assert body["esikler"]["anlamli_alan_orani"] == 0.25 and body["esikler"]["anlamli_alan_min_da"] == 2.0
     assert events[single.isoformat()]["islaklik_olabilir"] is None  # yağış verisi yok: bilinmiyor, uydurma yok
     assert events[second.isoformat()]["buyukluk_db"] == pytest.approx(-5.2, abs=0.3) and events[second.isoformat()]["alan_orani"] > 0.9
     only = await user_client.get(f"/gardens/{gid}/radar/degisimler", params={"durum": "aday"})

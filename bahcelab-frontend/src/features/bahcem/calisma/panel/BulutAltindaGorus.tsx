@@ -90,7 +90,7 @@ export function BulutAltindaGorus({ gardenId }: { gardenId: string }) {
                   <rect x={X(r.gun) - 2.5} y={SATIR.radar + alt - 2.5} width={5} height={5} fill="var(--color-app-text)" opacity={birincil ? 1 : 0.5}>
                     <title>{`${gunAy(r.tarih)} · yörünge ${r.yorunge} · ${yonAdi(r.yon)}${r.aday ? ` · olay adayı (${r.aday.buyukluk_db > 0 ? '+' : ''}${r.aday.buyukluk_db.toFixed(1)} dB)` : ''}`}</title>
                   </rect>
-                  {r.aday && <rect x={X(r.gun) - 5.5} y={SATIR.radar + alt - 5.5} width={11} height={11} fill="none" stroke="var(--color-app-text)" strokeWidth={1.4} />}
+                  {r.aday && <rect x={X(r.gun) - 5.5} y={SATIR.radar + alt - 5.5} width={11} height={11} fill="none" stroke="var(--color-app-text)" strokeWidth={1.4} strokeDasharray={r.aday.guven === 'dusuk' ? '2.5 2' : undefined} data-guven={r.aday.guven} />}
                 </g>
                 )
               })}
@@ -103,7 +103,7 @@ export function BulutAltindaGorus({ gardenId }: { gardenId: string }) {
               {aylar.map((a) => <text key={a.gun} x={X(a.gun)} y={YUKSEKLIK - 6} fontSize={10} fill="var(--color-app-text-muted)" textAnchor="middle">{a.ad}</text>)}
             </svg>
           </div>
-          <p className="mt-1 text-[11.5px] leading-snug text-app-text-muted">● net optik · ○ bulutlu (alınamadı) · ■ radar geçişi (yörünge başına ayrı satır; birincil yörünge koyu) · çerçeveli ■ radar olay adayı · gri bant bulutlu dönem. RVI: birincil yörünge, bahçe ortalaması. Eşikler ön değer · mühendis onayı bekliyor.</p>
+          <p className="mt-1 text-[11.5px] leading-snug text-app-text-muted">● net optik · ○ bulutlu (alınamadı) · ■ radar geçişi (yörünge başına ayrı satır; birincil yörünge koyu) · çerçeveli ■ radar olay adayı (kesikli çerçeve: düşük güven, ıslaklık olabilir) · gri bant bulutlu dönem. RVI: birincil yörünge, bahçe ortalaması. Eşikler ön değer · mühendis onayı bekliyor.</p>
           <button type="button" className="mt-1.5 flex min-h-9 items-center text-[12.5px] font-semibold underline underline-offset-2 max-[560px]:min-h-11" onClick={() => (setKatman('radarVh'), setTarih(null))} data-testid="radar-haritada">Radar (VH) katmanını haritada aç</button>
         </>
       )}

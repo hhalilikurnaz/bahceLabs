@@ -26,11 +26,26 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   // 1) Katman değişimi: tıklama → ilk karede boyanmış katman. Canlılık ↔ Yaprak suyu ↔ Değişim, birkaç tur.
   const menu = page.getByTestId('katman-menusu')
   const sureler: number[] = []
+  const sogukIlkAcilis: Record<string, number> = {}
   // Isınma: her katmanın ızgarası bir kez indirilsin (ilk ziyaret ağ süresini içerir; ölçülen şey katman DEĞİŞTİRMEDİR)
   for (const hedef of ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'degisim', 'canlilik'] as const) {
     await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Bölgeler|Değişim/ }).first().click()
+    await page.evaluate(() => {
+      performance.clearMarks('katman-boyandi')
+      ;(window as unknown as { __t0: number }).__t0 = performance.now()
+    })
     await page.getByTestId(`katman-${hedef}`).click()
-    await page.waitForTimeout(700)
+    // Soğuk ilk açılış (ağ dahil): YALNIZ raporlanır, eşiği yoktur
+    const soguk = await page.evaluate(async () => {
+      for (let i = 0; i < 150; i++) {
+        const m = performance.getEntriesByName('katman-boyandi').pop()
+        if (m) return m.startTime - (window as unknown as { __t0: number }).__t0
+        await new Promise((r) => setTimeout(r, 20))
+      }
+      return -1
+    })
+    if (soguk > 0) sogukIlkAcilis[hedef] = Math.round(soguk)
+    await page.waitForTimeout(500)
   }
   const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'radarVh', 'tacToprak', 'radarDegisim', 'degisim', 'canlilik', 'radarVh', 'yaprakAlani', 'radarDegisim', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
   for (const hedef of sirasi) {
@@ -90,7 +105,7 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   const sirali = [...kareler].sort((a, b) => a - b)
   const p95 = sirali[Math.floor(sirali.length * 0.95)] ?? 0
 
-  const sonuc = { katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanP95Ms: Math.round(p95Katman), katmanOlcumleri: sureler.map(Math.round), fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, KATMAN_P95_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
+  const sonuc = { katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanP95Ms: Math.round(p95Katman), katmanOlcumleri: sureler.map(Math.round), sogukIlkAcilisMs: sogukIlkAcilis, fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, KATMAN_P95_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
   console.log('PERFORMANS ' + JSON.stringify(sonuc))
   await testInfo.attach('performans.json', { body: JSON.stringify(sonuc, null, 2), contentType: 'application/json' })
 
