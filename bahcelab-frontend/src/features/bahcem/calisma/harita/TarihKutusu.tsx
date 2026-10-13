@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { yonAdi } from '../../api/radarApi'
 import { gunAy, kaynakSatiri, yuzde } from '../../lib/format'
 import { gardenPagePath } from '../../lib/routes'
 import { useCalismaStore } from '../calismaStore'
@@ -22,8 +23,8 @@ export function TarihKutusu({ gardenId, view }: { gardenId: string; view: Harita
       </button>
       <div className="min-w-[132px] px-1.5 leading-tight">
         <b className="num block text-[13px]" data-testid="secili-tarih">{s ? gunAy(s.tarih, 'always') : '—'}</b>
-        <span className="num block text-[10.5px] text-app-text-muted">
-          {s ? kaynakSatiri([view.tanim.id === 'degisim' && view.onceki ? `${gunAy(view.onceki.tarih)} ile fark` : null, s.bulutOrani != null ? `bulut ${yuzde(s.bulutOrani)}` : null, view.tanim.cozunurluk]) : 'görüntü yok'}
+        <span className="num block text-[10.5px] text-app-text-muted" data-testid={s?.yorunge != null ? 'radar-yorunge' : undefined}>
+          {s ? kaynakSatiri([view.tanim.id === 'degisim' && view.onceki ? `${gunAy(view.onceki.tarih)} ile fark` : null, s.yorunge != null ? `yörünge ${s.yorunge} · ${yonAdi(s.yon ?? '')}` : null, s.bulutOrani != null ? `bulut ${yuzde(s.bulutOrani)}` : null, view.tanim.cozunurluk]) : 'görüntü yok'}
         </span>
       </div>
       <button type="button" aria-label="Sonraki görüntü" disabled={i < 0 || i >= list.length - 1} onClick={() => go(1)} className="grid h-9 w-9 max-[560px]:h-11 max-[560px]:w-11 place-items-center rounded-md hover:bg-app-card-hover disabled:opacity-30">

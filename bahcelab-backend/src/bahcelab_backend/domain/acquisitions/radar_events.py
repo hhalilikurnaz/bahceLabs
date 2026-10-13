@@ -53,14 +53,12 @@ async def _daily_rain(session: AsyncSession, center: tuple[float, float], days: 
     return [by_day.get(d) for d in days]
 
 
-async def compute_change_events_for(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID) -> int:
-    """Tüm geçmişi yeniden değerlendirir (idempotent). Dönüş: yazılan olay sayısı (aday + gürültü)."""
-    repo = AcquisitionRepository(session)
-    primary = await repo.primary_orbit(garden_id)
+async def eligible_primary(session: AsyncSession, garden_id: uuid.UUID) -> tuple[tuple[int, str] | None, list[tuple[AcquisitionModel, float]]]:
+    """Birincil yörüngenin değişim hesabına girebilen sahneleri (net, ızgaralı, maske ≤ azami), tarih sıralı: [(edinim, bahçe VH ortalaması dB)]."""
+    primary = await AcquisitionRepository(session).primary_orbit(garden_id)
     if primary is None:
-        return 0
+        return None, []
     radar_rule = cat.load_catalog().radar
-    rule = rc.ChangeRule(radar_rule.anlamli_degisim_db, radar_rule.anlamli_alan_orani, radar_rule.ani_baseline_sahne, radar_rule.art_arda_sahne)
     acquisitions = (
         await session.execute(
             select(AcquisitionModel, AcquisitionStatModel.ortalama)
@@ -73,6 +71,34 @@ async def compute_change_events_for(session: AsyncSession, storage: StorageBacke
             .order_by(AcquisitionModel.tarih)
         )
     ).all()
+    return primary, [(a, float(m)) for a, m in acquisitions]
+
+
+async def delta_grid(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, day: date) -> np.ndarray | None:
+    """Seçili tarihin ani değişim ızgarası (dB): sahne − aynı yörüngedeki önceki N sahnenin piksel ortancası. Yeterli geçmiş yoksa None."""
+    _, scenes = await eligible_primary(session, garden_id)
+    n = cat.load_catalog().radar.ani_baseline_sahne
+    index = next((i for i, (a, _) in enumerate(scenes) if a.tarih == day), None)
+    if index is None or index < n:
+        return None
+    grids: list[np.ndarray] = []
+    for a, _ in scenes[index - n : index + 1]:
+        grid = decode_grids(storage.read(a.izgara_yolu)).get("vh_db") if a.izgara_yolu and storage.exists(a.izgara_yolu) else None
+        if grid is None:
+            return None
+        grids.append(grid)
+    delta = rc.smooth_delta(grids[-1] - np.nanmedian(np.stack(grids[:-1]), axis=0), cat.load_catalog().radar.delta_yumusatma)
+    return np.asarray(delta, dtype=np.float32)
+
+
+async def compute_change_events_for(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID) -> int:
+    """Tüm geçmişi yeniden değerlendirir (idempotent). Dönüş: yazılan olay sayısı (aday + gürültü)."""
+    repo = AcquisitionRepository(session)
+    primary, acquisitions = await eligible_primary(session, garden_id)
+    if primary is None:
+        return 0
+    radar_rule = cat.load_catalog().radar
+    rule = rc.ChangeRule(radar_rule.anlamli_degisim_db, radar_rule.anlamli_alan_orani, radar_rule.ani_baseline_sahne, radar_rule.art_arda_sahne, radar_rule.delta_yumusatma)
     limits = band_limits([b for b in await repo.bands(garden_id, RADAR_SOURCE) if b.indeks == "vh_db"])
     samples: list[rc.SceneSample] = []
     for acq, mean_db in acquisitions:

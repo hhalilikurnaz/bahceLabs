@@ -30,6 +30,8 @@ export interface Edinimler {
   izgara: { satir: number; sutun: number; koordinatlar: number[][] } | null
   net_sayisi: number
   bulutlu_sayisi: number
+  /** Bulut yüzünden kullanılamayan optik geçişlerin tarihleri */
+  bulutlu_tarihler: string[]
   edinimler: Edinim[]
 }
 

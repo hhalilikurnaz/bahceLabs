@@ -80,3 +80,16 @@ def test_wet_note_needs_known_rain_and_never_invents_it() -> None:
     assert rc.wet_note([0.0, 4.2, 0.3], 1.0) == (True, 4.5)
     assert rc.wet_note([0.0, 0.2, None], 1.0) == (False, 0.2)
     assert rc.wet_note([None, None], 1.0) == (None, None)
+
+
+def test_smoothing_removes_isolated_noise_pixels_but_keeps_a_real_patch() -> None:
+    rng = np.random.default_rng(5)
+    base = np.full((30, 30), -15.0)
+    noisy = base + rng.normal(0, 2.0, base.shape)  # piksel gürültüsü tek başına |Δ| ≥ 2 dB üretir
+    assert rc.pixel_change(noisy, base, rc.ChangeRule(2.0, 0.10, 3, 2, 1)) is not None  # yumuşatma kapalı: sahte «anlamlı»
+    assert rc.pixel_change(noisy, base, rc.ChangeRule(2.0, 0.10, 3, 2, 3)) is None  # yumuşatma açık: gürültü elenir
+    patch = base.copy()
+    patch[5:20, 5:20] -= 4.0
+    sign, share, size, _ = rc.pixel_change(patch, base, rc.ChangeRule(2.0, 0.10, 3, 2, 3))  # type: ignore[misc]
+    assert sign == rc.AZALIS and share > 0.2 and size == pytest.approx(-4.0, abs=0.3)
+    assert np.isnan(rc.smooth_delta(np.array([[np.nan, 1.0], [1.0, 1.0]]), 3)[0, 0])

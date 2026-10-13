@@ -4,7 +4,7 @@ import { chromium } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const { BAHCE, EPOSTA, SIFRE, CIKTI, PW_CHROME_PATH, WEB = 'http://localhost:5173' } = process.env
+const { BAHCE, EPOSTA, SIFRE, CIKTI, PW_CHROME_PATH, KUME = '9c', WEB = 'http://localhost:5173' } = process.env
 if (!BAHCE || !EPOSTA || !SIFRE || !CIKTI) throw new Error('BAHCE, EPOSTA, SIFRE ve CIKTI gerekli')
 mkdirSync(CIKTI, { recursive: true })
 /** Dar ekranda görünüm geçici olarak uzatılır, öğe bütün hâliyle çekilir (yapışkan alt katmanlar kırpmasın). */
@@ -15,6 +15,36 @@ async function cekim(page, el, yol, dar) {
   await page.waitForTimeout(600)
   await el.screenshot({ path: yol })
   if (dar) await page.setViewportSize(boyut)
+}
+/** 9D: radar katmanları, tarih kutusu (yörünge), nokta inceleme, Su sekmesi şeridi ve (varsa) Durum'daki eski optik satırı. */
+async function radarCekimleri(page, ad, width) {
+  const menu = page.getByTestId('katman-menusu')
+  const sec = async (id) => {
+    await menu.getByRole('button').first().click()
+    await page.getByTestId(`katman-${id}`).click()
+    await page.waitForTimeout(2500)
+  }
+  await sec('radarVh')
+  await page.screenshot({ path: join(CIKTI, `katman-radar-vh-${ad}.png`) })
+  await page.getByTestId('tarih-kutusu').screenshot({ path: join(CIKTI, `tarih-kutusu-yorunge-${ad}.png`) })
+  const harita = await page.getByTestId('harita-paneli').boundingBox()
+  await page.mouse.click(harita.x + harita.width * 0.45, harita.y + harita.height * 0.55)
+  await page.getByRole('dialog', { name: 'Nokta incelemesi' }).waitFor({ timeout: 15000 })
+  await page.getByTestId('radar-mini-seri').waitFor({ timeout: 15000 }).catch(() => {})
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: join(CIKTI, `nokta-inceleme-radar-${ad}.png`) })
+  await page.getByRole('dialog', { name: 'Nokta incelemesi' }).getByRole('button', { name: 'Kapat' }).click()
+  await sec('radarDegisim')
+  await page.screenshot({ path: join(CIKTI, `katman-radar-degisim-${ad}.png`) })
+  await page.goto(`${WEB}/bahceler/${BAHCE}/su`)
+  const serit = page.getByTestId('bulut-altinda-gorus')
+  await serit.waitFor({ timeout: 30000 })
+  await page.waitForTimeout(1500)
+  await cekim(page, serit, join(CIKTI, `su-bulut-altinda-gorus-${ad}.png`), width < 700)
+  await page.goto(`${WEB}/bahceler/${BAHCE}`)
+  await page.getByTestId('durum-karti').waitFor({ timeout: 30000 })
+  if (await page.getByTestId('eski-optik-satiri').count()) await page.screenshot({ path: join(CIKTI, `durum-eski-optik-satiri-${ad}.png`) })
+  else console.log(`[${ad}] eski optik satırı yok (son optik görüntü taze): görüntü alınmadı`)
 }
 const browser = await chromium.launch({ executablePath: PW_CHROME_PATH, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
@@ -29,6 +59,11 @@ for (const [ad, width, height] of [['1440', 1440, 900], ['390', 390, 844]]) {
   await page.goto(`${WEB}/bahceler/${BAHCE}`)
   await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
   await page.waitForTimeout(5000)
+  if (KUME === '9d') {
+    await radarCekimleri(page, ad, width)
+    await context.close()
+    continue
+  }
   await page.screenshot({ path: join(CIKTI, `durum-kademe-cipler-${ad}.png`) })
   const cubuk = page.getByTestId('gosterge-cubuklari')
   await cekim(page, cubuk, join(CIKTI, `durum-gosterge-cubuklari-${ad}.png`), width < 700)

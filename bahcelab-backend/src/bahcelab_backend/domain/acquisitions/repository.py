@@ -197,6 +197,24 @@ class AcquisitionRepository:
         n = await self.session.execute(select(func.count()).select_from(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == "bulutlu"))
         return int(n.scalar_one())
 
+    async def cloudy_dates(self, garden_id: uuid.UUID, source_id: str) -> list[date]:
+        rows = await self.session.execute(select(AcquisitionModel.tarih).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == "bulutlu").order_by(AcquisitionModel.tarih))
+        return [r[0] for r in rows.all()]
+
+    async def radar_scenes(self, garden_id: uuid.UUID, source_id: str, *, since: date | None = None) -> list[tuple[AcquisitionModel, dict[str, float]]]:
+        """Net radar geçişleri (tarih sıralı) ve VH/RVI bahçe ortalamaları."""
+        query = select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == ACQ_NET).order_by(AcquisitionModel.tarih, AcquisitionModel.yorunge)
+        if since:
+            query = query.where(AcquisitionModel.tarih >= since)
+        acqs = list((await self.session.execute(query)).scalars())
+        if not acqs:
+            return []
+        stats = (await self.session.execute(select(AcquisitionStatModel.acquisition_id, AcquisitionStatModel.indeks, AcquisitionStatModel.ortalama).where(AcquisitionStatModel.acquisition_id.in_([a.id for a in acqs]), AcquisitionStatModel.indeks.in_(("vh_db", "rvi"))))).all()
+        by: dict[uuid.UUID, dict[str, float]] = {}
+        for acq_id, name, value in stats:
+            by.setdefault(acq_id, {})[name] = float(value)
+        return [(a, by.get(a.id, {})) for a in acqs]
+
     async def acquisition_on(self, garden_id: uuid.UUID, source_id: str, day: date) -> AcquisitionModel | None:
         return (
             await self.session.execute(select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.tarih == day, AcquisitionModel.durum == ACQ_NET))

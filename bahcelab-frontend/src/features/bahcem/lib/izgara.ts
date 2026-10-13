@@ -120,6 +120,8 @@ export interface PaintOptions {
   clip?: number[][] | null
   /** Vurgulu aralık: dışındaki pikseller soluk (histogram hover) */
   highlight?: [number, number] | null
+  /** Soluk aralık: bu aralıktaki pikseller soluk çizilir (radar değişiminde anlamlı eşiğin altı) */
+  soluk?: [number, number] | null
   /** Görsel dil: sürekli renk (varsayılan), orantılı kareler (LAI) ya da toprak zemin + tepe daireleri (MSAVI) */
   gorunum?: 'rampa' | 'kareler' | 'daireler'
 }
@@ -167,7 +169,7 @@ function paintShapes(
 }
 
 /** Izgarayı tuvale boyar (bahçe dışı saydam). Kontur etiketleri çakışmasız yerleştirilir (çakışan etiket atlanır). */
-export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null, gorunum = 'rampa' }: PaintOptions): HTMLCanvasElement {
+export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null, soluk = null, gorunum = 'rampa' }: PaintOptions): HTMLCanvasElement {
   const small = document.createElement('canvas')
   small.width = g.cols
   small.height = g.rows
@@ -179,7 +181,8 @@ export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, c
     if (!Number.isFinite(v)) continue
     const [r, gg, b] = rampColor(ramp, (v - domain[0]) / span)
     const dim = highlight && (v < highlight[0] || v > highlight[1])
-    img.data.set([r, gg, b, dim ? 60 : 255], i * 4)
+    const faded = soluk && v > soluk[0] && v < soluk[1]
+    img.data.set([r, gg, b, dim ? 60 : faded ? 90 : 255], i * 4)
   }
   sctx.putImageData(img, 0, 0)
   const out = document.createElement('canvas')

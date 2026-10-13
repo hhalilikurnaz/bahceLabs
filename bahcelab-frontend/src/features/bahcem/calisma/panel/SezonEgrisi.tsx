@@ -86,7 +86,7 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
       </div>
       <div ref={ref} className="relative mt-2">
         {edinim.isLoading || bantlar.isLoading ? (
-          <div className="h-[170px] animate-pulse rounded bg-app-card-hover" aria-label="Sezon eğrisi yükleniyor" />
+          <div role="status" className="h-[170px] animate-pulse rounded bg-app-card-hover" aria-label="Sezon eğrisi yükleniyor" />
         ) : noktalar.length === 0 && koyu.length === 0 ? (
           <div className="grid h-[170px] place-items-center rounded border border-dashed border-app-border px-4 text-center text-[13px] text-app-text-muted" data-testid="sezon-bos">
             {dolduruluyor ? `Veri çekiliyor · %${gecmis?.yuzde ?? 0}. Grafik, geçmiş çekildikçe dolacak.` : 'Bu gösterge için henüz net görüntü ya da yeterli geçmiş yok.'}

@@ -10,6 +10,8 @@ from bahcelab_backend.domain.acquisitions.schemas import (
     GecmisDoldurmaDurumu,
     NormalBantlar,
     RadarDegisimler,
+    RadarEdinimler,
+    RadarNokta,
 )
 from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 
@@ -36,6 +38,30 @@ async def get_radar_changes(
 ) -> RadarDegisimler:
     """Radar değişim kayıtları (birincil yörünge): olay adayları ve gürültü; «ıslaklık olabilir» notu yağıştan gelir. Bildirim üretmez."""
     return await service.radar_changes(garden_id, durum=durum, since=baslangic)
+
+
+@router.get("/gardens/{garden_id}/radar/edinimler", response_model=RadarEdinimler)
+async def get_radar_acquisitions(garden_id: UUID, service: Service, baslangic: Annotated[date | None, Query()] = None) -> RadarEdinimler:
+    """Radar geçişleri (tüm yörüngeler): tarih, yörünge, yön, VH/RVI ortalaması, maske payı."""
+    return await service.radar_acquisitions(garden_id, since=baslangic)
+
+
+@router.get("/gardens/{garden_id}/radar/edinimler/{tarih}/{indeks}/izgara")
+async def get_radar_grid(garden_id: UUID, tarih: date, indeks: str, service: Service) -> Response:
+    """Birincil yörüngenin gösterge ızgarası (Lee filtreli; float32 LE, NaN = geçersiz)."""
+    return Response(content=await service.radar_grid_bytes(garden_id, tarih, indeks), media_type="application/octet-stream", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.get("/gardens/{garden_id}/radar/degisim/{tarih}/izgara")
+async def get_radar_change_grid(garden_id: UUID, tarih: date, service: Service) -> Response:
+    """Radar değişim ızgarası (dB): sahne − aynı yörüngedeki son 3 sahnenin ortancası."""
+    return Response(content=await service.radar_change_grid_bytes(garden_id, tarih), media_type="application/octet-stream", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.get("/gardens/{garden_id}/radar/nokta", response_model=RadarNokta)
+async def get_radar_point(garden_id: UUID, service: Service, satir: Annotated[int, Query(ge=0)], sutun: Annotated[int, Query(ge=0)], tarih: date) -> RadarNokta:
+    """Seçili pikselin son 6 radar sahnesindeki VH dB değeri (mini seri)."""
+    return await service.radar_point(garden_id, satir, sutun, tarih)
 
 
 @router.get("/gardens/{garden_id}/normal-bantlar", response_model=NormalBantlar)

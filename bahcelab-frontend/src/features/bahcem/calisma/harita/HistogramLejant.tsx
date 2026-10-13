@@ -30,7 +30,8 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   const max = Math.max(...bins.map((b) => b.share), 1e-6)
   const ramp = view.ramp
   const bw = W / BINS
-  const degisim = view.tanim.id === 'degisim'
+  const degisim = view.tanim.fark === true
+  const baslik = view.tanim.radar ? `${view.tanim.ad} · ${view.tanim.birim}` : `${view.tanim.ad}${degisim ? ' farkı' : ''}`
   const hb = hover !== null ? bins[hover] : null
   const [lo, hi] = view.alan
   const x = (v: number) => Math.min(W, Math.max(0, ((v - lo) / (hi - lo || 1)) * W))
@@ -40,7 +41,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   if (!acik) {
     return (
       <button type="button" onClick={() => setElle(true)} aria-expanded={false} data-testid="lejant-cip" className="glass flex min-h-11 items-center gap-2 px-3.5 text-[12.5px] font-semibold">
-        {view.tanim.ad}{degisim ? ' farkı' : ''}
+        {baslik}
         {view.ortanca !== null && <span className="num font-normal text-app-text-muted">· ortanca {sayi(view.ortanca)}</span>}
         <span aria-hidden>▴</span>
       </button>
@@ -49,7 +50,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   return (
     <div className="glass w-[286px] max-w-full px-3.5 pb-2.5 pt-3" data-testid="histogram-lejant">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[12.5px] font-bold leading-tight">{view.tanim.ad}{degisim ? ' farkı' : ''}</span>
+        <span className="text-[12.5px] font-bold leading-tight">{baslik}</span>
         {dar && <button type="button" onClick={() => setElle(false)} aria-expanded aria-label="Lejantı küçült" className="grid h-11 w-11 place-items-center text-app-text-muted">▾</button>}
       </div>
       <div className="mt-1 flex gap-3 text-[11px]" role="group" aria-label="Renk skalası">

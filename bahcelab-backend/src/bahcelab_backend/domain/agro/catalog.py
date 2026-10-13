@@ -161,6 +161,7 @@ class RadarKurali(KuralBlok):
     yagis_penceresi_saat: int = Field(default=48, ge=1)  # önceki bu kadar saatte yağış → «ıslaklık olabilir»
     yagis_esigi_mm: float = Field(default=1.0, ge=0)
     ani_baseline_sahne: int = Field(default=3, ge=2)  # ani değişim: son sahne, aynı yörüngedeki bu kadar önceki sahnenin ortancasıyla karşılaştırılır
+    delta_yumusatma: int = Field(default=3, ge=1)  # piksel farkı bu boyutlu pencerede ortalanır (kumlanma gürültüsü); 1 = kapalı
     art_arda_sahne: int = Field(default=2, ge=2)  # tek sahnelik sıçrama gürültüdür; bu kadar ardışık sahnede aynı yönde sürerse olay adayı
 
 

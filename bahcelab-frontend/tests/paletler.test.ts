@@ -20,6 +20,21 @@ describe('veri paletleri: algısal doğrulama', () => {
     expect(Math.abs(s[0][0] - s[10][0])).toBeLessThan(0.08)
   })
 
+  it('radar (VH) sıralı: açıklık tek yönlü artar (zayıf yansıma koyu → güçlü yansıma açık)', () => {
+    const ls = samples('radar').map(L)
+    for (let i = 1; i < ls.length; i++) expect(ls[i]).toBeGreaterThan(ls[i - 1])
+    expect(ls[ls.length - 1] - ls[0]).toBeGreaterThan(0.5)
+  })
+
+  it('radar değişimi iki yönlü: ortası nötr ve en açık, iki kol simetrik açıklıkta', () => {
+    const s = samples('radarDegisim').map((c) => oklab(c))
+    expect(Math.hypot(s[5][1], s[5][2])).toBeLessThan(0.02)
+    for (let i = 0; i < 5; i++) expect(s[i][0]).toBeLessThan(s[i + 1][0] + 1e-9)
+    for (let i = 5; i < 10; i++) expect(s[i][0]).toBeGreaterThan(s[i + 1][0] - 1e-9)
+    expect(Math.abs(s[0][0] - s[10][0])).toBeLessThan(0.12)
+    expect(deltaE(rampColor(RAMPS.radarDegisim, 0.1), rampColor(RAMPS.radarDegisim, 0.9))).toBeGreaterThan(20) // iki yön ayırt edilir
+  })
+
   it('bölge dereceleri: tek ton, komşular arası ΔE ≥ 15 (renk körlüğünde de açıklık farkı)', () => {
     const z = [1, 2, 3].map((k) => parseHex(ZONE_SHADES[k]))
     expect(deltaE(z[0], z[1])).toBeGreaterThan(15)

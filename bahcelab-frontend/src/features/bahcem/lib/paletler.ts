@@ -19,6 +19,10 @@ export const RAMPS = {
   klorofil: stops(['#f6efb0', '#e3dc7a', '#b4cf6a', '#6fae5e', '#2a7048']),
   /** Yaprak alanı (LAI): kare dolgusu tek ton koyu yeşil (kare büyüklüğü değeri taşır); lejant bu ton skalasıyla boyanır */
   yaprakAlani: stops(['#dfe9d4', '#b6d1a2', '#82b073', '#4e8750', '#255a3a']),
+  /** Radar (VH): gri-mavi ışık şiddeti dokusu; koyu = zayıf yansıma, açık = güçlü yansıma */
+  radar: stops(['#26323d', '#4a5e70', '#7c93a6', '#b3c3cf', '#eaf0f4']),
+  /** Radar değişimi: ortası nötr iki yönlü (azalma = turuncu-kahve ← nötr → artış = mavi) */
+  radarDegisim: stops(['#a8470a', '#e0a15f', '#eeeeea', '#8fb6d6', '#1f5f99']),
   /** Taç ve toprak (MSAVI): taç daireleri açık → koyu yeşil */
   tacToprak: stops(['#c9dca4', '#9cc774', '#62a255', '#357a43', '#1b5232']),
 } as const

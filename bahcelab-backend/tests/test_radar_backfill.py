@@ -247,3 +247,53 @@ async def test_scenes_masked_over_the_limit_never_enter_the_change_calculation(u
     assert all(found[d].maskeli_oran > 0.3 for d in days[5:8])
     body = (await user_client.get(f"/gardens/{gid}/radar/degisimler")).json()
     assert body["degisimler"] == []  # maskeli sahneler seriye girmedi: sahte değişim yok
+
+
+async def test_radar_endpoints_list_scenes_grids_change_grid_and_point_series(user_client, factory, app):
+    import numpy as np
+
+    from bahcelab_backend.api.deps import get_radar
+
+    gid = await new_garden(user_client)
+    radar = FakeRadarProvider(GEOMETRY, [FakeOrbit(87, "cikis", 12, 0), FakeOrbit(94, "inis", 12, 5)])
+    radar.noise = False
+    days = radar._days(radar.orbits[0], date(2024, 1, 1), date(2024, 6, 30))
+    radar.level_by_date[days[8]] = 0.3  # primary yörüngede düşüş
+    app.dependency_overrides[get_radar] = lambda: radar
+    runner, settings = make(factory, radar)
+    await run(factory, runner, settings, radar, gid, today=date(2024, 6, 30))
+    body = (await user_client.get(f"/gardens/{gid}/radar/edinimler")).json()
+    assert body["izgara"]["satir"] > 0 and {o["yorunge"] for o in body["yorungeler"]} == {87, 94}
+    scenes = body["edinimler"]
+    assert {s["yorunge"] for s in scenes} == {87, 94} and all(s["birincil"] == (s["yorunge"] == 87) for s in scenes)
+    assert all(s["izgara"] == s["birincil"] for s in scenes) and all(s["vh_db"] is not None and s["rvi"] is not None for s in scenes)
+    day = days[8].isoformat()
+    grid = await user_client.get(f"/gardens/{gid}/radar/edinimler/{day}/vh_db/izgara")
+    assert grid.status_code == 200 and len(grid.content) == body["izgara"]["satir"] * body["izgara"]["sutun"] * 4
+    other = [s for s in scenes if s["yorunge"] == 94][0]["tarih"]
+    assert (await user_client.get(f"/gardens/{gid}/radar/edinimler/{other}/vh_db/izgara")).status_code == 404  # ikincil yörüngede ızgara yok
+    delta = await user_client.get(f"/gardens/{gid}/radar/degisim/{day}/izgara")
+    values = np.frombuffer(delta.content, dtype="<f4")
+    assert delta.status_code == 200 and np.nanmedian(values) == pytest.approx(-5.2, abs=0.3)
+    assert (await user_client.get(f"/gardens/{gid}/radar/degisim/{days[1].isoformat()}/izgara")).status_code == 404  # yeterli önceki sahne yok
+    point = (await user_client.get(f"/gardens/{gid}/radar/nokta", params={"satir": 3, "sutun": 3, "tarih": day})).json()["seri"]
+    assert len(point) == 6 and point[-1]["tarih"] == day and point[-1]["vh_db"] < point[0]["vh_db"] - 3
+
+
+@pytest.mark.slow
+async def test_realistic_series_with_level_jitter_yields_only_the_planted_candidates(user_client, factory):
+    from datetime import timedelta
+
+    gid = await new_garden(user_client)
+    radar = FakeRadarProvider(GEOMETRY, [FakeOrbit(167, "inis", 6, 0), FakeOrbit(94, "inis", 6, 2)])
+    radar.jitter_db = 0.5
+    radar.noise = False
+    today = date(2024, 9, 30)
+    days = radar._days(radar.orbits[0], today - timedelta(days=80), today)
+    for d in days[-2:]:
+        radar.level_by_date[d] = 0.3
+    runner, settings = make(factory, radar, start="2018-01-01")
+    await run(factory, runner, settings, radar, gid, today=today)
+    body = (await user_client.get(f"/gardens/{gid}/radar/degisimler")).json()
+    found = [(e["tarih"], e["durum"]) for e in body["degisimler"]]
+    assert {t for t, d in found if d == "aday"} == {days[-2].isoformat(), days[-1].isoformat()}

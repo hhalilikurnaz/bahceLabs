@@ -1,6 +1,7 @@
 """Radar değişim değerlendirmesi (SAF, ADR 0016): ani değişim + kalıcı sapma → olay adayı ya da gürültü.
 
-Ani değişim: bir sahnenin VH dB ızgarası, AYNI yörüngedeki önceki N sahnenin piksel ortancasıyla karşılaştırılır (log-oran = dB farkı).
+Ani değişim: bir sahnenin VH dB ızgarası, AYNI yörüngedeki önceki N sahnenin piksel ortancasıyla karşılaştırılır (log-oran = dB farkı);
+fark ızgarası küçük bir pencerede ortalanır (kumlanma gürültüsü eşiği yanlışlıkla aşmasın).
 Alan payı = |Δ| eşiğini aşan, baskın yöndeki piksellerin geçerli piksellere oranı; büyüklük = o piksellerin Δ ortancası.
 Kalıcı sapma: sahnenin bahçe ortalaması (dB) o ayın normal bandına (birincil yörünge) göre konumlanır.
 Olay adayı = anlamlı ani değişim VE (kalıcı sapma bant DIŞINDA ve aynı yönde  YA DA aynı yönde art arda ≥ K sahne). Aksi hâlde «gürültü».
@@ -12,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 
 import numpy as np
+from scipy.ndimage import uniform_filter
 
 AZALIS, ARTIS = "azalis", "artis"
 ADAY, GURULTU = "aday", "gurultu"
@@ -24,6 +26,7 @@ class ChangeRule:
     anlamli_alan_orani: float
     baseline_sahne: int
     art_arda_sahne: int
+    yumusatma: int = 1  # piksel farkı bu boyutlu pencerede ortalanır (kumlanma gürültüsü eşiği yanlışlıkla aşmasın); 1 = kapalı
 
 
 @dataclass(frozen=True)
@@ -57,9 +60,21 @@ class ChangeResult:
     alan_pikseli: int
 
 
+def smooth_delta(delta: np.ndarray, window: int) -> np.ndarray:
+    """Fark ızgarasını geçerli komşu ortalamasıyla yumuşatır (NaN'lar sayılmaz, NaN kalır). `window ≤ 1`: değişmez."""
+    if window <= 1:
+        return delta
+    valid = np.isfinite(delta)
+    total = uniform_filter(np.where(valid, delta, 0.0), size=window, mode="nearest")
+    count = uniform_filter(valid.astype(np.float64), size=window, mode="nearest")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(count > 0, total / count, np.nan)
+    return np.where(valid, out, np.nan)
+
+
 def pixel_change(current: np.ndarray, baseline: np.ndarray, rule: ChangeRule) -> tuple[str, float, float, int] | None:
     """(yön, alan payı, büyüklük dB, piksel sayısı); anlamlı değilse None."""
-    delta = current - baseline
+    delta = smooth_delta(current - baseline, rule.yumusatma)
     valid = np.isfinite(delta)
     n = int(valid.sum())
     if n == 0:

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMultiyear } from '../../api/multiyearApi'
 import { useEdinimler } from '../../api/edinimApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
+import { useRadarEdinimler } from '../../api/radarApi'
 import { gunAy, kaynakSatiri } from '../../lib/format'
 import { RAMPS, ZEMIN, ZONE_SHADES, rampGradient } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
@@ -35,6 +36,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const box = useRef<HTMLDivElement>(null)
   const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik } = useCalismaStore()
   const { data } = useEdinimler(gardenId)
+  const radar = useRadarEdinimler(gardenId).data
   const gecmis = useGecmisDoldurma(gardenId).data
   const multi = useMultiyear(gardenId).data
   const aktif = KATMANLAR[katman]
@@ -57,6 +59,12 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
       const ok = multi?.durum === 'hazir'
       return { tarih: null, hazir: ok, not: ok ? (multi?.yil_araligi ?? '') : multi?.durum === 'islem_suruyor' ? 'işleniyor' : 'analiz yok' }
     }
+    if (t.radar) {
+      const liste = (radar?.edinimler ?? []).filter((e) => e.birincil && e.izgara)
+      const son = liste[liste.length - 1]
+      const hazir = t.radar === 'degisim' ? liste.length > 3 : liste.length > 0
+      return { tarih: son?.tarih ?? null, hazir, not: hazir && son ? `son ${gunAy(son.tarih)}` : 'radar verisi yok' }
+    }
     const usable = (data?.edinimler ?? []).filter((e) => t.gosterge !== null && e.gostergeler[t.gosterge])
     const son = usable[usable.length - 1]
     return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : gecmis?.durum === 'isleniyor' ? 'veri çekiliyor' : 'görüntü yok' }
@@ -77,7 +85,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
         {katman !== 'bolgeler' && (
           <>
             <label className="flex h-10 cursor-pointer items-center max-[560px]:hidden gap-2 rounded-md px-2.5 text-[12.5px] font-medium hover:bg-app-card-hover">
-              <input type="checkbox" checked={kontur} onChange={(e) => setKontur(e.target.checked)} className="h-4 w-4 accent-[var(--color-app-text)]" disabled={katman === 'degisim'} />
+              <input type="checkbox" checked={kontur} onChange={(e) => setKontur(e.target.checked)} className="h-4 w-4 accent-[var(--color-app-text)]" disabled={aktif.fark === true} />
               Eş değer çizgisi
             </label>
             <label className="flex h-10 items-center gap-2 px-2.5 text-[12.5px] font-medium max-[560px]:hidden">

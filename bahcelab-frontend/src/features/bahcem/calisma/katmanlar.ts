@@ -2,13 +2,13 @@
 import type { GostergeId } from '../api/edinimApi'
 import type { RampId } from '../lib/paletler'
 
-export type KatmanId = 'canlilik' | 'klorofil' | 'yaprakAlani' | 'tacToprak' | 'yaprakSuyu' | 'bolgeler' | 'degisim'
+export type KatmanId = 'canlilik' | 'klorofil' | 'yaprakAlani' | 'tacToprak' | 'yaprakSuyu' | 'radarVh' | 'radarDegisim' | 'bolgeler' | 'degisim'
 export type Gorunum = 'rampa' | 'kareler' | 'daireler'
 
 export interface KatmanTanimi {
   id: KatmanId
   ad: string
-  grup: 'Bitki' | 'Su' | 'Analiz'
+  grup: 'Bitki' | 'Su' | 'Radar · bulut geçirmez' | 'Analiz'
   /** Gösterge (bölgelerde yok) */
   gosterge: GostergeId | null
   ramp: RampId | null
@@ -21,6 +21,12 @@ export interface KatmanTanimi {
   /** Histogram lejantının uç kelimeleri: [düşük uç, yüksek uç] */
   uclar: [string, string]
   deneysel?: boolean
+  /** Radar katmanı: 'vh' = Lee filtreli VH dB ızgarası, 'degisim' = ani değişim ızgarası (dB) */
+  radar?: 'vh' | 'degisim'
+  /** İki yönlü fark katmanı (değişim, radar değişimi) */
+  fark?: boolean
+  /** Değer birimi (lejant ve nokta incelemede) */
+  birim?: string
 }
 
 export const KATMANLAR: Record<KatmanId, KatmanTanimi> = {
@@ -29,11 +35,17 @@ export const KATMANLAR: Record<KatmanId, KatmanTanimi> = {
   yaprakAlani: { id: 'yaprakAlani', ad: 'Yaprak alanı', grup: 'Bitki', gosterge: 'lai', ramp: 'yaprakAlani', gorunum: 'kareler', kaynak: 'Sentinel-2 L2A', cozunurluk: '20 m', anlam: 'Birim alandaki yaprak miktarı (LAI); kare büyüklüğü değerdir.', uclar: ['seyrek', 'gür'], deneysel: true },
   tacToprak: { id: 'tacToprak', ad: 'Taç ve toprak', grup: 'Bitki', gosterge: 'msavi', ramp: 'tacToprak', gorunum: 'daireler', kaynak: 'Sentinel-2 L2A', cozunurluk: '10 m', anlam: 'Toprak etkisi düzeltilmiş canlılık (MSAVI); daire büyüklüğü ağaç tacıdır.', uclar: ['çıplak toprak', 'sık taç'] },
   yaprakSuyu: { id: 'yaprakSuyu', ad: 'Yaprak suyu', grup: 'Su', gosterge: 'ndmi', ramp: 'yaprakSuyu', gorunum: 'rampa', kaynak: 'Sentinel-2 L2A', cozunurluk: '20 m', anlam: 'Yaprağın su içeriği (NDMI).', uclar: ['kuru', 'nemli'] },
+  radarVh: { id: 'radarVh', ad: 'Radar (VH)', grup: 'Radar · bulut geçirmez', gosterge: null, ramp: 'radar', gorunum: 'rampa', kaynak: 'Sentinel-1 RTC', cozunurluk: '10 m', anlam: 'Yüzeyden geri dönen radar ışığının şiddeti (VH): taç yapısı ve örtü. Bulutta da görür; toprak nemi ölçmez.', uclar: ['zayıf yansıma', 'güçlü yansıma'], radar: 'vh', birim: 'dB' },
+  radarDegisim: { id: 'radarDegisim', ad: 'Radar değişimi', grup: 'Radar · bulut geçirmez', gosterge: null, ramp: 'radarDegisim', gorunum: 'rampa', kaynak: 'Sentinel-1 RTC', cozunurluk: '10 m', anlam: 'Aynı yörüngedeki son 3 geçişin ortancasına göre fark; anlamlı eşiğin altı soluktur.', uclar: ['azalma', 'artış'], radar: 'degisim', fark: true, birim: 'dB' },
   bolgeler: { id: 'bolgeler', ad: 'Bölgeler', grup: 'Analiz', gosterge: null, ramp: null, gorunum: 'rampa', kaynak: 'Sentinel-2 çok yıllık', cozunurluk: '10 m', anlam: 'Yıllardır güçlü ya da zayıf kalan kesimler.', uclar: ['zayıf', 'güçlü'] },
   degisim: { id: 'degisim', ad: 'Değişim', grup: 'Analiz', gosterge: 'ndvi', ramp: 'degisim', gorunum: 'rampa', kaynak: 'Sentinel-2 L2A', cozunurluk: '10 m', anlam: 'Seçili tarihle bir önceki net görüntü arasındaki canlılık farkı.', uclar: ['düşüş', 'artış'] },
 }
-export const KATMAN_SIRASI: KatmanId[] = ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'bolgeler', 'degisim']
-export const KATMAN_GRUPLARI = ['Bitki', 'Su', 'Analiz'] as const
+export const KATMAN_SIRASI: KatmanId[] = ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'bolgeler', 'degisim']
+export const KATMAN_GRUPLARI = ['Bitki', 'Su', 'Radar · bulut geçirmez', 'Analiz'] as const
+
+/** Radar VH genel skalası (dB) ve değişimde simetrik aralık; anlamlı değişim eşiği sunucu kataloğundan gelir (ön değer 2 dB). */
+export const RADAR_VH_ARALIK: [number, number] = [-25, -5]
+export const RADAR_DEGISIM_ARALIK = 6
 
 /** Göstergenin mutlak (genel) skala aralığı ve ad/teknik adı. LAI: 0–5 (narenciye için makul üst). */
 export const GOSTERGE_ARALIK: Record<GostergeId, { min: number; max: number; fark: number }> = {

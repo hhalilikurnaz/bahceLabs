@@ -42,6 +42,7 @@ class FakeRadarProvider:
         self.vv_level = 0.15
         self.level_by_date: dict[date, float] = {}  # tarih → VH çarpanı (değişim/ıslaklık simülasyonu)
         self.shadow = 0.0
+        self.jitter_db = 0.0  # sahne başına bahçe düzeyi oynaması (gerçekte yıllar/sahneler arası değişkenlik; normal bant genişliği)
         self.noise = True
         self.fail_months: set[tuple[int, int]] = set()
         self.read_calls: list[date] = []
@@ -89,7 +90,7 @@ class FakeRadarProvider:
         shape = (h + 2 * PAD, w + 2 * PAD)
         speckle_h = rng.gamma(4.4, 1 / 4.4, shape) if self.noise else np.ones(shape)
         speckle_v = rng.gamma(4.4, 1 / 4.4, shape) if self.noise else np.ones(shape)
-        factor = self.level_by_date.get(ref.tarih, 1.0)
+        factor = self.level_by_date.get(ref.tarih, 1.0) * 10 ** (rng.normal(0, self.jitter_db) / 10)
         vh = (self.vh_level * factor * speckle_h).astype(np.float32)
         vv = (self.vv_level * speckle_v).astype(np.float32)
         if self.shadow > 0:

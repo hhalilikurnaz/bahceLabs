@@ -43,6 +43,7 @@ class AuthService:
             token_hash=hash_refresh_token(refresh),
             expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_days),
         )
+        await self.repo.commit()  # yanıt gitmeden kalıcı olsun: istemci hemen ardından çerezle istek atar (yield bağımlılığı yanıttan sonra commit eder)
         return IssuedSession(
             user=AuthUser(id=user.id, name=user.name, email=user.email, workspace_id=workspace_id),
             access_token=create_access_token(user.id),

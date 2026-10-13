@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createGarden, newUser, seedScenes } from './yardimcilar'
+import { createGarden, newUser, seedRadar, seedScenes } from './yardimcilar'
 
 /**
  * Performans eşikleri (aşılırsa test kırmızı). Başsız ortamda yazılım oluşturucu (SwiftShader) kullanıldığı için 60 fps hedefi
@@ -18,6 +18,7 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   await newUser(page)
   const garden = await createGarden(page.request, { ad: 'Performans', lng: 27.99, lat: 38.99, sideM: 300 })
   seedScenes(garden.id)
+  seedRadar(garden.id) // radar katmanları da ölçülür
   await page.goto(`/bahceler/${garden.id}`)
   await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
   await page.waitForTimeout(1500)
@@ -25,9 +26,15 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   // 1) Katman değişimi: tıklama → ilk karede boyanmış katman. Canlılık ↔ Yaprak suyu ↔ Değişim, birkaç tur.
   const menu = page.getByTestId('katman-menusu')
   const sureler: number[] = []
-  const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'tacToprak', 'degisim', 'canlilik', 'yaprakAlani', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
+  // Isınma: her katmanın ızgarası bir kez indirilsin (ilk ziyaret ağ süresini içerir; ölçülen şey katman DEĞİŞTİRMEDİR)
+  for (const hedef of ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'degisim', 'canlilik'] as const) {
+    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Bölgeler|Değişim/ }).first().click()
+    await page.getByTestId(`katman-${hedef}`).click()
+    await page.waitForTimeout(700)
+  }
+  const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'radarVh', 'tacToprak', 'radarDegisim', 'degisim', 'canlilik', 'radarVh', 'yaprakAlani', 'radarDegisim', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
   for (const hedef of sirasi) {
-    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Bölgeler|Değişim/ }).first().click()
+    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Bölgeler|Değişim/ }).first().click()
     await page.evaluate(() => {
       performance.clearMarks('katman-boyandi')
       ;(window as unknown as { __t0: number }).__t0 = performance.now()

@@ -54,6 +54,12 @@ export function seedAcquisitions(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_acquisitions', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
 }
 
+/** Test aracı: bahçeye radar serisi (sahte radar sağlayıcısı + gerçek doldurma hattı; son haftalarda olay adayı). */
+export function seedRadar(gardenId: string, options: { eskiOptik?: boolean; bulutlu?: boolean } = {}): void {
+  const flags = [...(options.eskiOptik ? ['--eski-optik'] : []), ...(options.bulutlu ? ['--bulutlu'] : [])]
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_radar', gardenId, ...flags], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 240_000, maxBuffer: 512 * 1024 * 1024 }) // API_DEBUG açıkken SQL günlüğü büyük çıktı üretir
+}
+
 /** Test aracı: bahçenin hava önbelleğini kayıtlı örnek veriyle doldurur (ağsız; gerçek hava servisi ve risk motoru çalışır). */
 export function seedWeather(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_weather', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })

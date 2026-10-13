@@ -3,6 +3,9 @@ import { useGardenStatus } from '../../api/agroApi'
 import { ErrorState, Skeleton } from '@/components/ui'
 import { TodayCard } from '../../components/garden-page/TodayCard'
 import { KADEME_META, SEVIYE_META, type Kademe } from '../../lib/kademe'
+import { useEdinimler } from '../../api/edinimApi'
+import { useRadarDegisimler, useRadarEdinimler } from '../../api/radarApi'
+import { eskiOptikSatiri } from '../../lib/radarSerit'
 import { GecmisCekiliyor } from './GecmisCekiliyor'
 import { GostergeCubuklari } from './GostergeCubuklari'
 import { SezonEgrisi } from './SezonEgrisi'
@@ -13,6 +16,11 @@ import { NasilHesaplandi } from './NasilHesaplandi'
 export function DurumPaneli({ garden }: { garden: Garden }) {
   const { data, isLoading, isError, refetch, isFetching } = useGardenStatus(garden.id)
   const kademe: Kademe | null = data && data.durum !== 'veri_yok' ? data.durum : null
+  const edinim = useEdinimler(garden.id).data
+  const radar = useRadarEdinimler(garden.id).data
+  const olaylar = useRadarDegisimler(garden.id).data
+  const sonOptik = edinim?.edinimler[edinim.edinimler.length - 1]?.tarih ?? null
+  const eskiOptik = eskiOptikSatiri(new Date().toISOString().slice(0, 10), sonOptik, radar?.edinimler, olaylar?.degisimler)
   return (
     <div className="grid gap-4 p-5">
       <GecmisCekiliyor gardenId={garden.id} />
@@ -22,6 +30,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
         <ErrorState title="Durum alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
       ) : (
         <section aria-label="Bahçe durumu" className="space-y-3.5" data-testid="durum-karti" data-kademe={data.durum}>
+          {eskiOptik && <p className="rounded border border-app-border bg-app-card px-2.5 py-1.5 text-[12.5px] leading-snug text-app-text-muted" data-testid="eski-optik-satiri">{eskiOptik}</p>}
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">Durum</div>
             {kademe ? (

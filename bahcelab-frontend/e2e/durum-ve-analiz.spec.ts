@@ -80,7 +80,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     if (riskCip?.etiket === 'yüksek') expect(['dikkat', 'sorun']).toContain(api.durum) // yüksek risk: en fazla Dikkat
 
     const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
-    await expect(risk).toContainText(/Meyve sineği|örümcek|Kuruma/)
+    await expect(risk).toContainText(/meyve sineği|örümcek|kuruma/i)
     await expect(risk).toContainText(riskCip?.etiket ?? '')
     await expect(page.getByTestId('kademe-ad')).not.toContainText('İyi')
     await page.getByText('Nasıl hesaplandı?').click()
@@ -122,7 +122,7 @@ test.describe('Durum sekmesi (kademe, sayı yok)', () => {
     await page.goto(`/bahceler/${garden.id}`)
     const risk = page.locator('[data-testid="durum-cip"][data-kod="risk"]')
     await expect(risk).toContainText(/orta|yüksek/, { timeout: 30_000 })
-    await expect(risk).toContainText(/Meyve sineği|örümcek|Kuruma/)
+    await expect(risk).toContainText(/meyve sineği|örümcek|kuruma/i)
     await expect(risk).not.toContainText('görünmüyor')
   })
 

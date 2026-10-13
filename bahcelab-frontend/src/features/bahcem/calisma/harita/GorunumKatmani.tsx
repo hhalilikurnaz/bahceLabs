@@ -29,7 +29,7 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
       return
     }
     const started = performance.now()
-    const konturAcik = kontur && view.tanim.id !== 'degisim' && view.tanim.gorunum === 'rampa'
+    const konturAcik = kontur && view.tanim.fark !== true && view.tanim.gorunum === 'rampa'
     const canvas = paintGrid(view.izgara, {
       ramp: view.ramp,
       domain: view.alan,
@@ -38,6 +38,7 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
       gorunum: view.tanim.gorunum,
       clip: ring,
       highlight: vurgu,
+      soluk: view.soluk,
     })
     // MapLibre canvas kaynağı tuval değişimini desteklemez: kaynak her çizimde yeniden kurulur (ızgara küçük, < 5 ms)
     if (map.getLayer(SRC)) map.removeLayer(SRC)
@@ -55,7 +56,7 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
       }),
     )
     if (import.meta.env.DEV) console.debug(`[harita] katman çizimi ${Math.round(performance.now() - started)} ms`)
-  }, [map, styleVersion, view.izgara, view.ramp, view.alan, view.tanim.id, kontur, vurgu, ring]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, styleVersion, view.izgara, view.ramp, view.alan, view.soluk, view.tanim.id, kontur, vurgu, ring]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (map?.getLayer(SRC)) map.setPaintProperty(SRC, 'raster-opacity', opaklik)
