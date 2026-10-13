@@ -111,7 +111,8 @@ su:
   durum: dogrulanmadi
   kaynak: >-
     Ön değer · mühendis onayı bekliyor: Kc, NDVI 0,30→0,80 aralığında 0,45→0,75 (narenciye, doğrusal); etkin kök derinliği 80 cm;
-    tükenme oranı p = 0,5 (RAW/TAW); doluluk «nemli» ≥ %60, «kuru» ≤ %35 (normale göre); yüzey–hava farkı stres eşiği +5 °C;
+    tükenme oranı p = 0,5 (RAW/TAW); doluluk «nemli» ≥ %60, «kuru» ≤ %35 (AYNI DÖNEM normaline göre, ±15 gün, 2015–2025); günlük < 2 mm yağış su dengesinde sayılmaz;
+    yüzey–hava farkı bahçenin aynı ay Landsat geçmişine göre p25–p75 bandıyla değerlendirilir (sabit eşik yok; aynı ayda ≥ 8 geçmiş sahne);
     karışık piksel |bahçe − tampon| ≥ 1,5 °C. Tarla kapasitesi ve solma noktası SoilGrids + Saxton & Rawls pedotransferinden (ön değer),
     ERA5 mutlak nemine uygulanmaz. Adım 14 toprak tahlili gelince değişecek.
   kc_ndvi_alt: 0.30
@@ -122,6 +123,8 @@ su:
   tukenme_orani: 0.5
   gecmis_gun: 30
   tahmin_gun: 7
+  klima_pencere_gun: 15
+  kucuk_yagis_esigi_mm: 2
   klima_p_alt: 2
   klima_p_ust: 98
   normal_aralik_alt: 10
@@ -131,7 +134,9 @@ su:
   kok_katman_agirliklari: [7, 21, 72]
   doluluk_nemli_min: 60
   doluluk_kuru_max: 35
-  yuzey_hava_stres_c: 5
+  sicaklik_normal_alt: 25
+  sicaklik_normal_ust: 75
+  sicaklik_min_sahne: 8
   karisik_piksel_c: 1.5
   landsat_gecis_saati: 11
 

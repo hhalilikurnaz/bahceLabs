@@ -18,9 +18,9 @@ class ProfilNoktasi(BaseModel):
     bugun: float | None  # m³/m³ (ERA5-Land ya da model)
     bugun_kaynak: Literal["era5_land", "model", "yok"]
     otuz_gun_once: float | None
-    normal_alt: float  # bu hücrenin p10'u
+    normal_alt: float  # AYNI DÖNEMİN (±15 gün, 2015–2025) p10'u
     normal_ust: float  # p90
-    doluluk: float | None  # «normale göre doluluk» % (p2=0, p98=100)
+    doluluk: float | None  # «dönem normaline göre doluluk» % (dönem p2 = 0, p98 = 100)
 
 
 class NemProfili(BaseModel):
@@ -31,12 +31,15 @@ class NemProfili(BaseModel):
     kok_bolgesi_sinif: Literal["nemli", "orta", "kuru", "bilinmiyor"]
     gecis_gunu: date | None  # ERA5-Land → model geçişinin ilk model günü (yoksa None)
     model_ofset: dict[str, float] | None  # katman başına uygulanan model–ERA5-Land farkı
+    donem: str | None = None  # «Ekim»: doluluk ve normal aralık bu ayın ±15 günüyle karşılaştırılır
+    donem_pencere_gun: int = 15
 
 
 class DengeGunu(BaseModel):
     tarih: date
     yagis_mm: float | None
     etc_mm: float | None
+    etkili_yagis_mm: float | None  # dengede sayılan yağış (günlük eşiğin altı 0)
     tukenme_mm: float | None
     birikimli_mm: float | None
     tahmin: bool
@@ -53,21 +56,34 @@ class SuDengesi(BaseModel):
     kc_notu: str
 
 
+class SicaklikNormali(BaseModel):
+    alt_c: float  # bahçenin aynı ay geçmişinde yüzey − hava farkı p25
+    ortanca_c: float
+    ust_c: float  # p75
+    sahne: int
+
+
 class SicaklikNoktasi(BaseModel):
     tarih: date
+    ay: str  # «Eylül»
     yuzey_bahce_c: float
     yuzey_tampon_c: float | None
     hava_c: float | None
     fark_c: float | None
-    stres: bool | None
+    normal: SicaklikNormali | None
+    sapma_c: float | None  # fark − aynı ay ortancası
+    durum: Literal["ustunde", "icinde", "altinda", "yetersiz_gecmis", "bilinmiyor"]
+    stres: bool | None  # yalnız bandın üstünde ve karışık piksel değilken
     karisik_piksel: bool | None
     bahce_tampon_fark_c: float | None
 
 
 class YuzeyHava(BaseModel):
     noktalar: list[SicaklikNoktasi]
-    stres_esigi_c: float
     karisik_piksel_esigi_c: float
+    normal_alt_yuzde: float
+    normal_ust_yuzde: float
+    min_sahne: int
 
 
 class ToprakOzeti(BaseModel):
@@ -80,8 +96,20 @@ class ToprakOzeti(BaseModel):
     kaynak: str | None
 
 
+class SulamaKarari(BaseModel):
+    """TEK sulama kararı: Su sekmesi ve Hava sekmesindeki sulama kartı bu nesneyi gösterir."""
+
+    durum: Literal["sulama", "izle", "gerekmiyor", "veri_yok"]
+    gerekli: bool
+    cumle: str
+    doluluk: float | None  # mevsim normaline göre kök bölgesi doluluğu %
+    donem: str | None
+    ihtiyac_mm: float | None
+
+
 class SuYaniti(BaseModel):
     karar: str
+    karar_detay: SulamaKarari
     on_deger: bool  # katalogda «ön değer · mühendis onayı bekliyor»
     profil: NemProfili
     denge: SuDengesi

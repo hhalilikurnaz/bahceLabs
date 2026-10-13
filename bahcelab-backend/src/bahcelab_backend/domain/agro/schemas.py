@@ -197,6 +197,7 @@ class SulamaYanit(BaseModel):
     sistem: SulamaSistemiYanit
     gerekli: bool
     cumle: str
+    karar_kaynagi: Literal["su", "hava"] = "hava"  # su: karar Su sekmesindekiyle aynı fonksiyondan gelir
     not_: str
     etkili_yagis_kural: KuralMeta
     sistem_kural: KuralMeta

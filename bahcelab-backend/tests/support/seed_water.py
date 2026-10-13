@@ -63,8 +63,8 @@ async def main(garden_id: uuid.UUID) -> None:
         session.add(SoilProfileModel(garden_id=garden_id, kum_yuzde=33.0, kil_yuzde=27.0, silt_yuzde=40.0, organik_karbon_g_kg=15.0, tarla_kapasitesi=0.323, solma_noktasi=0.175, kaynak="test (kayıtlı)", ayrinti=None))
         await session.commit()
     geometry = json.loads(geojson)
-    landsat = FakeLandsatProvider(geometry, step_days=8, start=today - timedelta(days=400))
-    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), settings.model_copy(update={"acq_landsat_start": (today - timedelta(days=400)).isoformat()}), landsat_provider=landsat)
+    landsat = FakeLandsatProvider(geometry, step_days=5, start=today - timedelta(days=800))
+    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), settings.model_copy(update={"acq_landsat_start": (today - timedelta(days=800)).isoformat()}), landsat_provider=landsat)
     async with async_session_factory() as session:
         service = BackfillService(session, runner.provider, runner.storage, ImmediateMonthQueue(runner), runner.settings, landsat_provider=landsat)
         await service.start(garden_id, today=today, source=LANDSAT_SOURCE)

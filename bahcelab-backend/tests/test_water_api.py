@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -81,7 +81,7 @@ async def seed(client: AsyncClient, factory, *, with_soil: bool = True) -> uuid.
 async def test_su_returns_decision_profile_balance_thermal_and_source_chips(user_client, factory):
     gid = await seed(user_client, factory)
     body = (await user_client.get(f"/gardens/{gid}/su")).json()
-    assert body["on_deger"] is True and body["karar"].startswith("Kök bölgesi")
+    assert body["on_deger"] is True and body["karar"].startswith(("Kök bölgesi", "Su dengesi"))
     p = body["profil"]
     assert [k["derinlik"] for k in p["katmanlar"]] == ["0–7 cm", "7–28 cm", "28–100 cm", "100–255 cm"]
     assert all(k["normal_alt"] < k["normal_ust"] for k in p["katmanlar"])  # bu hücrenin p10–p90 aralığı
@@ -92,7 +92,9 @@ async def test_su_returns_decision_profile_balance_thermal_and_source_chips(user
     assert len(d["gunler"]) == 30 + 7 and sum(1 for g in d["gunler"] if g["tahmin"]) == 8 and d["yagis_kaynagi"] == "era5" and "yeterli ay yok" in d["yagis_karari"]
     assert all(g["tukenme_mm"] is not None for g in d["gunler"]) and d["gunler"][-1]["tarih"] == str(TODAY + timedelta(days=7))
     t = body["sicaklik"]
-    assert len(t["noktalar"]) == 3 and t["noktalar"][-1]["hava_c"] == pytest.approx(25.5) and t["noktalar"][-1]["stres"] is True  # 11:00 ERA5 sıcaklığı 25,5; yüzey 38
+    assert len(t["noktalar"]) == 3 and t["noktalar"][-1]["hava_c"] == pytest.approx(25.5) and t["noktalar"][-1]["fark_c"] == pytest.approx(38.0 - 25.5)  # 11:00 ERA5 sıcaklığı 25,5; yüzey 38
+    assert all(n["durum"] == "yetersiz_gecmis" and n["stres"] is None and n["normal"] is None for n in t["noktalar"])  # aynı ayda 3 sahne < 8: sabit eşikle yargı verilmez
+    assert body["karar_detay"]["cumle"] == body["karar"] and body["profil"]["donem"] == ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"][TODAY.month - 1]
     assert all(n["karisik_piksel"] is False for n in t["noktalar"])  # bahçe − tampon = 1,0 °C < 1,5 °C eşiği
     assert set(body["kaynaklar"]) == {"profil", "denge", "sicaklik"} and any("SMAP" in s for s in body["dogrulama"]) and body["toprak"]["tarla_kapasitesi"] == pytest.approx(0.32)
 
@@ -124,3 +126,44 @@ async def test_landsat_endpoints_list_scenes_and_serve_a_polygon_masked_celsius_
     assert grid.status_code == 200 and int(np.isfinite(values).sum()) == int(masking.mask_for(GEOMETRY).sum()) and np.nanmean(values) == pytest.approx(36.0, abs=0.1)
     assert (await user_client.get(f"/gardens/{gid}/landsat/edinimler/2001-01-01/izgara")).status_code == 404
     assert (await user_client.get(f"/gardens/{uuid.uuid4()}/su")).status_code == 404
+
+
+async def test_climatology_and_fill_are_compared_with_the_same_season_not_the_whole_year(user_client, factory):
+    """Kış ıslak (0,40), yaz kuru (0,15): 0,15 yazın NORMAL (≈ orta), kışın ise çok kuru. Yıl geneliyle bakılsa her zaman «kuru» görünürdü."""
+    from bahcelab_backend.domain.agro.catalog import load_catalog
+    from bahcelab_backend.domain.water import balance as wb
+    from bahcelab_backend.domain.water.service import WaterService
+
+    gid = uuid.UUID((await user_client.post("/gardens", json=garden_body(geometry=GEOMETRY))).json()["id"])
+    rule = load_catalog().su
+    async with factory() as session:
+        cell, _, _ = await garden_cell(session, gid)
+        await session.execute(text("DELETE FROM era5_daily WHERE cell_id = :c"), {"c": cell})
+        rows, day, n = [], date(2015, 1, 1), 0
+        while day <= date(2025, 12, 31):
+            base = 0.40 if day.month in (12, 1, 2) else 0.15 if day.month in (7, 8, 9) else 0.28
+            v = base + 0.02 * ((n % 7) / 6)
+            rows.append({"c": cell, "d": day, "v": v})
+            day += timedelta(days=1)
+            n += 1
+        await session.execute(text("INSERT INTO era5_daily (cell_id, tarih, sm0, sm1, sm2, sm3, toprak_kaynak, hava_kaynak) VALUES (:c, :d, :v, :v, :v, :v, 'era5_land', 'era5_land')"), rows)
+        service = WaterService(session, uuid.uuid4())
+        summer = (await service.climatology(cell, rule, date(2026, 8, 15)))[0]
+        winter = (await service.climatology(cell, rule, date(2026, 1, 15)))[0]
+        year = (await session.execute(text("SELECT percentile_cont(0.02) WITHIN GROUP (ORDER BY sm0), percentile_cont(0.98) WITHIN GROUP (ORDER BY sm0) FROM era5_daily WHERE cell_id = :c"), {"c": cell})).one()
+        await session.execute(text("DELETE FROM era5_daily WHERE cell_id = :c"), {"c": cell})  # kalıcı test veritabanını kirletme
+        await session.commit()
+    assert summer.p_ust < 0.19 and winter.p_alt > 0.38  # pencere yalnız ±15 gün: ağustos bandı kuru, ocak bandı ıslak
+    assert 0 < (wb.normalized_fill(0.16, summer) or 0) < 100  # yazın 0,16 normal aralıkta
+    assert wb.normalized_fill(0.16, winter) == 0.0  # aynı değer kışın normalin çok altı
+    assert wb.normalized_fill(0.16, wb.Climatology(float(year[0]), float(year[1]), 0, 0)) < 15  # yıl geneliyle bakınca yazın normal nem bile «kuru» görünürdü (eski hata)
+
+
+async def test_hava_and_su_endpoints_return_the_same_irrigation_decision(user_client, factory):
+    gid = await seed(user_client, factory)
+    su = (await user_client.get(f"/gardens/{gid}/su")).json()
+    hava = (await user_client.get(f"/gardens/{gid}/sulama")).json()
+    assert hava["karar_kaynagi"] == "su" and hava["gerekli"] == su["karar_detay"]["gerekli"]
+    assert su["karar"].split(" Kök bölgesini doldurmak")[0] == su["karar_detay"]["cumle"]
+    assert hava["cumle"].startswith(su["karar_detay"]["cumle"])  # aynı cümle; yalnız gerekliyse miktar eklenir
+    assert (hava["ihtiyac_mm"] or 0) > 0 if su["karar_detay"]["gerekli"] else not hava["ihtiyac_mm"]

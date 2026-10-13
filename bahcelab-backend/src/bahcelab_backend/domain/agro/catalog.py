@@ -181,18 +181,22 @@ class SuKurali(KuralBlok):
     tukenme_orani: float = Field(default=0.5, gt=0, lt=1)  # RAW/TAW: bitki stresi başlamadan tüketilebilen pay (narenciye ≈ 0,5)
     gecmis_gun: int = Field(default=30, ge=7)
     tahmin_gun: int = Field(default=7, ge=1)
-    # Normale göre doluluk: her katman için ERA5-Land'in kendi 2015–2025 klimatolojisi; p_alt = 0, p_ust = 100
+    # Normale göre doluluk: her katman için ERA5-Land'in AYNI DÖNEMİ (±klima_pencere_gün, 2015–2025); p_alt = 0, p_ust = 100
+    klima_pencere_gun: int = Field(default=15, ge=1, le=60)
     klima_p_alt: float = 2.0
     klima_p_ust: float = 98.0
-    normal_aralik_alt: float = 10.0  # «bu bahçenin normal aralığı»
+    normal_aralik_alt: float = 10.0  # «dönem normal aralığı»
     normal_aralik_ust: float = 90.0
     klima_ilk_yil: int = 2015
     klima_son_yil: int = 2025
     kok_katman_agirliklari: tuple[float, float, float] = (7.0, 21.0, 72.0)  # 0–7, 7–28, 28–100 cm kalınlıkları (kök bölgesi 0–100 cm)
     doluluk_nemli_min: float = Field(default=60.0, ge=0, le=100)  # «normale göre doluluk» ≥ bu: nemli
     doluluk_kuru_max: float = Field(default=35.0, ge=0, le=100)  # ≤ bu: kuru
-    # Yüzey–hava sıcaklık farkı (Landsat geçişi ≈ 11:00 yerel)
-    yuzey_hava_stres_c: float = 5.0
+    kucuk_yagis_esigi_mm: float = Field(default=2.0, ge=0)  # günlük yağış bunun altındaysa su dengesinde sayılmaz (etkili yağış)
+    # Yüzey–hava sıcaklık farkı (Landsat geçişi ≈ 11:00 yerel): bahçenin AYNI AY Landsat geçmişine göre p25–p75 bandı; sabit eşik yok
+    sicaklik_normal_alt: float = 25.0
+    sicaklik_normal_ust: float = 75.0
+    sicaklik_min_sahne: int = Field(default=8, ge=3)  # aynı ayda bundan az geçmiş sahne varsa «yetersiz geçmiş»
     karisik_piksel_c: float = 1.5  # |bahçe − tampon| bunu aşarsa «karışık piksel»
     landsat_gecis_saati: int = 11  # yerel saat; hava sıcaklığı bu saatin ERA5 değeri
 

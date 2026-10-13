@@ -81,6 +81,7 @@ class IrrigationResult:
     verimlilik: float | None
     gerekli: bool
     cumle: str
+    kaynak: str = "hava"  # hava: yalnız hava verisiyle yaklaşık hesap · su: Su sekmesindeki TEK karar (toprak nemi + su dengesi)
 
 
 def recommend(

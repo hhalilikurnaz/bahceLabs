@@ -30,7 +30,9 @@ from bahcelab_backend.domain.water.schemas import (
     NemProfili,
     ProfilNoktasi,
     SicaklikNoktasi,
+    SicaklikNormali,
     SuDengesi,
+    SulamaKarari,
     SuYaniti,
     ToprakOzeti,
     YuzeyHava,
@@ -95,16 +97,19 @@ class WaterService:
         return None if found is None else dict(found)
 
     # ------------------------------------------------------------------ klimatoloji
-    async def climatology(self, cell: uuid.UUID, rule: cat.SuKurali) -> list[wb.Climatology]:
+    async def climatology(self, cell: uuid.UUID, rule: cat.SuKurali, ref: date) -> list[wb.Climatology]:
+        """Katman başına AYNI DÖNEMİN (yılın gününe göre ±`klima_pencere_gun`, 2015–2025) p2 / p10 / p90 / p98 değerleri."""
         out = []
+        doy = ref.timetuple().tm_yday
         for i in range(4):
             r = (
                 await self.session.execute(
                     text(
                         f"SELECT percentile_cont(ARRAY[CAST(:a AS float8), CAST(:b AS float8), CAST(:c AS float8), CAST(:d AS float8)]) WITHIN GROUP (ORDER BY sm{i}) FROM era5_daily "
-                        "WHERE cell_id = :cell AND toprak_kaynak = 'era5_land' AND sm" + str(i) + " IS NOT NULL AND tarih BETWEEN :s AND :e"
+                        "WHERE cell_id = :cell AND toprak_kaynak = 'era5_land' AND sm" + str(i) + " IS NOT NULL AND tarih BETWEEN :s AND :e "
+                        "AND LEAST(ABS(EXTRACT(DOY FROM tarih)::int - :doy), 366 - ABS(EXTRACT(DOY FROM tarih)::int - :doy)) <= :w"
                     ),
-                    {"a": rule.klima_p_alt / 100, "b": rule.normal_aralik_alt / 100, "c": rule.normal_aralik_ust / 100, "d": rule.klima_p_ust / 100, "cell": cell, "s": date(rule.klima_ilk_yil, 1, 1), "e": date(rule.klima_son_yil, 12, 31)},
+                    {"a": rule.klima_p_alt / 100, "b": rule.normal_aralik_alt / 100, "c": rule.normal_aralik_ust / 100, "d": rule.klima_p_ust / 100, "cell": cell, "s": date(rule.klima_ilk_yil, 1, 1), "e": date(rule.klima_son_yil, 12, 31), "doy": doy, "w": rule.klima_pencere_gun},
                 )
             ).scalar_one()
             p2, p10, p90, p98 = (r or [0, 0, 0, 0])
@@ -119,7 +124,6 @@ class WaterService:
         rule = cat.load_catalog().su
         today = today or datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).date()
         cell, _, _ = await garden_cell(self.session, garden_id)
-        clims = await self.climatology(cell, rule)
         centroid = (await self.session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).one()
         soil = await self.ensure_soil(garden_id, float(centroid[0]), float(centroid[1]))  # toprak BAHÇE noktasında (hücre merkezi kıyıda boş olabilir)
 
@@ -128,21 +132,25 @@ class WaterService:
             r["tarih"]: r
             for r in (await self.session.execute(text("SELECT * FROM era5_daily WHERE cell_id = :c AND tarih BETWEEN :s AND :e ORDER BY tarih"), {"c": cell, "s": start - timedelta(days=1), "e": today + timedelta(days=rule.tahmin_gun)})).mappings().all()
         }
+        usable_days = [d for d in sorted(rows) if d <= today and rows[d]["sm0"] is not None]
+        ref_day = usable_days[-1] if usable_days else today
+        clims = await self.climatology(cell, rule, ref_day)  # bugünün DÖNEMİ (±15 gün) — doluluk ve normal aralık buna göre
         profile = self._profile(rows, clims, today, rule)
 
         # toprak kovası
         taw = None
         if soil is not None and soil["tarla_kapasitesi"] is not None and soil["solma_noktasi"] is not None:
             taw = available_water_mm(float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"]), rule.kok_derinligi_cm)
-        balance = await self._balance(garden_id, cell, rows, clims, taw, today, start, rule)
+        balance = await self._balance(garden_id, cell, rows, taw, today, start, rule)
         forecast = [b for b in balance[0] if b.tarih > today]  # önümüzdeki `tahmin_gun` gün
         now = next((b for b in balance[0] if b.tarih == today), None)
-        decision = wb.decision_sentence(profile.kok_bolgesi_doluluk, forecast, taw, rule, now)
+        decision = wb.irrigation_decision(profile.kok_bolgesi_doluluk, profile.bugun_tarihi, forecast, now, taw, rule)
         thermal = await self._thermal(garden_id, cell, rule)
 
         last_thermal = thermal.noktalar[-1].tarih if thermal.noktalar else None
         return SuYaniti(
-            karar=decision,
+            karar=decision.cumle,
+            karar_detay=SulamaKarari(durum=cast(Literal["sulama", "izle", "gerekmiyor", "veri_yok"], decision.durum), gerekli=decision.gerekli, cumle=decision.cumle, doluluk=decision.doluluk, donem=decision.donem, ihtiyac_mm=decision.ihtiyac_mm),
             on_deger=True,
             profil=profile,
             denge=SuDengesi(
@@ -166,7 +174,7 @@ class WaterService:
     @staticmethod
     def _day(b: wb.DayBalance, source: str) -> DengeGunu:
         return DengeGunu(
-            tarih=b.tarih, yagis_mm=None if b.veri_eksik else b.yagis_mm, etc_mm=None if b.veri_eksik else b.etc_mm, tukenme_mm=b.tukenme_mm, birikimli_mm=b.birikimli_mm, tahmin=b.tahmin,
+            tarih=b.tarih, yagis_mm=None if b.veri_eksik else b.yagis_mm, etc_mm=None if b.veri_eksik else b.etc_mm, etkili_yagis_mm=None if b.veri_eksik else b.etkili_yagis_mm, tukenme_mm=b.tukenme_mm, birikimli_mm=b.birikimli_mm, tahmin=b.tahmin,
             yagis_kaynagi=cast(Literal["era5", "imerg", "model", "yok"], source), veri_eksik=b.veri_eksik,
         )
 
@@ -175,7 +183,7 @@ class WaterService:
         latest = usable[-1] if usable else None
         weights = rule.kok_katman_agirliklari
         if latest is None:
-            return NemProfili(bugun_tarihi=None, otuz_gun_once_tarihi=None, katmanlar=[], kok_bolgesi_doluluk=None, kok_bolgesi_sinif="bilinmiyor", gecis_gunu=None, model_ofset=None)
+            return NemProfili(bugun_tarihi=None, otuz_gun_once_tarihi=None, katmanlar=[], kok_bolgesi_doluluk=None, kok_bolgesi_sinif="bilinmiyor", gecis_gunu=None, model_ofset=None, donem=None, donem_pencere_gun=rule.klima_pencere_gun)
         before_day = latest - timedelta(days=30)
         before = rows.get(before_day)
         today_row = rows[latest]
@@ -192,15 +200,15 @@ class WaterService:
         offsets = (today_row["saatlik"] or {}).get("model_ofset") if today_row["toprak_kaynak"] != ERA5 else None
         return NemProfili(
             bugun_tarihi=latest, otuz_gun_once_tarihi=before_day if before is not None else None, katmanlar=layers, kok_bolgesi_doluluk=fill, kok_bolgesi_sinif=cast(Literal["nemli", "orta", "kuru", "bilinmiyor"], wb.classify_fill(fill, rule)),
-            gecis_gunu=first_model, model_ofset=offsets,
+            gecis_gunu=first_model, model_ofset=offsets, donem=wb.TR_AYLAR[latest.month - 1], donem_pencere_gun=rule.klima_pencere_gun,
         )
 
     async def _balance(
-        self, garden_id: uuid.UUID, cell: uuid.UUID, rows: dict[date, Any], clims: list[wb.Climatology], taw: float | None, today: date, start: date, rule: cat.SuKurali
+        self, garden_id: uuid.UUID, cell: uuid.UUID, rows: dict[date, Any], taw: float | None, today: date, start: date, rule: cat.SuKurali
     ) -> tuple[list[wb.DayBalance], dict[date, str], str, str]:
         era5_all = {r[0]: float(r[1]) for r in (await self.session.execute(text("SELECT tarih, yagis_mm FROM era5_daily WHERE cell_id = :c AND hava_kaynak = 'era5_land' AND yagis_mm IS NOT NULL"), {"c": cell})).all()}
         imerg_all = {r[0]: float(r[1]) for r in (await self.session.execute(text("SELECT tarih, deger FROM dogrulama_gozlem WHERE garden_id = :g AND source_id = 'imerg-daily' AND deger IS NOT NULL"), {"g": garden_id})).all()}
-        source, reason = wb.choose_rain_source(wb.monthly_rain(era5_all, imerg_all))
+        source, reason = wb.choose_rain_source(wb.monthly_rain(era5_all, imerg_all, rule.kucuk_yagis_esigi_mm))
         ndvi_obs = [
             (r[0], float(r[1]))
             for r in (
@@ -222,25 +230,34 @@ class WaterService:
                 rain, src = imerg_all[d], "imerg"
             sources[d] = src
             inputs.append(wb.DayInput(d, rain, None if r is None else r["et0_mm"], wb.kc_from_ndvi(nd, rule), tahmin=d >= today))
-        fill_start = wb.root_zone_fill([rows[start][f"sm{i}"] for i in range(4)], clims, rule.kok_katman_agirliklari) if start in rows else None
+        clims_start = await self.climatology(cell, rule, start)  # başlangıç nemi, başlangıç gününün DÖNEMİne göre normalize edilir
+        fill_start = wb.root_zone_fill([rows[start][f"sm{i}"] for i in range(4)], clims_start, rule.kok_katman_agirliklari) if start in rows else None
         initial = 0.5 * (taw or 0.0) if fill_start is None else (taw or 0.0) * (1 - fill_start / 100.0)
-        return (wb.simulate(inputs, taw or 0.0, initial) if taw else []), sources, source, reason
+        return (wb.simulate(inputs, taw or 0.0, initial, rule.kucuk_yagis_esigi_mm) if taw else []), sources, source, reason
 
     async def _thermal(self, garden_id: uuid.UUID, cell: uuid.UUID, rule: cat.SuKurali) -> YuzeyHava:
+        """Son 6 Landsat geçişi; her birinin yüzey − hava farkı bahçenin AYNI AY geçmişine (p25–p75) göre değerlendirilir."""
         rows = (
             await self.session.execute(
                 text(
-                    "SELECT a.tarih, b.ortalama, t.ortalama FROM acquisitions a JOIN acquisition_stats b ON b.acquisition_id = a.id AND b.indeks = 'st_c' "
-                    "LEFT JOIN acquisition_stats t ON t.acquisition_id = a.id AND t.indeks = 'st_tampon' WHERE a.garden_id = :g AND a.source_id = 'landsat-c2-l2' AND a.durum = 'net' ORDER BY a.tarih DESC LIMIT 6"
+                    "SELECT a.tarih, b.ortalama, t.ortalama, (e.saatlik->'t2m'->>CAST(:h AS int))::float8 FROM acquisitions a "
+                    "JOIN acquisition_stats b ON b.acquisition_id = a.id AND b.indeks = 'st_c' "
+                    "LEFT JOIN acquisition_stats t ON t.acquisition_id = a.id AND t.indeks = 'st_tampon' "
+                    "LEFT JOIN era5_daily e ON e.cell_id = :c AND e.tarih = a.tarih "
+                    "WHERE a.garden_id = :g AND a.source_id = 'landsat-c2-l2' AND a.durum = 'net' ORDER BY a.tarih"
                 ),
-                {"g": garden_id},
+                {"g": garden_id, "c": cell, "h": rule.landsat_gecis_saati},
             )
         ).all()
+        history = [(day, float(garden_c) - float(air)) for day, garden_c, _, air in rows if air is not None]
         points: list[SicaklikNoktasi] = []
-        for day, garden_c, buffer_c in reversed(rows):
-            hourly = (await self.session.execute(text("SELECT saatlik FROM era5_daily WHERE cell_id = :c AND tarih = :d"), {"c": cell, "d": day})).scalar_one_or_none()
-            temps = (hourly or {}).get("t2m")
-            air = temps[rule.landsat_gecis_saati] if temps and len(temps) > rule.landsat_gecis_saati else None
-            p = wb.thermal_point(day, float(garden_c), None if buffer_c is None else float(buffer_c), air, rule)
-            points.append(SicaklikNoktasi(**p.__dict__))
-        return YuzeyHava(noktalar=points, stres_esigi_c=rule.yuzey_hava_stres_c, karisik_piksel_esigi_c=rule.karisik_piksel_c)
+        for day, garden_c, buffer_c, air in rows[-6:]:
+            p = wb.thermal_point(day, float(garden_c), None if buffer_c is None else float(buffer_c), None if air is None else float(air), wb.thermal_normal(history, day, rule), rule)
+            normal = None if p.normal is None else SicaklikNormali(alt_c=p.normal.alt, ortanca_c=p.normal.ortanca, ust_c=p.normal.ust, sahne=p.normal.sahne)
+            points.append(
+                SicaklikNoktasi(
+                    tarih=p.tarih, ay=p.ay, yuzey_bahce_c=p.yuzey_bahce_c, yuzey_tampon_c=p.yuzey_tampon_c, hava_c=p.hava_c, fark_c=p.fark_c, normal=normal, sapma_c=p.sapma_c,
+                    durum=cast(Literal["ustunde", "icinde", "altinda", "yetersiz_gecmis", "bilinmiyor"], p.durum), stres=p.stres, karisik_piksel=p.karisik_piksel, bahce_tampon_fark_c=p.bahce_tampon_fark_c,
+                )
+            )
+        return YuzeyHava(noktalar=points, karisik_piksel_esigi_c=rule.karisik_piksel_c, normal_alt_yuzde=rule.sicaklik_normal_alt, normal_ust_yuzde=rule.sicaklik_normal_ust, min_sahne=rule.sicaklik_min_sahne)

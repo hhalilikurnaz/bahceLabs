@@ -56,8 +56,9 @@ class DayInput:
 @dataclass(frozen=True)
 class DayBalance:
     tarih: date
-    yagis_mm: float
+    yagis_mm: float  # ham yağış (grafikte gösterilir)
     etc_mm: float
+    etkili_yagis_mm: float  # dengede SAYILAN yağış: günlük eşiğin (katalog, ön değer 2 mm) altı 0
     tukenme_mm: float  # kök bölgesi su eksiği (0 = tarla kapasitesi, TAW = solma noktası)
     kullanilabilir_mm: float  # TAW − tükenme
     birikimli_mm: float  # birikimli (yağış − ETc), pencere başından
@@ -65,8 +66,13 @@ class DayBalance:
     veri_eksik: bool  # yağış, ET0 ya da Kc eksikse gün sayılmaz (kova değişmez)
 
 
-def simulate(days: list[DayInput], taw_mm: float, initial_depletion_mm: float) -> list[DayBalance]:
-    """Günlük kova: Dr_t = clamp(Dr_{t−1} − P + ETc, 0, TAW). Sulama kaydı yoktur (yalnız yağış ve ETc); taşan su (Dr < 0) derin sızıntı sayılır.
+def effective_rain(rain_mm: float, min_rain_mm: float) -> float:
+    """Etkili yağış: günlük yağış eşiğin altındaysa kök bölgesine ulaşmadan buharlaşır, sayılmaz (ön değer 2 mm)."""
+    return rain_mm if rain_mm >= min_rain_mm else 0.0
+
+
+def simulate(days: list[DayInput], taw_mm: float, initial_depletion_mm: float, min_rain_mm: float = 0.0) -> list[DayBalance]:
+    """Günlük kova: Dr_t = clamp(Dr_{t−1} − P_etkili + ETc, 0, TAW). Sulama kaydı yoktur (yalnız yağış ve ETc); taşan su (Dr < 0) derin sızıntı sayılır.
 
     Veri eksik gün (yağış/ET0/Kc None): kova ve birikimli değişmez, `veri_eksik=True` — eksik değer uydurulmaz.
     """
@@ -76,11 +82,12 @@ def simulate(days: list[DayInput], taw_mm: float, initial_depletion_mm: float) -
     for day in days:
         etc = etc_mm(day.et0_mm, day.kc)
         if day.yagis_mm is None or etc is None:
-            out.append(DayBalance(day.tarih, 0.0, 0.0, dr, taw_mm - dr, cumulative, day.tahmin, True))
+            out.append(DayBalance(day.tarih, 0.0, 0.0, 0.0, dr, taw_mm - dr, cumulative, day.tahmin, True))
             continue
-        dr = min(taw_mm, max(0.0, dr - day.yagis_mm + etc))
-        cumulative += day.yagis_mm - etc
-        out.append(DayBalance(day.tarih, day.yagis_mm, etc, dr, taw_mm - dr, cumulative, day.tahmin, False))
+        eff = effective_rain(day.yagis_mm, min_rain_mm)
+        dr = min(taw_mm, max(0.0, dr - eff + etc))
+        cumulative += eff - etc
+        out.append(DayBalance(day.tarih, day.yagis_mm, etc, eff, dr, taw_mm - dr, cumulative, day.tahmin, False))
     return out
 
 
@@ -119,24 +126,72 @@ def classify_fill(fill: float | None, rule: SuKurali) -> str:
     return "nemli" if fill >= rule.doluluk_nemli_min else "kuru" if fill <= rule.doluluk_kuru_max else "orta"
 
 
-def decision_sentence(fill: float | None, forecast: list[DayBalance], taw_mm: float | None, rule: SuKurali, now: DayBalance | None = None) -> str:
-    """Su sekmesi karar cümlesi (ön değer): kök bölgesi doluluğu + 7 günlük tahminle kovanın tükenmesi."""
+TR_AYLAR = ("Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık")
+
+
+@dataclass(frozen=True)
+class IrrigationDecision:
+    """TEK sulama kararı (Hava ve Su sekmeleri aynısını gösterir). durum: sulama | izle | gerekmiyor | veri_yok."""
+
+    durum: str
+    gerekli: bool
+    cumle: str
+    doluluk: float | None  # mevsim normaline göre kök bölgesi doluluğu %
+    donem: str | None  # «Ekim»
+    ihtiyac_mm: float | None  # gerekliyse: tarla kapasitesine dönmek için su açığı (mm), yoksa None
+
+
+def irrigation_decision(fill: float | None, ref_day: date | None, forecast: list[DayBalance], now: DayBalance | None, taw_mm: float | None, rule: SuKurali) -> IrrigationDecision:
+    """Sulama kararı (ön değer · mühendis onayı bekliyor): mevsim normaline göre doluluk ve su dengesi AÇIĞI birlikte aranır.
+
+    «Sulama planlayın» yalnız ikisi birlikte varsa çıkar: doluluk mevsim normaline göre düşük (≤ kuru eşiği) VE kova stres eşiğinde ya da 7 gün içinde ona iniyor.
+    Tek göstergenin düşük olması «izleyin» der; mutlak «kuru» sözü normale göre düşük olmayan yerde kurulmaz.
+    """
     state = classify_fill(fill, rule)
-    if state == "bilinmiyor":
-        return "Kök bölgesi nemi için yeterli veri yok; durum değerlendirilemiyor."
+    if state == "bilinmiyor" or fill is None or ref_day is None:
+        return IrrigationDecision("veri_yok", False, "Kök bölgesi nemi için yeterli veri yok; durum değerlendirilemiyor.", None, None, None)
+    donem = TR_AYLAR[ref_day.month - 1]
+    pct = f"%{round(fill)}"
+    base = f"{donem} normaline göre"
     usable = [d for d in forecast if not d.veri_eksik]
     if taw_mm is None or taw_mm <= 0 or not usable:
-        return {"nemli": "Kök bölgesi normale göre nemli.", "orta": "Kök bölgesi normale göre orta nemde.", "kuru": "Kök bölgesi normale göre kuru."}[state] + " Önümüzdeki günler için su dengesi hesaplanamadı."
-    worst = max(d.tukenme_mm for d in usable)
+        return IrrigationDecision("izle", False, f"Kök bölgesi {base} {pct} dolu; su dengesi hesaplanamadığından sulama kararı verilemiyor, durumu izleyin.", fill, donem, None)
     raw = rule.tukenme_orani * taw_mm
+    worst = max(d.tukenme_mm for d in usable)
     days = len(forecast)
-    if now is not None and not now.veri_eksik and now.tukenme_mm >= raw:
-        return "Kök bölgesi kuru; kullanılabilir su stres eşiğinin altında: sulama planlayın." if state == "kuru" else "Kullanılabilir su stres eşiğinin altında (normale göre doluluk yüksek olsa da): sulama planlayın."
-    if state == "kuru" or worst >= raw:
-        return f"Kök bölgesi {'kuru' if state == 'kuru' else 'kuruyor'}; önümüzdeki {days} gün içinde kullanılabilir su stres eşiğine iniyor: sulama planlayın."
+    deficit_now = now is not None and not now.veri_eksik and now.tukenme_mm >= raw
+    deficit_soon = worst >= raw
+    refill = round(max(worst, now.tukenme_mm if now is not None and not now.veri_eksik else 0.0), 1)
+    if state == "kuru" and deficit_now:
+        return IrrigationDecision("sulama", True, f"Kök bölgesi {base} kuru ({pct}) ve kullanılabilir su stres eşiğinin altında: sulama planlayın.", fill, donem, refill)
+    if state == "kuru" and deficit_soon:
+        return IrrigationDecision("sulama", True, f"Kök bölgesi {base} kuru ({pct}) ve önümüzdeki {days} gün içinde kullanılabilir su stres eşiğine iniyor: sulama planlayın.", fill, donem, refill)
+    if state == "kuru":
+        return IrrigationDecision("izle", False, f"Kök bölgesi {base} düşük ({pct}); su dengesi açık vermiyor, şimdilik sulama gerekmiyor, durumu izleyin.", fill, donem, None)
+    if deficit_now or deficit_soon:
+        return IrrigationDecision("izle", False, f"Su dengesi açığa {'indi' if deficit_now else 'yaklaşıyor'} ama kök bölgesi {base} {pct} dolu: sulama gerekmiyor, durumu izleyin.", fill, donem, None)
     if state == "nemli":
-        return f"Kök bölgesi nemli; önümüzdeki {days} gün sulama gerekmiyor."
-    return f"Kök bölgesi orta nemde; önümüzdeki {days} gün sulama gerekmiyor, durumu izleyin."
+        return IrrigationDecision("gerekmiyor", False, f"Kök bölgesi {base} nemli ({pct}); önümüzdeki {days} gün sulama gerekmiyor.", fill, donem, None)
+    return IrrigationDecision("gerekmiyor", False, f"Kök bölgesi {base} orta nemde ({pct}); önümüzdeki {days} gün sulama gerekmiyor, durumu izleyin.", fill, donem, None)
+
+
+@dataclass(frozen=True)
+class ThermalNormal:
+    """Bahçenin AYNI AY Landsat geçmişinde yüzey − hava farkının p25 / ortanca / p75 değeri."""
+
+    alt: float
+    ortanca: float
+    ust: float
+    sahne: int
+
+
+def thermal_normal(history: list[tuple[date, float]], day: date, rule: SuKurali) -> ThermalNormal | None:
+    """`history`: (tarih, yüzey − hava). Aynı takvim ayındaki, bu sahne HARİÇ geçmiş sahnelerden bant; en az `sicaklik_min_sahne` sahne yoksa None (yetersiz geçmiş)."""
+    diffs = [d for t, d in history if t.month == day.month and t != day]
+    if len(diffs) < rule.sicaklik_min_sahne:
+        return None
+    lo, mid, hi = np.percentile(diffs, [rule.sicaklik_normal_alt, 50.0, rule.sicaklik_normal_ust])
+    return ThermalNormal(float(lo), float(mid), float(hi), len(diffs))
 
 
 @dataclass(frozen=True)
@@ -146,18 +201,28 @@ class ThermalPoint:
     yuzey_tampon_c: float | None
     hava_c: float | None
     fark_c: float | None  # yüzey (bahçe) − hava
-    stres: bool | None
-    karisik_piksel: bool | None
     bahce_tampon_fark_c: float | None
+    karisik_piksel: bool | None
+    normal: ThermalNormal | None
+    sapma_c: float | None  # fark − dönem ortancası
+    durum: str  # ustunde | icinde | altinda | yetersiz_gecmis | bilinmiyor
+    stres: bool | None  # YALNIZ bandın üstünde VE karışık piksel değilken; tampon bilinmiyorsa None
+    ay: str
 
 
-def thermal_point(day: date, garden_c: float, buffer_c: float | None, air_c: float | None, rule: SuKurali) -> ThermalPoint:
-    """Yüzey–hava sıcaklık farkı ve işaretler. Hava yoksa fark/stres None; tampon yoksa karışık piksel None (bilinmiyor)."""
+def thermal_point(day: date, garden_c: float, buffer_c: float | None, air_c: float | None, normal: ThermalNormal | None, rule: SuKurali) -> ThermalPoint:
+    """Yüzey–hava farkı, bahçenin aynı ay bandına göre durumu ve stres/karışık işaretleri. Sabit eşik yoktur."""
     diff = None if air_c is None else garden_c - air_c
     gap = None if buffer_c is None else garden_c - buffer_c
-    return ThermalPoint(
-        day, garden_c, buffer_c, air_c, diff, None if diff is None else diff > rule.yuzey_hava_stres_c, None if gap is None else abs(gap) >= rule.karisik_piksel_c, gap
-    )
+    mixed = None if gap is None else abs(gap) >= rule.karisik_piksel_c
+    month = TR_AYLAR[day.month - 1]
+    if diff is None:
+        return ThermalPoint(day, garden_c, buffer_c, air_c, None, gap, mixed, normal, None, "bilinmiyor", None, month)
+    if normal is None:
+        return ThermalPoint(day, garden_c, buffer_c, air_c, diff, gap, mixed, None, None, "yetersiz_gecmis", None, month)
+    status = "ustunde" if diff > normal.ust else "altinda" if diff < normal.alt else "icinde"
+    stress = None if mixed is None else (status == "ustunde" and not mixed)
+    return ThermalPoint(day, garden_c, buffer_c, air_c, diff, gap, mixed, normal, diff - normal.ortanca, status, stress, month)
 
 
 # ----------------------------------------------------------------------------- yağış kaynağı seçimi (ERA5 ↔ IMERG)
@@ -179,13 +244,13 @@ class MonthlyRain:
         return self.era5_mm / self.imerg_mm if self.imerg_mm >= 5.0 else None  # çok kurak ayda oran anlamsız
 
 
-def monthly_rain(era5: dict[date, float], imerg: dict[date, float]) -> list[MonthlyRain]:
-    """Her iki kaynağın da değeri olan günlerden aylık toplamlar (en az 25 ortak gün olan aylar)."""
+def monthly_rain(era5: dict[date, float], imerg: dict[date, float], min_rain_mm: float = 0.0) -> list[MonthlyRain]:
+    """Her iki kaynağın da değeri olan günlerden aylık toplamlar (en az 25 ortak gün olan aylar). `min_rain_mm`: etkili yağış eşiği (günlük değer altında 0 sayılır)."""
     by_month: dict[tuple[int, int], list[date]] = {}
     for d in sorted(set(era5) & set(imerg)):
         by_month.setdefault((d.year, d.month), []).append(d)
     return [
-        MonthlyRain(y, m, sum(era5[d] for d in days), sum(imerg[d] for d in days), len(days))
+        MonthlyRain(y, m, sum(effective_rain(era5[d], min_rain_mm) for d in days), sum(effective_rain(imerg[d], min_rain_mm) for d in days), len(days))
         for (y, m), days in sorted(by_month.items())
         if len(days) >= MIN_DAYS_PER_MONTH
     ]

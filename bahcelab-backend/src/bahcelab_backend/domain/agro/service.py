@@ -22,7 +22,11 @@ from bahcelab_backend.domain.agro.risks import (
     mal_secco,
     red_spider,
 )
-from bahcelab_backend.domain.agro.rulebook import load_irrigation_rules, load_risk_rules
+from bahcelab_backend.domain.agro.rulebook import (
+    SulamaKurallari,
+    load_irrigation_rules,
+    load_risk_rules,
+)
 from bahcelab_backend.domain.agro.schemas import (
     BugunMaddesiYanit,
     BugunYanit,
@@ -63,6 +67,8 @@ from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.ndvi.indices import INDICES
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts
+from bahcelab_backend.domain.water.schemas import SulamaKarari
+from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import TIMEZONE
 from bahcelab_backend.domain.weather.schemas import HavaYanit
 from bahcelab_backend.domain.weather.service import WeatherService
@@ -382,10 +388,35 @@ class AgroService:
         rules = load_irrigation_rules()
         past = [DayInput(today - timedelta(days=i), daily_et0.get(today - timedelta(days=i)), (history.get(today - timedelta(days=i)) or GunVerisi(today, None, None)).yagis_mm) for i in range(rules.hesap.gecmis_gun, 0, -1)]
         future = [DayInput(d.tarih, d.et0_mm, d.yagis_mm) for d in (weather.gunler if weather else []) if d.tarih >= today][: rules.hesap.gelecek_gun]
-        if not future:
+        result = recommend(past, future, stages, rules, dekar=float(garden.alan_dekar), system=garden.sulama_sistemi) if future else None
+        unified = await self._water_decision(garden.id, today)
+        if unified is not None:  # TEK karar kaynağı: toprak nemi + su dengesi varsa karar buradan gelir (Su sekmesiyle aynı)
+            return self._merge_decision(result, unified, garden, rules), None
+        if result is None:
             return None, "Hava tahmini alınamadığından önümüzdeki günlerin su ihtiyacı hesaplanamadı."
-        result = recommend(past, future, stages, rules, dekar=float(garden.alan_dekar), system=garden.sulama_sistemi)
         return result, None
+
+    async def _water_decision(self, garden_id: uuid.UUID, today: date) -> SulamaKarari | None:
+        """Su sekmesinin kararı (`WaterService.su().karar_detay`); toprak nemi/ERA5 verisi yoksa None (o zaman hava tabanlı yaklaşık hesap kalır)."""
+        try:
+            decision = (await WaterService(self.ndvi.session, self.gardens.workspace_id).su(garden_id, today)).karar_detay
+        except AppError:
+            return None
+        return None if decision.durum == "veri_yok" else decision
+
+    @staticmethod
+    def _merge_decision(base: IrrigationResult | None, decision: SulamaKarari, garden: GardenModel, rules: SulamaKurallari) -> IrrigationResult:
+        info = rules.sulama_sistemleri.sistemler.get(garden.sulama_sistemi or "")
+        efficiency = info.verimlilik if info else None
+        need = decision.ihtiyac_mm if decision.gerekli and decision.ihtiyac_mm else 0.0
+        gross = round(need / efficiency, 1) if need and efficiency else None
+        ton_da = round((gross if gross is not None else need) * rules.hesap.mm_basina_ton_dekar, 1)
+        gecmis, gelecek = (base.gecmis, base.gelecek) if base else (None, None)
+        sentence = decision.cumle
+        if decision.gerekli and need:
+            suffix = "" if gross is not None else " (sulama sistemi seçilmediğinden verimlilik uygulanmadı)"
+            sentence += f" Kök bölgesini doldurmak için yaklaşık {(gross if gross is not None else need):g} mm (≈ {ton_da:g} ton/dekar){suffix}."
+        return IrrigationResult(gecmis, gelecek, need, gross, ton_da, round(ton_da * float(garden.alan_dekar), 1), garden.sulama_sistemi, efficiency, decision.gerekli, sentence, "su")
 
     async def _daily_et0(self, garden_id: uuid.UUID, today: date) -> dict[date, float | None]:
         try:
@@ -410,7 +441,7 @@ class AgroService:
         def win(w) -> SulamaPenceresi | None:  # type: ignore[no-untyped-def]
             return SulamaPenceresi(gun=w.gun, etc_mm=w.etc_mm, etkili_yagis_mm=w.etkili_yagis_mm, net_mm=w.net_mm, eksik_gun=w.eksik_gun) if w else None
 
-        if result is None or result.gelecek is None:
+        if result is None or (result.gelecek is None and result.kaynak != "su"):
             return SulamaYanit(
                 veri_yeterli=False, veri_yetersiz_nedeni=reason or "Su ihtiyacı için yeterli veri yok.", son_gunler=None, onumuzdeki_gunler=None,
                 ihtiyac_mm=None, brut_ihtiyac_mm=None, ton_dekar=None, toplam_ton=None, sistem=system, gerekli=False,
@@ -419,7 +450,7 @@ class AgroService:
         return SulamaYanit(
             veri_yeterli=True, veri_yetersiz_nedeni=None, son_gunler=win(result.gecmis), onumuzdeki_gunler=win(result.gelecek),
             ihtiyac_mm=result.ihtiyac_mm, brut_ihtiyac_mm=result.brut_ihtiyac_mm, ton_dekar=result.ton_dekar, toplam_ton=result.toplam_ton,
-            sistem=system, gerekli=result.gerekli, cumle=result.cumle, not_=IRRIGATION_NOTE, etkili_yagis_kural=etkili, sistem_kural=sistem_kural, kc_kural=kc_kural,
+            sistem=system, gerekli=result.gerekli, cumle=result.cumle, karar_kaynagi="su" if result.kaynak == "su" else "hava", not_=IRRIGATION_NOTE, etkili_yagis_kural=etkili, sistem_kural=sistem_kural, kc_kural=kc_kural,
         )
 
     # ------------------------------------------------------------------ skor

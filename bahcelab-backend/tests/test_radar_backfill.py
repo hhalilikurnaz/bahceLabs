@@ -208,6 +208,7 @@ async def test_changes_are_recorded_as_candidate_or_noise_with_a_wet_note_from_r
         key = {"a": snap(float(lat), step), "b": snap(float(lng), step)}
         await session.execute(text("INSERT INTO weather_cells (id, enlem, boylam) VALUES (:i, :a, :b) ON CONFLICT ON CONSTRAINT uq_weather_cell DO NOTHING"), {"i": uuid.uuid4(), **key})
         cell = (await session.execute(text("SELECT id FROM weather_cells WHERE enlem = :a AND boylam = :b"), key)).scalar_one()
+        await session.execute(text("DELETE FROM era5_daily WHERE cell_id = :c"), {"c": cell})  # ERA5 arşivi öncelikli yağış kaynağı: başka testlerden kalan satırlar notu bozmasın
         await session.execute(text("DELETE FROM weather_daily WHERE cell_id = :c"), {"c": cell})  # test veritabanı kalıcıdır: önceki koşudan kalan satırlar silinir
         await session.execute(text("INSERT INTO weather_daily (cell_id, tarih, yagis_mm, kaynak) VALUES (:c, :d, 6.0, 'arsiv')"), {"c": cell, "d": second - timedelta(days=1)})
         await session.commit()
