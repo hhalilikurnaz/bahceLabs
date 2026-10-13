@@ -39,6 +39,7 @@ jobs:
       API_DEBUG: "true"
       REGISTRATION_ENABLED: "true"
       NDVI_ENABLED: "false"
+      SOILGRIDS_ENABLED: "false"
       JOBS_ENABLED: "false"
       PYTHONPATH: src:.
     defaults:
@@ -87,6 +88,7 @@ jobs:
       REDIS_URL: redis://localhost:6379/0  # arq ayarı içe aktarma sırasında çözümlenir; bağlantı kurulmaz
       API_DEBUG: "true"
       COOKIE_SECURE: "false"
+      SOILGRIDS_ENABLED: "false"
       REGISTRATION_ENABLED: "true"
     steps:
       - uses: actions/checkout@v4

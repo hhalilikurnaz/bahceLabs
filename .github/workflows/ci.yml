@@ -32,6 +32,7 @@ jobs:
       API_DEBUG: "true"
       REGISTRATION_ENABLED: "true"
       NDVI_ENABLED: "false"
+      SOILGRIDS_ENABLED: "false"
       JOBS_ENABLED: "false"
       PYTHONPATH: src:.
     defaults:
