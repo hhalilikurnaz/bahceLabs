@@ -52,7 +52,7 @@ jobs:
         run: .venv/bin/ruff check src tests scripts
       - name: mypy
         run: .venv/bin/mypy src
-      - name: pytest (hızlı: yavaş işaretliler hariç)
+      - name: pytest (hızlı, yavaş işaretliler hariç)
         run: .venv/bin/pytest -q -n 4 -m "not slow"
 
   frontend:

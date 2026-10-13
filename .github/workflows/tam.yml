@@ -95,7 +95,7 @@ jobs:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: bahcelab-backend/pyproject.toml
-      - name: Backend bağımlılıkları (.venv: e2e betikleri bu yolu kullanır)
+      - name: Backend bağımlılıkları (.venv yolu e2e betikleri için)
         working-directory: bahcelab-backend
         run: |
           python -m venv .venv
