@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createGarden, newUser } from './yardimcilar'
+import { createGarden, newUser, seedWeather } from './yardimcilar'
 
 /** Open-Meteo'ya çıkılmaz: sunucu yanıtı sahte (yalnızca testte) ve sabit tarihli saatlik tahmin. */
 function fakeWeather(today: string) {
@@ -93,6 +93,7 @@ test('hava servisi hata verirse anlaşılır hata ve "Tekrar dene" gösterilir',
 test('Hava sekmesi: sulama ve zararlı riski kartları ön değer uyarısı ile gelir', async ({ page }) => {
   await newUser(page)
   const garden = await createGarden(page.request, { ad: 'Risk Bahçesi', lng: 27.85, lat: 38.85 })
+  seedWeather(garden.id) // sulama ve risk kartları sunucu tarafında hesaplanır: kayıtlı örnek veriyle (ağsız) beslenir; CI'da Open-Meteo'ya çıkılmaz
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
 

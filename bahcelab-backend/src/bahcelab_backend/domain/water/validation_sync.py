@@ -133,7 +133,7 @@ def fetch_imerg(lat: float, lng: float, days: list[date]) -> dict[date, list[Obs
 FETCHERS: dict[str, Callable[[float, float, list[date]], dict[date, list[Observation]]]] = {SMAP: fetch_smap, CHIRPS: fetch_chirps, IMERG: fetch_imerg}
 
 
-async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 60) -> dict[str, int]:
+async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 30) -> dict[str, int]:
     """[start, end] eksik günleri parça parça çeker ve yazar. Dönüş: aranan gün, yazılan gözlem."""
     import asyncio
 
@@ -142,8 +142,8 @@ async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id
     have = await existing_days(session, garden_id, source_id)
     todo = [d for d in days_between(start, end) if d not in have]
     written = 0
-    for i in range(0, len(todo), chunk_days):
-        chunk = todo[i : i + chunk_days]
+    chunks = [todo[i : i + chunk_days] for i in range(0, len(todo), chunk_days)]
+    for chunk in reversed(chunks):  # en yeni parça önce: süre dolarsa en güncel dönem hazır olur (ağ hızı SMAP için sınırlayıcı)
         results = await asyncio.to_thread(FETCHERS[source_id], lat, lng, chunk)
         written += await store(session, garden_id, source_id, results)
         await session.commit()
