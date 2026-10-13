@@ -47,5 +47,8 @@ Durum: kabul edildi. Tarih: 2026-10-13.
 - Test bahçeleri (jlnnlk, soğuk hava) 4311 günlük ERA5 serisi (2015-01-01 → +7 gün), Landsat 539 net/186 bulutlu geçiş (jlnnlk); bahçe–tampon farkı ortalama +0,44 °C (p95 1,27; 83 sahnede > 1 °C → karışık uyarısı sık çıkar).
 - Yağış kaynağı kararı ve SMAP/IMERG kapsamı için `docs/` raporuna ve son bölüm güncellemesine bakın (aşağıda «Güncel karşılaştırma»).
 
-## Güncel karşılaştırma
-_(veri tamamlandıkça doldurulur)_
+## Güncel karşılaştırma (2026-10-13, jlnnlk hücresi; arka plan doldurma sürüyor)
+- **IMERG kapsamı:** 2025-02-14 → 2026-10-12 (606 gün; 2022'ye doğru sürüyor). **SMAP:** 2026-03-11 → 2026-10-11 (3 günde bir; geçerli örnek ≈ 35/94 geçiş, kıyı hücresi).
+- **ERA5 / IMERG aylık yağış (16 tam ay, Mar 2025 – Eyl 2026):** oran medyanı **1,62**; ayların **%56'sında oran ≥ 1,25** (kural: medyan ≥ 1,25 **ve** ayların ≥ %60'ı). Toplam: ERA5 ≈ 1250 mm, IMERG ≈ 1030 mm (oran 1,21). Örüntü tutarlı bir önyargı değildir: **yağışlı aylarda (Ara, Mar–May) ERA5 IMERG'in altında (0,63–0,82), kurak aylarda (Haz–Eyl) çok üstünde** (düşük paydalı oranlar: ERA5 sürekli çiseleme üretir, IMERG ~0).
+- **Karar: ERA5 korunur** (sistematik değil; yüzde 56 < 60). Kurak ayda ERA5'in birkaç mm fazlası su dengesini az etkiler; yağışlı dönemde ERA5'in düşük kalması ise «sulama gerekmez» yönünde değil, aksi yönde (az yağış) bir hatadır. 2022'ye kadar veri tamamlandıkça kural otomatik yeniden değerlendirilir (`choose_rain_source`).
+- **SMAP–ERA5 yüzey nemi (am/pm geçişi, ERA5 saat 6/18):** r = 0,26 / 0,21; ERA5 − SMAP ortalama fark +0,20 / +0,17 m³/m³ (düzey farkı sınırı). İlişki zayıftır ve yalnız kuru mevsimi kapsar; kış verisi geldikçe yeniden bakılacak.
