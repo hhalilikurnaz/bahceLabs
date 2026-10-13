@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createGarden, newUser, seedRadar, seedScenes } from './yardimcilar'
+import { createGarden, newUser, seedRadar, seedScenes, seedWater } from './yardimcilar'
 
 /**
  * Performans eşikleri (aşılırsa test kırmızı). Başsız ortamda yazılım oluşturucu (SwiftShader) kullanıldığı için 60 fps hedefi
@@ -22,6 +22,7 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   const garden = await createGarden(page.request, { ad: 'Performans', lng: 27.99, lat: 38.99, sideM: 300 })
   seedScenes(garden.id)
   seedRadar(garden.id) // radar katmanları da ölçülür
+  seedWater(garden.id) // yüzey sıcaklığı katmanı da ölçülür
   await page.goto(`/bahceler/${garden.id}`)
   await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
   await page.waitForTimeout(1500)
@@ -31,8 +32,8 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   const sureler: number[] = []
   const sogukIlkAcilis: Record<string, number> = {}
   // Isınma: her katmanın ızgarası bir kez indirilsin (ilk ziyaret ağ süresini içerir; ölçülen şey katman DEĞİŞTİRMEDİR)
-  for (const hedef of ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'degisim', 'canlilik'] as const) {
-    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Bölgeler|Değişim/ }).first().click()
+  for (const hedef of ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'yuzeySicakligi', 'degisim', 'canlilik'] as const) {
+    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Yüzey sıcaklığı|Bölgeler|Değişim/ }).first().click()
     await page.evaluate(() => {
       performance.clearMarks('katman-boyandi')
       ;(window as unknown as { __t0: number }).__t0 = performance.now()
@@ -50,9 +51,9 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
     if (soguk > 0) sogukIlkAcilis[hedef] = Math.round(soguk)
     await page.waitForTimeout(500)
   }
-  const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'radarVh', 'tacToprak', 'radarDegisim', 'degisim', 'canlilik', 'radarVh', 'yaprakAlani', 'radarDegisim', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
+  const sirasi = ['yaprakSuyu', 'klorofil', 'yaprakAlani', 'radarVh', 'tacToprak', 'radarDegisim', 'yuzeySicakligi', 'degisim', 'canlilik', 'radarVh', 'yaprakAlani', 'radarDegisim', 'yuzeySicakligi', 'tacToprak', 'klorofil', 'yaprakSuyu', 'canlilik'] as const
   for (const hedef of sirasi) {
-    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Bölgeler|Değişim/ }).first().click()
+    await menu.getByRole('button', { name: /Canlılık|Klorofil|Yaprak alanı|Taç ve toprak|Yaprak suyu|Radar \(VH\)|Radar değişimi|Yüzey sıcaklığı|Bölgeler|Değişim/ }).first().click()
     await page.evaluate(() => {
       performance.clearMarks('katman-boyandi')
       ;(window as unknown as { __t0: number }).__t0 = performance.now()

@@ -24,7 +24,7 @@ test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışı
   await expect(page.getByText('Adım 11')).toBeVisible()
 
   await page.goto(`/bahceler/${garden.id}/su`)
-  await expect(page.getByTestId('bos-su')).toContainText('9E')
+  await expect(page.getByTestId('bos-su')).toContainText('9H')
 })
 
 test('tam sayfalar: Geçmiş ve Saha Defteri iskelet olarak açılır', async ({ page }) => {

@@ -4,6 +4,7 @@ import { useMultiyear } from '../../api/multiyearApi'
 import { useEdinimler } from '../../api/edinimApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { useRadarEdinimler } from '../../api/radarApi'
+import { useLandsatEdinimler } from '../../api/suApi'
 import { gunAy, kaynakSatiri } from '../../lib/format'
 import { RAMPS, ZEMIN, ZONE_SHADES, rampGradient } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
@@ -37,6 +38,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik } = useCalismaStore()
   const { data } = useEdinimler(gardenId)
   const radar = useRadarEdinimler(gardenId).data
+  const landsatListe = useLandsatEdinimler(gardenId).data
   const gecmis = useGecmisDoldurma(gardenId).data
   const multi = useMultiyear(gardenId).data
   const aktif = KATMANLAR[katman]
@@ -58,6 +60,11 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
     if (id === 'bolgeler') {
       const ok = multi?.durum === 'hazir'
       return { tarih: null, hazir: ok, not: ok ? (multi?.yil_araligi ?? '') : multi?.durum === 'islem_suruyor' ? 'işleniyor' : 'analiz yok' }
+    }
+    if (t.landsat) {
+      const liste = landsatListe?.edinimler ?? []
+      const son = liste[liste.length - 1]
+      return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : 'Landsat verisi yok' }
     }
     if (t.radar) {
       const liste = (radar?.edinimler ?? []).filter((e) => e.birincil && e.izgara)

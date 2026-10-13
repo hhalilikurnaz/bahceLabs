@@ -120,6 +120,8 @@ export interface PaintOptions {
   clip?: number[][] | null
   /** Vurgulu aralık: dışındaki pikseller soluk (histogram hover) */
   highlight?: [number, number] | null
+  /** Izgara çizgisi adımı (piksel): Landsat'ta 100 m fiziksel çözünürlüğü gösteren ince çizgiler (10 piksel = 100 m); null = yok */
+  izgaraAdimi?: number | null
   /** Soluk aralık: bu aralıktaki pikseller soluk çizilir (radar değişiminde anlamlı eşiğin altı) */
   soluk?: [number, number] | null
   /** Görsel dil: sürekli renk (varsayılan), orantılı kareler (LAI) ya da toprak zemin + tepe daireleri (MSAVI) */
@@ -169,7 +171,7 @@ function paintShapes(
 }
 
 /** Izgarayı tuvale boyar (bahçe dışı saydam). Kontur etiketleri çakışmasız yerleştirilir (çakışan etiket atlanır). */
-export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null, soluk = null, gorunum = 'rampa' }: PaintOptions): HTMLCanvasElement {
+export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, clip = null, highlight = null, soluk = null, izgaraAdimi = null, gorunum = 'rampa' }: PaintOptions): HTMLCanvasElement {
   const small = document.createElement('canvas')
   small.width = g.cols
   small.height = g.rows
@@ -205,6 +207,23 @@ export function paintGrid(g: PGrid, { ramp, domain, scale = 4, contour = null, c
     return out
   }
   ctx.drawImage(small, 0, 0, out.width, out.height)
+  if (izgaraAdimi && izgaraAdimi > 0) {
+    // 100 m fiziksel çözünürlük: ızgara kökeninden itibaren her `izgaraAdimi` pikselde ince çizgi (yalnız bahçe poligonu içinde görünür; klip açık)
+    ctx.save()
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'
+    ctx.lineWidth = Math.max(1, scale / 10)
+    ctx.beginPath()
+    for (let c = 0; c <= g.cols; c += izgaraAdimi) {
+      ctx.moveTo(c * scale, 0)
+      ctx.lineTo(c * scale, out.height)
+    }
+    for (let r = 0; r <= g.rows; r += izgaraAdimi) {
+      ctx.moveTo(0, r * scale)
+      ctx.lineTo(out.width, r * scale)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
 
   if (contour) {
     const filled = fillGaps(g)

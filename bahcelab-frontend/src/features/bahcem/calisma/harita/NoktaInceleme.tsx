@@ -99,9 +99,10 @@ export function NoktaInceleme({ gardenId, view }: { gardenId: string; view: Hari
           <p className="pr-6 text-[12.5px] text-app-text-muted">Bu nokta bahçe sınırının dışında.</p>
         ) : (
           <>
-            <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{radarKatmani ? <>{view.tanim.ad} · <span className="normal-case">dB</span></> : `${view.tanim.ad}${degisimKatmani ? ' farkı' : ''}`}</div>
-            <div className="num mt-1 text-[28px] font-semibold leading-none">{info.v == null ? '—' : radarKatmani ? `${view.tanim.fark && info.v > 0 ? '+' : ''}${sayi(info.v, 1)}` : degisimKatmani ? degisim(info.v * 100, 0).replace('%', '') : sayi(info.v)}</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{radarKatmani ? <>{view.tanim.ad} · <span className="normal-case">dB</span></> : view.tanim.landsat ? <>{view.tanim.ad}</> : `${view.tanim.ad}${degisimKatmani ? ' farkı' : ''}`}</div>
+            <div className="num mt-1 text-[28px] font-semibold leading-none">{info.v == null ? '—' : radarKatmani ? `${view.tanim.fark && info.v > 0 ? '+' : ''}${sayi(info.v, 1)}` : view.tanim.landsat ? `${sayi(info.v, 1)} °C` : degisimKatmani ? degisim(info.v * 100, 0).replace('%', '') : sayi(info.v)}</div>
             {radarKatmani && nokta && <MiniSeri seri={nokta.seri} />}
+            {view.tanim.landsat && <p className="mt-1.5 text-[11.5px] leading-snug text-app-text-muted" data-testid="nokta-landsat-not">Landsat 100 m fiziksel çözünürlükte ölçer; bu pikselin değeri komşu 3×3 kareyle aynı yüzeyin ortalamasıdır.</p>}
             {info.p != null && !degisimKatmani && !radarKatmani && <p className="mt-1.5 text-[12.5px]">Bahçenin {yuzde(info.p)}’i bundan zayıf.</p>}
             {info.zone != null && !radarKatmani && <p className="mt-1 text-[12.5px]">Çok yıllık bölge: <b>{ZONE_LABEL[info.zone]}</b></p>}
             <p className="num mt-2 border-t border-app-border pt-2 text-[10.5px] text-app-text-muted">

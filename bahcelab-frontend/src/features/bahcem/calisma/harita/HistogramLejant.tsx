@@ -31,7 +31,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   const ramp = view.ramp
   const bw = W / BINS
   const degisim = view.tanim.fark === true
-  const baslik = view.tanim.radar ? `${view.tanim.ad} · ${view.tanim.birim}` : `${view.tanim.ad}${degisim ? ' farkı' : ''}`
+  const baslik = view.tanim.birim ? `${view.tanim.ad} · ${view.tanim.birim}` : `${view.tanim.ad}${degisim ? ' farkı' : ''}`
   const hb = hover !== null ? bins[hover] : null
   const [lo, hi] = view.alan
   const x = (v: number) => Math.min(W, Math.max(0, ((v - lo) / (hi - lo || 1)) * W))
@@ -99,6 +99,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
         {view.ortanca !== null && <span>ortanca <b className="font-semibold text-app-text">{degisim && view.ortanca > 0 ? '+' : ''}{sayi(view.ortanca)}</b></span>}
         {bandVisible && band && <span> · {TIPIK_ETIKETI} {sayi(band.alt)}–{sayi(band.ust)}{band.onDeger ? ' · mühendis onayı bekliyor' : ''}</span>}
       </div>
+      {view.tanim.not && <p className="mt-1 text-[11px] leading-snug text-app-text-muted" data-testid="lejant-not">{view.tanim.not}</p>}
       {view.tanim.gorunum === 'daireler' && <p className="mt-1 text-[11px] leading-snug text-app-text-muted" data-testid="lejant-not">Daire = 10 m piksel, ağaç konumu değil.</p>}
     </div>
   )

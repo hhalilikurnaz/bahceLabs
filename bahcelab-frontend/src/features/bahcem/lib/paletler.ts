@@ -23,10 +23,15 @@ export const RAMPS = {
   radar: stops(['#26323d', '#4a5e70', '#7c93a6', '#b3c3cf', '#eaf0f4']),
   /** Radar değişimi: ortası nötr iki yönlü (azalma = turuncu-kahve ← nötr → artış = mavi) */
   radarDegisim: stops(['#a8470a', '#e0a15f', '#eeeeea', '#8fb6d6', '#1f5f99']),
+  /** Yüzey sıcaklığı (Landsat): açık sarı → turuncu → koyu kırmızı-kahve (sıralı, tek yönlü açıklık) */
+  sicaklik: stops(['#fdf3c4', '#f9d27a', '#f0a04b', '#d6602a', '#8f2d14']),
   /** Taç ve toprak (MSAVI): taç daireleri açık → koyu yeşil */
   tacToprak: stops(['#c9dca4', '#9cc774', '#62a255', '#357a43', '#1b5232']),
 } as const
 export type RampId = keyof typeof RAMPS
+
+/** Su sekmesi grafik renkleri (yalnız veride): yağış/su mavisi, ETc/kuruma kahvesi, sıcaklık kırmızı-turuncusu; tahmin = gri bant */
+export const SU_RENK = { su: '#2f6a99', suSoluk: '#9ec1dc', etc: '#a8601c', yuzey: '#c2461f', hava: '#4a5a66', band: 'rgba(120,140,150,.18)' } as const
 
 /** MSAVI/LAI görsel dili için zemin tonları: toprak (taç ve toprak) ve nötr kâğıt (yaprak alanı kareleri) */
 export const ZEMIN = { toprak: '#b79b78', notr: '#efece4' } as const

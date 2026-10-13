@@ -40,6 +40,7 @@ export const backendEnv = (): NodeJS.ProcessEnv => ({
   STORAGE_DIR: E2E.storageDir,
   NDVI_ENABLED: 'false', // gerçek uydu işlemi başlatılmaz; sahneler test aracıyla yazılır
   JOBS_ENABLED: 'false',
+  SOILGRIDS_ENABLED: 'false', // e2e dış servise çıkmaz; toprak profili test aracıyla yazılır
   REGISTRATION_ENABLED: 'true',
   CORS_ORIGINS: E2E.webUrl,
 })

@@ -69,7 +69,7 @@ test('Su sekmesi: «Bulut altında görüş» şeridi bulgu cümlesi, optik/rada
   await expect(bolum.locator('[data-testid="radar-gecis"][data-aday="evet"]')).toHaveCount(2) // son iki ardışık geçiş
   expect(await bolum.getByTestId('bulutlu-bant').count()).toBeGreaterThanOrEqual(2)
   await expect(bolum.getByTestId('rvi-cizgi')).toBeVisible()
-  await expect(page.getByTestId('bos-su')).toContainText('9E') // Su sekmesinin geri kalanı 9E için boş durum
+  await expect(page.getByTestId('bos-su')).toContainText('9H') // sulama planı ve karar kartı 9H'de
   await expect(page.locator('body')).not.toContainText(/radar nemi/i)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])

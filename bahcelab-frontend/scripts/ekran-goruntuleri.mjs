@@ -46,6 +46,26 @@ async function radarCekimleri(page, ad, width) {
   if (await page.getByTestId('eski-optik-satiri').count()) await page.screenshot({ path: join(CIKTI, `durum-eski-optik-satiri-${ad}.png`) })
   else console.log(`[${ad}] eski optik satırı yok (son optik görüntü taze): görüntü alınmadı`)
 }
+/** 9E: Su sekmesi (karar + 4 grafik), Yüzey sıcaklığı katmanı ve Landsat tarih kutusu. */
+async function suCekimleri(page, ad, width) {
+  const dar = width < 700
+  await page.goto(`${WEB}/bahceler/${BAHCE}/su`)
+  await page.getByTestId('nem-profili').waitFor({ timeout: 60000 })
+  await page.getByTestId('yuzey-hava').waitFor({ timeout: 30000 })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: join(CIKTI, `su-sekmesi-ust-${ad}.png`) })
+  for (const [id, dosya] of [['su-karar', 'karar'], ['su-profil', 'nem-profili'], ['su-denge', 'su-dengesi'], ['bulut-altinda-gorus', 'bulut-altinda-gorus'], ['su-sicaklik', 'yuzey-hava-sicakligi']]) {
+    await cekim(page, page.getByTestId(id), join(CIKTI, `su-${dosya}-${ad}.png`), dar)
+  }
+  await page.goto(`${WEB}/bahceler/${BAHCE}`)
+  await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
+  await page.waitForTimeout(3000)
+  await page.getByTestId('katman-menusu').getByRole('button').first().click()
+  await page.getByTestId('katman-yuzeySicakligi').click()
+  await page.waitForTimeout(3000)
+  await page.screenshot({ path: join(CIKTI, `katman-yuzey-sicakligi-${ad}.png`) })
+  await page.getByTestId('tarih-kutusu').screenshot({ path: join(CIKTI, `tarih-kutusu-landsat-${ad}.png`) })
+}
 const browser = await chromium.launch({ executablePath: PW_CHROME_PATH, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
 for (const [ad, width, height] of [['1440', 1440, 900], ['390', 390, 844]]) {
@@ -59,6 +79,11 @@ for (const [ad, width, height] of [['1440', 1440, 900], ['390', 390, 844]]) {
   await page.goto(`${WEB}/bahceler/${BAHCE}`)
   await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
   await page.waitForTimeout(5000)
+  if (KUME === '9e') {
+    await suCekimleri(page, ad, width)
+    await context.close()
+    continue
+  }
   if (KUME === '9d') {
     await radarCekimleri(page, ad, width)
     await context.close()

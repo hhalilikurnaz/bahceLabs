@@ -39,6 +39,7 @@ export function GorunumKatmani({ garden, view }: { garden: Garden; view: HaritaG
       clip: ring,
       highlight: vurgu,
       soluk: view.soluk,
+      izgaraAdimi: view.tanim.landsat ? 10 : null,
     })
     // MapLibre canvas kaynağı tuval değişimini desteklemez: kaynak her çizimde yeniden kurulur (ızgara küçük, < 5 ms)
     if (map.getLayer(SRC)) map.removeLayer(SRC)
