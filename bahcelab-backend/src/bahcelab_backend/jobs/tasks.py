@@ -58,6 +58,34 @@ async def refresh_acquisitions(factory: SessionFactory, provider: WeatherProvide
     return result
 
 
+async def refresh_era5(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
+    """Günlük ERA5 artımlı çekimi (ADR 0018): her hava hücresi bir kez; son ERA5-Land gününden 10 gün geriden + model tahmini. İdempotent."""
+    from bahcelab_backend.domain.water.feed import feed_all
+
+    result = JobResult()
+    try:
+        counts = await feed_all(factory)
+        result.isler, result.hata = counts["hucre"], counts["hata"]
+    except Exception:  # noqa: BLE001
+        logger.exception("ERA5 günlük çekimi başarısız")
+        result.hata += 1
+    return result
+
+
+async def refresh_validation(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001
+    """Günlük SMAP/IMERG doğrulama tamamlaması (eksik günler; belirteç yoksa atlanır)."""
+    from bahcelab_backend.domain.water.feed import validation_all
+
+    result = JobResult()
+    try:
+        counts = await validation_all(factory)
+        result.isler = counts["bahce"]
+    except Exception:  # noqa: BLE001
+        logger.exception("Doğrulama günlük çekimi başarısız")
+        result.hata += 1
+    return result
+
+
 async def refresh_weather(factory: SessionFactory, provider: WeatherProvider, *, workspace_id: uuid.UUID | None = None) -> JobResult:
     """Tüm çalışma alanlarının hava hücrelerini tazeler (1 saatlik önbellek: sık çağrı sağlayıcıya yük bindirmez)."""
     result = JobResult()

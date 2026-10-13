@@ -55,8 +55,17 @@ async def process_garden_month(ctx: dict[str, Any], garden_id: str, month_iso: s
     return await runner.run_month(uuid.UUID(garden_id), date.fromisoformat(month_iso), source=source)
 
 
+async def feed_garden_water(ctx: dict[str, Any], garden_id: str) -> str:
+    """Bahçe eklenince su verisi beslemesi: ERA5 geçmişi (2015→), toprak profili, SMAP/IMERG doğrulama (ADR 0018). İdempotenttir."""
+    import uuid
+
+    from bahcelab_backend.jobs.feed import run_garden_feed
+
+    return repr(await run_garden_feed(uuid.UUID(garden_id)))
+
+
 class WorkerSettings:
     _built = build_settings(get_settings())
-    functions = [*_built["functions"], process_garden_month]
+    functions = [*_built["functions"], process_garden_month, feed_garden_water]
     cron_jobs = _built["cron_jobs"]
     redis_settings = _built["redis_settings"]

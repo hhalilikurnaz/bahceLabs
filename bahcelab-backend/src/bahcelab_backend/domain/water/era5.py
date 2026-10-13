@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, Protocol
 
 import httpx
 
@@ -103,7 +103,7 @@ def parse_era5_land(data: dict[str, Any]) -> dict[date, dict[str, list[float | N
 
 def parse_era5(data: dict[str, Any]) -> dict[date, dict[str, list[float | None]]]:
     h = data["hourly"]
-    return group_by_day(h["time"], {"yagis": h["precipitation"], "et0": h["et0_fao_evapotranspiration"]})
+    return group_by_day(h["time"], {"yagis": h["precipitation"], "et0": h["et0_fao_evapotranspiration"], "hamle": h.get("wind_gusts_10m", [])})
 
 
 def parse_model(data: dict[str, Any]) -> dict[date, dict[str, list[float | None]]]:
@@ -115,8 +115,16 @@ def parse_model(data: dict[str, Any]) -> dict[date, dict[str, list[float | None]
         mapped = model_to_era5_layers([h[v][t] for v in MODEL_SOIL_VARS])
         for i in range(4):
             layers[f"sm{i}"].append(mapped[i])
-    series = layers | {"yagis": h["precipitation"], "et0": h["et0_fao_evapotranspiration"], "t2m": h["temperature_2m"]}
+    series = layers | {"yagis": h["precipitation"], "et0": h["et0_fao_evapotranspiration"], "t2m": h["temperature_2m"], "hamle": h.get("wind_gusts_10m", [])}
     return group_by_day(h["time"], series)
+
+
+class Era5Source(Protocol):
+    """ERA5 istemcisi sözleşmesi: Open-Meteo (`Era5Client`) ya da test sahtesi."""
+
+    async def land(self, lat: float, lng: float, start: date, end: date) -> dict[date, dict[str, list[float | None]]]: ...
+    async def reanalysis(self, lat: float, lng: float, start: date, end: date) -> dict[date, dict[str, list[float | None]]]: ...
+    async def model(self, lat: float, lng: float, past_days: int = 10, forecast_days: int = 8) -> dict[date, dict[str, list[float | None]]]: ...
 
 
 @dataclass
@@ -154,11 +162,11 @@ class Era5Client:
         return parse_era5_land(data)
 
     async def reanalysis(self, lat: float, lng: float, start: date, end: date) -> dict[date, dict[str, list[float | None]]]:
-        data = await self._get(self._archive, {"latitude": lat, "longitude": lng, "start_date": start.isoformat(), "end_date": end.isoformat(), "models": "era5", "hourly": "precipitation,et0_fao_evapotranspiration"})
+        data = await self._get(self._archive, {"latitude": lat, "longitude": lng, "start_date": start.isoformat(), "end_date": end.isoformat(), "models": "era5", "hourly": "precipitation,et0_fao_evapotranspiration,wind_gusts_10m"})
         return parse_era5(data)
 
     async def model(self, lat: float, lng: float, past_days: int = 10, forecast_days: int = 8) -> dict[date, dict[str, list[float | None]]]:
-        data = await self._get(self._forecast, {"latitude": lat, "longitude": lng, "past_days": past_days, "forecast_days": forecast_days, "hourly": ",".join((*MODEL_SOIL_VARS, "precipitation", "et0_fao_evapotranspiration", "temperature_2m"))})
+        data = await self._get(self._forecast, {"latitude": lat, "longitude": lng, "past_days": past_days, "forecast_days": forecast_days, "hourly": ",".join((*MODEL_SOIL_VARS, "precipitation", "et0_fao_evapotranspiration", "temperature_2m", "wind_gusts_10m"))})
         return parse_model(data)
 
 

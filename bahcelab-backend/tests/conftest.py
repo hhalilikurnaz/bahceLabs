@@ -33,12 +33,13 @@ def test_engine():
 @pytest.fixture
 def app(test_engine, tmp_path):
     settings = get_settings()
-    previous = (settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill, settings.soilgrids_enabled)
+    previous = (settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill, settings.soilgrids_enabled, settings.era5_auto_feed)
     settings.registration_enabled = True
     # Testler ağa çıkmaz ve arka plan işi başlatmaz; NDVI testleri bunu kendileri açar
     settings.ndvi_enabled = False
     settings.acq_auto_backfill = False  # geçmiş doldurma testleri hizmeti kendileri sürer (ağsız sahte sağlayıcı)
     settings.soilgrids_enabled = False  # testler SoilGrids'e çıkmaz (toprak satırı tohumlanır)
+    settings.era5_auto_feed = False  # bahçe eklenince ERA5 beslemesi testlerde kendiliğinden başlamaz (besleme testleri açar)
     settings.storage_dir = str(tmp_path / "uploads")
 
     factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
@@ -55,7 +56,7 @@ def app(test_engine, tmp_path):
     application = create_app()
     application.dependency_overrides[get_db_session] = override_session
     yield application
-    settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill, settings.soilgrids_enabled = previous
+    settings.registration_enabled, settings.ndvi_enabled, settings.storage_dir, settings.acq_auto_backfill, settings.soilgrids_enabled, settings.era5_auto_feed = previous
 
 
 def make_client(app) -> AsyncClient:

@@ -104,6 +104,14 @@ class NdviCoordinator:
     async def start_initial(self, garden_id: uuid.UUID) -> None:
         await self.enqueue(garden_id, "ilk")
         await self._start_backfill(garden_id)
+        await self._start_water_feed(garden_id)
+
+    async def _start_water_feed(self, garden_id: uuid.UUID) -> None:
+        """ERA5 geçmişi + toprak + doğrulama beslemesi (ADR 0018); uydu işlemesi kapalı olsa da çalışır (hava verisidir)."""
+        from bahcelab_backend.jobs.feed import start_garden_feed
+
+        await self.repo.session.commit()  # bahçe satırı görünür olsun
+        start_garden_feed(garden_id)
 
     async def _start_backfill(self, garden_id: uuid.UUID) -> None:
         """Geçmiş doldurma (ADR 0015): bahçe eklenince / sınırı değişince 2015'ten bugüne; işleme kapalıysa çalışmaz."""
@@ -143,6 +151,7 @@ class NdviCoordinator:
         self.purge_files(garden_id)
         await self.enqueue(garden_id, "yeniden")
         await self._start_backfill(garden_id)
+        await self._start_water_feed(garden_id)  # sınır değişince hücre değişmiş olabilir
 
     def purge_files(self, garden_id: uuid.UUID) -> None:
         self.storage.delete_prefix(storage_prefix(garden_id))

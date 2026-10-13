@@ -118,6 +118,14 @@ class Settings(BaseSettings):
     job_notifications_interval_minutes: int = 60
     job_acquisitions_interval_minutes: int = 1440  # günlük artımlı sahne çekimi (arq: her gün job_acquisitions_hour saatinde)
     job_acquisitions_hour: int = 3
+    # Su ve sıcaklık besleme (ADR 0017/0018): bahçe eklenince ERA5 geçmişi (2015→) ve doğrulama doldurması; her gün artımlı çekim
+    era5_auto_feed: bool = True
+    era5_client: str = ""  # YALNIZ API_DEBUG=true iken: «modül:ad» ile test istemcisi (ağsız e2e); boşsa Open-Meteo
+    job_era5_interval_minutes: int = 1440
+    job_era5_hour: int = 4
+    job_validation_interval_minutes: int = 1440
+    job_validation_hour: int = 5
+    validation_start: str = "2022-01-01"  # SMAP/IMERG doğrulama doldurmasının başlangıcı
 
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.
     jwt_secret: str = "dev-insecure-secret-change-me-0123456789"

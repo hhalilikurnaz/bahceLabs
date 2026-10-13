@@ -52,11 +52,11 @@ def test_fill_is_normalized_to_the_cells_own_climatology_p2_to_p98() -> None:
     assert wb.normalized_fill(None, CLIM) is None and wb.normalized_fill(0.2, wb.Climatology(0.2, 0.2, 0.2, 0.2)) is None
 
 
-def test_root_zone_fill_is_thickness_weighted_over_the_first_three_layers_and_ignores_missing_ones() -> None:
+def test_root_zone_fill_uses_root_distribution_weights_and_the_deepest_layer_has_none() -> None:
     clims = [CLIM, CLIM, CLIM, CLIM]
-    assert wb.root_zone_fill([0.40, 0.40, 0.10, 0.10], clims, (7, 21, 72)) == pytest.approx((100 * 7 + 100 * 21 + 0 * 72) / 100)
-    assert wb.root_zone_fill([None, 0.25, 0.25, 0.4], clims, (7, 21, 72)) == pytest.approx(50.0)  # katman 3 ve 4 hesaba girmez/eksik katman atlanır
-    assert wb.root_zone_fill([None, None, None, 0.3], clims, (7, 21, 72)) is None
+    assert wb.root_zone_fill([0.40, 0.40, 0.10, 0.10], clims, (15, 35, 50, 0)) == pytest.approx((100 * 15 + 100 * 35 + 0 * 50) / 100)
+    assert wb.root_zone_fill([None, 0.25, 0.25, 0.4], clims, (15, 35, 50, 0)) == pytest.approx(50.0)  # eksik katman atlanır
+    assert wb.root_zone_fill([None, None, None, 0.3], clims, (15, 35, 50, 0)) is None  # 100–255 cm ağırlığı 0: tek başına doluluk vermez
 
 
 def test_fill_classes_follow_the_catalog_thresholds() -> None:

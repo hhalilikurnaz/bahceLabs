@@ -27,7 +27,7 @@ def test_recorded_open_meteo_responses_parse_and_merge_into_a_full_day() -> None
     land = era5.parse_era5_land(ERA5_LAND)
     rean = era5.parse_era5(ERA5)
     day = date(2024, 1, 10)
-    assert set(land[day]) == {"sm0", "sm1", "sm2", "sm3", "t2m"} and set(rean[day]) == {"yagis", "et0"}
+    assert set(land[day]) == {"sm0", "sm1", "sm2", "sm3", "t2m"} and set(rean[day]) == {"yagis", "et0", "hamle"} and all(v is None for v in rean[day]["hamle"])  # kayıtlı yanıtta hamle yok: boş (olay motoru uydurmaz)
     merged = merge_day(land[day], rean[day], None)
     assert merged is not None and merged["toprak_kaynak"] == "era5_land" and merged["hava_kaynak"] == "era5_land"
     assert 0.05 < merged["sm0"] < 0.6 and merged["sm3"] is not None and merged["yagis_mm"] is not None and merged["et0_mm"] is not None and len(merged["saatlik"]["sm0"]) == 24

@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.water.era5 import DayAgg, Era5Client, aggregate_day, year_chunks
+from bahcelab_backend.domain.water.era5 import DayAgg, Era5Source, aggregate_day, year_chunks
 from bahcelab_backend.domain.water.models import ERA5, MODEL, Era5DailyModel
 from bahcelab_backend.domain.weather.service import snap
 
@@ -45,7 +45,7 @@ def merge_day(land: dict[str, list[float | None]] | None, reanalysis: dict[str, 
 
 
 def _row(soil: DayAgg, wx: DayAgg, temp: DayAgg, *, soil_source: str, wx_source: str) -> dict[str, Any]:
-    hourly = {k: v for k, v in soil.saatlik.items() if k.startswith("sm")} | {k: v for k, v in wx.saatlik.items() if k in ("yagis", "et0")} | {k: v for k, v in temp.saatlik.items() if k == "t2m"}
+    hourly = {k: v for k, v in soil.saatlik.items() if k.startswith("sm")} | {k: v for k, v in wx.saatlik.items() if k in ("yagis", "et0", "hamle")} | {k: v for k, v in temp.saatlik.items() if k == "t2m"}
     return {
         "sm0": soil.sm[0], "sm1": soil.sm[1], "sm2": soil.sm[2], "sm3": soil.sm[3], "et0_mm": wx.et0_mm, "yagis_mm": wx.yagis_mm,
         "t_ort": temp.t_ort, "t_min": temp.t_min, "t_max": temp.t_max, "saatlik": hourly or None, "toprak_kaynak": soil_source, "hava_kaynak": wx_source,
@@ -101,7 +101,7 @@ def apply_offsets(row: dict[str, Any], offsets: list[float | None]) -> dict[str,
     return out
 
 
-async def sync_cell(session: AsyncSession, client: Era5Client, cell_id: uuid.UUID, lat: float, lng: float, start: date, today: date, *, past_days: int = 10, forecast_days: int = 8) -> dict[str, int]:
+async def sync_cell(session: AsyncSession, client: Era5Source, cell_id: uuid.UUID, lat: float, lng: float, start: date, today: date, *, past_days: int = 10, forecast_days: int = 8) -> dict[str, int]:
     """[start, today] arşivi + son günler ve ileri için model tahmini. Dönüş: yazılan gün sayısı ve model günü sayısı."""
     archive_end = today - timedelta(days=1)
     model = await client.model(lat, lng, past_days=past_days, forecast_days=forecast_days)

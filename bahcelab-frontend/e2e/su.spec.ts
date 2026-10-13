@@ -99,3 +99,16 @@ test('TEK sulama kararı: Hava sekmesindeki sulama kartı ile Su sekmesi aynı c
   await page.getByTestId('irrigation-su-link').click()
   await expect(page).toHaveURL(/\/su$/)
 })
+
+test('Yeni bahçe eklenince ERA5 besleme işi kendiliğinden çalışır ve Su sekmesi elle betik olmadan dolar', async ({ page }) => {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad: 'Kendiliginden Su', lng: 27.71, lat: 38.61, sideM: 200 }) // seedWater YOK: yalnız besleme işi
+  await page.goto(`/bahceler/${garden.id}/su`)
+  await expect(async () => {
+    await page.reload()
+    await expect(page.getByTestId('nem-profili')).toBeVisible({ timeout: 4_000 })
+  }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 3_000] }) // iş arka planda 2015→bugün doldurur
+  expect(await page.getByTestId('profil-nokta').count()).toBeGreaterThanOrEqual(3) // son gün model: 100–255 cm modelde yok
+  await expect(page.getByTestId('su-karar-cumlesi')).not.toBeEmpty()
+  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre kök bölgesi doluluğu/)
+})

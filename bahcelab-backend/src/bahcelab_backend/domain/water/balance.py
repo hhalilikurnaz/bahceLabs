@@ -108,10 +108,10 @@ def normalized_fill(value: float | None, clim: Climatology) -> float | None:
     return float(min(100.0, max(0.0, (value - clim.p_alt) / (clim.p_ust - clim.p_alt) * 100.0)))
 
 
-def root_zone_fill(layer_values: list[float | None], clims: list[Climatology], weights: tuple[float, float, float]) -> float | None:
+def root_zone_fill(layer_values: list[float | None], clims: list[Climatology], weights: tuple[float, float, float, float]) -> float | None:
     """Kök bölgesi (0–100 cm = ilk 3 katman) doluluğu: katman doluluklarının kalınlık ağırlıklı ortalaması; hiçbir katman yoksa None."""
     total = acc = 0.0
-    for value, clim, w in zip(layer_values[:3], clims[:3], weights, strict=True):
+    for value, clim, w in zip(layer_values, clims, weights, strict=True):
         fill = normalized_fill(value, clim)
         if fill is not None:
             acc += fill * w
