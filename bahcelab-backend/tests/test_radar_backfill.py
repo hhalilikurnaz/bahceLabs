@@ -272,6 +272,10 @@ async def test_radar_endpoints_list_scenes_grids_change_grid_and_point_series(us
     day = days[8].isoformat()
     grid = await user_client.get(f"/gardens/{gid}/radar/edinimler/{day}/vh_db/izgara")
     assert grid.status_code == 200 and len(grid.content) == body["izgara"]["satir"] * body["izgara"]["sutun"] * 4
+    from bahcelab_backend.domain.acquisitions import masking
+
+    values = np.frombuffer(grid.content, dtype="<f4")
+    assert int(np.isfinite(values).sum()) == int(masking.mask_for(GEOMETRY).sum())  # poligon dışı NaN: histogram ve ortanca yalnız bahçe pikselleriyle
     other = [s for s in scenes if s["yorunge"] == 94][0]["tarih"]
     assert (await user_client.get(f"/gardens/{gid}/radar/edinimler/{other}/vh_db/izgara")).status_code == 404  # ikincil yörüngede ızgara yok
     delta = await user_client.get(f"/gardens/{gid}/radar/degisim/{day}/izgara")

@@ -87,7 +87,7 @@ radar:
   durum: dogrulanmadi
   kaynak: >-
     Ön değer: VH < −30 dB gölge, VV > +5 dB üst üste binme/doygunluk vekili (PC RTC varlıklarında maske bandı yok);
-    Lee 5×5, ENL 4,4; bahçenin >%30'u maskeliyse sahne değişime girmez; |Δ| ≥ 2 dB ve (alanın ≥ %25'i veya ≥ 2 da) anlamlı değişim;
+    Lee 5×5, ENL 4,4; bahçenin >%30'u maskeliyse sahne değişime girmez; |Δ| ≥ 2 dB ve eşiği aşan piksellerin en büyük bitişik (8-komşuluk) yaması ≥ min(bahçenin %25'i, 5 da) anlamlı değişim;
     önceki 48 saatte ≥ 1 mm yağış → «ıslaklık olabilir»; ani değişim = son sahne vs aynı yörüngedeki son 3 sahnenin ortancası; «ıslaklık olabilir» notlu aday güveni düşük sayılır (9F bildirime çevirmez); olay adayı = anlamlı ani değişim VE (kalıcı sapma bant dışında ya da 2 ardışık sahnede aynı yönde), tek sahnelik sıçrama «gürültü». Ziraat mühendisi/uzaktan algılama uzmanı onayı bekliyor.
   golge_vh_alt_db: -30.0
   ust_uste_vv_ust_db: 5.0
@@ -97,7 +97,9 @@ radar:
   anlamli_degisim_db: 2.0
   anlamli_alan_orani: 0.25
   anlamli_alan_min_da: 2.0
-  alan_birlesim: veya
+  alan_birlesim: ve
+  alan_kurali: bitisik
+  bitisik_alan_min_da: 5.0
   yagis_penceresi_saat: 48
   yagis_esigi_mm: 1.0
   ani_baseline_sahne: 3

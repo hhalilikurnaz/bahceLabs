@@ -11,6 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.acquisitions import masking
 from bahcelab_backend.domain.acquisitions import radar_changes as rc
 from bahcelab_backend.domain.acquisitions.models import (
     ACQ_NET,
@@ -74,7 +75,7 @@ async def eligible_primary(session: AsyncSession, garden_id: uuid.UUID) -> tuple
     return primary, [(a, float(m)) for a, m in acquisitions]
 
 
-async def delta_grid(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, day: date) -> np.ndarray | None:
+async def delta_grid(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, day: date, mask: np.ndarray | None = None) -> np.ndarray | None:
     """Seçili tarihin ani değişim ızgarası (dB): sahne − aynı yörüngedeki önceki N sahnenin piksel ortancası. Yeterli geçmiş yoksa None."""
     _, scenes = await eligible_primary(session, garden_id)
     n = cat.load_catalog().radar.ani_baseline_sahne
@@ -86,7 +87,7 @@ async def delta_grid(session: AsyncSession, storage: StorageBackend, garden_id: 
         grid = decode_grids(storage.read(a.izgara_yolu)).get("vh_db") if a.izgara_yolu and storage.exists(a.izgara_yolu) else None
         if grid is None:
             return None
-        grids.append(grid)
+        grids.append(masking.apply(grid, mask) if mask is not None else grid)
     delta = rc.smooth_delta(grids[-1] - np.nanmedian(np.stack(grids[:-1]), axis=0), cat.load_catalog().radar.delta_yumusatma)
     return np.asarray(delta, dtype=np.float32)
 
@@ -101,7 +102,10 @@ async def compute_change_events_for(session: AsyncSession, storage: StorageBacke
     rule = rc.ChangeRule(
         radar_rule.anlamli_degisim_db, radar_rule.anlamli_alan_orani, radar_rule.ani_baseline_sahne, radar_rule.art_arda_sahne,
         alan_min_m2=radar_rule.anlamli_alan_min_da * 1000.0, birlesim=radar_rule.alan_birlesim, yumusatma=radar_rule.delta_yumusatma,
+        bitisik=radar_rule.alan_kurali == "bitisik", bitisik_min_m2=radar_rule.bitisik_alan_min_da * 1000.0,
     )
+    geometry = await repo.geometry_geojson(garden_id)
+    mask = masking.mask_for(geometry) if geometry else None
     limits = band_limits([b for b in await repo.bands(garden_id, RADAR_SOURCE) if b.indeks == "vh_db"])
     samples: list[rc.SceneSample] = []
     for acq, mean_db in acquisitions:
@@ -110,7 +114,7 @@ async def compute_change_events_for(session: AsyncSession, storage: StorageBacke
         grid = decode_grids(storage.read(acq.izgara_yolu)).get("vh_db")
         if grid is None:
             continue
-        samples.append(rc.SceneSample(acq.tarih, acq.scene_id, grid, float(mean_db), limits.get(acq.tarih.month)))
+        samples.append(rc.SceneSample(acq.tarih, acq.scene_id, masking.apply(grid, mask) if mask is not None else grid, float(mean_db), limits.get(acq.tarih.month)))
     results = rc.evaluate_series(samples, rule)
 
     center = await repo.garden_center(garden_id)

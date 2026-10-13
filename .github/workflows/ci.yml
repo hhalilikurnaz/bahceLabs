@@ -1,0 +1,78 @@
+name: CI
+
+# Her push'ta hızlı doğrulama. Gizli anahtar gerekmez: testler sahte sağlayıcılar ve kayıtlı yanıtlarla koşar (ağa çıkmaz).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (ruff, mypy, hızlı pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: bahcelab
+          POSTGRES_PASSWORD: bahcelab
+          POSTGRES_DB: bahcelab
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bahcelab" --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://bahcelab:bahcelab@localhost:5432/bahcelab
+      JWT_SECRET: ci-yalniz-test-icin-gizli-olmayan-deger-0123456789
+      API_DEBUG: "true"
+      REGISTRATION_ENABLED: "true"
+      NDVI_ENABLED: "false"
+      JOBS_ENABLED: "false"
+      PYTHONPATH: src:.
+    defaults:
+      run:
+        working-directory: bahcelab-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: bahcelab-backend/pyproject.toml
+      - name: Bağımlılıklar
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -U pip
+          .venv/bin/pip install -e ".[dev]"
+      - name: ruff
+        run: .venv/bin/ruff check src tests scripts
+      - name: mypy
+        run: .venv/bin/mypy src
+      - name: pytest (hızlı: yavaş işaretliler hariç)
+        run: .venv/bin/pytest -q -n 4 -m "not slow"
+
+  frontend:
+    name: Frontend (tsc, oxlint, vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: bahcelab-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bahcelab-frontend/package-lock.json
+      - run: npm ci
+      - name: tsc
+        run: npx tsc -p tsconfig.app.json --noEmit
+      - name: oxlint
+        run: npx oxlint
+      - name: vitest
+        run: npx vitest run

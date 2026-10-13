@@ -7,6 +7,7 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bahcelab_backend.domain.acquisitions import masking
 from bahcelab_backend.domain.acquisitions.backfill import BackfillService
 from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.radar_events import delta_grid, eligible_primary
@@ -124,7 +125,7 @@ class DataFoundationService:
 
     async def radar_grid_bytes(self, garden_id: uuid.UUID, day: date, indicator: str) -> bytes:
         """Birincil yörüngenin o günkü Lee filtreli gösterge ızgarası (float32 LE, NaN = geçersiz)."""
-        await self._check(garden_id)
+        geometry = await self._check(garden_id)
         primary = await self.repo.primary_orbit(garden_id)
         acq = next((a for a, _ in await self.repo.radar_scenes(garden_id, RADAR_SOURCE, since=day) if a.tarih == day and a.izgara_yolu and (a.yorunge, a.gecis_yonu) == primary), None)
         if acq is None or not acq.izgara_yolu or not self.storage.exists(acq.izgara_yolu):
@@ -132,24 +133,26 @@ class DataFoundationService:
         grids = decode_grids(self.storage.read(acq.izgara_yolu))
         if indicator not in grids:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bu gösterge bu tarih için hesaplanmadı.")
-        return grids[indicator].astype("<f4").tobytes()
+        return masking.apply(grids[indicator], masking.mask_for(geometry)).astype("<f4").tobytes()
 
     async def radar_change_grid_bytes(self, garden_id: uuid.UUID, day: date) -> bytes:
         """Radar değişimi: sahne − aynı yörüngedeki önceki 3 sahnenin ortancası (dB, float32 LE)."""
-        await self._check(garden_id)
-        delta = await delta_grid(self.session, self.storage, garden_id, day)
+        geometry = await self._check(garden_id)
+        delta = await delta_grid(self.session, self.storage, garden_id, day, masking.mask_for(geometry))
         if delta is None:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bu tarih için radar değişimi hesaplanamadı (aynı yörüngede yeterli önceki sahne yok).")
         return delta.astype("<f4").tobytes()
 
     async def radar_point(self, garden_id: uuid.UUID, row: int, col: int, day: date, count: int = 6) -> RadarNokta:
         """Bir pikselin son `count` birincil-yörünge sahnesindeki VH dB değeri (gün dahil)."""
-        await self._check(garden_id)
+        geometry = await self._check(garden_id)
+        mask = masking.mask_for(geometry)
         _, scenes = await eligible_primary(self.session, garden_id)
         picked = [a for a, _ in scenes if a.tarih <= day][-count:]
         series: list[RadarNoktaDegeri] = []
         for acq in picked:
             grid = decode_grids(self.storage.read(acq.izgara_yolu)).get("vh_db") if acq.izgara_yolu and self.storage.exists(acq.izgara_yolu) else None
+            grid = masking.apply(grid, mask) if grid is not None else None
             value = None
             if grid is not None and 0 <= row < grid.shape[0] and 0 <= col < grid.shape[1] and grid[row, col] == grid[row, col]:
                 value = float(grid[row, col])
@@ -175,11 +178,11 @@ class DataFoundationService:
 
     async def grid_bytes(self, garden_id: uuid.UUID, day: date, indicator: str) -> bytes:
         """Bir edinimin gösterge ızgarası: float32 LE, satır sırasıyla, geçersiz = NaN (bahçe dışı ve bulutlu dahil)."""
-        await self._check(garden_id)
+        geometry = await self._check(garden_id)
         acq = await self.repo.acquisition_on(garden_id, SOURCE_ID, day)
         if acq is None or not acq.izgara_yolu or not self.storage.exists(acq.izgara_yolu):
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bu tarih için görüntü yok.")
         grids = decode_grids(self.storage.read(acq.izgara_yolu))
         if indicator not in grids:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bu gösterge bu tarih için hesaplanmadı.")
-        return grids[indicator].astype("<f4").tobytes()
+        return masking.apply(grids[indicator], masking.mask_for(geometry)).astype("<f4").tobytes()

@@ -1,0 +1,126 @@
+name: Tam paket
+
+# TAM backend (yavaş testler dahil) + Playwright (izole Postgres hizmetiyle). Aralıklı düşmeyi doğrulamak için.
+# Tetikleme:
+#  - elle: Actions sekmesi → «Tam paket» → Run workflow (bu dosya varsayılan dalda olmalıdır)
+#  - feature/faz1'e push: commit iletisi «[tam]» içeriyorsa (varsayılan dala dokunmadan elle tetiklemek için: git commit --allow-empty -m "ci: [tam]")
+#  - günlük (UTC 03:00): zamanlanmış iş yalnız varsayılan daldaki dosyadan çalışır; ref olarak feature/faz1 çekilir
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+  push:
+    branches: [feature/faz1]
+
+concurrency:
+  group: tam-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tam:
+    name: Backend tam paket
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[tam]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: bahcelab
+          POSTGRES_PASSWORD: bahcelab
+          POSTGRES_DB: bahcelab
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bahcelab" --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://bahcelab:bahcelab@localhost:5432/bahcelab
+      JWT_SECRET: ci-yalniz-test-icin-gizli-olmayan-deger-0123456789
+      API_DEBUG: "true"
+      REGISTRATION_ENABLED: "true"
+      NDVI_ENABLED: "false"
+      JOBS_ENABLED: "false"
+      PYTHONPATH: src:.
+    defaults:
+      run:
+        working-directory: bahcelab-backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'feature/faz1' || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: bahcelab-backend/pyproject.toml
+      - run: |
+          python -m venv .venv
+          .venv/bin/pip install -U pip
+          .venv/bin/pip install -e ".[dev]"
+      - name: pytest (tam)
+        run: .venv/bin/pytest -q -n 4
+
+  e2e:
+    name: Playwright tam paket
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[tam]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: bahcelab
+          POSTGRES_PASSWORD: bahcelab
+          POSTGRES_DB: bahcelab_e2e
+        ports: ["5435:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bahcelab" --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      CI: "true"
+      E2E_DB_EXTERNAL: "1"
+      E2E_DB_PORT: "5435"
+      E2E_DB_NAME: bahcelab_e2e
+      E2E_DB_CONTAINER: bahcelab-db-e2e
+      E2E_API_PORT: "8011"
+      E2E_WEB_PORT: "5183"
+      JWT_SECRET: ci-yalniz-test-icin-gizli-olmayan-deger-0123456789
+      API_DEBUG: "true"
+      COOKIE_SECURE: "false"
+      REGISTRATION_ENABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'feature/faz1' || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: bahcelab-backend/pyproject.toml
+      - name: Backend bağımlılıkları (.venv: e2e betikleri bu yolu kullanır)
+        working-directory: bahcelab-backend
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -U pip
+          .venv/bin/pip install -e ".[dev]"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bahcelab-frontend/package-lock.json
+      - name: Frontend bağımlılıkları ve Chromium
+        working-directory: bahcelab-frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Playwright
+        working-directory: bahcelab-frontend
+        run: npx playwright test --reporter=line,html
+      - name: Rapor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-raporu
+          path: |
+            bahcelab-frontend/playwright-report
+            bahcelab-frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7

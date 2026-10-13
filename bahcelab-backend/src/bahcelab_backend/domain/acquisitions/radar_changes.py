@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 
 import numpy as np
-from scipy.ndimage import uniform_filter
+from scipy.ndimage import label, uniform_filter
 
 PIXEL_M2 = 100.0  # 10 m piksel
 AZALIS, ARTIS = "azalis", "artis"
@@ -29,7 +29,9 @@ class ChangeRule:
     art_arda_sahne: int
     yumusatma: int = 1  # piksel farkı bu boyutlu pencerede ortalanır (kumlanma gürültüsü eşiği yanlışlıkla aşmasın); 1 = kapalı
     alan_min_m2: float = 0.0  # 0 = yalnız pay kuralı; >0: eşiği aşan alan en az bu kadar m² (1 da = 1000 m²)
-    birlesim: str = "veya"  # pay ile mutlak alan: veya | ve
+    birlesim: str = "ve"  # pay ile mutlak alan: veya | ve
+    bitisik: bool = False  # True: eşiği aşan piksellerin EN BÜYÜK BİTİŞİK bileşeni (8-komşuluk) ölçülür; pay/mutlak alan kuralı yerine geçer
+    bitisik_min_m2: float = 5000.0  # bitişik kural: bileşen ≥ min(pay × bahçe, bu alan)
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,14 @@ def pixel_change(current: np.ndarray, baseline: np.ndarray, rule: ChangeRule) ->
     down, up = valid & (delta <= -thr), valid & (delta >= thr)
     sign, mask = (AZALIS, down) if down.sum() >= up.sum() else (ARTIS, up)
     share = float(mask.sum()) / n
+    if rule.bitisik:
+        # Dağınık gürültü pikselleri toplamda eşiği aşsa da tek bir yama oluşturmaz: en büyük bağlı bileşen ölçülür
+        labels, count = label(mask, structure=np.ones((3, 3), dtype=int))
+        largest = int(np.bincount(labels.ravel())[1:].max()) if count else 0
+        need = min(rule.anlamli_alan_orani * n, rule.bitisik_min_m2 / PIXEL_M2)
+        if largest < max(1.0, need):
+            return None
+        return sign, share, float(np.median(delta[mask])), largest
     pay_tamam = share >= rule.anlamli_alan_orani
     alan_tamam = rule.alan_min_m2 > 0 and float(mask.sum()) * PIXEL_M2 >= rule.alan_min_m2
     if rule.alan_min_m2 <= 0:

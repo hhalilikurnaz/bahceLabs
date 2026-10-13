@@ -41,6 +41,6 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     // Başsız tarayıcıda harita (WebGL2) için yazılım oluşturucu (SwiftShader) açılır
     launchOptions: { executablePath, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] },
-    channel: executablePath ? undefined : 'chrome',
+    channel: executablePath || process.env.CI ? undefined : 'chrome', // CI: Playwright'ın kendi Chromium'u
   },
 })

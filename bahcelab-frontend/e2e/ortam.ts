@@ -11,6 +11,9 @@ function need(key: string): string {
   return value
 }
 
+/** CI: veritabanı bir hizmet konteyneri (docker compose yok); psql ile temizlenir. */
+export const E2E_DB_HARICI = process.env.E2E_DB_EXTERNAL === '1'
+
 export const E2E = {
   apiPort: need('E2E_API_PORT'),
   webPort: need('E2E_WEB_PORT'),

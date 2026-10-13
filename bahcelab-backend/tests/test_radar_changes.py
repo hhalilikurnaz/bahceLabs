@@ -136,3 +136,48 @@ def test_wet_candidates_have_low_confidence_and_dry_or_unknown_do_not() -> None:
     assert rc.event_confidence(rc.ADAY, False) == "normal"
     assert rc.event_confidence(rc.ADAY, None) == "normal"  # bilinmiyor: güven düşürülmez, not da yok
     assert rc.event_confidence(rc.GURULTU, True) == "normal"
+
+
+def test_bitisik_rule_needs_one_connected_patch_not_scattered_pixels() -> None:
+    rule = rc.ChangeRule(2.0, 0.25, 3, 2, 1, bitisik=True, bitisik_min_m2=5000.0)  # min(%25, 5 da)
+    base = np.full((20, 20), -15.0)  # 400 piksel = 40 da → eşik min(100 px, 50 px) = 50 piksel (5 da)
+    scattered = base.copy()
+    scattered[::2, ::2] -= 4.0  # 100 piksel ama hiçbiri komşu değil (köşegen dahil değil: 2 adımlık)
+    assert rc.pixel_change(scattered, base, rule) is None
+    patch_ = base.copy()
+    patch_[:6, :9] -= 4.0  # 54 bitişik piksel
+    result = rc.pixel_change(patch_, base, rule)
+    assert result is not None and result[3] == 54
+    diag = base.copy()
+    for i in range(20):  # 8-komşuluk: köşegen zincir tek bileşen
+        diag[i, i] -= 4.0
+        if i < 19:
+            diag[i, i + 1] -= 4.0
+    assert rc.pixel_change(diag, base, rc.ChangeRule(2.0, 0.05, 3, 2, 1, bitisik=True, bitisik_min_m2=3000.0)) is not None
+
+
+def test_bitisik_rule_in_a_90_decare_garden_with_speckle_noise_stays_quiet_but_finds_a_real_patch() -> None:
+    from bahcelab_backend.domain.imagery import radar_math as rm
+
+    rng = np.random.default_rng(11)
+    valid = np.ones((30, 30), dtype=bool)  # 900 piksel = 90 da
+
+    def scene(patch_px: int = 0) -> np.ndarray:
+        linear = 0.03 * rng.gamma(4.4, 1 / 4.4, (30, 30))  # kumlanma (ENL 4,4)
+        if patch_px:
+            linear.reshape(-1)[:patch_px] *= 0.35  # ≈ −4,6 dB
+        return rm.to_db(rm.lee_filter(linear, valid, size=5, looks=4.4))
+
+    rule_pay = rc.ChangeRule(2.0, 0.25, 3, 2, 3, alan_min_m2=2000.0, birlesim="ve")
+    rule_bit = rc.ChangeRule(2.0, 0.25, 3, 2, 3, bitisik=True, bitisik_min_m2=5000.0)  # min(%25 = 225 px, 5 da = 50 px)
+    false_pay = false_bit = 0
+    for _ in range(300):
+        base = np.nanmedian(np.stack([scene() for _ in range(3)]), axis=0)
+        cur = scene()
+        false_pay += rc.pixel_change(cur, base, rule_pay) is not None
+        false_bit += rc.pixel_change(cur, base, rule_bit) is not None
+    assert false_pay <= 3 and false_bit <= 3  # yalnız gürültüyle sahte «anlamlı değişim» çok nadir
+    base = np.nanmedian(np.stack([scene() for _ in range(3)]), axis=0)
+    patch_scene = scene(patch_px=70)  # 7 da'lık bitişik yama (satır sırasıyla ilk 70 piksel ≈ 2,3 satır)
+    assert rc.pixel_change(patch_scene, base, rule_bit) is not None  # büyük bahçede mutlak 5 da yeter
+    assert rc.pixel_change(patch_scene, base, rule_pay) is None  # pay+mutlak: %25 (225 px) yok
