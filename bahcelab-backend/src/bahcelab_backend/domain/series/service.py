@@ -44,6 +44,7 @@ async def sync_hls(session: AsyncSession, garden_id: uuid.UUID, start: date, end
     if geometry is None:
         return {"aranan": 0, "yazilan": 0}
     have = {r[0] for r in (await session.execute(select(HlsObservationModel.scene_id).where(HlsObservationModel.garden_id == garden_id))).all()}
+    await session.commit()  # okuma işlemi açık kalmasın: uzun süren sahne okumaları sırasında kilit tutulmaz
     searched = written = 0
     chunks: list[tuple[date, date]] = []
     cursor = start
