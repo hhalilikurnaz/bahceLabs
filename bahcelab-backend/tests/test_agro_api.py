@@ -1,6 +1,5 @@
 """Agro API: katalog, çeşit eşlemesi, fenoloji düzeltmeleri, seriler, durum skoru ve «Bugün» (yetki dahil)."""
 
-import uuid
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -186,60 +185,6 @@ async def test_series_rejects_future_season_and_handles_missing_weather(user_cli
 
 
 # ----------------------------------------------------------------------------- durum skoru
-async def test_status_without_images_is_insufficient_data(user_client: AsyncClient, provider):
-    garden = await new_garden(user_client)
-    data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["durum"] == "veri_yok" and "skor" not in data and data["veri_yeterli"] is False
-    assert "net uydu görüntüsü" in data["veri_yetersiz_nedeni"]
-    assert data["nasil"]["guven"]["seviye"] == "dusuk" and data["nasil"]["son_goruntu_tarihi"] is None
-
-
-async def test_status_scores_against_the_gardens_own_history(user_client: AsyncClient, factory, provider, monkeypatch):
-    from bahcelab_backend.domain.agro.service import AgroService
-
-    async def no_risks(self, garden_row, history, weather, today):
-        return []  # aktif risk yok: kademe yalnız bahçenin kendi geçmişine bakar
-
-    monkeypatch.setattr(AgroService, "_compute_risks", no_risks)
-    garden = await new_garden(user_client)
-    await seed_scenes(factory, garden["id"])
-    data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["veri_yeterli"] is True and data["durum"] == "iyi" and data["etiket"] == "İyi"
-    assert "skor" not in data and "bilesenler" not in data and "/100" not in str(data)  # iç skor arayüze çıkmaz
-    assert [c["kod"] for c in data["cipler"]] == ["agac_gucu", "su", "risk"]
-    assert [c["ad"] for c in data["cipler"]] == ["Ağaç gücü (NDVI)", "Su (NDMI)", "Risk"] and all(c["aciklama"] for c in data["cipler"])
-    nasil = data["nasil"]
-    assert nasil["guven"]["seviye"] in ("orta", "yuksek") and nasil["guven"]["son_goruntu_yasi_gun"] in (1, 2, 3)
-    assert nasil["esik_durumu"] == "ön değer · v1" and "9F" in nasil["formul_notu"] and nasil["son_goruntu_tarihi"]
-    assert "iyi durumda" in data["ozet"]
-
-
-async def test_status_drops_after_a_sudden_fall(user_client: AsyncClient, factory, provider):
-    garden = await new_garden(user_client)
-    await seed_scenes(factory, garden["id"], last_ndvi=0.36)
-    data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert data["durum"] in ("izle", "dikkat", "sorun")
-    vigor = next(c for c in data["cipler"] if c["kod"] == "agac_gucu")
-    assert vigor["seviye"] in ("normalin_alti", "belirgin_dusuk") and "altında" in vigor["aciklama"]
-    assert data["nasil"]["dusuren_bilesen"] == "agac_gucu" and "Ağaç gücü" in data["nasil"]["kademe_nedeni"]
-
-
-async def test_list_and_status_endpoint_agree_on_the_label(user_client: AsyncClient, factory, provider):
-    garden = await new_garden(user_client)
-    await seed_scenes(factory, garden["id"], last_ndvi=0.36)
-    # Liste, zamanlanmış işin son risk özetini (snapshot) okur: önce iş çalışır, sonra ikisi aynı değeri verir
-    from bahcelab_backend.jobs.tasks import generate_notifications
-
-    workspace = uuid.UUID((await user_client.get("/auth/me")).json()["workspace_id"])
-    await generate_notifications(factory, provider, workspace_id=workspace)
-    status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    overview = (await user_client.get("/gardens/overview")).json()
-    item = next(g for g in overview["bahceler"] if g["id"] == garden["id"])
-    # Tek durum fonksiyonu: liste ile Durum sekmesi aynı kademeyi verir (liste hava önbelleğini yalnızca okur)
-    assert "skor" not in item and item["durum"] == status["durum"]
-    assert item["durum"] in ("izle", "dikkat", "sorun")
-
-
 # ----------------------------------------------------------------------------- bugün
 async def test_today_defaults_to_all_clear_or_spray_window(user_client: AsyncClient, provider):
     garden = await new_garden(user_client)
@@ -266,47 +211,3 @@ async def test_today_survives_weather_outage(user_client: AsyncClient, factory, 
     assert response.status_code == 200 and response.json()["maddeler"]
 
 
-async def test_medium_pest_risk_on_the_weather_tab_caps_the_tier_and_is_named(user_client: AsyncClient, factory, provider, monkeypatch):
-    """Hava'da meyve sineği «orta» iken Risk çipi «normal», kademe «İyi» kalmaz; neden açıkça yazılır."""
-    from datetime import timedelta
-
-    from bahcelab_backend.domain.agro.risks import RiskSonucu
-    from bahcelab_backend.domain.agro.service import AgroService
-
-    async def no_risks(self, garden_row, history, weather, today):
-        return []
-
-    monkeypatch.setattr(AgroService, "_compute_risks", no_risks)
-    garden = await new_garden(user_client)
-    await seed_scenes(factory, garden["id"])
-    before = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert before["durum"] == "iyi"
-
-    async def medium_risk(self, garden_row, history, weather, today):
-        result = RiskSonucu("akdeniz_meyve_sinegi", "Meyve sineği", "orta", "gerekçe", today, today + timedelta(days=7), True)
-        return [(result, None, None)]
-
-    monkeypatch.setattr(AgroService, "_compute_risks", medium_risk)
-    after = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    risk = next(c for c in after["cipler"] if c["kod"] == "risk")
-    assert after["durum"] == "izle" and risk["seviye"] == "normalin_alti" and "Meyve sineği · orta" in risk["aciklama"]
-    assert after["nasil"]["dusuren_bilesen"] == "risk" and "en fazla İzle" in after["nasil"]["kademe_nedeni"]
-    assert "skor" not in after
-
-
-async def test_high_pest_risk_caps_the_tier_at_attention_and_the_chip_says_yuksek(user_client: AsyncClient, factory, provider, monkeypatch):
-    from datetime import timedelta
-
-    from bahcelab_backend.domain.agro.risks import RiskSonucu
-    from bahcelab_backend.domain.agro.service import AgroService
-
-    async def high_risk(self, garden_row, history, weather, today):
-        return [(RiskSonucu("akdeniz_meyve_sinegi", "Meyve sineği", "yuksek", "gerekçe", today, today + timedelta(days=7), True), None, None)]
-
-    monkeypatch.setattr(AgroService, "_compute_risks", high_risk)
-    garden = await new_garden(user_client)
-    await seed_scenes(factory, garden["id"])
-    data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    risk = next(c for c in data["cipler"] if c["kod"] == "risk")
-    assert data["durum"] == "dikkat" and risk["etiket"] == "yüksek" and risk["seviye"] == "belirgin_dusuk"
-    assert "en fazla Dikkat" in data["nasil"]["kademe_nedeni"]

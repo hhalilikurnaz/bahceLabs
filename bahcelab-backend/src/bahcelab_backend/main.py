@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bahcelab_backend.api.acquisitions.router import router as acquisitions_router
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
+from bahcelab_backend.api.events.router import router as events_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.multiyear.router import router as multiyear_router
 from bahcelab_backend.api.ndvi.router import definitions_router
@@ -17,6 +18,7 @@ from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.notifications.router import router as notifications_router
 from bahcelab_backend.api.overview.router import router as overview_router
 from bahcelab_backend.api.planning.router import router as planning_router
+from bahcelab_backend.api.series.router import router as series_router
 from bahcelab_backend.api.water.router import router as water_router
 from bahcelab_backend.api.weather.router import router as weather_router
 from bahcelab_backend.config import get_settings
@@ -112,6 +114,8 @@ def create_app() -> FastAPI:
     app.include_router(multiyear_router)
     app.include_router(acquisitions_router)
     app.include_router(water_router)
+    app.include_router(series_router)
+    app.include_router(events_router)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:

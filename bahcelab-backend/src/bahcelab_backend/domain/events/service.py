@@ -163,6 +163,8 @@ class EventView:
     kaynak_sayisi: int
     durum: str = "olay"
     neden: str | None = None
+    ayrinti: dict[str, float | str | None] | None = None
+    anahtar: str = ""
 
 
 async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: date | None = None, until: date | None = None, suphe: bool = False) -> list[EventView]:
@@ -186,7 +188,7 @@ async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: dat
     return [
         EventView(
             r.id, r.tur, list(r.turler), r.baslangic, r.bitis, max([a for a in [r.alan_da, *areas.get(r.id, [])] if a is not None], default=None), r.guven, r.siddet, r.katman, r.tahmin,
-            count.get(r.id, 0), r.durum, str((r.ayrinti or {}).get("s2_dusus.neden")) if (r.ayrinti or {}).get("s2_dusus.neden") else None,
+            count.get(r.id, 0), r.durum, str((r.ayrinti or {}).get("s2_dusus.neden")) if (r.ayrinti or {}).get("s2_dusus.neden") else None, r.ayrinti, r.anahtar,
         )
         for r in rows
     ]

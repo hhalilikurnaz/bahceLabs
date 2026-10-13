@@ -71,7 +71,7 @@ export function seedWeather(gardenId: string): void {
 }
 
 /** Test aracı: bahçeye gerçek yayım yolundan bildirim ekler (öncelik: kritik | uyari | bilgi). */
-export function seedNotification(gardenId: string, oncelik: 'kritik' | 'uyari' | 'bilgi', key: string, sekme = 'hava'): void {
+export function seedNotification(gardenId: string, oncelik: 'kritik' | 'onemli' | 'bilgi', key: string, sekme = 'hava'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_notifications', gardenId, oncelik, key, sekme], {
     cwd: '../bahcelab-backend',
     env: backendEnv(),

@@ -185,7 +185,7 @@ class DurumV2Yanit(BaseModel):
 
 class BugunMaddesiYanit(BaseModel):
     tur: str
-    oncelik: Literal["kritik", "uyari", "bilgi"]
+    oncelik: Literal["kritik", "onemli", "bilgi"]
     baslik: str
     metin: str
     sekme: Literal["durum", "analiz", "hava", "gunluk", "rapor"]

@@ -1,6 +1,6 @@
 """TEST ARACI (ürün kodu değil): uçtan uca testler için bir bahçeye belirli bildirim yayımlar.
 
-Gerçek `NotificationService.publish` yolundan geçer (tercih + tekrar önleme). Yalnızca API_DEBUG=true.
+Kayıt gerçek depo yolundan (tekrar önleme) geçer ve DOĞRUDAN listede görünür (teslim = anlik): panel/e2e testleri özet beklemeden bildirimi görebilsin. Yalnızca API_DEBUG=true.
 Kullanım:  python -m tests.support.seed_notifications <bahce-id> <oncelik> <anahtar> [sekme]
 """
 
@@ -14,7 +14,6 @@ from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory, engine
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.notifications.repository import NotificationRepository
-from bahcelab_backend.domain.notifications.service import NotificationService
 from bahcelab_backend.domain.notifications.types import Candidate
 
 
@@ -27,9 +26,8 @@ async def main(garden_id: uuid.UUID, oncelik: str, key: str, sekme: str) -> None
         ).scalar_one_or_none()
         if workspace_id is None:
             raise SystemExit("Bahçe bulunamadı")
-        service = NotificationService(NotificationRepository(session, workspace_id))
-        created = await service.publish(
-            [
+        repo = NotificationRepository(session, workspace_id)
+        row = await repo.insert_if_new(
                 Candidate(
                     garden_id=garden_id,
                     tur="hava_don",
@@ -38,11 +36,11 @@ async def main(garden_id: uuid.UUID, oncelik: str, key: str, sekme: str) -> None
                     metin="Bu gece don riski var; hassas sürgünleri koruyun.",
                     sekme=sekme,
                     dedupe_key=f"test:{key}",
-                )
-            ]
+                ),
+            teslim="anlik",
         )
         await session.commit()
-        print(f"{len(created)} bildirim yayımlandı")
+        print(f"{1 if row else 0} bildirim yayımlandı")
     await engine.dispose()
 
 

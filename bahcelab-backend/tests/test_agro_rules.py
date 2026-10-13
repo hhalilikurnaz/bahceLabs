@@ -188,7 +188,7 @@ def test_label_thresholds_come_from_one_function():
 
 # ----------------------------------------------------------------------------- bugün
 EMPTY = Girdi(hava_uyarilari=[], zararli_riskleri=[], ilaclama=[], uydu_uyarilari=[], sulama=None)
-PRIORITY = ("hava_uyarisi", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
+PRIORITY = ("hava_uyarisi", "olay", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
 
 
 def test_today_defaults_to_all_clear():
@@ -205,8 +205,8 @@ def test_today_orders_by_priority_and_limits_to_three():
         sulama=(12.0, "Önümüzdeki hafta yaklaşık 12 mm su ihtiyacı var."),
     )
     items = build_today(data, TODAY, PRIORITY, 3)
-    assert [i.tur for i in items] == ["hava_uyarisi", "hava_uyarisi", "zararli_riski"]
-    assert items[0].baslik == "Don riski" and items[0].oncelik == "kritik"  # kırmızı önce
+    assert [i.tur for i in items] == ["hava_uyarisi", "zararli_riski", "hava_uyarisi"]  # önem sırası: iki kritik (kırmızı don, YÜKSEK risk), sonra önemli (sarı)
+    assert items[0].baslik == "Don riski" and items[0].oncelik == "kritik" and items[1].oncelik == "kritik" and items[2].oncelik == "onemli"
     assert all(i.tur != "her_sey_yolunda" for i in items) and len(items) == 3
 
 
@@ -243,3 +243,13 @@ def test_high_pest_risk_lowers_points_and_caps_the_tier_at_attention():
     assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden
     assert next(b for b in heavy.bilesenler if b.kod == "hava").puan == 0
     assert plain.durum == "iyi" and risky.durum == "dikkat"  # yüksek zararlı riski kademeyi en fazla Dikkat yapar (orta: İzle)
+
+
+def test_today_lists_events_and_risks_by_importance_then_kind_priority_with_one_action_each() -> None:
+    data = Girdi(
+        hava_uyarilari=[("sari", "Sıcak uyarısı", "m")], zararli_riskleri=[("orta", "Meyve sineği", "sade", "neden")], ilaclama=[], uydu_uyarilari=[], sulama=None,
+        olaylar=[("bilgi", "Küçük olay", "m", "durum"), ("kritik", "Don olayı", "m", "hava"), ("onemli", "Kuvvetli rüzgâr olayı", "m", "hava")],
+    )
+    items = build_today(data, date(2026, 10, 13), PRIORITY, 4)
+    assert [i.baslik for i in items] == ["Don olayı", "Sıcak uyarısı", "Kuvvetli rüzgâr olayı", "Meyve sineği"]  # kritik, sonra önemliler (tür önceliği), bilgi dışarıda (limit 4)
+    assert all(i.sekme in ("durum", "analiz", "hava", "gunluk", "rapor") and i.oncelik in ("kritik", "onemli", "bilgi") for i in items)

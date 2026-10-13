@@ -25,12 +25,12 @@ def build_candidates(
     for alert in weather_alerts:
         kind = "hava_don" if alert.tur == "don" else "hava_sicak"
         out.append(
-            Candidate(garden_id, kind, "kritik" if alert.seviye == "kirmizi" else "uyari", f"{garden_name}: {alert.baslik}", alert.mesaj, "hava",
+            Candidate(garden_id, kind, "kritik" if alert.seviye == "kirmizi" else "onemli", f"{garden_name}: {alert.baslik}", alert.mesaj, "hava",
                       f"hava:{garden_id}:{alert.tur}:{alert.baslangic}:{alert.seviye}")
         )
     for sat in satellite_alerts:
         out.append(
-            Candidate(garden_id, "indeks_dususu", "kritik" if sat.oncelik == "yuksek" else "uyari", f"{garden_name}: {sat.baslik}", sat.mesaj, "durum",
+            Candidate(garden_id, "indeks_dususu", "onemli" if sat.oncelik == "yuksek" else "bilgi", f"{garden_name}: {sat.baslik}", sat.mesaj, "durum",
                       f"uydu:{garden_id}:{sat.son_tarih}:{','.join(sorted(sat.indeksler))}")
         )
     if irrigation is not None and irrigation.gerekli:

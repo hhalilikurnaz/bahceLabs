@@ -41,6 +41,7 @@ export const backendEnv = (): NodeJS.ProcessEnv => ({
   NDVI_ENABLED: 'false', // gerçek uydu işlemi başlatılmaz; sahneler test aracıyla yazılır
   JOBS_ENABLED: 'false',
   EARTHDATA_TOKEN: '', // e2e Earthdata'ya çıkmaz (.env.local'daki gerçek belirteç bu süreçlere geçmez)
+  HLS_CLIENT: 'tests.support.fake_hls:FakeHlsProvider', // ağsız HLS: kesintisiz canlılık eğrisi e2e'de gerçek hattan geçer
   ERA5_CLIENT: 'tests.support.fake_era5:FakeEra5Client', // ağsız ERA5: bahçe eklenince besleme işi gerçek hattan geçer
   SOILGRIDS_ENABLED: 'false', // e2e dış servise çıkmaz; toprak profili test aracıyla yazılır
   REGISTRATION_ENABLED: 'true',

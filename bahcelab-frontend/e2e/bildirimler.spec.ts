@@ -8,7 +8,7 @@ test('bildirim gelir → rozet → tıkla → bahçe ve sekme açılır → okun
   await page.goto('/bahceler')
   await expect(page.getByTestId('unread-badge')).toHaveCount(0)
 
-  seedNotification(garden.id, 'uyari', 'a')
+  seedNotification(garden.id, 'onemli', 'a')
   await page.reload()
   await expect(page.getByTestId('unread-badge')).toContainText('1')
 
@@ -56,8 +56,8 @@ test('yaşam döngüsü: çözüldü ve ertelendi sekmelerine geçer; geri alın
   await newUser(page)
   const garden = await createGarden(page.request, { ad: 'Döngü Bahçesi', lng: 27.82, lat: 38.82 })
   await page.route('**/api/gardens/*/weather', (route) => route.abort())
-  seedNotification(garden.id, 'uyari', 'a')
-  seedNotification(garden.id, 'uyari', 'b')
+  seedNotification(garden.id, 'onemli', 'a')
+  seedNotification(garden.id, 'onemli', 'b')
   await page.goto('/bahceler')
   await page.getByTestId('bildirim-ac').click()
   const items = page.getByTestId('notification-item')

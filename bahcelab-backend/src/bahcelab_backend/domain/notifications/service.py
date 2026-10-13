@@ -2,7 +2,9 @@ import math
 import uuid
 from datetime import UTC, datetime
 
+from bahcelab_backend.domain.agro.catalog import load_catalog
 from bahcelab_backend.domain.agro.risks import RiskSonucu
+from bahcelab_backend.domain.notifications import decision, templates
 from bahcelab_backend.domain.notifications.channels import registry
 from bahcelab_backend.domain.notifications.models import NotificationModel
 from bahcelab_backend.domain.notifications.repository import NotificationRepository
@@ -28,7 +30,7 @@ def to_response(row: NotificationModel) -> BildirimYanit:
     state = effective_state(row)
     return BildirimYanit(
         id=row.id, bahce_id=row.garden_id, tur=row.tur, tur_adi=TYPES.get(row.tur, {}).get("ad", row.tur), oncelik=row.oncelik,  # type: ignore[arg-type]
-        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", durum=state,  # type: ignore[arg-type]
+        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", durum=state, ogeler=list(row.ayrinti or []),  # type: ignore[arg-type]
         ertelendi_bitis=row.ertelendi_bitis if state == "ertelendi" else None, olusturma=row.created_at,
     )
 
@@ -96,28 +98,62 @@ class NotificationService:
                 continue
             if level == "yuksek":
                 if existing is None:
-                    row = await self.repo.insert_if_new(Candidate(garden_id, "zararli_riski", "uyari", title, risk.sade, "hava", key))
+                    row = await self.repo.insert_if_new(Candidate(garden_id, "zararli_riski", "kritik", title, risk.sade, "hava", key))
                     if row is not None:
                         created += 1
                         await registry.deliver(self.repo.workspace_id, row)
+                elif existing.oncelik != "kritik":  # özette bekleyen / önemli seviyesindeki risk yüksek oldu: kritik, anında
+                    await self.repo.update_risk(existing, title, risk.sade, reopen=False)
+                    await self.repo.escalate(existing)
+                    created += 1
+                    await registry.deliver(self.repo.workspace_id, existing)
                 else:
                     await self.repo.update_risk(existing, title, risk.sade, reopen=existing.durum == "cozuldu" and existing.otomatik_cozuldu)
-            elif existing is not None and existing.durum != "cozuldu":
-                if level == "orta":
+            elif level == "orta":
+                if existing is None:  # orta risk: ÖNEMLİ, günlük özette (anında değil)
+                    row = await self.repo.insert_if_new(Candidate(garden_id, "zararli_riski", "onemli", title, risk.sade, "hava", key), teslim="ozet")
+                    if row is not None:
+                        created += 1
+                elif existing.durum != "cozuldu":
                     await self.repo.update_risk(existing, title, risk.sade, reopen=False)
-                else:
-                    await self.repo.resolve_auto(existing)
+            elif existing is not None and existing.durum != "cozuldu":
+                await self.repo.resolve_auto(existing)
         return created
 
     async def publish(self, candidates: list[Candidate]) -> list[NotificationModel]:
-        """Tercihi kapalı türler atlanır; aynı olay (dedupe) için yalnızca ilk çağrı kayıt üretir. Yeni kayıtlar ek kanallara iletilir."""
+        """Karar katmanı: tercihi kapalı türler atlanır; kritik ANINDA (kanallara iletilir), önemli ve bilgi günlük özete bırakılır.
+        Aynı olay (dedupe) için yalnızca ilk çağrı kayıt üretir."""
         prefs = await self.repo.preferences()
+        rule = load_catalog().bildirim
         created: list[NotificationModel] = []
         for candidate in candidates:
             if not prefs.get(candidate.tur, True):
                 continue
-            row = await self.repo.insert_if_new(candidate)
+            teslim = "anlik" if decision.delivery(candidate.oncelik, rule) == "hemen" else "ozet"
+            row = await self.repo.insert_if_new(candidate, teslim=teslim)
             if row is not None:
                 created.append(row)
-                await registry.deliver(self.repo.workspace_id, row)
+                if teslim == "anlik":
+                    await registry.deliver(self.repo.workspace_id, row)
         return created
+
+    async def build_digest(self, now_local: datetime) -> NotificationModel | None:
+        """Günlük TEK özet: bekleyen önemli ve bilgi maddelerini şablonla birleştirir. Vakti gelmediyse, sessiz saatteyse, bugün üretildiyse ya da madde yoksa None. İdempotent."""
+        rule = load_catalog().bildirim
+        key = f"ozet:{self.repo.workspace_id}:{now_local.date().isoformat()}"
+        if not decision.digest_due(now_local.hour, now_local.date(), now_local.date() if await self.repo.by_key(key) is not None else None, rule):
+            return None
+        prefs = await self.repo.preferences()
+        items = sorted(await self.repo.pending_digest_items(), key=lambda i: (0 if i.oncelik == "onemli" else 1, i.created_at, i.baslik))  # önemliler önce
+        if not items or not prefs.get("ozet", True):
+            return None
+        title, body = templates.digest_text(now_local.date(), [(i.oncelik, i.baslik, i.baglanti) for i in items], rule)
+        candidate = Candidate(None, "ozet", "onemli" if any(i.oncelik == "onemli" for i in items) else "bilgi", title, body, "durum", key)
+        row = await self.repo.insert_if_new(candidate, teslim="anlik")
+        if row is None:
+            return None
+        row.baglanti = "/bahceler"
+        await self.repo.set_digest_detail(row, [{"onem": i.oncelik, "baslik": i.baslik, "metin": i.metin, "baglanti": i.baglanti, "tur": i.tur} for i in items])
+        await self.repo.attach_digest(items, row.id)
+        await registry.deliver(self.repo.workspace_id, row)
+        return row

@@ -7,7 +7,6 @@ from bahcelab_backend.api.deps import get_agro_service, get_current_user
 from bahcelab_backend.domain.agro.schemas import (
     BugunYanit,
     DurumV2Yanit,
-    DurumYanit,
     FenolojiDuzeltme,
     FenolojiYanit,
     KatalogYanit,
@@ -53,15 +52,9 @@ async def reset_phenology(garden_id: UUID, evre: str, service: Service) -> Fenol
     return await service.reset_phenology_override(garden_id, evre)
 
 
-@router.get("/gardens/{garden_id}/durum-v2", response_model=DurumV2Yanit)
-async def get_status_v2(garden_id: UUID, service: Service) -> DurumV2Yanit:
-    """Durum v2 (ADR 0018): kademe, 5 bileşen çipi, risk satırı ve «Nasıl hesaplandı?». İç puan yanıtta yoktur."""
-    return await service.status_v2(garden_id)
-
-
-@router.get("/gardens/{garden_id}/durum", response_model=DurumYanit)
-async def get_status(garden_id: UUID, service: Service) -> DurumYanit:
-    """Bahçe durumu skoru (0–100), bileşen dökümü ve güven düzeyi; veri yetersizse nedeniyle."""
+@router.get("/gardens/{garden_id}/durum", response_model=DurumV2Yanit)
+async def get_status(garden_id: UUID, service: Service) -> DurumV2Yanit:
+    """Durum (v2, ADR 0018): kademe, 5 bileşen çipi, risk satırı ve «Nasıl hesaplandı?». Sayısal skor yanıtta YOKTUR."""
     return await service.status(garden_id)
 
 

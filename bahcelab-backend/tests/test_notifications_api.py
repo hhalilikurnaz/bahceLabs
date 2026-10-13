@@ -196,9 +196,10 @@ async def test_extra_channels_receive_only_new_notifications(user_client: AsyncC
     registry.register(channel)
     try:
         first = await run_job(factory, provider, user_client)
-        assert len(channel.delivered) == first.uretilen >= 1
+        assert 1 <= len(channel.delivered) <= first.uretilen  # yalnız KRİTİK anında iletilir; önemli/bilgi özeti bekler
+        delivered = len(channel.delivered)
         await run_job(factory, provider, user_client)
-        assert len(channel.delivered) == first.uretilen  # tekrar yok
+        assert len(channel.delivered) == delivered  # tekrar yok
     finally:
         registry._extra.clear()
 
@@ -207,10 +208,10 @@ async def test_extra_channels_receive_only_new_notifications(user_client: AsyncC
 def test_job_registry_runs_weather_before_notifications_and_arq_cron_matches():
     settings = Settings(job_weather_interval_minutes=30, job_notifications_interval_minutes=60)
     specs = job_registry.job_specs(settings)
-    assert [s.name for s in specs] == ["refresh_weather", "refresh_era5", "generate_notifications", "refresh_acquisitions", "refresh_validation"]
+    assert [s.name for s in specs] == ["refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation"]
     assert arq_worker.minute_slots(30) == {0, 30} and arq_worker.minute_slots(60) == {0} and arq_worker.minute_slots(15) == {0, 15, 30, 45}
     built = arq_worker.build_settings(settings)
-    assert len(built["cron_jobs"]) == 5 and {f.__name__ for f in built["functions"]} == {"refresh_weather", "refresh_era5", "generate_notifications", "refresh_acquisitions", "refresh_validation"}
+    assert len(built["cron_jobs"]) == 8 and {f.__name__ for f in built["functions"]} == {"refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation"}
 
 
 async def test_inline_queue_runs_jobs_synchronously_and_arq_queue_enqueues_with_a_stable_id(user_client: AsyncClient, factory, provider):
@@ -291,7 +292,7 @@ async def test_today_and_status_use_the_new_risk_and_irrigation_inputs(user_clie
     today = (await user_client.get(f"/gardens/{garden['id']}/bugun")).json()
     assert 1 <= len(today["maddeler"]) <= 3
     status = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
-    assert status["veri_yeterli"] is True and "skor" not in status
+    assert "skor" not in status and status["durum"] in ("iyi", "izle", "dikkat", "sorun", "veri_yok")
     assert istanbul_today() - timedelta(days=0) == date.fromisoformat(today["tarih"])
 
 

@@ -209,6 +209,36 @@ olay:
   guven_yuksek_min: 4
   guven_orta_min: 2
 
+# Bildirim karar katmanı (ADR 0018): ön değer
+bildirim:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer: kritik (don, şiddetli ya da çok kaynaklı yüksek güvenli olay, yüksek risk) anında; önemli (kademe düşüşü, orta risk, olay) ve bilgi günlük tek özette
+    (07:00, yerel); sessiz saatler 22:00–07:00 (kritik hariç); bitişi 3 günden eski olay bildirilmez.
+  ozet_saat: 7
+  sessiz_baslangic: 22
+  sessiz_bitis: 7
+  taze_olay_gun: 3
+  kritik_olay_guven: yuksek
+  ozet_azami_madde: 8
+
+# Kesintisiz canlılık eğrisi (ADR 0018): ön değer
+egri:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer: ağırlıklı Whittaker (λ = 300, ikinci fark); Sentinel-2 ağırlığı 1,0, HLS 0,6 (× geçerli piksel oranı); bant = %90 yaklaşık, en yakın gözleme uzaklıkla genişler;
+    boşluk > 12 gün ise radar değişim işareti; kademe eğriye değil GERÇEK gözleme dayanır. Radar NDVI üretmez.
+  lambda: 300
+  w_s2: 1.0
+  w_hls: 0.6
+  hls_min_gecerli_oran: 0.5
+  sigma_taban: 0.02
+  belirsizlik_z: 1.645
+  belirsizlik_tau_gun: 10
+  gozlem_yakin_gun: 2
+  ekstrapolasyon_azami_gun: 30
+  radar_bosluk_gun: 12
+
 urunler:
   limon:
     ad: Limon

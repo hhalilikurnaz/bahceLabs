@@ -271,6 +271,32 @@ class OlayKurali(KuralBlok):
     guven_orta_min: int = 2
 
 
+class BildirimKurali(KuralBlok):
+    """Bildirim karar katmanı (ADR 0018): önem sınıfları, özet saati, sessiz saatler ve olay tazeliği. Hepsi ön değer · mühendis/kullanıcı onayı bekliyor."""
+
+    ozet_saat: int = Field(default=7, ge=0, le=23)  # önemli ve bilgi bildirimleri günlük TEK özette bu saatte (yerel)
+    sessiz_baslangic: int = Field(default=22, ge=0, le=23)  # sessiz saatler: kritik hariç hiçbir bildirim gönderilmez
+    sessiz_bitis: int = Field(default=7, ge=0, le=23)
+    taze_olay_gun: int = Field(default=3, ge=0)  # bitişi bundan eski olay bildirilmez (ilk çalıştırmada geçmiş birikimi bildirim yağdırmasın)
+    kritik_olay_guven: str = "yuksek"  # bu güvendeki olay «şiddetli olay» sayılır → kritik (ayrıca don ve şiddetli don daima kritik)
+    ozet_azami_madde: int = Field(default=8, ge=1)  # özet metni en çok bu kadar satır; fazlası «+N madde daha»
+
+
+class EgriKurali(KuralBlok):
+    """Kesintisiz canlılık eğrisi (ADR 0018): ağırlıklı Whittaker yumuşatma, gözlem ağırlıkları ve belirsizlik bandı. Ön değer; kademe eğriye değil gerçek gözleme dayanır."""
+
+    lambda_: float = Field(default=300.0, gt=0, alias="lambda")  # Whittaker pürüzsüzlük (ikinci fark cezası); büyük = daha düz
+    w_s2: float = Field(default=1.0, gt=0)  # Sentinel-2 gözlem ağırlığı (10 m, bahçe ortancası) × geçerli piksel oranı
+    w_hls: float = Field(default=0.6, gt=0)  # HLS (30 m): bahçe küçükse birkaç piksel; daha düşük ağırlık
+    hls_min_gecerli_oran: float = Field(default=0.5, ge=0, le=1)  # HLS sahnesi bunun altında geçerli piksel içeriyorsa gözlem sayılmaz
+    sigma_taban: float = 0.02  # artık dağılımı bunun altına inmez
+    belirsizlik_z: float = 1.645  # %90 yaklaşık bant (sezgisel, istatistiksel aralık değil)
+    belirsizlik_tau_gun: float = Field(default=10.0, gt=0)  # bant genişliği en yakın gözleme uzaklık d için × sqrt(1 + (d/τ)²)
+    gozlem_yakin_gun: int = Field(default=2, ge=0)  # en yakın gözlem bu kadar günden yakınsa nokta «gözlem destekli», değilse «tahmini»
+    ekstrapolasyon_azami_gun: int = Field(default=30, ge=0)  # son gözlemden sonra en çok bu kadar gün tahmin çizilir
+    radar_bosluk_gun: int = Field(default=12, ge=1)  # optik gözlem boşluğu bundan uzunsa radar «değişim var/yok» işareti çizilir
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -280,6 +306,8 @@ class Katalog(BaseModel):
     su: SuKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
+    bildirim: BildirimKurali
+    egri: EgriKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

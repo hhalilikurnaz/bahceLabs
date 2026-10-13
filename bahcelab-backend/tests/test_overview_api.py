@@ -24,6 +24,17 @@ from .test_weather_api import (  # noqa: F401  (autouse hava hücresi temizliği
 TODAY = datetime.now(UTC).date()
 
 
+async def set_tier(factory, garden_id: str, tier: str) -> None:  # noqa: ANN001
+    """Liste kademeyi son hesaplanan Durum v2 kademesinden (anlık görüntü) okur; bu yardımcı zamanlanmış işin / Durum sekmesinin yazdığı değeri taklit eder."""
+    import uuid
+
+    from bahcelab_backend.domain.notifications.repository import StatusSnapshotRepository
+
+    async with factory() as session:
+        await StatusSnapshotRepository(session).save(uuid.UUID(garden_id), tier)
+        await session.commit()
+
+
 @pytest.fixture
 def factory(test_engine):
     return async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
@@ -104,6 +115,7 @@ async def test_overview_with_images_series_and_thumbnail(user_client: AsyncClien
         await add_scene(factory, gid, TODAY - timedelta(days=days_ago), {**ALL_MEANS, "ndvi": mean})
     latest = TODAY - timedelta(days=3)
     get_storage().save(f"indeks/{gid}/{latest}/ndvi.png", real_png())
+    await set_tier(factory, gid, "iyi")
 
     body = (await user_client.get("/gardens/overview")).json()
     (item,) = body["bahceler"]
@@ -129,6 +141,7 @@ async def test_overview_status_follows_alerts(user_client: AsyncClient, factory)
         await add_scene(factory, gid, TODAY - timedelta(days=ago), {**ALL_MEANS, "ndvi": 0.7})
     await add_scene(factory, gid, TODAY - timedelta(days=18), {**ALL_MEANS, "ndvi": 0.7})
     await add_scene(factory, gid, TODAY - timedelta(days=2), {**ALL_MEANS, "ndvi": 0.5})
+    await set_tier(factory, gid, "izle")
     (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
     assert item["durum"] in ("izle", "dikkat", "sorun") and "skor" not in item
     assert [(u["kaynak"], u["seviye"]) for u in item["uyarilar"]] == [("uydu", "sari")]
@@ -146,7 +159,10 @@ async def test_overview_reads_cached_weather_without_network(app, user_client: A
     (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
     assert provider.forecast_calls == calls  # özet ağa çıkmaz
     assert item["hava"]["bayat"] is False and item["hava"]["ikon"]
-    assert item["durum"] == "dikkat"  # kırmızı don uyarısı
+    assert item["durum"] == "veri_yok"  # kademe henüz hesaplanmadı (anlık görüntü yok)
+    assert (await user_client.get(f"/gardens/{garden['id']}/durum")).json()["durum"] == "dikkat"  # Durum sekmesi hesaplar: kırmızı don uyarısı en az Dikkat
+    (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
+    assert item["durum"] == "dikkat"  # liste, Durum sekmesinin kademesini aynen gösterir (TEK kademe)
     assert ("hava", "kirmizi") in [(u["kaynak"], u["seviye"]) for u in item["uyarilar"]]
     assert item["uyarilar"][0]["seviye"] == "kirmizi"  # kırmızılar önce
 

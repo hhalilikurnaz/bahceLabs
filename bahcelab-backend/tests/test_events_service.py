@@ -212,11 +212,19 @@ async def test_forecast_wind_is_flagged_as_forecast_and_past_wind_is_low_confide
     assert rows[future].tahmin and rows[future].guven == "orta"  # Open-Meteo tahmin hamlesi: uyarı
 
 
-async def test_status_v2_endpoint_returns_a_tier_five_components_and_never_a_number(user_client, factory, provider):
+
+async def test_events_endpoint_lists_events_and_suspicions_separately_with_ownership(user_client, factory, app):
+    from .conftest import make_client
+
     gid = await seed(user_client, factory)
-    body = (await user_client.get(f"/gardens/{gid}/durum-v2")).json()
-    assert body["durum"] in ("veri_yok", "izle", "dikkat") and [c["kod"] for c in body["bilesenler"]] == ["agac_gucu", "su", "beslenme", "ani_degisim", "isi"]
-    assert not any(c["kullanilabilir"] for c in body["bilesenler"] if c["kod"] in ("agac_gucu", "beslenme", "isi"))  # veri yok: kademe yalnız risk/uyarıdan
-    assert "ic_puan" not in body and "skor" not in body and all("puan" not in c for c in body["bilesenler"]) and len(body["nasil"]) <= 3
-    assert body["esik_durumu"] == "ön değer · v2" and body["guven"] == "dusuk"
-    assert (await user_client.get(f"/gardens/{uuid.uuid4()}/durum-v2")).status_code == 404
+    d = TODAY - timedelta(days=25)
+    await add_era5(factory, gid, {d: (-3.0, 10.0)})
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+    body = (await user_client.get(f"/gardens/{gid}/olaylar")).json()
+    assert [o["tur"] for o in body["olaylar"]] == ["don"] and body["olaylar"][0]["siddet"] == "siddetli" and body["olaylar"][0]["tur_adi"] == "Don olayı" and body["supheler"] == []
+    assert "kopyalan" not in str(body)  # yanıt kaynak kayıt değerlerini taşımaz
+    async with make_client(app) as other:
+        await register(other)
+        assert (await other.get(f"/gardens/{gid}/olaylar")).status_code == 404

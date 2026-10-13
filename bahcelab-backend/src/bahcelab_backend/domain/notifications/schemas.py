@@ -10,7 +10,7 @@ class BildirimYanit(BaseModel):
     bahce_id: uuid.UUID | None
     tur: str
     tur_adi: str
-    oncelik: Literal["kritik", "uyari", "bilgi"]
+    oncelik: Literal["kritik", "onemli", "bilgi"]
     baslik: str
     metin: str
     baglanti: str
@@ -18,6 +18,7 @@ class BildirimYanit(BaseModel):
     durum: Literal["olustu", "goruldu", "cozuldu", "ertelendi"]
     ertelendi_bitis: datetime | None = None
     olusturma: datetime
+    ogeler: list[dict[str, str]] = Field(default_factory=list)  # özet kartı: kapsanan maddeler (önem, başlık, metin, bağlantı, tür)
 
 
 class BildirimListesi(BaseModel):

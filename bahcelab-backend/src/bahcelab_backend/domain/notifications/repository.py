@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.notifications.models import (
+    GardenStatusSnapshotModel,
     NotificationModel,
     NotificationPreferenceModel,
     RiskSnapshotModel,
@@ -25,7 +26,7 @@ class NotificationRepository:
         return or_(NotificationModel.durum == "olustu", and_(NotificationModel.durum == "ertelendi", NotificationModel.ertelendi_bitis <= now))
 
     def _filters(self, tur: str | None, garden_id: uuid.UUID | None, unread_only: bool, durum: str = "aktif") -> list:
-        cond = [NotificationModel.workspace_id == self.workspace_id]
+        cond = [NotificationModel.workspace_id == self.workspace_id, NotificationModel.teslim == "anlik"]  # özet maddeleri listede görünmez (özet kartında)
         if tur:
             cond.append(NotificationModel.tur == tur)
         if garden_id:
@@ -57,7 +58,7 @@ class NotificationRepository:
         return int(
             (
                 await self.session.execute(
-                    select(func.count()).select_from(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, self._unread_cond())
+                    select(func.count()).select_from(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.teslim == "anlik", self._unread_cond())
                 )
             ).scalar_one()
         )
@@ -87,6 +88,10 @@ class NotificationRepository:
         self._apply(notification, durum, days, datetime.now(UTC))
         await self.session.flush()
 
+    async def set_digest_detail(self, notification: NotificationModel, items: list[dict[str, str]]) -> None:
+        notification.ayrinti = items
+        await self.session.flush()
+
     async def mark_all_read(self, *, tur: str | None, garden_id: uuid.UUID | None) -> int:
         cond = self._filters(tur, garden_id, True)
         result = await self.session.execute(
@@ -94,13 +99,13 @@ class NotificationRepository:
         )
         return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
-    async def insert_if_new(self, candidate: Candidate) -> NotificationModel | None:
+    async def insert_if_new(self, candidate: Candidate, teslim: str = "anlik") -> NotificationModel | None:
         """Aynı olay (dedupe_key) için yalnızca ilk çağrı kayıt üretir; tekrar çağrı None döner (idempotent)."""
         stmt = (
             insert(NotificationModel)
             .values(
                 id=uuid.uuid4(), workspace_id=self.workspace_id, garden_id=candidate.garden_id, tur=candidate.tur, oncelik=candidate.oncelik,
-                baslik=candidate.baslik, metin=candidate.metin, baglanti=candidate.link(), dedupe_key=candidate.dedupe_key,
+                baslik=candidate.baslik, metin=candidate.metin, baglanti=candidate.link(), dedupe_key=candidate.dedupe_key, teslim=teslim,
             )
             .on_conflict_do_nothing(constraint="uq_notification_dedupe")
             .returning(NotificationModel.id)
@@ -122,6 +127,24 @@ class NotificationRepository:
         notification.durum, notification.okundu = "cozuldu", True
         notification.okundu_zamani = notification.okundu_zamani or datetime.now(UTC)
         notification.cozuldu_zamani, notification.otomatik_cozuldu, notification.ertelendi_bitis = datetime.now(UTC), True, None
+        await self.session.flush()
+
+    async def pending_digest_items(self) -> list[NotificationModel]:
+        """Özete girecek maddeler: teslim = özet ve henüz bir özete alınmamış (eskiden yeniye)."""
+        rows = await self.session.execute(
+            select(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.teslim == "ozet", NotificationModel.ozet_id.is_(None)).order_by(NotificationModel.created_at, NotificationModel.id)
+        )
+        return list(rows.scalars())
+
+    async def attach_digest(self, items: list[NotificationModel], digest_id: uuid.UUID) -> None:
+        for row in items:
+            row.ozet_id = digest_id
+        await self.session.flush()
+
+    async def escalate(self, notification: NotificationModel) -> None:
+        """Özette bekleyen orta risk YÜKSEĞE çıktı: kritik olur, listede anında görünür (özet maddesi olmaktan çıkar)."""
+        notification.oncelik, notification.teslim, notification.ozet_id = "kritik", "anlik", None
+        notification.durum, notification.okundu, notification.okundu_zamani = "olustu", False, None
         await self.session.flush()
 
     async def by_key(self, dedupe_key: str) -> NotificationModel | None:
@@ -163,3 +186,23 @@ class RiskSnapshotRepository:
             return {}
         rows = (await self.session.execute(select(RiskSnapshotModel).where(RiskSnapshotModel.garden_id.in_(garden_ids)))).scalars()
         return {r.garden_id: list(r.aktif or []) for r in rows}
+
+
+class StatusSnapshotRepository:
+    """Bahçe başına son Durum v2 kademesi (kademe düşüşü bildirimi için)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def get(self, garden_id: uuid.UUID) -> str | None:
+        return (await self.session.execute(select(GardenStatusSnapshotModel.kademe).where(GardenStatusSnapshotModel.garden_id == garden_id))).scalar_one_or_none()
+
+    async def bulk(self, garden_ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+        if not garden_ids:
+            return {}
+        rows = await self.session.execute(select(GardenStatusSnapshotModel.garden_id, GardenStatusSnapshotModel.kademe).where(GardenStatusSnapshotModel.garden_id.in_(garden_ids)))
+        return {r[0]: r[1] for r in rows.all()}
+
+    async def save(self, garden_id: uuid.UUID, kademe: str) -> None:
+        stmt = insert(GardenStatusSnapshotModel).values(garden_id=garden_id, kademe=kademe, hesaplama=datetime.now(UTC))
+        await self.session.execute(stmt.on_conflict_do_update(index_elements=["garden_id"], set_={"kademe": kademe, "hesaplama": datetime.now(UTC)}))

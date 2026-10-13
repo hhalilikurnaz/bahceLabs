@@ -8,22 +8,19 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
-from bahcelab_backend.domain.agro.score import AktifRisk, BandRef, SceneValue, ScoreConfig, assess
-from bahcelab_backend.domain.agro.service import (
-    acquisition_values,
-    satellite_severities,
-    scene_values,
-    score_spans,
-)
+from bahcelab_backend.domain.agro.score import ScoreConfig
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts, index_series
-from bahcelab_backend.domain.notifications.repository import RiskSnapshotRepository
+from bahcelab_backend.domain.notifications.repository import (
+    RiskSnapshotRepository,
+    StatusSnapshotRepository,
+)
 from bahcelab_backend.domain.overview.schemas import (
     BahceOzeti,
     BahceOzetiYanit,
@@ -33,7 +30,7 @@ from bahcelab_backend.domain.overview.schemas import (
     Toplamlar,
     UyariOzeti,
 )
-from bahcelab_backend.domain.overview.status import Seviye
+from bahcelab_backend.domain.overview.status import Durum, Seviye
 from bahcelab_backend.domain.weather.models import WeatherCellModel
 from bahcelab_backend.domain.weather.provider import TIMEZONE, Forecast
 from bahcelab_backend.domain.weather.repository import WeatherRepository
@@ -61,15 +58,11 @@ class GardenOverviewService:
         ids = [row.garden.id for row in rows]
         scenes = await self.ndvi.list_scenes_bulk(ids)
         weather_by_garden = await self._cached_weather(ids)
-        risk_active = await self.snapshots.active_risks(ids) if self.snapshots else {}
-        local_month = datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).month
-        band_map = await band_refs_for(self.ndvi.session, ids, local_month)  # liste de Durum sekmesi gibi normal banda göre karar verir
-
-        acq_values = {gid: await acquisition_values(self.ndvi.session, gid) for gid in ids}  # Durum sekmesiyle AYNI değer (edinim medyanı)
+        tiers = await StatusSnapshotRepository(self.ndvi.session).bulk(ids)
         now_utc = datetime.now(UTC)
         local = now_utc.astimezone(ZoneInfo(TIMEZONE))
         items = [
-            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, risk_active.get(row.garden.id, []), band_map.get(row.garden.id, {}), acq_values.get(row.garden.id, []))
+            self._garden_item(row, scenes[row.garden.id], indeks, weather_by_garden.get(row.garden.id), now_utc, local, tiers.get(row.garden.id))
             for row in rows
         ]
         totals = Toplamlar(
@@ -102,9 +95,7 @@ class GardenOverviewService:
         weather: tuple[Forecast, datetime] | None,
         now_utc: datetime,
         local: datetime,
-        active_risks: list[dict[str, str]] | None = None,
-        bands: dict[str, BandRef] | None = None,
-        values: list[SceneValue] | None = None,
+        tier: str | None = None,
     ) -> BahceOzeti:
         garden = row.garden
         series = index_series(scenes, indeks)
@@ -146,17 +137,7 @@ class GardenOverviewService:
                 alerts.append(UyariOzeti(kaynak="hava", tur=item.tur, seviye=item.seviye, baslik=item.baslik))
 
         alerts.sort(key=lambda a: 0 if a.seviye == "kirmizi" else 1)
-        sat_levels, _ = satellite_severities(scenes)
-        weather_levels: list[Seviye] | None = None
-        if weather is not None:
-            weather_levels = [a.seviye for a in weather_alerts(weather[0], local.date(), local.strftime("%Y-%m-%dT%H:%M"))]
-
-        result = assess(
-            values or scene_values(scenes), spans=score_spans(), sat_severities=sat_levels,
-            weather_severities=weather_levels, today=local.date(), cfg=self.score_cfg, active_risks=[AktifRisk(r["ad"], r["seviye"]) for r in (active_risks or [])],  # type: ignore[arg-type]
-            bands=bands,
-        )
-        status = result.durum if last_image is not None or result.durum == "dikkat" else "veri_yok"
+        status: Durum = cast(Durum, tier) if tier in ("iyi", "izle", "dikkat", "sorun") else "veri_yok"  # TEK kademe: Durum sekmesiyle aynı (Durum v2); son hesaplanan değer
         return BahceOzeti(
             id=garden.id,
             ad=garden.ad,

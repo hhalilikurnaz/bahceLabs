@@ -28,9 +28,30 @@ async def run_garden_feed(garden_id: uuid.UUID) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         logger.exception("ERA5 beslemesi başarısız (bahçe %s); günlük iş yeniden dener", garden_id)
         out["era5"] = "hata"
+    out["hls"] = await feed_hls(garden_id)
     out["dogrulama"] = await feed.feed_validation(async_session_factory, garden_id)
     logger.info("Su verisi beslemesi bitti (bahçe %s): %s", garden_id, out)
     return out
+
+
+async def feed_hls(garden_id: uuid.UUID, days: int | None = None) -> dict[str, Any] | str:
+    """HLS NDVI gözlemleri (2020→ ya da son `days` gün): idempotent; hata günlüğe yazılır, günlük iş yeniden dener."""
+    from datetime import UTC, date, datetime, timedelta
+
+    from bahcelab_backend.domain.imagery.registry import get_hls_provider
+    from bahcelab_backend.domain.series.service import sync_hls
+
+    settings = get_settings()
+    if not settings.hls_enabled:
+        return "kapali"
+    today = datetime.now(UTC).date()
+    start = date.fromisoformat(settings.hls_start) if days is None else today - timedelta(days=days)
+    try:
+        async with async_session_factory() as session:
+            return await sync_hls(session, garden_id, start, today, get_hls_provider())
+    except Exception:  # noqa: BLE001
+        logger.exception("HLS beslemesi başarısız (bahçe %s)", garden_id)
+        return "hata"
 
 
 async def _enqueue_arq(garden_id: uuid.UUID) -> None:

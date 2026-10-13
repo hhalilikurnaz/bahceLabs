@@ -40,7 +40,20 @@ class NotificationModel(Base):
     cozuldu_zamani: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     otomatik_cozuldu: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)  # koşul ortadan kalktığı için sistem çözdü (koşul dönerse yeniden açılır)
     dedupe_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    teslim: Mapped[str] = mapped_column(String(8), nullable=False, server_default="anlik", default="anlik")  # anlik | ozet
+    ozet_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    ayrinti: Mapped[list[dict[str, str]] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class GardenStatusSnapshotModel(Base):
+    """Son hesaplanan Durum v2 kademesi: kademe DÜŞÜŞÜ bildirimi için önceki ile karşılaştırılır."""
+
+    __tablename__ = "garden_status_snapshots"
+
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
+    kademe: Mapped[str] = mapped_column(String(10), nullable=False)
+    hesaplama: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class NotificationPreferenceModel(Base):

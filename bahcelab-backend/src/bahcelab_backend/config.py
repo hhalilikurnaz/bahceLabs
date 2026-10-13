@@ -107,7 +107,7 @@ class Settings(BaseSettings):
 
     # "Bugün" listesi
     today_max_items: int = 3
-    today_priority: tuple[str, ...] = ("hava_uyarisi", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
+    today_priority: tuple[str, ...] = ("hava_uyarisi", "olay", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
 
     # Zamanlanmış işler (ADR 0009): 'inline' = süreç içi periyodik döngü (geliştirme; Redis gerekmez),
     # 'arq' = Redis + arq işçisi (üretim; `make worker`). Testlerde işler doğrudan (senkron) çağrılır.
@@ -125,6 +125,14 @@ class Settings(BaseSettings):
     job_era5_hour: int = 4
     job_validation_interval_minutes: int = 1440
     job_validation_hour: int = 5
+    job_events_interval_minutes: int = 1440
+    job_events_hour: int = 6
+    job_digest_interval_minutes: int = 60
+    hls_enabled: bool = True  # HLS NDVI gözlemleri (Planetary Computer, 2020→): kesintisiz canlılık eğrisi
+    hls_client: str = ""  # YALNIZ API_DEBUG=true: «modül:ad» test sağlayıcısı (ağsız e2e); boşsa Planetary Computer
+    hls_start: str = "2020-01-01"
+    job_hls_interval_minutes: int = 1440
+    job_hls_hour: int = 2
     validation_start: str = "2022-01-01"  # SMAP/IMERG doğrulama doldurmasının başlangıcı
 
     # Auth — JWT cookie'leri (httpOnly). Üretimde jwt_secret mutlaka değiştirilmeli.

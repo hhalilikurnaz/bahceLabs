@@ -66,12 +66,13 @@ from bahcelab_backend.domain.agro.score import (
     summary_sentence,
 )
 from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
-from bahcelab_backend.domain.agro.today import Girdi, build_today
+from bahcelab_backend.domain.agro.today import Girdi, Oncelik, Sekme, build_today
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.ndvi.indices import INDICES
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts
+from bahcelab_backend.domain.notifications.repository import StatusSnapshotRepository
 from bahcelab_backend.domain.water.schemas import SulamaKarari
 from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import TIMEZONE
@@ -489,10 +490,6 @@ class AgroService:
         )
         return result, scenes, weather, risks, irrigation
 
-    async def status(self, garden_id: uuid.UUID) -> DurumYanit:
-        result, _, _, _, _ = await self.assess(garden_id)
-        return to_status_response(result, self._today())
-
     async def status_v2_result(self, garden_id: uuid.UUID, today: date | None = None) -> sv.DurumV2:
         """Durum v2 (alan sonucu; iç puan dahil — yalnız karşılaştırma ve testler için). API `status_v2` iç puanı yanıta koymaz."""
         garden = await self._garden(garden_id)
@@ -504,9 +501,12 @@ class AgroService:
         inputs, _ = await sv2.collect(self.ndvi.session, self.gardens.workspace_id, garden_id, today, active_risks_of(risks), red)
         return sv.evaluate(inputs, self.catalog.durum_v2)
 
-    async def status_v2(self, garden_id: uuid.UUID) -> DurumV2Yanit:
+    async def status(self, garden_id: uuid.UUID) -> DurumV2Yanit:
+        """Durum (v2, ADR 0018): kademe + 5 bileşen. Son kademe bahçe listesi ve kademe düşüşü bildirimi için kaydedilir (liste ile Durum sekmesi TEK kademe)."""
         today = self._today()
         result = await self.status_v2_result(garden_id, today)
+        if result.kademe != "veri_yok":
+            await StatusSnapshotRepository(self.ndvi.session).save(garden_id, result.kademe)
         rule = self.catalog.durum_v2
         weather = await self._weather_or_none(garden_id)
         garden = await self._garden(garden_id)
@@ -517,6 +517,28 @@ class AgroService:
             riskler=[r.metin for r in risks], guven=result.guven, guven_nedeni=result.guven_nedeni, nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
             esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
         )
+
+    async def _today_events(self, garden_id: uuid.UUID, today: date) -> list[tuple[Oncelik, str, str, Sekme]]:
+        """Bugün listesine girecek taze/tahmin olaylar: önem ve metin bildirimle AYNI kuraldan (event_importance + şablon). Düşük güvenliler girmez."""
+        from bahcelab_backend.domain.events.service import list_events
+        from bahcelab_backend.domain.notifications.event_candidates import (
+            WEATHER_KINDS,
+            event_candidate,
+        )
+
+        rule = self.catalog.bildirim
+        garden = await self._garden(garden_id)
+        out: list[tuple[Oncelik, str, str, Sekme]] = []
+        for e in await list_events(self.ndvi.session, garden_id, since=today - timedelta(days=rule.taze_olay_gun)):
+            cand = event_candidate(garden_id, garden.ad, e, today, rule, e.anahtar) if not (e.tahmin and e.tur == "don") else None
+            if cand is None and e.tahmin and e.tur == "don":  # tahmin donu hava uyarısı yolundan da gelir; Bugün'de kritik olay olarak görünür
+                from bahcelab_backend.domain.notifications import templates
+
+                title, body = templates.event_text(garden.ad, "don", e.baslangic, e.bitis, {"en_dusuk_c": (e.ayrinti or {}).get("don.en_dusuk_c")}, forecast=True, severe=e.siddet == "siddetli")
+                out.append(("kritik", title, body, "hava"))
+            elif cand is not None:
+                out.append((cand.oncelik, cand.baslik, cand.metin, "hava" if e.tur in WEATHER_KINDS else "durum"))
+        return out
 
     # ------------------------------------------------------------------ bugün
     async def today(self, garden_id: uuid.UUID) -> BugunYanit:
@@ -534,6 +556,7 @@ class AgroService:
             ilaclama=spray,
             uydu_uyarilari=sat,
             sulama=(irrigation.ihtiyac_mm or 0.0, irrigation.cumle) if irrigation is not None and irrigation.gerekli else None,
+            olaylar=await self._today_events(garden_id, today),
         )
         items = build_today(data, today, self.settings.today_priority, self.settings.today_max_items)
         return BugunYanit(tarih=today, maddeler=[BugunMaddesiYanit(**i.__dict__) for i in items])

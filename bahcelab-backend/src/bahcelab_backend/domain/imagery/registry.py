@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.imagery.hls import PlanetaryHlsProvider
 from bahcelab_backend.domain.imagery.landsat import PlanetaryLandsatProvider
 from bahcelab_backend.domain.imagery.planet import PlanetProvider
 from bahcelab_backend.domain.imagery.provider import ImageryProvider, ProviderNotConfigured
@@ -20,6 +21,19 @@ _FACTORIES: dict[str, Callable[[], ImageryProvider]] = {
 def get_landsat_provider() -> PlanetaryLandsatProvider:
     """Landsat yüzey sıcaklığı (ADR 0017); testlerde sahte sağlayıcıyla değiştirilir."""
     return PlanetaryLandsatProvider()
+
+
+def get_hls_provider() -> PlanetaryHlsProvider:
+    """HLS v2.0 NDVI (kesintisiz canlılık eğrisi, ADR 0018); testlerde sahte sağlayıcıyla değiştirilir (`HLS_CLIENT`, yalnız API_DEBUG)."""
+    settings = get_settings()
+    if settings.hls_client:
+        if not settings.api_debug:
+            raise RuntimeError("HLS_CLIENT yalnızca API_DEBUG=true ortamında kullanılabilir.")
+        import importlib
+
+        module, _, name = settings.hls_client.partition(":")
+        return getattr(importlib.import_module(module), name)()
+    return PlanetaryHlsProvider()
 
 
 def get_radar_provider() -> PlanetaryRadarProvider:
