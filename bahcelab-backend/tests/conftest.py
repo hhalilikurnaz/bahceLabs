@@ -1,3 +1,7 @@
+from tests import _testdb
+
+_testdb.prepare()  # bahcelab_backend içe aktarılmadan ÖNCE: DATABASE_URL işçi test veritabanına yönlenir (geliştirme verisine dokunulmaz)
+
 import uuid
 from collections.abc import AsyncGenerator
 

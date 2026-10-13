@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.acquisitions.backfill import BackfillService
 from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
+from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
 from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.acquisitions.schemas import (
     Edinim,
@@ -29,6 +30,8 @@ from bahcelab_backend.domain.ndvi.processing import image_corners
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
+SOURCES = {"sentinel2": SOURCE_ID, "radar": RADAR_SOURCE}
+
 
 class DataFoundationService:
     def __init__(self, session: AsyncSession, workspace_id: uuid.UUID, backfill: BackfillService, storage: StorageBackend | None = None) -> None:
@@ -44,16 +47,17 @@ class DataFoundationService:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bahçe bulunamadı.")
         return row.geojson
 
-    async def start(self, garden_id: uuid.UUID) -> GecmisDoldurmaDurumu:
+    async def start(self, garden_id: uuid.UUID, kaynak: str = "sentinel2") -> GecmisDoldurmaDurumu:
         await self._check(garden_id)
-        return GecmisDoldurmaDurumu(**await self.backfill.start(garden_id))
+        return GecmisDoldurmaDurumu(**await self.backfill.start(garden_id, source=SOURCES[kaynak]))
 
-    async def status(self, garden_id: uuid.UUID, *, detail: bool = False) -> GecmisDoldurmaDurumu:
+    async def status(self, garden_id: uuid.UUID, *, detail: bool = False, kaynak: str = "sentinel2") -> GecmisDoldurmaDurumu:
         await self._check(garden_id)
-        data = await self.backfill.status(garden_id)
+        source = SOURCES[kaynak]
+        data = await self.backfill.status(garden_id, source)
         months = None
         if detail:
-            months = [GecmisAy(ay=m.ay, durum=m.durum, net_sahne=m.net_sahne, aday_sayisi=m.aday_sayisi, hata_mesaji=m.hata_mesaji, sure_saniye=m.sure_saniye) for m in await self.repo.month_rows(garden_id, SOURCE_ID)]  # type: ignore[arg-type]
+            months = [GecmisAy(ay=m.ay, durum=m.durum, net_sahne=m.net_sahne, aday_sayisi=m.aday_sayisi, hata_mesaji=m.hata_mesaji, sure_saniye=m.sure_saniye) for m in await self.repo.month_rows(garden_id, source)]  # type: ignore[arg-type]
         return GecmisDoldurmaDurumu(**data, aylar=months)
 
     async def normal_bands(self, garden_id: uuid.UUID) -> NormalBantlar:

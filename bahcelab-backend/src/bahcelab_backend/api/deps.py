@@ -13,6 +13,7 @@ from bahcelab_backend.domain.acquisitions.backfill import (
     MonthQueue,
     month_queue_for,
 )
+from bahcelab_backend.domain.acquisitions.radar_processor import RadarProvider
 from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 from bahcelab_backend.domain.agro.repository import AgroRepository
 from bahcelab_backend.domain.agro.service import AgroService
@@ -23,7 +24,7 @@ from bahcelab_backend.domain.auth.service import AuthService
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
 from bahcelab_backend.domain.imagery.provider import ImageryProvider
-from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+from bahcelab_backend.domain.imagery.registry import get_imagery_provider, get_radar_provider
 from bahcelab_backend.domain.multiyear.service import MultiyearService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
@@ -150,6 +151,11 @@ async def get_notification_service(
     return NotificationService(NotificationRepository(session, workspace_id))
 
 
+def get_radar() -> RadarProvider:
+    """Radar kaynağı (ADR 0016); testlerde sahte sağlayıcıyla değiştirilir."""
+    return get_radar_provider()
+
+
 def get_imagery() -> ImageryProvider:
     """Uydu kaynağı (ADR 0011); testlerde sahte sağlayıcıyla değiştirilir."""
     return get_imagery_provider()
@@ -158,11 +164,11 @@ def get_imagery() -> ImageryProvider:
 _ARQ_POOL: object | None = None
 
 
-async def get_month_queue(provider: Annotated[ImageryProvider, Depends(get_imagery)]) -> MonthQueue:
+async def get_month_queue(provider: Annotated[ImageryProvider, Depends(get_imagery)], radar: Annotated[RadarProvider, Depends(get_radar)]) -> MonthQueue:
     """Ay görevi kuyruğu: `JOB_BACKEND=arq` ise Redis, değilse süreç içi."""
     global _ARQ_POOL
     settings = get_settings()
-    runner = BackfillRunner(async_session_factory, provider, get_storage(), settings)
+    runner = BackfillRunner(async_session_factory, provider, get_storage(), settings, radar_provider=radar)
     if settings.job_backend == "arq":
         if _ARQ_POOL is None:
             from arq import create_pool
@@ -178,8 +184,9 @@ async def get_data_foundation_service(
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
     provider: Annotated[ImageryProvider, Depends(get_imagery)],
     queue: Annotated[MonthQueue, Depends(get_month_queue)],
+    radar: Annotated[RadarProvider, Depends(get_radar)],
 ) -> DataFoundationService:
-    return DataFoundationService(session, workspace_id, BackfillService(session, provider, get_storage(), queue))
+    return DataFoundationService(session, workspace_id, BackfillService(session, provider, get_storage(), queue, radar_provider=radar))
 
 
 async def get_multiyear_service(

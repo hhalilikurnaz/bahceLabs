@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test frontend-install frontend-dev
+.PHONY: e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test backend-test-fast frontend-install frontend-dev
 
 help:
 	@echo "BahçeLab — bahcelab-web monorepo"
@@ -13,7 +13,8 @@ help:
 	@echo "  make db-migrate         Run Alembic migrations"
 	@echo "  make db-seed            Create dev user test@bahcelab.com / test1234"
 	@echo "  make backend-dev        Start FastAPI dev server (port $$API_PORT)"
-	@echo "  make backend-test       Run backend tests"
+	@echo "  make backend-test       Run full backend tests (parallel, per-worker test DB)"
+	@echo "  make backend-test-fast  Run fast backend tests (-m 'not slow')"
 	@echo "  make frontend-install   Install frontend dependencies"
 	@echo "  make frontend-dev       Start Vite dev server (port $$WEB_PORT)"
 
@@ -41,8 +42,11 @@ backend-dev:
 worker:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
 
-backend-test:
-	cd bahcelab-backend && PYTHONPATH=src .venv/bin/pytest -v
+backend-test:  ## TAM paket (yavaş testler dahil), işçi başına ayrı test veritabanı, paralel
+	cd bahcelab-backend && PYTHONPATH=src:. .venv/bin/pytest -q -n 8
+
+backend-test-fast:  ## HIZLI paket (her commit): yavaş işaretli testler hariç
+	cd bahcelab-backend && PYTHONPATH=src:. .venv/bin/pytest -q -n 8 -m "not slow"
 
 frontend-install:
 	npm install

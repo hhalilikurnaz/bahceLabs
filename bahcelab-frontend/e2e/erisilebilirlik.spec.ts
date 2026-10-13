@@ -114,4 +114,20 @@ test.describe('mobil 390 px', () => {
     await expect(page.getByTestId('histogram-lejant')).toBeVisible()
     expect(await audit(page, { touch: true })).toEqual([])
   })
+
+  test('sezon grafiği: çeyrek ay etiketleri, şerit boyunca dokunma haritayı o aya götürür; aya git düğmeleri yalnız ekran okuyucuda', async ({ page }) => {
+    await newUser(page)
+    const g = await createGarden(page.request, { ad: 'Mobil Sezon', lng: 27.61, lat: 38.61, sideM: 200 })
+    seedScenes(g.id)
+    await page.goto(`/bahceler/${g.id}`)
+    const sezon = page.getByTestId('sezon-egrisi')
+    await sezon.scrollIntoViewIfNeeded()
+    await expect(sezon.getByTestId('eksen-ay')).toHaveCount(4)
+    await expect(sezon.getByTestId('ay-3')).toHaveClass(/sr-only/)
+    const kutu = await sezon.getByTestId('sezon-dokunma').boundingBox()
+    if (!kutu) throw new Error('dokunma şeridi yok')
+    await page.mouse.click(kutu.x + kutu.width * (2.5 / 12), kutu.y + 40) // Mart
+    await expect(page.getByTestId('tarih-kutusu')).toContainText('Mar')
+    expect(await audit(page, { touch: true })).toEqual([])
+  })
 })

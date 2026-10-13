@@ -82,6 +82,23 @@ normal_bant:
   ilk_yil: 2015
   # Çip, çubuk ve kademe AYNI kuralı kullanır: p25–p75 normal · p10–p25 normalin alt kısmı · p10 altı belirgin düşük (ön değer).
 
+# Sentinel-1 radar (ADR 0016): hepsi ön değer
+radar:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer: VH < −30 dB gölge, VV > +5 dB üst üste binme/doygunluk vekili (PC RTC varlıklarında maske bandı yok);
+    Lee 5×5, ENL 4,4; bahçenin >%30'u maskeliyse sahne değişime girmez; |Δ| ≥ 2 dB ve alanın ≥ %10'u anlamlı değişim;
+    önceki 48 saatte ≥ 1 mm yağış → «ıslaklık olabilir». Ziraat mühendisi/uzaktan algılama uzmanı onayı bekliyor.
+  golge_vh_alt_db: -30.0
+  ust_uste_vv_ust_db: 5.0
+  lee_pencere: 5
+  lee_bakis: 4.4
+  azami_maske_orani: 0.30
+  anlamli_degisim_db: 2.0
+  anlamli_alan_orani: 0.10
+  yagis_penceresi_saat: 48
+  yagis_esigi_mm: 1.0
+
 urunler:
   limon:
     ad: Limon

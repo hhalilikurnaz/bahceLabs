@@ -16,6 +16,7 @@ from bahcelab_backend.domain.acquisitions.models import (
     AcquisitionStatModel,
     BackfillMonthModel,
     NormalBandModel,
+    RadarOrbitModel,
 )
 from bahcelab_backend.domain.acquisitions.store import PixelStats
 
@@ -113,7 +114,7 @@ class AcquisitionRepository:
             await self.session.flush()
             target = row
         else:
-            for column in ("tarih", "bulut_orani", "durum", "hata_mesaji", "gecerli_oran", "gecikme_gun", "isleme_surumu", "formul_surumu", "izgara_yolu", "izgara_boyut_bayt"):
+            for column in ("tarih", "bulut_orani", "durum", "hata_mesaji", "gecerli_oran", "gecikme_gun", "isleme_surumu", "formul_surumu", "izgara_yolu", "izgara_boyut_bayt", "yorunge", "gecis_yonu", "maskeli_oran"):
                 setattr(existing, column, getattr(row, column))
             await self.session.execute(delete(AcquisitionStatModel).where(AcquisitionStatModel.acquisition_id == existing.id))
             target = existing
@@ -125,22 +126,50 @@ class AcquisitionRepository:
             )
         await self.session.flush()
 
-    async def monthly_values(self, garden_id: uuid.UUID, source_id: str, indeks: str) -> dict[int, dict[int, float]]:
-        """{yıl: {ay: temsilci değer}}: net edinimlerin bahçe medyanlarının ortalaması."""
+    async def monthly_values(
+        self, garden_id: uuid.UUID, source_id: str, indeks: str, *, stat: str = "medyan", yorunge: int | None = None, yon: str | None = None
+    ) -> dict[int, dict[int, float]]:
+        """{yıl: {ay: temsilci değer}}: net edinimlerin bahçe istatistiğinin (`stat`: medyan | ortalama) aylık ortalaması.
+
+        Radar: yalnız verilen yörünge + geçiş yönü (aynı geometri); değişim ve bant başka yörüngeyle karıştırılmaz.
+        """
+        if stat not in ("medyan", "ortalama"):
+            raise ValueError("stat medyan ya da ortalama olmalı")
+        orbit = " AND a.yorunge = :o AND a.gecis_yonu = :d" if yorunge is not None and yon is not None else ""
+        params: dict[str, Any] = {"g": garden_id, "s": source_id, "net": ACQ_NET, "i": indeks}
+        if orbit:
+            params.update(o=yorunge, d=yon)
         rows = (
             await self.session.execute(
                 text(
-                    "SELECT extract(year FROM a.tarih)::int AS y, extract(month FROM a.tarih)::int AS m, avg(s.medyan) AS v "
+                    f"SELECT extract(year FROM a.tarih)::int AS y, extract(month FROM a.tarih)::int AS m, avg(s.{stat}) AS v "
                     "FROM acquisitions a JOIN acquisition_stats s ON s.acquisition_id = a.id "
-                    "WHERE a.garden_id = :g AND a.source_id = :s AND a.durum = :net AND s.indeks = :i GROUP BY 1, 2"
+                    f"WHERE a.garden_id = :g AND a.source_id = :s AND a.durum = :net AND s.indeks = :i{orbit} GROUP BY 1, 2"
                 ),
-                {"g": garden_id, "s": source_id, "net": ACQ_NET, "i": indeks},
+                params,
             )
         ).all()
         out: dict[int, dict[int, float]] = {}
         for y, m, v in rows:
             out.setdefault(int(y), {})[int(m)] = float(v)
         return out
+
+    # --- radar yörüngeleri
+    async def replace_orbits(self, garden_id: uuid.UUID, orbits: list[tuple[int, str, int]]) -> None:
+        """(yörünge, yön, geçiş sayısı) listesi; en çok geçiş yapan «birincil»."""
+        await self.session.execute(delete(RadarOrbitModel).where(RadarOrbitModel.garden_id == garden_id))
+        ranked = sorted(orbits, key=lambda o: -o[2])
+        for i, (orbit, yon, count) in enumerate(ranked):
+            self.session.add(RadarOrbitModel(garden_id=garden_id, yorunge=orbit, gecis_yonu=yon, sahne_sayisi=count, birincil=i == 0))
+        await self.session.flush()
+
+    async def orbits(self, garden_id: uuid.UUID) -> list[RadarOrbitModel]:
+        rows = await self.session.execute(select(RadarOrbitModel).where(RadarOrbitModel.garden_id == garden_id).order_by(RadarOrbitModel.sahne_sayisi.desc()))
+        return list(rows.scalars())
+
+    async def primary_orbit(self, garden_id: uuid.UUID) -> tuple[int, str] | None:
+        row = (await self.session.execute(select(RadarOrbitModel).where(RadarOrbitModel.garden_id == garden_id, RadarOrbitModel.birincil.is_(True)))).scalars().first()
+        return (row.yorunge, row.gecis_yonu) if row else None
 
     async def net_with_stats(self, garden_id: uuid.UUID, source_id: str) -> list[tuple[AcquisitionModel, list[AcquisitionStatModel]]]:
         acqs = (
@@ -152,6 +181,17 @@ class AcquisitionRepository:
             by.setdefault(st.acquisition_id, []).append(st)
         return [(a, by.get(a.id, [])) for a in acqs]
 
+    async def delete_acquisitions(self, garden_id: uuid.UUID, source_id: str, storage: Any) -> None:
+        """Bir kaynağın bu bahçedeki tüm edinimlerini (ve dosyalarını) siler; ay satırları da sıfırlanır."""
+        paths = (await self.session.execute(select(AcquisitionModel.izgara_yolu).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id))).scalars().all()
+        for path in paths:
+            if path:
+                storage.delete(path)
+        await self.session.execute(delete(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id))
+        await self.session.execute(delete(BackfillMonthModel).where(BackfillMonthModel.garden_id == garden_id, BackfillMonthModel.source_id == source_id))
+        await self.session.execute(delete(NormalBandModel).where(NormalBandModel.garden_id == garden_id, NormalBandModel.source_id == source_id))
+        await self.session.flush()
+
     async def count_cloudy(self, garden_id: uuid.UUID, source_id: str) -> int:
         n = await self.session.execute(select(func.count()).select_from(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.durum == "bulutlu"))
         return int(n.scalar_one())
@@ -161,8 +201,11 @@ class AcquisitionRepository:
             await self.session.execute(select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == source_id, AcquisitionModel.tarih == day, AcquisitionModel.durum == ACQ_NET))
         ).scalars().first()
 
-    async def storage_bytes(self, garden_id: uuid.UUID) -> tuple[int, int]:
-        row = (await self.session.execute(select(func.coalesce(func.sum(AcquisitionModel.izgara_boyut_bayt), 0), func.count()).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.durum == ACQ_NET))).one()
+    async def storage_bytes(self, garden_id: uuid.UUID, source_id: str | None = None) -> tuple[int, int]:
+        query = select(func.coalesce(func.sum(AcquisitionModel.izgara_boyut_bayt), 0), func.count()).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.durum == ACQ_NET)
+        if source_id is not None:
+            query = query.where(AcquisitionModel.source_id == source_id)
+        row = (await self.session.execute(query)).one()
         return int(row[0] or 0), int(row[1] or 0)
 
     # --- normal bantlar

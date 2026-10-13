@@ -12,6 +12,11 @@ def grid_key(garden_id: object, scene_id: str) -> str:
     return f"acq/{garden_id}/{scene_id}.npz"
 
 
+def radar_grid_key(garden_id: object, scene_id: str) -> str:
+    """Radar ızgaraları ayrı önekte: Sentinel-2 temizliği (`acq/{bahçe}`) radar dosyalarını silmez."""
+    return f"acq-radar/{garden_id}/{scene_id}.npz"
+
+
 def encode_grids(grids: dict[str, np.ndarray]) -> bytes:
     """{gösterge: dizi} → sıkıştırılmış .npz (float16; NaN korunur)."""
     buffer = io.BytesIO()

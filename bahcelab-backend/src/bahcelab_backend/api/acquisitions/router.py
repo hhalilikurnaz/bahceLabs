@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -14,18 +14,19 @@ from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 
 router = APIRouter(tags=["veri-temeli"], dependencies=[Depends(get_current_user)])
 Service = Annotated[DataFoundationService, Depends(get_data_foundation_service)]
+Kaynak = Annotated[Literal["sentinel2", "radar"], Query(description="Veri kaynağı")]
 
 
 @router.post("/gardens/{garden_id}/gecmis-doldurma", response_model=GecmisDoldurmaDurumu, status_code=status.HTTP_202_ACCEPTED)
-async def start_backfill(garden_id: UUID, service: Service) -> GecmisDoldurmaDurumu:
+async def start_backfill(garden_id: UUID, service: Service, kaynak: Kaynak = "sentinel2") -> GecmisDoldurmaDurumu:
     """2015'ten bugüne geçmiş doldurmayı başlatır / kaldığı yerden sürdürür (idempotent)."""
-    return await service.start(garden_id)
+    return await service.start(garden_id, kaynak)
 
 
 @router.get("/gardens/{garden_id}/gecmis-doldurma", response_model=GecmisDoldurmaDurumu)
-async def get_backfill(garden_id: UUID, service: Service, ayrinti: Annotated[bool, Query(description="Ay ay döküm")] = False) -> GecmisDoldurmaDurumu:
+async def get_backfill(garden_id: UUID, service: Service, ayrinti: Annotated[bool, Query(description="Ay ay döküm")] = False, kaynak: Kaynak = "sentinel2") -> GecmisDoldurmaDurumu:
     """İlerleme: tamamlanan ay / toplam, net sahne sayısı, depolama boyutu."""
-    return await service.status(garden_id, detail=ayrinti)
+    return await service.status(garden_id, detail=ayrinti, kaynak=kaynak)
 
 
 @router.get("/gardens/{garden_id}/normal-bantlar", response_model=NormalBantlar)

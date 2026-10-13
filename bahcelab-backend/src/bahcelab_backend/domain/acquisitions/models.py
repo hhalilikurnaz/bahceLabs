@@ -57,6 +57,9 @@ class AcquisitionModel(Base):
     gecikme_gun: Mapped[int | None] = mapped_column(Integer, nullable=True)  # sahne tarihi → işleme günü
     isleme_surumu: Mapped[str | None] = mapped_column(String(10), nullable=True)  # processing baseline
     formul_surumu: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    yorunge: Mapped[int | None] = mapped_column(Integer, nullable=True)  # radar: göreli yörünge (değişim yalnız aynı yörüngede)
+    gecis_yonu: Mapped[str | None] = mapped_column(String(10), nullable=True)  # radar: inis | cikis
+    maskeli_oran: Mapped[float | None] = mapped_column(Float, nullable=True)  # radar: bahçede gölge/üst üste binme/geçersiz piksel payı
     izgara_yolu: Mapped[str | None] = mapped_column(Text, nullable=True)
     izgara_boyut_bayt: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -78,6 +81,19 @@ class AcquisitionStatModel(Base):
     minimum: Mapped[float] = mapped_column(Float, nullable=False)
     maksimum: Mapped[float] = mapped_column(Float, nullable=False)
     gecerli_piksel: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class RadarOrbitModel(Base):
+    """Bahçeyi kapsayan radar yörüngeleri; en sık geçen «birincil» (ızgara saklanır), diğerleri ayrı seri (yalnız istatistik)."""
+
+    __tablename__ = "radar_orbits"
+
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
+    yorunge: Mapped[int] = mapped_column(Integer, primary_key=True)
+    gecis_yonu: Mapped[str] = mapped_column(String(10), primary_key=True)
+    sahne_sayisi: Mapped[int] = mapped_column(Integer, nullable=False)
+    birincil: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    guncelleme: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class BackfillMonthModel(Base):

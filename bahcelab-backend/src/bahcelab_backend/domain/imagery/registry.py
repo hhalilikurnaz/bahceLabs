@@ -7,12 +7,18 @@ from collections.abc import Callable
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.imagery.planet import PlanetProvider
 from bahcelab_backend.domain.imagery.provider import ImageryProvider, ProviderNotConfigured
+from bahcelab_backend.domain.imagery.radar import PlanetaryRadarProvider
 from bahcelab_backend.domain.imagery.sentinel2 import Sentinel2L2AProvider
 
 _FACTORIES: dict[str, Callable[[], ImageryProvider]] = {
     "sentinel2-l2a": Sentinel2L2AProvider,
     "planet-scope": PlanetProvider,
 }
+
+
+def get_radar_provider() -> PlanetaryRadarProvider:
+    """Radar kaynağı (Sentinel-1 RTC, ADR 0016); testlerde sahte sağlayıcıyla değiştirilir."""
+    return PlanetaryRadarProvider()
 
 
 def register(name: str, factory: Callable[[], ImageryProvider]) -> None:

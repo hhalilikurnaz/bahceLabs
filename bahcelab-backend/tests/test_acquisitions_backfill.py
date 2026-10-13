@@ -159,6 +159,7 @@ async def test_progress_survives_a_restart_and_stale_running_months_are_failed(u
     assert status["durum"] == "tamam" and status["tamamlanan_ay"] == 3
 
 
+@pytest.mark.slow
 async def test_normal_bands_need_enough_years_and_skip_excluded_years(user_client, factory):
     gid = await new_garden(user_client)
     provider, runner, settings = make(factory, "2015-06-01")
@@ -197,6 +198,7 @@ async def test_incremental_refresh_takes_only_new_scenes_and_respects_the_budget
     assert len(provider.read_calls) > reads  # eksilen bütçe yeniden dolduruldu
 
 
+@pytest.mark.slow
 async def test_backfill_endpoints_require_login_and_report_progress(user_client: AsyncClient, factory, app):
     from bahcelab_backend.api.deps import (
         get_data_foundation_service,
@@ -233,6 +235,7 @@ async def test_backfill_endpoints_require_login_and_report_progress(user_client:
         assert (await anon.get(f"/gardens/{gid}/gecmis-doldurma")).status_code == 401
 
 
+@pytest.mark.slow
 async def test_acquisition_list_and_grid_endpoints(user_client: AsyncClient, factory, app):
     from bahcelab_backend.api.deps import (
         get_data_foundation_service,

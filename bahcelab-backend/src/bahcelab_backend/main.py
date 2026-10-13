@@ -46,12 +46,15 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                 fail_stale_months,
                 resume_incomplete,
             )
-            from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+            from bahcelab_backend.domain.imagery.registry import (
+                get_imagery_provider,
+                get_radar_provider,
+            )
             from bahcelab_backend.shared.storage import get_storage
 
             await fail_stale_months(async_session_factory)  # yarım kalan geçmiş doldurma aylarını kaldığı yerden sürdür
             if get_settings().job_backend == "inline":
-                await resume_incomplete(async_session_factory, BackfillRunner(async_session_factory, get_imagery_provider(), get_storage()))
+                await resume_incomplete(async_session_factory, BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), radar_provider=get_radar_provider()))
         except Exception:  # noqa: BLE001
             logging.getLogger(__name__).warning("Yarım kalan yıl görevleri temizlenemedi", exc_info=True)
     scheduler = None

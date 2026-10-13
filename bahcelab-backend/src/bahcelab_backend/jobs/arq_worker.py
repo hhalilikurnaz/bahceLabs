@@ -38,17 +38,17 @@ def build_settings(settings: Settings) -> dict[str, Any]:
     return {"functions": functions, "cron_jobs": cron_jobs, "redis_settings": RedisSettings.from_dsn(settings.redis_url)}
 
 
-async def process_garden_month(ctx: dict[str, Any], garden_id: str, month_iso: str) -> str:
+async def process_garden_month(ctx: dict[str, Any], garden_id: str, month_iso: str, source: str = "sentinel2-l2a") -> str:
     """Geçmiş doldurma: bir bahçe × ay görevi (ADR 0015). Aynı görev iki kez çalışmaz (`_job_id` + idempotent `claim_month`)."""
     import uuid
     from datetime import date
 
     from bahcelab_backend.domain.acquisitions.backfill import BackfillRunner
-    from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+    from bahcelab_backend.domain.imagery.registry import get_imagery_provider, get_radar_provider
     from bahcelab_backend.shared.storage import get_storage
 
-    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage())
-    return await runner.run_month(uuid.UUID(garden_id), date.fromisoformat(month_iso))
+    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), radar_provider=get_radar_provider())
+    return await runner.run_month(uuid.UUID(garden_id), date.fromisoformat(month_iso), source=source)
 
 
 class WorkerSettings:

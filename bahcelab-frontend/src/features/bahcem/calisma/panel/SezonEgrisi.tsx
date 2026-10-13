@@ -3,6 +3,7 @@ import { useEdinimler, type GostergeId } from '../../api/edinimApi'
 import { usePhenology } from '../../api/agroApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { useNormalBantlar } from '../../api/normalBantApi'
+import { useDarEkran } from '../../hooks/useDarEkran'
 import { useElementWidth } from '../../hooks/useElementWidth'
 import { sayi } from '../../lib/format'
 import { AY_KISA, ayTarihi, bandAylari, evreAraligi, sezonNoktalari } from '../../lib/sezon'
@@ -12,6 +13,8 @@ import { GOSTERGE_KATMAN, KATMANLAR } from '../katmanlar'
 const SECENEKLER: GostergeId[] = ['ndvi', 'ndre', 'lai', 'ndmi', 'msavi']
 const YUKSEKLIK = 170
 const KENAR = { sol: 34, sag: 10, ust: 14, alt: 6 }
+const DAR_ALT = 18 // telefonda eksen etiketleri (çeyrek aylar) çizimin altında
+const CEYREK_AYLAR = [0, 3, 6, 9]
 
 /**
  * «Bu sezon, kendi geçmişine göre»: bu yılın eğrisi, bahçenin kendi normal bandı (p10–p90 açık, p25–p75 koyu, ortanca kesikli),
@@ -31,8 +34,10 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
   const band = bantlar.data?.gostergeler[gosterge]
   const { koyu, acik } = bandAylari(band)
   const yillar = (band?.find((b) => b.ay === new Date().getMonth() + 1 && b.ceyrek_yeterli) ?? band?.find((b) => b.ceyrek_yeterli))?.yillar
+  const dar = useDarEkran(479) // 480 px altı: çeyrek ay etiketleri + şerit boyunca dokunma; üstünde: hizalı ay düğmeleri
   const w = Math.max(240, genislik)
   const iw = w - KENAR.sol - KENAR.sag
+  const yukseklik = YUKSEKLIK + (dar ? DAR_ALT : 0)
   const ih = YUKSEKLIK - KENAR.ust - KENAR.alt
 
   const [lo, hi] = useMemo(() => {
@@ -87,7 +92,7 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
             {dolduruluyor ? `Veri çekiliyor · %${gecmis?.yuzde ?? 0}. Grafik, geçmiş çekildikçe dolacak.` : 'Bu gösterge için henüz net görüntü ya da yeterli geçmiş yok.'}
           </div>
         ) : (
-          <svg width={w} height={YUKSEKLIK} viewBox={`0 0 ${w} ${YUKSEKLIK}`} role="img" aria-label={`${KATMANLAR[GOSTERGE_KATMAN[gosterge]].ad}: ${yil} eğrisi ve normal bant`} className="block overflow-visible">
+          <svg width={w} height={yukseklik} viewBox={`0 0 ${w} ${yukseklik}`} role="img" aria-label={`${KATMANLAR[GOSTERGE_KATMAN[gosterge]].ad}: ${yil} eğrisi ve normal bant`} className="block overflow-visible">
             {[0, 0.5, 1].map((t) => {
               const v = lo + (hi - lo) * t
               return (
@@ -111,17 +116,30 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
             {koyu.length === 0 && !dolduruluyor && (
               <text x={KENAR.sol + 6} y={KENAR.ust + 12} fontSize={11} fill="var(--color-app-text-muted)" data-testid="sezon-yetersiz-gecmis">Normal bant için yetersiz geçmiş (en az {bantlar.data?.asgari_yil_ceyrek ?? 5} yıl gerekir)</text>
             )}
+            {dar && CEYREK_AYLAR.map((i) => <text key={AY_KISA[i]} x={X(i + 0.5)} y={YUKSEKLIK + 10} textAnchor="middle" fontSize={10} fill="var(--color-app-text-muted)" data-testid="eksen-ay">{AY_KISA[i]}</text>)}
           </svg>
+        )}
+        {dar && noktalar.length + koyu.length > 0 && (
+          <div
+            aria-hidden
+            data-testid="sezon-dokunma"
+            className="absolute top-0 cursor-pointer"
+            style={{ left: KENAR.sol, width: iw, height: yukseklik }}
+            onClick={(e) => {
+              const kutu = e.currentTarget.getBoundingClientRect()
+              aya(Math.min(12, Math.max(1, Math.floor(((e.clientX - kutu.left) / kutu.width) * 12) + 1)))
+            }}
+          />
         )}
         {dolduruluyor && noktalar.length > 0 && <p className="mt-1 text-[11.5px] text-app-text-muted" data-testid="sezon-doluyor">Geçmiş çekiliyor · %{gecmis?.yuzde}: bant tamamlanana kadar eksik olabilir.</p>}
       </div>
       <Fenoloji evreler={fenoloji?.evreler ?? []} yil={yil} genislik={w} />
-      <div className="mt-0.5 grid grid-cols-6 gap-1 min-[480px]:grid-cols-12 min-[480px]:ml-[34px] min-[480px]:w-[var(--iw)] min-[480px]:gap-0" style={{ '--iw': `${iw}px` } as CSSProperties} role="group" aria-label="Aya git (eksen)">
+      <div className="relative min-[480px]:mt-0.5 min-[480px]:ml-[34px] min-[480px]:grid min-[480px]:w-[var(--iw)] min-[480px]:grid-cols-12 min-[480px]:gap-0" style={{ '--iw': `${iw}px` } as CSSProperties} role="group" aria-label="Aya git (eksen)">
         {AY_KISA.map((a, i) => (
-          <button key={a} type="button" onClick={() => aya(i + 1)} data-testid={`ay-${i + 1}`} className="min-h-9 rounded text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text max-[560px]:min-h-11">{a}</button>
+          <button key={a} type="button" onClick={() => aya(i + 1)} data-testid={`ay-${i + 1}`} className="sr-only min-[480px]:not-sr-only min-h-9 rounded text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text">{a}</button>
         ))}
       </div>
-      <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: geçmiş yılların ortancası · çizgi: {yil}. Aya dokununca harita o aya geçer.</p>
+      <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: geçmiş yılların ortancası · çizgi: {yil}. Grafiğe ya da aya dokununca harita o aya geçer.</p>
     </section>
   )
 }

@@ -148,11 +148,26 @@ class NormalBant(KuralBlok):
         return self
 
 
+class RadarKurali(KuralBlok):
+    """Sentinel-1 radar (ADR 0016): maske, kumlanma filtresi ve değişim eşikleri (hepsi ön değer; mühendis onayı bekler)."""
+
+    golge_vh_alt_db: float = -30.0  # VH bunun altındaysa gölge/geçersiz sayılır (RTC'de gölge-üst üste binme bandı yok: vekil)
+    ust_uste_vv_ust_db: float = 5.0  # VV bunun üstündeyse üst üste binme/doygunluk sayılır
+    lee_pencere: int = Field(default=5, ge=3)
+    lee_bakis: float = Field(default=4.4, gt=0)  # eşdeğer bakış sayısı (STAC: sar:looks_equivalent_number)
+    azami_maske_orani: float = Field(default=0.30, ge=0, le=1)  # bahçenin bundan fazlası maskeliyse sahne değişim hesabına girmez
+    anlamli_degisim_db: float = Field(default=2.0, gt=0)  # |Δ| eşiği
+    anlamli_alan_orani: float = Field(default=0.10, ge=0, le=1)  # alanın en az bu payı eşiği aşmalı
+    yagis_penceresi_saat: int = Field(default=48, ge=1)  # önceki bu kadar saatte yağış → «ıslaklık olabilir»
+    yagis_esigi_mm: float = Field(default=1.0, ge=0)
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
     durum_kademesi: DurumKademesi
     normal_bant: NormalBant
+    radar: RadarKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

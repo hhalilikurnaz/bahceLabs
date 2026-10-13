@@ -38,6 +38,8 @@ TODAY = datetime.now(UTC).date()
 LAST = last_complete_year(TODAY, 9)
 YEARS = list(range(2018, LAST + 1))
 
+pytestmark = pytest.mark.slow  # çok yıllık hat: her test onlarca sahne işler
+
 
 @pytest.fixture
 def factory(test_engine):
