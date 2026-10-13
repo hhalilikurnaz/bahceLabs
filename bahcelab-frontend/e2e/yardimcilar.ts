@@ -44,14 +44,14 @@ export function seedScenes(gardenId: string, options: { flat?: boolean } = {}): 
   execFileSync(
     '../bahcelab-backend/.venv/bin/python',
     ['-m', 'tests.support.seed_scenes', gardenId, ...(options.flat ? ['--flat'] : [])],
-    { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' },
+    { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 }, // takılırsa test hata verir (sonsuz beklemez)
   )
   seedAcquisitions(gardenId) // harita, sezon eğrisi ve normal bantlar TEK veri hattından (edinimler) beslenir
 }
 
 /** Test aracı: bahçeye 2017'den bugüne ay başına 2 net edinim + normal bantlar (sentetik desen; gerçek depolama ve bant hesabı). */
 export function seedAcquisitions(gardenId: string): void {
-  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_acquisitions', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_acquisitions', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
 /** Test aracı: bahçeye radar serisi (sahte radar sağlayıcısı + gerçek doldurma hattı; son haftalarda olay adayı). */
@@ -67,12 +67,12 @@ export function seedWater(gardenId: string): void {
 
 /** Test aracı: bahçeye taze olaylar (kritik don + önemli aşırı yağış) yazar; bildirimler karar katmanından geçer, günlük özet üretilir. */
 export function seedOlayOzet(gardenId: string): void {
-  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_olay_ozet', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_olay_ozet', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
 /** Test aracı: bahçenin hava önbelleğini kayıtlı örnek veriyle doldurur (ağsız; gerçek hava servisi ve risk motoru çalışır). */
 export function seedWeather(gardenId: string): void {
-  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_weather', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_weather', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
 /** Test aracı: bahçeye gerçek yayım yolundan bildirim ekler (öncelik: kritik | uyari | bilgi). */

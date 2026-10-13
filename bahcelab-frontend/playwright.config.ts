@@ -11,6 +11,7 @@ const executablePath = process.env.PW_CHROME_PATH
 export default defineConfig({
   testDir: './e2e',
   timeout: 90_000,
+  globalTimeout: 30 * 60_000, // takılan bir koşu 60 dakika asılı kalmasın; kalan testler raporlanır
   // Başsız SwiftShader + tek işçi: makine yükünde harita etkileşimleri 15 sn'yi aşabiliyordu (tur 2/3'te farklı testler düştü); sınır 30 sn
   expect: { timeout: 30_000 },
   fullyParallel: false,
