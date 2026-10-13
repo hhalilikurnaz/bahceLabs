@@ -15,6 +15,11 @@ from typing import Any, Protocol
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.config import Settings, get_settings
+from bahcelab_backend.domain.acquisitions.landsat_processor import (
+    LANDSAT_SOURCE,
+    LandsatProvider,
+    process_landsat_month,
+)
 from bahcelab_backend.domain.acquisitions.models import (
     MONTH_DONE,
     MONTH_ERROR,
@@ -50,9 +55,10 @@ class MonthQueue(Protocol):
 class BackfillRunner:
     """Ay görevini çalıştırır ve gerekirse sonuçlandırır (normal bantlar). Kaynak: Sentinel-2 (varsayılan) ya da radar."""
 
-    def __init__(self, factory: SessionFactory, provider: ImageryProvider, storage: StorageBackend, settings: Settings | None = None, radar_provider: RadarProvider | None = None) -> None:
+    def __init__(self, factory: SessionFactory, provider: ImageryProvider, storage: StorageBackend, settings: Settings | None = None, radar_provider: RadarProvider | None = None, landsat_provider: LandsatProvider | None = None) -> None:
         self.factory, self.provider, self.storage = factory, provider, storage
         self.radar_provider = radar_provider
+        self.landsat_provider = landsat_provider
         self.settings = settings or get_settings()
 
     async def run_month(self, garden_id: uuid.UUID, month: date, *, force: bool = False, source: str = SOURCE_ID) -> str:
@@ -62,6 +68,10 @@ class BackfillRunner:
             outcome = await process_radar_month(self.factory, self.radar_provider, self.storage, garden_id, month, settings=self.settings, force=force)
             await self.finalize(garden_id, RADAR_SOURCE)
             return outcome
+        if source == LANDSAT_SOURCE:
+            if self.landsat_provider is None:
+                return "atlandi"
+            return await process_landsat_month(self.factory, self.landsat_provider, self.storage, garden_id, month, settings=self.settings, force=force)
         outcome = await process_month(self.factory, self.provider, self.storage, garden_id, month, settings=self.settings, force=force)
         await self.finalize(garden_id)
         from bahcelab_backend.domain.multiyear.finalize import after_month
@@ -145,15 +155,16 @@ async def _allowed_years(session: AsyncSession, garden_id: uuid.UUID) -> set[int
 
 
 class BackfillService:
-    def __init__(self, session: AsyncSession, provider: ImageryProvider, storage: StorageBackend, queue: MonthQueue, settings: Settings | None = None, radar_provider: RadarProvider | None = None) -> None:
+    def __init__(self, session: AsyncSession, provider: ImageryProvider, storage: StorageBackend, queue: MonthQueue, settings: Settings | None = None, radar_provider: RadarProvider | None = None, landsat_provider: LandsatProvider | None = None) -> None:
         self.session = session
         self.repo = AcquisitionRepository(session)
         self.provider, self.storage, self.queue = provider, storage, queue
         self.radar_provider = radar_provider
+        self.landsat_provider = landsat_provider
         self.settings = settings or get_settings()
 
     def month_range(self, today: date | None = None, source: str = SOURCE_ID) -> list[date]:
-        start = self.settings.acq_radar_start if source == RADAR_SOURCE else self.settings.acq_start
+        start = {RADAR_SOURCE: self.settings.acq_radar_start, LANDSAT_SOURCE: self.settings.acq_landsat_start}.get(source, self.settings.acq_start)
         return months_between(date.fromisoformat(start), today or datetime.now(UTC).date())
 
     async def start(self, garden_id: uuid.UUID, today: date | None = None, source: str = SOURCE_ID) -> dict[str, Any]:
@@ -163,9 +174,9 @@ class BackfillService:
         if stale:
             if source == SOURCE_ID:
                 self.storage.delete_prefix(f"acq/{garden_id}")
-            else:  # radar: yalnız radar edinimleri silinir
+            else:  # radar / Landsat: yalnız o kaynağın edinimleri silinir
                 await self.repo.delete_acquisitions(garden_id, source, self.storage)
-                self.storage.delete_prefix(f"acq-radar/{garden_id}")
+                self.storage.delete_prefix(f"acq-radar/{garden_id}" if source == RADAR_SOURCE else f"acq-landsat/{garden_id}")
         if source == RADAR_SOURCE and self.radar_provider is not None:
             geometry = await self.repo.geometry_geojson(garden_id)
             if geometry is not None:
@@ -271,7 +282,7 @@ async def refresh_recent(factory: SessionFactory, runner: BackfillRunner, garden
 
     today = datetime.now(UTC).date()
     months = months_between(today - timedelta(days=runner.settings.acq_incremental_days), today)
-    sources = [SOURCE_ID, *([RADAR_SOURCE] if runner.radar_provider is not None else [])]
+    sources = [SOURCE_ID, *([RADAR_SOURCE] if runner.radar_provider is not None else []), *([LANDSAT_SOURCE] if runner.landsat_provider is not None else [])]
     async with factory() as session:
         ids = garden_ids or [r[0] for r in (await session.execute(select(GardenModel.id))).all()]
         for gid in ids:  # eksik ay satırları (yeni ay başladıysa)

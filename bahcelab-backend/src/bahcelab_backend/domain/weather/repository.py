@@ -87,8 +87,10 @@ class WeatherRepository:
                 "et0_mm": p.et0,
                 "kaynak": source,
             }
-            for p in points
+            for p in sorted(points, key=lambda p: p.tarih)  # her işlem satırları AYNI sırayla kilitler (eşzamanlı iki istek kilitlenmesin)
         ]
+        # Aynı hücre için eşzamanlı yazımlar sıraya girer (işlem sonunda kalkan danışma kilidi): «deadlock detected» önlenir
+        await self.session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"), {"k": f"weather_daily:{cell_id}"})
         statement = insert(WeatherDailyModel)
         statement = statement.on_conflict_do_update(
             index_elements=["cell_id", "tarih"],

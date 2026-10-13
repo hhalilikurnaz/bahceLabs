@@ -41,7 +41,7 @@ def band_limits(rows: list[Any]) -> dict[int, rc.BandLimits]:
 
 
 async def _daily_rain(session: AsyncSession, center: tuple[float, float], days: list[date]) -> list[float | None]:
-    """Önbellekteki günlük yağış (mm); hücre ya da gün yoksa None (uydurma yok)."""
+    """Günlük yağış (mm): önce ERA5 yeniden analizi (`era5_daily`, 2015'ten), yoksa önbellekteki hava günlüğü (`weather_daily`); ikisi de yoksa None (uydurma yok)."""
     from bahcelab_backend.domain.weather.service import snap
 
     step = get_settings().weather_cell_degrees
@@ -49,9 +49,9 @@ async def _daily_rain(session: AsyncSession, center: tuple[float, float], days: 
     cell = (await session.execute(text("SELECT id FROM weather_cells WHERE enlem = :a AND boylam = :b"), {"a": lat, "b": lng})).scalar_one_or_none()
     if cell is None:
         return [None for _ in days]
-    rows = (await session.execute(text("SELECT tarih, yagis_mm FROM weather_daily WHERE cell_id = :c AND tarih = ANY(:d)"), {"c": cell, "d": days})).all()
-    by_day = {r[0]: r[1] for r in rows}
-    return [by_day.get(d) for d in days]
+    era5 = {r[0]: r[1] for r in (await session.execute(text("SELECT tarih, yagis_mm FROM era5_daily WHERE cell_id = :c AND tarih = ANY(:d)"), {"c": cell, "d": days})).all()}
+    cached = {r[0]: r[1] for r in (await session.execute(text("SELECT tarih, yagis_mm FROM weather_daily WHERE cell_id = :c AND tarih = ANY(:d)"), {"c": cell, "d": days})).all()}
+    return [era5.get(d) if era5.get(d) is not None else cached.get(d) for d in days]
 
 
 async def eligible_primary(session: AsyncSession, garden_id: uuid.UUID) -> tuple[tuple[int, str] | None, list[tuple[AcquisitionModel, float]]]:

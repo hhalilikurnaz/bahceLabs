@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from bahcelab_backend.config import get_settings
+from bahcelab_backend.domain.imagery.landsat import PlanetaryLandsatProvider
 from bahcelab_backend.domain.imagery.planet import PlanetProvider
 from bahcelab_backend.domain.imagery.provider import ImageryProvider, ProviderNotConfigured
 from bahcelab_backend.domain.imagery.radar import PlanetaryRadarProvider
@@ -14,6 +15,11 @@ _FACTORIES: dict[str, Callable[[], ImageryProvider]] = {
     "sentinel2-l2a": Sentinel2L2AProvider,
     "planet-scope": PlanetProvider,
 }
+
+
+def get_landsat_provider() -> PlanetaryLandsatProvider:
+    """Landsat yüzey sıcaklığı (ADR 0017); testlerde sahte sağlayıcıyla değiştirilir."""
+    return PlanetaryLandsatProvider()
 
 
 def get_radar_provider() -> PlanetaryRadarProvider:

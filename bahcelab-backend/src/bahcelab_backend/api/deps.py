@@ -24,7 +24,11 @@ from bahcelab_backend.domain.auth.service import AuthService
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gardens.service import GardenService
 from bahcelab_backend.domain.imagery.provider import ImageryProvider
-from bahcelab_backend.domain.imagery.registry import get_imagery_provider, get_radar_provider
+from bahcelab_backend.domain.imagery.registry import (
+    get_imagery_provider,
+    get_landsat_provider,
+    get_radar_provider,
+)
 from bahcelab_backend.domain.multiyear.service import MultiyearService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
@@ -168,7 +172,7 @@ async def get_month_queue(provider: Annotated[ImageryProvider, Depends(get_image
     """Ay görevi kuyruğu: `JOB_BACKEND=arq` ise Redis, değilse süreç içi."""
     global _ARQ_POOL
     settings = get_settings()
-    runner = BackfillRunner(async_session_factory, provider, get_storage(), settings, radar_provider=radar)
+    runner = BackfillRunner(async_session_factory, provider, get_storage(), settings, radar_provider=radar, landsat_provider=get_landsat_provider())
     if settings.job_backend == "arq":
         if _ARQ_POOL is None:
             from arq import create_pool

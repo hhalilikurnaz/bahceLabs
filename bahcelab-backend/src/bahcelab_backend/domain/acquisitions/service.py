@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.acquisitions import masking
 from bahcelab_backend.domain.acquisitions.backfill import BackfillService
+from bahcelab_backend.domain.acquisitions.landsat_processor import LANDSAT_SOURCE
 from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.radar_events import delta_grid, eligible_primary
 from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
@@ -39,7 +40,7 @@ from bahcelab_backend.domain.ndvi.processing import image_corners
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
-SOURCES = {"sentinel2": SOURCE_ID, "radar": RADAR_SOURCE}
+SOURCES = {"sentinel2": SOURCE_ID, "radar": RADAR_SOURCE, "landsat": LANDSAT_SOURCE}
 
 
 class DataFoundationService:

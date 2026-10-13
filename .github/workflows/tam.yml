@@ -88,6 +88,12 @@ jobs:
       API_DEBUG: "true"
       COOKIE_SECURE: "false"
       REGISTRATION_ENABLED: "true"
+      # Performans eşikleri (medyan ≤150 ms, p95 ≤200 ms) GERÇEK donanımda yerel koşuda doğrulanır; paylaşımlı CI çalıştırıcısında yazılım WebGL çok yavaştır:
+      # burada yalnız ölçülür ve gevşek eşikle (gerilemeyi yakalamak için) kontrol edilir.
+      E2E_KATMAN_MAKS_MS: "450"
+      E2E_KATMAN_P95_MAKS_MS: "900"
+      E2E_FPS_MIN: "5"
+      E2E_KARE_P95_MAKS_MS: "400"
     steps:
       - uses: actions/checkout@v4
         with:

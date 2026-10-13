@@ -17,7 +17,7 @@ from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 
 router = APIRouter(tags=["veri-temeli"], dependencies=[Depends(get_current_user)])
 Service = Annotated[DataFoundationService, Depends(get_data_foundation_service)]
-Kaynak = Annotated[Literal["sentinel2", "radar"], Query(description="Veri kaynağı")]
+Kaynak = Annotated[Literal["sentinel2", "radar", "landsat"], Query(description="Veri kaynağı")]
 
 
 @router.post("/gardens/{garden_id}/gecmis-doldurma", response_model=GecmisDoldurmaDurumu, status_code=status.HTTP_202_ACCEPTED)

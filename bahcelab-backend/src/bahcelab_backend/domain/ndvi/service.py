@@ -115,18 +115,21 @@ class NdviCoordinator:
             BackfillService,
             month_queue_for,
         )
+        from bahcelab_backend.domain.acquisitions.landsat_processor import LANDSAT_SOURCE
         from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
         from bahcelab_backend.domain.imagery.registry import (
             get_imagery_provider,
+            get_landsat_provider,
             get_radar_provider,
         )
 
         await self.repo.session.commit()  # bahçe satırı görünür olsun (görevler kendi bağlantısından okur)
-        runner = BackfillRunner(async_session_factory, get_imagery_provider(), self.storage, radar_provider=get_radar_provider())
+        runner = BackfillRunner(async_session_factory, get_imagery_provider(), self.storage, radar_provider=get_radar_provider(), landsat_provider=get_landsat_provider())
         async with async_session_factory() as session:
-            service = BackfillService(session, runner.provider, self.storage, month_queue_for(runner), radar_provider=runner.radar_provider)
+            service = BackfillService(session, runner.provider, self.storage, month_queue_for(runner), radar_provider=runner.radar_provider, landsat_provider=runner.landsat_provider)
             await service.start(garden_id)
             await service.start(garden_id, source=RADAR_SOURCE)  # radar: Sentinel-1 RTC, aynı bahçe için ayrı ay görevleri
+            await service.start(garden_id, source=LANDSAT_SOURCE)  # Landsat yüzey sıcaklığı (ADR 0017)
 
     async def restart_after_boundary_change(self, garden_id: uuid.UUID) -> None:
         """Sınır değişti: eski kayıtlar ve dosyalar silinir, devam eden iş iptal edilir, baştan işlenir."""

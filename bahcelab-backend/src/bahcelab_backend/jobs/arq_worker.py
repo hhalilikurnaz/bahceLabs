@@ -44,10 +44,14 @@ async def process_garden_month(ctx: dict[str, Any], garden_id: str, month_iso: s
     from datetime import date
 
     from bahcelab_backend.domain.acquisitions.backfill import BackfillRunner
-    from bahcelab_backend.domain.imagery.registry import get_imagery_provider, get_radar_provider
+    from bahcelab_backend.domain.imagery.registry import (
+        get_imagery_provider,
+        get_landsat_provider,
+        get_radar_provider,
+    )
     from bahcelab_backend.shared.storage import get_storage
 
-    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), radar_provider=get_radar_provider())
+    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), radar_provider=get_radar_provider(), landsat_provider=get_landsat_provider())
     return await runner.run_month(uuid.UUID(garden_id), date.fromisoformat(month_iso), source=source)
 
 

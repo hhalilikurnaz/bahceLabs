@@ -20,11 +20,16 @@ from bahcelab_backend.domain.acquisitions.backfill import (
     BackfillRunner,
     BackfillService,
 )
+from bahcelab_backend.domain.acquisitions.landsat_processor import LANDSAT_SOURCE
 from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
 from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F401
-from bahcelab_backend.domain.imagery.registry import get_imagery_provider, get_radar_provider
+from bahcelab_backend.domain.imagery.registry import (
+    get_imagery_provider,
+    get_landsat_provider,
+    get_radar_provider,
+)
 from bahcelab_backend.shared.storage import get_storage
 
 SCOPE_SQL = (
@@ -60,14 +65,14 @@ async def report(garden_id: uuid.UUID, name: str, seconds: float | None, source:
 
 async def main() -> None:
     ap = parser("Geçmiş doldurma (ADR 0015 / 0016)")
-    ap.add_argument("--kaynak", choices=("sentinel2", "radar"), default="sentinel2", help="Veri kaynağı")
+    ap.add_argument("--kaynak", choices=("sentinel2", "radar", "landsat"), default="sentinel2", help="Veri kaynağı")
     args = ap.parse_args()
-    source = RADAR_SOURCE if args.kaynak == "radar" else SOURCE_ID
+    source = {"radar": RADAR_SOURCE, "landsat": LANDSAT_SOURCE}.get(args.kaynak, SOURCE_ID)
     targets = await resolve(args.user, args.garden)
     if not targets:
         raise SystemExit("Kapsamda bahçe yok.")
     settings = get_settings()
-    summary = {"bahceler": [n for _, n in targets], "kaynak": source, "baslangic": settings.acq_radar_start if source == RADAR_SOURCE else settings.acq_start, "ay_basina_sahne": settings.acq_scenes_per_month, "asgari_aralik_gun": settings.acq_min_gap_days, "kip": "uygula" if args.apply else "dry-run"}
+    summary = {"bahceler": [n for _, n in targets], "kaynak": source, "baslangic": {RADAR_SOURCE: settings.acq_radar_start, LANDSAT_SOURCE: settings.acq_landsat_start}.get(source, settings.acq_start), "ay_basina_sahne": settings.acq_scenes_per_month, "asgari_aralik_gun": settings.acq_min_gap_days, "kip": "uygula" if args.apply else "dry-run"}
     if not args.apply:
         log("dry-run", **summary)
         for gid, name in targets:
@@ -77,7 +82,7 @@ async def main() -> None:
     if not confirm({**summary, "yedek": str(path)}, assume_yes=args.yes):
         log("iptal")
         return
-    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), settings, radar_provider=get_radar_provider())
+    runner = BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), settings, radar_provider=get_radar_provider(), landsat_provider=get_landsat_provider())
     sem = asyncio.Semaphore(settings.acq_parallel_months)
 
     class _Queue:
@@ -91,7 +96,7 @@ async def main() -> None:
     for gid, name in targets:
         started = time.monotonic()
         async with async_session_factory() as session:
-            service = BackfillService(session, runner.provider, runner.storage, queue, settings, radar_provider=runner.radar_provider)  # type: ignore[arg-type]
+            service = BackfillService(session, runner.provider, runner.storage, queue, settings, radar_provider=runner.radar_provider, landsat_provider=runner.landsat_provider)  # type: ignore[arg-type]
             await service.start(gid, source=source)
             pending = await service.repo.pending_months(gid, source)
         log("basliyor", bahce=name, ay=len(pending))
