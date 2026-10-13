@@ -169,12 +169,41 @@ class RadarKurali(KuralBlok):
     art_arda_sahne: int = Field(default=2, ge=2)  # tek sahnelik sıçrama gürültüdür; bu kadar ardışık sahnede aynı yönde sürerse olay adayı
 
 
+class SuKurali(KuralBlok):
+    """Su ve sıcaklık dilimi (ADR 0017): hepsi ön değer · mühendis onayı bekliyor. Toprak eşikleri ERA5 mutlak nemine UYGULANMAZ."""
+
+    # Kc: NDVI'dan doğrusal ilişki (narenciye, örtü yoğunluğu arttıkça Kc artar)
+    kc_ndvi_alt: float = 0.30
+    kc_ndvi_ust: float = 0.80
+    kc_alt: float = 0.45
+    kc_ust: float = 0.75
+    kok_derinligi_cm: float = Field(default=80.0, gt=0)  # etkin kök bölgesi (kullanılabilir su kovası)
+    tukenme_orani: float = Field(default=0.5, gt=0, lt=1)  # RAW/TAW: bitki stresi başlamadan tüketilebilen pay (narenciye ≈ 0,5)
+    gecmis_gun: int = Field(default=30, ge=7)
+    tahmin_gun: int = Field(default=7, ge=1)
+    # Normale göre doluluk: her katman için ERA5-Land'in kendi 2015–2025 klimatolojisi; p_alt = 0, p_ust = 100
+    klima_p_alt: float = 2.0
+    klima_p_ust: float = 98.0
+    normal_aralik_alt: float = 10.0  # «bu bahçenin normal aralığı»
+    normal_aralik_ust: float = 90.0
+    klima_ilk_yil: int = 2015
+    klima_son_yil: int = 2025
+    kok_katman_agirliklari: tuple[float, float, float] = (7.0, 21.0, 72.0)  # 0–7, 7–28, 28–100 cm kalınlıkları (kök bölgesi 0–100 cm)
+    doluluk_nemli_min: float = Field(default=60.0, ge=0, le=100)  # «normale göre doluluk» ≥ bu: nemli
+    doluluk_kuru_max: float = Field(default=35.0, ge=0, le=100)  # ≤ bu: kuru
+    # Yüzey–hava sıcaklık farkı (Landsat geçişi ≈ 11:00 yerel)
+    yuzey_hava_stres_c: float = 5.0
+    karisik_piksel_c: float = 1.5  # |bahçe − tampon| bunu aşarsa «karışık piksel»
+    landsat_gecis_saati: int = 11  # yerel saat; hava sıcaklığı bu saatin ERA5 değeri
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
     durum_kademesi: DurumKademesi
     normal_bant: NormalBant
     radar: RadarKurali
+    su: SuKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

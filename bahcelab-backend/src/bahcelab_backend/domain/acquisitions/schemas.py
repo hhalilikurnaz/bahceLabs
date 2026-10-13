@@ -158,3 +158,20 @@ class RadarDegisimler(BaseModel):
     esikler: dict[str, float]  # anlamlı değişim dB, alan payı, en az alan (da), azami maske payı (katalog, ön değer)
     esik_durumu: Literal["dogrulanmadi", "muhendis_onayli"]
     degisimler: list[RadarDegisim]
+
+
+class LandsatEdinim(BaseModel):
+    """Landsat yüzey sıcaklığı sahnesi: bahçe ve 300 m tampon ortalamaları (°C)."""
+
+    tarih: date
+    scene_id: str
+    platform: str | None
+    bulut_orani: float | None
+    gecerli_oran: float | None
+    bahce_c: float
+    tampon_c: float | None
+
+
+class LandsatEdinimler(BaseModel):
+    izgara: IzgaraBilgisi | None
+    edinimler: list[LandsatEdinim]

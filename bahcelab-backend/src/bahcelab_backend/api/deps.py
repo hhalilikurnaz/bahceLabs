@@ -40,6 +40,7 @@ from bahcelab_backend.domain.notifications.service import NotificationService
 from bahcelab_backend.domain.overview.service import GardenOverviewService
 from bahcelab_backend.domain.planning.repository import PlanRepository, ProductRepository
 from bahcelab_backend.domain.planning.service import PlanningService
+from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import WeatherProvider, get_provider
 from bahcelab_backend.domain.weather.repository import WeatherRepository
 from bahcelab_backend.domain.weather.service import WeatherService
@@ -191,6 +192,13 @@ async def get_data_foundation_service(
     radar: Annotated[RadarProvider, Depends(get_radar)],
 ) -> DataFoundationService:
     return DataFoundationService(session, workspace_id, BackfillService(session, provider, get_storage(), queue, radar_provider=radar))
+
+
+async def get_water_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+) -> WaterService:
+    return WaterService(session, workspace_id)
 
 
 async def get_multiyear_service(

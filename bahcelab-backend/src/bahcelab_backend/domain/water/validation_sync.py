@@ -69,7 +69,7 @@ def fetch_smap(lat: float, lng: float, days: list[date]) -> dict[date, list[Obse
 
     ea = _earthaccess()
     granules = {}
-    for g in ea.search_data(short_name="SPL3SMP_E", temporal=(days[0].isoformat(), days[-1].isoformat()), bounding_box=(lng - 0.3, lat - 0.3, lng + 0.3, lat + 0.3)):
+    for g in ea.search_data(short_name="SPL3SMP_E", temporal=(min(days).isoformat(), max(days).isoformat()), bounding_box=(lng - 0.3, lat - 0.3, lng + 0.3, lat + 0.3)):
         link = next((link for link in g.data_links() if link.endswith(".h5")), None)
         if link and (day := granule_day(link)) in set(days):
             granules[day] = link
@@ -106,8 +106,8 @@ def fetch_imerg(lat: float, lng: float, days: list[date]) -> dict[date, list[Obs
 
     ea = _earthaccess()
     urls: dict[date, str] = {}
-    for short in ("GPM_3IMERGDF", "GPM_3IMERGDL"):  # önce Final, olmayan son günler için Late
-        for g in ea.search_data(short_name=short, temporal=(days[0].isoformat(), days[-1].isoformat())):
+    for short in ("GPM_3IMERGDL",):  # Late günlük (gecikme ~14 saat; Final ~3,5 ay): karar gereği tek kaynak
+        for g in ea.search_data(short_name=short, temporal=(min(days).isoformat(), max(days).isoformat())):
             link = next((link for link in g.data_links() if link.endswith(".nc4")), None)
             if link and (day := granule_day(link)) in set(days) and day not in urls:
                 urls[day] = link
@@ -120,7 +120,7 @@ def fetch_imerg(lat: float, lng: float, days: list[date]) -> dict[date, list[Obs
     def one(item: tuple[date, str]) -> tuple[date, list[Observation]]:
         day, url = item
         try:
-            with h5py.File(open_remote(url, ea.get_requests_https_session()), "r") as handle:
+            with h5py.File(open_remote(url, ea.get_requests_https_session(), block=8 * 1024 * 1024), "r") as handle:  # ~30 MB dosya: az sayıda büyük blok
                 return day, [imerg_value(handle, lat, lng)]
         except Exception as exc:  # noqa: BLE001
             logger.warning("IMERG okunamadı %s: %s", day, type(exc).__name__)
@@ -133,14 +133,14 @@ def fetch_imerg(lat: float, lng: float, days: list[date]) -> dict[date, list[Obs
 FETCHERS: dict[str, Callable[[float, float, list[date]], dict[date, list[Observation]]]] = {SMAP: fetch_smap, CHIRPS: fetch_chirps, IMERG: fetch_imerg}
 
 
-async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 30) -> dict[str, int]:
+async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 30, step: int = 1) -> dict[str, int]:
     """[start, end] eksik günleri parça parça çeker ve yazar. Dönüş: aranan gün, yazılan gözlem."""
     import asyncio
 
     row = (await session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).one()
     lat, lng = float(row[0]), float(row[1])
     have = await existing_days(session, garden_id, source_id)
-    todo = [d for d in days_between(start, end) if d not in have]
+    todo = [d for i, d in enumerate(days_between(start, end)) if i % step == 0 and d not in have]  # step=3: 3 günde bir (SMAP)
     written = 0
     chunks = [todo[i : i + chunk_days] for i in range(0, len(todo), chunk_days)]
     for chunk in reversed(chunks):  # en yeni parça önce: süre dolarsa en güncel dönem hazır olur (ağ hızı SMAP için sınırlayıcı)

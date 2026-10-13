@@ -21,6 +21,8 @@ from bahcelab_backend.domain.acquisitions.schemas import (
     GecmisDoldurmaDurumu,
     GostergeIstatistigi,
     IzgaraBilgisi,
+    LandsatEdinim,
+    LandsatEdinimler,
     NormalBantAy,
     NormalBantlar,
     RadarDegisim,
@@ -104,6 +106,34 @@ class DataFoundationService:
             esik_durumu=rule.durum,
             degisimler=[RadarDegisim.model_validate(e, from_attributes=True) for e in events],
         )
+
+    async def landsat_acquisitions(self, garden_id: uuid.UUID) -> LandsatEdinimler:
+        """Net Landsat sahneleri (tarih, platform, bulut, bahçe ve tampon °C): Sıcaklık katmanı tarihleri ve Su sekmesi bunu kullanır."""
+        geometry = await self._check(garden_id)
+        grid = canonical_grid(geometry)
+        rows = await self.repo.net_with_stats(garden_id, LANDSAT_SOURCE)
+        items = [
+            LandsatEdinim(
+                tarih=a.tarih, scene_id=a.scene_id, platform=a.isleme_surumu, bulut_orani=a.bulut_orani, gecerli_oran=a.gecerli_oran,
+                bahce_c=next(s.ortalama for s in stats if s.indeks == "st_c"), tampon_c=next((s.ortalama for s in stats if s.indeks == "st_tampon"), None),
+            )
+            for a, stats in rows
+            if any(s.indeks == "st_c" for s in stats)
+        ]
+        return LandsatEdinimler(
+            izgara=IzgaraBilgisi(satir=grid.shape[0], sutun=grid.shape[1], koordinatlar=[list(c) for c in image_corners(grid.transform, grid.crs, grid.shape)]) if items else None, edinimler=items
+        )
+
+    async def landsat_grid_bytes(self, garden_id: uuid.UUID, day: date) -> bytes:
+        """Landsat yüzey sıcaklığı ızgarası (°C, float32 LE, poligon dışı NaN). Ürün 30 m (3×3 blok), fiziksel çözünürlük 100 m."""
+        geometry = await self._check(garden_id)
+        acq = await self.repo.acquisition_on(garden_id, LANDSAT_SOURCE, day)
+        if acq is None or not acq.izgara_yolu or not self.storage.exists(acq.izgara_yolu):
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Bu tarih için Landsat görüntüsü yok.")
+        grid = decode_grids(self.storage.read(acq.izgara_yolu)).get("st_c")
+        if grid is None:
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Bu tarih için yüzey sıcaklığı hesaplanmadı.")
+        return masking.apply(grid, masking.mask_for(geometry)).astype("<f4").tobytes()
 
     async def radar_acquisitions(self, garden_id: uuid.UUID, *, since: date | None = None) -> RadarEdinimler:
         """Radar geçişleri (tüm yörüngeler, kompakt): Su sekmesi şeridi, tarih kutusu ve mini seri bunu kullanır."""

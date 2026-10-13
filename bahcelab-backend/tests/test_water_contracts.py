@@ -106,6 +106,17 @@ def test_imerg_value_reads_the_cell_nearest_to_the_garden(tmp_path: Path) -> Non
     assert obs.indeks == "yagis_mm" and obs.deger == pytest.approx(7.5)
 
 
+def test_imerg_v07_daily_file_keeps_variables_at_the_root(tmp_path: Path) -> None:
+    lons, lats = np.arange(-179.95, 180, 0.1), np.arange(-89.95, 90, 0.1)
+    data = np.full((1, lons.size, lats.size), -9999.9, dtype=np.float32)
+    with h5py.File(tmp_path / "imerg_v07.nc4", "w") as h:  # gerçek V07C yapısı (kök değişkenler)
+        h.create_dataset("lon", data=lons)
+        h.create_dataset("lat", data=lats)
+        h.create_dataset("precipitation", data=data)
+    with h5py.File(tmp_path / "imerg_v07.nc4", "r") as h:
+        assert validation.imerg_value(h, 36.66, 34.38).deger is None  # doldurma değeri: yağış uydurulmaz
+
+
 def test_chirps_cog_window_returns_cell_value_and_none_when_the_file_is_missing(tmp_path: Path, monkeypatch) -> None:
     path = tmp_path / "chirps-v2.0.2024.01.10.cog"
     data = np.zeros((40, 40), dtype=np.float32)

@@ -8,6 +8,7 @@ from bahcelab_backend.api.deps import get_current_user, get_data_foundation_serv
 from bahcelab_backend.domain.acquisitions.schemas import (
     Edinimler,
     GecmisDoldurmaDurumu,
+    LandsatEdinimler,
     NormalBantlar,
     RadarDegisimler,
     RadarEdinimler,
@@ -38,6 +39,18 @@ async def get_radar_changes(
 ) -> RadarDegisimler:
     """Radar değişim kayıtları (birincil yörünge): olay adayları ve gürültü; «ıslaklık olabilir» notu yağıştan gelir. Bildirim üretmez."""
     return await service.radar_changes(garden_id, durum=durum, since=baslangic)
+
+
+@router.get("/gardens/{garden_id}/landsat/edinimler", response_model=LandsatEdinimler)
+async def get_landsat_acquisitions(garden_id: UUID, service: Service) -> LandsatEdinimler:
+    """Net Landsat 8/9 yüzey sıcaklığı sahneleri: tarih, bulut, bahçe ve tampon ortalaması (°C)."""
+    return await service.landsat_acquisitions(garden_id)
+
+
+@router.get("/gardens/{garden_id}/landsat/edinimler/{tarih}/izgara")
+async def get_landsat_grid(garden_id: UUID, tarih: date, service: Service) -> Response:
+    """Landsat yüzey sıcaklığı ızgarası (°C; float32 LE, NaN = geçersiz). Ürün 30 m, fiziksel çözünürlük 100 m."""
+    return Response(content=await service.landsat_grid_bytes(garden_id, tarih), media_type="application/octet-stream", headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.get("/gardens/{garden_id}/radar/edinimler", response_model=RadarEdinimler)

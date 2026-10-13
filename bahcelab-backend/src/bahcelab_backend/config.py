@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     acq_start: str = "2015-06-01"  # arşiv taraması başlangıcı (Sentinel-2 L2A 13 Ağu 2015'te başlar; ilk aylar boş çıkar)
     # NASA Earthdata (SMAP/IMERG): değer yalnız ortamdan (.env.local); koda, loga, teste girmez
     earthdata_token: str = Field(default="", repr=False)
+    soilgrids_enabled: bool = True  # false: SoilGrids'e hiç çıkılmaz (testler, ağsız ortam); toprak parametresi yoksa su dengesi «hesaplanamadı» der
     acq_landsat_start: str = "2015-01-01"  # Landsat 8 (2013) / 9 (2021) arşiv taraması başlangıcı
     acq_radar_start: str = "2015-01-01"  # radar (Sentinel-1 RTC) arşiv taraması başlangıcı; PC arşivi Ekim 2014'te başlar
     acq_auto_backfill: bool = True  # bahçe eklenince / sınırı değişince geçmiş doldurma kendiliğinden başlar (işleme açıksa)

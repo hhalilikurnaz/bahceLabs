@@ -72,11 +72,11 @@ async def report_validation(garden_id: uuid.UUID, name: str, seconds: float | No
     log("rapor", bahce=name, kaynak=kaynak, sure_sn=None if seconds is None else round(seconds, 1), yillar=[{"yil": r[0], "gun": r[1], "bos_deger": r[2]} for r in rows])
 
 
-async def run_validation(targets: list[tuple[uuid.UUID, str]], kaynak: str, start: date, end: date) -> None:
+async def run_validation(targets: list[tuple[uuid.UUID, str]], kaynak: str, start: date, end: date, step: int = 1) -> None:
     for gid, name in targets:
         t0 = time.monotonic()
         async with async_session_factory() as s:
-            result = await sync_validation(s, gid, SOURCE_OF[kaynak], start, end)
+            result = await sync_validation(s, gid, SOURCE_OF[kaynak], start, end, step=step)
         log("dogrulama", bahce=name, kaynak=kaynak, **result)
         await report_validation(gid, name, time.monotonic() - t0, kaynak)
 
@@ -85,6 +85,7 @@ async def main() -> None:
     ap = parser("Su ve sıcaklık geçmiş doldurma (ADR 0017)")
     ap.add_argument("--kaynak", choices=("era5", "smap", "imerg", "chirps"), required=True)
     ap.add_argument("--baslangic", default=None, help="varsayılan: era5 2015-01-01; doğrulama kaynakları 2022-01-01")
+    ap.add_argument("--adim", type=int, default=1, help="doğrulama kaynakları: her N günde bir (SMAP için 3)")
     ap.add_argument("--bitis", default=None, help="doğrulama kaynakları için; varsayılan: dün")
     args = ap.parse_args()
     targets = await resolve(args.user, args.garden)
@@ -104,7 +105,7 @@ async def main() -> None:
     if args.kaynak == "era5":
         await run_era5(targets, start)
     else:
-        await run_validation(targets, args.kaynak, start, date.fromisoformat(args.bitis) if args.bitis else datetime.now(UTC).date() - timedelta(days=1))
+        await run_validation(targets, args.kaynak, start, date.fromisoformat(args.bitis) if args.bitis else datetime.now(UTC).date() - timedelta(days=1), args.adim)
     log("bitti", saat=datetime.now(UTC).isoformat(timespec="seconds"))
     await engine.dispose()
 

@@ -35,7 +35,7 @@ class DataSourceModel(Base):
     ad: Mapped[str] = mapped_column(String(80), nullable=False)
     cozunurluk_m: Mapped[float] = mapped_column(Float, nullable=False)
     tekrar_gun: Mapped[int] = mapped_column(Integer, nullable=False)
-    durum: Mapped[str] = mapped_column(String(10), nullable=False)  # aktif | planli
+    durum: Mapped[str] = mapped_column(String(10), nullable=False)  # aktif | planli | devre_disi
     aciklama: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 

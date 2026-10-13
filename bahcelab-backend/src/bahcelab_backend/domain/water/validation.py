@@ -83,7 +83,7 @@ def smap_block(handle: Any, row: int, col: int, half: int = 2) -> list[Observati
 
 def imerg_value(handle: Any, lat: float, lng: float) -> Observation:
     """GPM IMERG günlük (0,1°) hücre değeri (mm/gün)."""
-    grid = handle["Grid"]
+    grid = handle["Grid"] if "Grid" in handle else handle  # V07 günlük dosyalarda değişkenler kökte; eski sürümlerde «Grid» grubunda
     lons, lats = grid["lon"][:], grid["lat"][:]
     i, j = int(np.argmin(np.abs(lons - lng))), int(np.argmin(np.abs(lats - lat)))
     raw = grid["precipitation"][0, i, j]
