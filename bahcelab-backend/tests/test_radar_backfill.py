@@ -185,3 +185,65 @@ async def test_a_month_with_an_unreadable_pass_stays_failed_and_only_the_missing
     status = await run(factory, runner, settings, radar, gid, today=date(2024, 1, 31))
     assert status["durum"] == "tamam" and len(radar.read_calls) - reads <= 2  # yalnız eksik geçiş(ler)
     assert len([a for a in await rows(factory, gid) if a.durum == "net"]) > ok_before
+
+
+async def test_changes_are_recorded_as_candidate_or_noise_with_a_wet_note_from_rain(user_client, factory):
+    from datetime import timedelta
+
+    from sqlalchemy import text
+
+    from bahcelab_backend.domain.weather.service import snap
+
+    gid = await new_garden(user_client)
+    radar = FakeRadarProvider(GEOMETRY, [FakeOrbit(87, "cikis", 12, 0)])
+    radar.noise = False
+    days = radar._days(radar.orbits[0], date(2024, 1, 1), date(2024, 12, 31))
+    single, first, second = days[4], days[9], days[10]  # tek sahne sıçraması; iki ardışık düşüş
+    for d in (single, first, second):
+        radar.level_by_date[d] = 0.3  # VH ≈ −5,2 dB
+    runner, settings = make(factory, radar)
+    async with factory() as session:  # önbellekteki yağış: ikinci düşüşten bir gün önce 6 mm
+        lat, lng = (await session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": gid})).one()
+        step = get_settings().weather_cell_degrees
+        key = {"a": snap(float(lat), step), "b": snap(float(lng), step)}
+        await session.execute(text("INSERT INTO weather_cells (id, enlem, boylam) VALUES (:i, :a, :b) ON CONFLICT ON CONSTRAINT uq_weather_cell DO NOTHING"), {"i": uuid.uuid4(), **key})
+        cell = (await session.execute(text("SELECT id FROM weather_cells WHERE enlem = :a AND boylam = :b"), key)).scalar_one()
+        await session.execute(text("DELETE FROM weather_daily WHERE cell_id = :c"), {"c": cell})  # test veritabanı kalıcıdır: önceki koşudan kalan satırlar silinir
+        await session.execute(text("INSERT INTO weather_daily (cell_id, tarih, yagis_mm, kaynak) VALUES (:c, :d, 6.0, 'arsiv')"), {"c": cell, "d": second - timedelta(days=1)})
+        await session.commit()
+    await run(factory, runner, settings, radar, gid, today=date(2024, 12, 31))
+    response = await user_client.get(f"/gardens/{gid}/radar/degisimler")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["esik_durumu"] == "dogrulanmadi" and body["esikler"]["anlamli_degisim_db"] == 2.0
+    assert [(o["yorunge"], o["birincil"]) for o in body["yorungeler"]] == [(87, True)]
+    events = {e["tarih"]: e for e in body["degisimler"] if e["isaret"] == "azalis"}
+    assert events[single.isoformat()]["durum"] == "gurultu"  # tek sahne: aday değil
+    assert events[first.isoformat()]["durum"] == "gurultu" and events[second.isoformat()]["durum"] == "aday" and events[second.isoformat()]["art_arda"]
+    assert events[second.isoformat()]["islaklik_olabilir"] is True and events[second.isoformat()]["yagis_mm"] == 6.0
+    assert events[single.isoformat()]["islaklik_olabilir"] is None  # yağış verisi yok: bilinmiyor, uydurma yok
+    assert events[second.isoformat()]["buyukluk_db"] == pytest.approx(-5.2, abs=0.3) and events[second.isoformat()]["alan_orani"] > 0.9
+    only = await user_client.get(f"/gardens/{gid}/radar/degisimler", params={"durum": "aday"})
+    assert {e["durum"] for e in only.json()["degisimler"]} == {"aday"}
+
+
+async def test_scenes_masked_over_the_limit_never_enter_the_change_calculation(user_client, factory):
+    gid = await new_garden(user_client)
+    radar = FakeRadarProvider(GEOMETRY, [FakeOrbit(87, "cikis", 12, 0)])
+    radar.noise = False
+    days = radar._days(radar.orbits[0], date(2024, 1, 1), date(2024, 6, 30))
+    for d in days[5:8]:
+        radar.level_by_date[d] = 0.3
+    real = radar.read
+
+    def shadowed(ref, geometry):  # düşüşlü sahnelerin %50'si gölgede: > %30 maske
+        radar.shadow = 0.5 if ref.tarih in days[5:8] else 0.0
+        return real(ref, geometry)
+
+    radar.read = shadowed  # type: ignore[method-assign]
+    runner, settings = make(factory, radar)
+    await run(factory, runner, settings, radar, gid, today=date(2024, 6, 30))
+    found = {a.tarih: a for a in await rows(factory, gid)}
+    assert all(found[d].maskeli_oran > 0.3 for d in days[5:8])
+    body = (await user_client.get(f"/gardens/{gid}/radar/degisimler")).json()
+    assert body["degisimler"] == []  # maskeli sahneler seriye girmedi: sahte değişim yok

@@ -88,7 +88,7 @@ radar:
   kaynak: >-
     Ön değer: VH < −30 dB gölge, VV > +5 dB üst üste binme/doygunluk vekili (PC RTC varlıklarında maske bandı yok);
     Lee 5×5, ENL 4,4; bahçenin >%30'u maskeliyse sahne değişime girmez; |Δ| ≥ 2 dB ve alanın ≥ %10'u anlamlı değişim;
-    önceki 48 saatte ≥ 1 mm yağış → «ıslaklık olabilir». Ziraat mühendisi/uzaktan algılama uzmanı onayı bekliyor.
+    önceki 48 saatte ≥ 1 mm yağış → «ıslaklık olabilir»; ani değişim = son sahne vs aynı yörüngedeki son 3 sahnenin ortancası; olay adayı = anlamlı ani değişim VE (kalıcı sapma bant dışında ya da 2 ardışık sahnede aynı yönde), tek sahnelik sıçrama «gürültü». Ziraat mühendisi/uzaktan algılama uzmanı onayı bekliyor.
   golge_vh_alt_db: -30.0
   ust_uste_vv_ust_db: 5.0
   lee_pencere: 5
@@ -98,6 +98,8 @@ radar:
   anlamli_alan_orani: 0.10
   yagis_penceresi_saat: 48
   yagis_esigi_mm: 1.0
+  ani_baseline_sahne: 3
+  art_arda_sahne: 2
 
 urunler:
   limon:

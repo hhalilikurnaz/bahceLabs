@@ -96,6 +96,33 @@ class RadarOrbitModel(Base):
     guncelleme: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+class ChangeEventModel(Base):
+    """Radar değişim olay adayı ya da gürültü kaydı (9D). Bildirim YOK: 9F olay motoru `durum='aday'` kayıtlarını tüketir."""
+
+    __tablename__ = "change_events"
+    __table_args__ = (UniqueConstraint("garden_id", "source_id", "scene_id", name="uq_change_event_scene"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(40), ForeignKey("data_sources.id"), nullable=False)
+    scene_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    tarih: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    yorunge: Mapped[int] = mapped_column(Integer, nullable=False)
+    gecis_yonu: Mapped[str] = mapped_column(String(10), nullable=False)
+    durum: Mapped[str] = mapped_column(String(10), nullable=False)  # aday | gurultu
+    isaret: Mapped[str] = mapped_column(String(10), nullable=False)  # azalis | artis
+    alan_orani: Mapped[float] = mapped_column(Float, nullable=False)
+    alan_m2: Mapped[float] = mapped_column(Float, nullable=False)
+    buyukluk_db: Mapped[float] = mapped_column(Float, nullable=False)
+    bahce_delta_db: Mapped[float | None] = mapped_column(Float, nullable=True)
+    kalici_sapma: Mapped[str] = mapped_column(String(10), nullable=False)
+    art_arda: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    islaklik_olabilir: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    yagis_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    formul_surumu: Mapped[str] = mapped_column(String(40), nullable=False)
+    hesaplama: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class BackfillMonthModel(Base):
     """Geçmiş doldurma ilerlemesi: bahçe × kaynak × ay görevi (idempotent, kaldığı yerden devam)."""
 

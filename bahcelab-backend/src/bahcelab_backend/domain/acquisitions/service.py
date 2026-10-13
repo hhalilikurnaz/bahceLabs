@@ -20,6 +20,9 @@ from bahcelab_backend.domain.acquisitions.schemas import (
     IzgaraBilgisi,
     NormalBantAy,
     NormalBantlar,
+    RadarDegisim,
+    RadarDegisimler,
+    RadarYorunge,
     TipikBantBilgisi,
 )
 from bahcelab_backend.domain.acquisitions.store import decode_grids
@@ -80,6 +83,19 @@ class DataFoundationService:
             tipik_bantlar=typical,
             kaynak=SOURCE_ID, formul_surumu=rows[0].formul_surumu if rows else None, asgari_yil_ceyrek=rule.asgari_yil_ceyrek, asgari_yil_onluk=rule.asgari_yil_onluk,
             esik_durumu=rule.durum, gostergeler=out, hazir=progress["durum"] == "tamam" and bool(rows),
+        )
+
+    async def radar_changes(self, garden_id: uuid.UUID, *, durum: str | None = None, since: date | None = None) -> RadarDegisimler:
+        """Radar değişim kayıtları (aday ve gürültü), yörünge özeti ve katalog eşikleri (ön değer)."""
+        await self._check(garden_id)
+        rule = cat.load_catalog().radar
+        events = await self.repo.change_events(garden_id, RADAR_SOURCE, durum=durum, since=since)
+        orbits = await self.repo.orbits(garden_id)
+        return RadarDegisimler(
+            yorungeler=[RadarYorunge(yorunge=o.yorunge, gecis_yonu=o.gecis_yonu, sahne_sayisi=o.sahne_sayisi, birincil=o.birincil) for o in orbits],
+            esikler={"anlamli_degisim_db": rule.anlamli_degisim_db, "anlamli_alan_orani": rule.anlamli_alan_orani, "azami_maske_orani": rule.azami_maske_orani},
+            esik_durumu=rule.durum,
+            degisimler=[RadarDegisim.model_validate(e, from_attributes=True) for e in events],
         )
 
     async def acquisitions(self, garden_id: uuid.UUID) -> Edinimler:

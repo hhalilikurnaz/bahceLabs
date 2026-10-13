@@ -9,6 +9,7 @@ from bahcelab_backend.domain.acquisitions.schemas import (
     Edinimler,
     GecmisDoldurmaDurumu,
     NormalBantlar,
+    RadarDegisimler,
 )
 from bahcelab_backend.domain.acquisitions.service import DataFoundationService
 
@@ -27,6 +28,14 @@ async def start_backfill(garden_id: UUID, service: Service, kaynak: Kaynak = "se
 async def get_backfill(garden_id: UUID, service: Service, ayrinti: Annotated[bool, Query(description="Ay ay döküm")] = False, kaynak: Kaynak = "sentinel2") -> GecmisDoldurmaDurumu:
     """İlerleme: tamamlanan ay / toplam, net sahne sayısı, depolama boyutu."""
     return await service.status(garden_id, detail=ayrinti, kaynak=kaynak)
+
+
+@router.get("/gardens/{garden_id}/radar/degisimler", response_model=RadarDegisimler)
+async def get_radar_changes(
+    garden_id: UUID, service: Service, durum: Annotated[Literal["aday", "gurultu"] | None, Query()] = None, baslangic: Annotated[date | None, Query()] = None
+) -> RadarDegisimler:
+    """Radar değişim kayıtları (birincil yörünge): olay adayları ve gürültü; «ıslaklık olabilir» notu yağıştan gelir. Bildirim üretmez."""
+    return await service.radar_changes(garden_id, durum=durum, since=baslangic)
 
 
 @router.get("/gardens/{garden_id}/normal-bantlar", response_model=NormalBantlar)

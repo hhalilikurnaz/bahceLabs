@@ -1,0 +1,124 @@
+"""Radar değişim değerlendirmesi (SAF, ADR 0016): ani değişim + kalıcı sapma → olay adayı ya da gürültü.
+
+Ani değişim: bir sahnenin VH dB ızgarası, AYNI yörüngedeki önceki N sahnenin piksel ortancasıyla karşılaştırılır (log-oran = dB farkı).
+Alan payı = |Δ| eşiğini aşan, baskın yöndeki piksellerin geçerli piksellere oranı; büyüklük = o piksellerin Δ ortancası.
+Kalıcı sapma: sahnenin bahçe ortalaması (dB) o ayın normal bandına (birincil yörünge) göre konumlanır.
+Olay adayı = anlamlı ani değişim VE (kalıcı sapma bant DIŞINDA ve aynı yönde  YA DA aynı yönde art arda ≥ K sahne). Aksi hâlde «gürültü».
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+
+import numpy as np
+
+AZALIS, ARTIS = "azalis", "artis"
+ADAY, GURULTU = "aday", "gurultu"
+BANT_ALTI, BANT_USTU, BANT_ICI, BANT_YOK = "alt", "ust", "bant_ici", "bant_yok"
+
+
+@dataclass(frozen=True)
+class ChangeRule:
+    anlamli_degisim_db: float
+    anlamli_alan_orani: float
+    baseline_sahne: int
+    art_arda_sahne: int
+
+
+@dataclass(frozen=True)
+class BandLimits:
+    """Normal bandın dış sınırı: p10–p90 (yeterliyse) ya da p25–p75."""
+
+    alt: float
+    ust: float
+
+
+@dataclass(frozen=True)
+class SceneSample:
+    tarih: date
+    scene_id: str
+    vh_db: np.ndarray  # Lee filtreli VH dB ızgarası (bahçe dışı/geçersiz NaN)
+    bahce_ortalama_db: float  # ham doğrusal ortalamadan dB
+    bant: BandLimits | None  # sahnenin ayının normal bandı (yoksa None)
+
+
+@dataclass(frozen=True)
+class ChangeResult:
+    tarih: date
+    scene_id: str
+    durum: str  # aday | gurultu
+    isaret: str  # azalis | artis
+    alan_orani: float
+    buyukluk_db: float  # imzalı, aşan piksellerin ortancası
+    bahce_delta_db: float  # bahçe ortalaması − baseline bahçe ortalaması (bilgi)
+    kalici_sapma: str  # alt | ust | bant_ici | bant_yok
+    art_arda: bool
+    alan_pikseli: int
+
+
+def pixel_change(current: np.ndarray, baseline: np.ndarray, rule: ChangeRule) -> tuple[str, float, float, int] | None:
+    """(yön, alan payı, büyüklük dB, piksel sayısı); anlamlı değilse None."""
+    delta = current - baseline
+    valid = np.isfinite(delta)
+    n = int(valid.sum())
+    if n == 0:
+        return None
+    thr = rule.anlamli_degisim_db
+    down, up = valid & (delta <= -thr), valid & (delta >= thr)
+    sign, mask = (AZALIS, down) if down.sum() >= up.sum() else (ARTIS, up)
+    share = float(mask.sum()) / n
+    if share < rule.anlamli_alan_orani:
+        return None
+    return sign, share, float(np.median(delta[mask])), int(mask.sum())
+
+
+def _position(mean_db: float, band: BandLimits | None) -> str:
+    if band is None:
+        return BANT_YOK
+    return BANT_ALTI if mean_db < band.alt else BANT_USTU if mean_db > band.ust else BANT_ICI
+
+
+def evaluate_series(samples: list[SceneSample], rule: ChangeRule) -> list[ChangeResult]:
+    """Aynı yörüngenin tarih sıralı uygun sahneleri → anlamlı ani değişimi olan sahneler için aday/gürültü sonuçları."""
+    ordered = sorted(samples, key=lambda s: s.tarih)
+    results: list[ChangeResult] = []
+    previous_signs: list[str | None] = []  # her sahne için anlamlı yön (yoksa None)
+    for i, scene in enumerate(ordered):
+        if i < rule.baseline_sahne:
+            previous_signs.append(None)
+            continue
+        window = ordered[i - rule.baseline_sahne : i]
+        baseline = np.nanmedian(np.stack([w.vh_db for w in window]), axis=0)
+        change = pixel_change(scene.vh_db, baseline, rule)
+        if change is None:
+            previous_signs.append(None)
+            continue
+        sign, share, size, pixels = change
+        previous_signs.append(sign)
+        run = 1
+        for back in range(i - 1, -1, -1):
+            if previous_signs[back] == sign:
+                run += 1
+            else:
+                break
+        position = _position(scene.bahce_ortalama_db, scene.bant)
+        outside = (sign == AZALIS and position == BANT_ALTI) or (sign == ARTIS and position == BANT_USTU)
+        consecutive = run >= rule.art_arda_sahne
+        base_mean = float(np.nanmean(baseline)) if np.isfinite(baseline).any() else float("nan")
+        results.append(
+            ChangeResult(
+                tarih=scene.tarih, scene_id=scene.scene_id, durum=ADAY if (outside or consecutive) else GURULTU, isaret=sign, alan_orani=round(share, 4),
+                buyukluk_db=round(size, 2), bahce_delta_db=round(scene.bahce_ortalama_db - base_mean, 2), kalici_sapma=position, art_arda=consecutive, alan_pikseli=pixels,
+            )
+        )
+    return results
+
+
+def wet_note(daily_rain_mm: list[float | None], threshold_mm: float) -> tuple[bool | None, float | None]:
+    """Önceki ~48 saatin günlük yağışlarından «ıslaklık olabilir». Hiç veri yoksa (None, None): bilinmiyor, uydurma yok."""
+    known = [v for v in daily_rain_mm if v is not None]
+    if not known:
+        return None, None
+    total = round(sum(known), 1)
+    return total >= threshold_mm, total

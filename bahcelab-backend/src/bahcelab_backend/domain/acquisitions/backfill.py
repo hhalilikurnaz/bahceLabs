@@ -77,7 +77,15 @@ class BackfillRunner:
                 counts = progress["counts"]
                 if progress["total"] == 0 or counts.get(MONTH_PENDING, 0) or counts.get(MONTH_RUNNING, 0):
                     return
-                await (compute_radar_bands_for(session, garden_id) if source == RADAR_SOURCE else compute_bands_for(session, garden_id))
+                if source == RADAR_SOURCE:
+                    from bahcelab_backend.domain.acquisitions.radar_events import (
+                        compute_change_events_for,
+                    )
+
+                    await compute_radar_bands_for(session, garden_id)
+                    await compute_change_events_for(session, self.storage, garden_id)
+                else:
+                    await compute_bands_for(session, garden_id)
                 await session.commit()
         except Exception:  # noqa: BLE001
             logger.exception("Normal bantlar hesaplanamadı: %s", garden_id)

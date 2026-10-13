@@ -160,6 +160,8 @@ class RadarKurali(KuralBlok):
     anlamli_alan_orani: float = Field(default=0.10, ge=0, le=1)  # alanın en az bu payı eşiği aşmalı
     yagis_penceresi_saat: int = Field(default=48, ge=1)  # önceki bu kadar saatte yağış → «ıslaklık olabilir»
     yagis_esigi_mm: float = Field(default=1.0, ge=0)
+    ani_baseline_sahne: int = Field(default=3, ge=2)  # ani değişim: son sahne, aynı yörüngedeki bu kadar önceki sahnenin ortancasıyla karşılaştırılır
+    art_arda_sahne: int = Field(default=2, ge=2)  # tek sahnelik sıçrama gürültüdür; bu kadar ardışık sahnede aynı yönde sürerse olay adayı
 
 
 class Katalog(BaseModel):

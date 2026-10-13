@@ -4,6 +4,39 @@ from typing import Literal
 from pydantic import BaseModel
 
 
+class RadarDegisim(BaseModel):
+    """Radar değişim kaydı: aday (olay motoru tüketir) ya da gürültü (tek sahnelik sıçrama)."""
+
+    tarih: date
+    scene_id: str
+    yorunge: int
+    gecis_yonu: str
+    durum: Literal["aday", "gurultu"]
+    isaret: Literal["azalis", "artis"]
+    alan_orani: float
+    alan_m2: float
+    buyukluk_db: float
+    bahce_delta_db: float | None
+    kalici_sapma: Literal["alt", "ust", "bant_ici", "bant_yok"]
+    art_arda: bool
+    islaklik_olabilir: bool | None  # null: yağış verisi yok
+    yagis_mm: float | None
+
+
+class RadarYorunge(BaseModel):
+    yorunge: int
+    gecis_yonu: str
+    sahne_sayisi: int
+    birincil: bool
+
+
+class RadarDegisimler(BaseModel):
+    yorungeler: list[RadarYorunge]
+    esikler: dict[str, float]  # anlamlı değişim dB, alan payı, azami maske payı (katalog, ön değer)
+    esik_durumu: Literal["dogrulanmadi", "muhendis_onayli"]
+    degisimler: list[RadarDegisim]
+
+
 class GecmisAy(BaseModel):
     ay: date
     durum: Literal["bekliyor", "isleniyor", "tamam", "hata"]

@@ -15,6 +15,7 @@ from bahcelab_backend.domain.acquisitions.models import (
     AcquisitionModel,
     AcquisitionStatModel,
     BackfillMonthModel,
+    ChangeEventModel,
     NormalBandModel,
     RadarOrbitModel,
 )
@@ -227,3 +228,21 @@ class AcquisitionRepository:
     async def geometry_hash(self, garden_id: uuid.UUID) -> str | None:
         value = (await self.session.execute(text("SELECT md5(ST_AsEWKB(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).scalar_one_or_none()
         return str(value)[:40] if value else None
+
+    # --- radar değişim olayları
+    async def replace_change_events(self, garden_id: uuid.UUID, source_id: str, rows: list[ChangeEventModel]) -> None:
+        await self.session.execute(delete(ChangeEventModel).where(ChangeEventModel.garden_id == garden_id, ChangeEventModel.source_id == source_id))
+        self.session.add_all(rows)
+        await self.session.flush()
+
+    async def change_events(self, garden_id: uuid.UUID, source_id: str, *, durum: str | None = None, since: date | None = None) -> list[ChangeEventModel]:
+        query = select(ChangeEventModel).where(ChangeEventModel.garden_id == garden_id, ChangeEventModel.source_id == source_id).order_by(ChangeEventModel.tarih.desc())
+        if durum:
+            query = query.where(ChangeEventModel.durum == durum)
+        if since:
+            query = query.where(ChangeEventModel.tarih >= since)
+        return list((await self.session.execute(query)).scalars())
+
+    async def garden_center(self, garden_id: uuid.UUID) -> tuple[float, float] | None:
+        row = (await self.session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).one_or_none()
+        return (float(row[0]), float(row[1])) if row else None
