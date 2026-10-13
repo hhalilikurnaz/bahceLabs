@@ -17,6 +17,7 @@ from bahcelab_backend.domain.acquisitions import models as acquisition_models  #
 from bahcelab_backend.domain.ndvi import models as ndvi_models  # noqa: F401
 from bahcelab_backend.domain.planning import models  # noqa: F401
 from bahcelab_backend.domain.weather import models as weather_models  # noqa: F401
+from bahcelab_backend.domain.water import models as water_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

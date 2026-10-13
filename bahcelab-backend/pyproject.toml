@@ -29,6 +29,8 @@ dependencies = [
     "pyyaml>=6.0",
     "arq>=0.26.0",
     "scipy>=1.13",
+    "earthaccess>=0.14",  # SMAP/IMERG doğrulama (Earthdata token ortamdan)
+    "h5py>=3.11",
 ]
 
 [project.optional-dependencies]

@@ -28,6 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://bahcelab:bahcelab@localhost:5432/bahcelab
       JWT_SECRET: ci-yalniz-test-icin-gizli-olmayan-deger-0123456789
+      REDIS_URL: redis://localhost:6379/0  # arq ayarı içe aktarma sırasında çözümlenir; bağlantı kurulmaz
       API_DEBUG: "true"
       REGISTRATION_ENABLED: "true"
       NDVI_ENABLED: "false"

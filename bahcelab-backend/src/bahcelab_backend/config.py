@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -58,6 +59,8 @@ class Settings(BaseSettings):
     acq_max_candidates_per_month: int = 8  # bir ayda en çok bu kadar aday sahne okunur
     acq_parallel_months: int = 3  # aynı anda işlenen ay görevi (tüm bahçeler için ortak)
     acq_start: str = "2015-06-01"  # arşiv taraması başlangıcı (Sentinel-2 L2A 13 Ağu 2015'te başlar; ilk aylar boş çıkar)
+    # NASA Earthdata (SMAP/IMERG): değer yalnız ortamdan (.env.local); koda, loga, teste girmez
+    earthdata_token: str = Field(default="", repr=False)
     acq_radar_start: str = "2015-01-01"  # radar (Sentinel-1 RTC) arşiv taraması başlangıcı; PC arşivi Ekim 2014'te başlar
     acq_auto_backfill: bool = True  # bahçe eklenince / sınırı değişince geçmiş doldurma kendiliğinden başlar (işleme açıksa)
     acq_incremental_days: int = 45  # günlük artımlı çekim bu kadar geriye bakar
