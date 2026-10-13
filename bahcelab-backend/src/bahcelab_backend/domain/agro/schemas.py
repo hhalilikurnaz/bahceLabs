@@ -159,7 +159,7 @@ class DurumYanit(BaseModel):
 class BilesenV2Yanit(BaseModel):
     kod: Literal["agac_gucu", "su", "beslenme", "ani_degisim", "isi"]
     ad: str
-    seviye: Literal["normal", "normalin_alti", "belirgin_dusuk"] | None  # sayı yok; None = veri yok
+    seviye: Literal["belirgin_dusuk", "normalin_alti", "normal", "normalin_ustu", "belirgin_yuksek"] | None  # tek etiket kuralı: p25–p75 normal, p10–p25/p75–p90 altı/üstü, <p10/>p90 belirgin; None = veri yok
     kullanilabilir: bool
     bayat: bool
     neden: str

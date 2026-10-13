@@ -58,7 +58,7 @@ async def seed(client: AsyncClient, factory) -> uuid.UUID:  # noqa: ANN001
     return gid
 
 
-async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None) -> uuid.UUID:  # noqa: ANN001
+async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None, *, whole: bool = False) -> uuid.UUID:  # noqa: ANN001
     async with factory() as session:
         repo = AcquisitionRepository(session)
         geometry = await repo.geometry_geojson(gid)
@@ -66,7 +66,9 @@ async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None) -> uuid
         mask = garden_mask(grid, geometry)
         ndvi = np.where(mask, 0.7, np.nan).astype(np.float32)
         if ndvi_patch is not None:
-            ndvi[8:20, 8:20] = np.where(mask[8:20, 8:20], 0.7 - ndvi_patch, np.nan)
+            ndvi = np.where(mask, 0.7 - ndvi_patch, np.nan).astype(np.float32) if whole else ndvi
+            if not whole:
+                ndvi[8:20, 8:20] = np.where(mask[8:20, 8:20], 0.7 - ndvi_patch, np.nan)
         key = f"acq/{gid}/S2_{day}.npz"
         data = encode_grids({"ndvi": ndvi})
         get_storage().save(key, data)
@@ -74,6 +76,12 @@ async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None) -> uuid
         await repo.upsert_acquisition(row, {})
         await session.commit()
         return row.id
+
+
+async def add_history(factory, gid: uuid.UUID, day, count: int = 9) -> None:  # noqa: ANN001
+    """Diğer yılların AYNI dönemi (bahçenin kendi normu): sağlıklı NDVI 0,7 — pikselin dönem p10'u 0,7 olur."""
+    for k in range(1, count + 1):
+        await add_s2(factory, gid, day.replace(year=day.year - k, day=min(day.day, 28)), None)
 
 
 async def add_era5(factory, gid: uuid.UUID, rows: dict) -> uuid.UUID:  # noqa: ANN001
@@ -92,7 +100,7 @@ async def add_radar_candidate(factory, gid: uuid.UUID, day, *, wet: bool) -> uui
     async with factory() as session:
         row = ChangeEventModel(
             garden_id=gid, source_id=RADAR_SOURCE, scene_id=f"S1_{day}", tarih=day, yorunge=87, gecis_yonu="cikis", durum="aday", isaret="azalis", alan_orani=0.6, alan_m2=60000.0, buyukluk_db=-4.0, bahce_delta_db=-3.0,
-            kalici_sapma="alt", art_arda=True, islaklik_olabilir=wet, yagis_mm=9.0 if wet else 0.0, formul_surumu="t", guven="dusuk" if wet else "normal",
+            kalici_sapma="alt", art_arda=True, islaklik_olabilir=wet, yagis_mm=9.0 if wet else 0.0, formul_surumu="t", guven="dusuk" if wet else "orta",
         )
         session.add(row)
         await session.commit()
@@ -102,9 +110,11 @@ async def add_radar_candidate(factory, gid: uuid.UUID, day, *, wet: bool) -> uui
 async def test_frost_s2_and_radar_within_five_days_merge_into_one_event_that_references_sources_by_id(user_client, factory):
     gid = await seed(user_client, factory)
     d = TODAY - timedelta(days=40)
+    await add_history(factory, gid, d)
     cell = await add_era5(factory, gid, {d: (-3.0, 10.0), d + timedelta(days=1): (-1.0, 10.0)})
     first = await add_s2(factory, gid, d - timedelta(days=5), None)
-    second = await add_s2(factory, gid, d + timedelta(days=3), 0.2)  # 12×12 piksel yama: ≈ 14 da düşüş
+    second = await add_s2(factory, gid, d + timedelta(days=3), 0.25)  # 12×12 piksel yama: p10 (0,7) altında ve Δ = −0,25
+    await add_s2(factory, gid, d + timedelta(days=10), 0.25)  # sonraki net görüntüde de sürüyor: kalıcı
     radar = await add_radar_candidate(factory, gid, d + timedelta(days=4), wet=False)
     await add_radar_candidate(factory, gid, d + timedelta(days=20), wet=True)  # ıslaklık notlu: güven düşük, olay OLMAZ
     async with factory() as session:
@@ -113,7 +123,7 @@ async def test_frost_s2_and_radar_within_five_days_merge_into_one_event_that_ref
         assert result["olay"] == 1 and result["eklenen"] == 1
         ev = (await session.execute(select(EventModel).where(EventModel.garden_id == gid))).scalar_one()
         sources = (await session.execute(select(EventSourceModel).where(EventSourceModel.event_id == ev.id))).scalars().all()
-    assert ev.tur == "don" and ev.turler == ["don", "s2_dusus", "radar_degisim"] and ev.guven == "yuksek" and ev.siddet == "siddetli" and ev.katman == "degisim" and not ev.tahmin
+    assert ev.tur == "don" and ev.turler == ["don", "s2_dusus", "radar_degisim"] and ev.guven == "yuksek" and ev.siddet == "siddetli" and ev.katman == "degisim" and not ev.tahmin and ev.durum == "olay"
     assert ev.alan_da is not None and ev.alan_da > 5
     refs = {(s.kaynak_tablosu, s.kaynak_kimligi, s.rol) for s in sources}
     assert ("change_events", str(radar), "radar_degisim") in refs  # radar kaydı KOPYALANMADI, kimlikle referanslandı
@@ -124,6 +134,45 @@ async def test_frost_s2_and_radar_within_five_days_merge_into_one_event_that_ref
         view = (await events.list_events(session, gid))[0]
     assert view.kaynak_sayisi == len(sources) and view.alan_da is not None and view.alan_da >= 60.0  # radar alanı (60 da) change_events'ten OKUNDU
     assert cell is not None
+
+
+async def s2_scenario(user_client, factory, *, next_drop: float | None, whole: bool = False, frost: bool = False):  # noqa: ANN001, ANN201
+    gid = await seed(user_client, factory)
+    d = TODAY - timedelta(days=60)
+    await add_history(factory, gid, d)
+    await add_era5(factory, gid, {d + timedelta(days=3): (-2.5, 10.0)} if frost else {d: (10.0, 10.0)})
+    await add_s2(factory, gid, d - timedelta(days=5), None)
+    await add_s2(factory, gid, d + timedelta(days=3), 0.25, whole=whole)
+    if next_drop is not None:
+        await add_s2(factory, gid, d + timedelta(days=10), next_drop, whole=whole)
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+        real = await events.list_events(session, gid)
+        doubt = await events.list_events(session, gid, suphe=True)
+    return [e for e in real if "s2_dusus" in e.turler], doubt
+
+
+async def test_a_single_scene_drop_or_one_without_a_following_scene_is_an_atmosphere_suspicion_not_an_event(user_client, factory):
+    real, doubt = await s2_scenario(user_client, factory, next_drop=0.0)  # sonraki görüntüde toparlandı
+    assert real == [] and len(doubt) == 1 and doubt[0].tur == "s2_suphe" and doubt[0].durum == "suphe" and doubt[0].neden == "toparlandi" and doubt[0].guven == "dusuk"
+
+
+async def test_a_drop_with_no_following_scene_waits_for_confirmation_as_a_suspicion(user_client, factory):
+    real, doubt = await s2_scenario(user_client, factory, next_drop=None)
+    assert real == [] and len(doubt) == 1 and doubt[0].neden == "teyit_bekliyor"
+
+
+async def test_a_persistent_partial_drop_is_an_event_without_extra_support(user_client, factory):
+    real, doubt = await s2_scenario(user_client, factory, next_drop=0.25)
+    assert len(real) == 1 and real[0].tur == "s2_dusus" and real[0].durum == "olay" and doubt == []
+
+
+async def test_a_whole_garden_drop_needs_weather_or_radar_support(user_client, factory):
+    real, doubt = await s2_scenario(user_client, factory, next_drop=0.25, whole=True)
+    assert real == [] and len(doubt) == 1 and doubt[0].neden == "tum_bahce_destek_yok"
+    real, doubt = await s2_scenario(user_client, factory, next_drop=0.25, whole=True, frost=True)  # ±5 gün içinde don: destek
+    assert len(real) == 1 and real[0].tur == "don" and "s2_dusus" in real[0].turler and doubt == []
 
 
 async def test_recompute_is_idempotent_keeps_ids_and_removes_events_whose_sources_disappeared(user_client, factory):

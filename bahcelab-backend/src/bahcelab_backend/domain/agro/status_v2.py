@@ -17,7 +17,9 @@ from bahcelab_backend.domain.agro.catalog import DurumV2Kurali
 from bahcelab_backend.domain.agro.score import AY_ADLARI, AktifRisk
 
 Kademe = Literal["iyi", "izle", "dikkat", "sorun", "veri_yok"]
-Seviye = Literal["normal", "normalin_alti", "belirgin_dusuk"]
+Seviye = Literal["belirgin_dusuk", "normalin_alti", "normal", "normalin_ustu", "belirgin_yuksek"]
+BAD_DOWN = {"belirgin_dusuk": 2, "normalin_alti": 1}  # aşağı yön kötüdür (ağaç gücü, beslenme, su)
+BAD_UP = {"belirgin_yuksek": 2, "normalin_ustu": 1}  # yukarı yön kötüdür (ısı)
 Guven = Literal["yuksek", "orta", "dusuk"]
 KADEME_ADI: dict[str, str] = {"iyi": "İyi", "izle": "İzle", "dikkat": "Dikkat", "sorun": "Sorun", "veri_yok": "Veri yok"}
 BILESEN_ADI = {"agac_gucu": "Ağaç gücü", "su": "Su", "beslenme": "Beslenme", "ani_degisim": "Ani değişim", "isi": "Isı"}
@@ -50,6 +52,7 @@ class HeatInput:
     fark_c: float | None
     bant_ust_c: float | None
     karisik_piksel: bool | None
+    bant: tuple[float, float, float, float] | None = None  # aynı ay yüzey–hava farkının p10, p25, p75, p90 değeri (etiket kuralı)
 
 
 @dataclass(frozen=True)
@@ -64,6 +67,7 @@ class StatusInputs:
     isi: HeatInput | None
     riskler: list[AktifRisk] = field(default_factory=list)
     kirmizi_uyari: bool = False  # hava kırmızı uyarısı (don/aşırı sıcak): kademe en az Dikkat
+    doluluk_bant: tuple[float, float, float, float] | None = None  # kök bölgesi doluluğunun dönem p10, p25, p75, p90 değeri
 
 
 @dataclass(frozen=True)
@@ -169,6 +173,68 @@ def level_of(points: int | None, rule: DurumV2Kurali) -> Seviye | None:
     return "normal" if points >= rule.bilesen_normal_min else "belirgin_dusuk" if points <= rule.bilesen_belirgin_dusuk_max else "normalin_alti"
 
 
+def position_label(value: float, band: tuple[float, float, float, float], rule: DurumV2Kurali) -> Seviye:
+    """TEK etiket kuralı (her bileşende aynı): p25–p75 normal · p10–p25 / p75–p90 normalin altı/üstü · <p10 / >p90 belirgin. `band` = (p10, p25, p75, p90)."""
+    p10, p25, p75, p90 = band
+    if value < p10:
+        return "belirgin_dusuk"
+    if value < p25:
+        return "normalin_alti"
+    if value > p90:
+        return "belirgin_yuksek"
+    if value > p75:
+        return "normalin_ustu"
+    return "normal"
+
+
+def percentile_band(samples: list[float], rule: DurumV2Kurali) -> tuple[float, float, float, float]:
+    a, b, c, d = (float(v) for v in statistics_percentile(samples, [rule.bant_belirgin_alt, rule.bant_normal_alt, rule.bant_normal_ust, rule.bant_belirgin_ust]))
+    return a, b, c, d
+
+
+def statistics_percentile(samples: list[float], q: list[float]) -> list[float]:
+    ordered = sorted(samples)
+    n = len(ordered)
+    out = []
+    for p in q:
+        pos = (n - 1) * p / 100.0
+        lo, hi = int(pos // 1), min(n - 1, int(pos // 1) + 1)
+        out.append(ordered[lo] + (ordered[hi] - ordered[lo]) * (pos - lo))
+    return out
+
+
+def index_label(item: IndexInput | None, rule: DurumV2Kurali) -> Seviye | None:
+    if item is None or len(item.gecmis) < rule.asgari_ornek:
+        return None
+    return position_label(item.deger, percentile_band(item.gecmis, rule), rule)
+
+
+def water_label(ndmi: Seviye | None, fill: Seviye | None) -> Seviye | None:
+    """Su etiketi: biri yoksa öbürü; ikisi de normalin altındaysa KÖTÜSÜ (puanla aynı kural); yalnız biri düşükse en çok «normalin altı» (puan ortalaması); yukarı yön etiketi gösterim içindir."""
+    if ndmi is None or fill is None:
+        return ndmi if fill is None else fill
+    down_a, down_b = BAD_DOWN.get(ndmi, 0), BAD_DOWN.get(fill, 0)
+    if down_a and down_b:
+        return ndmi if down_a >= down_b else fill
+    if down_a or down_b:
+        return "normalin_alti"
+    if "belirgin_yuksek" in (ndmi, fill):
+        return "belirgin_yuksek"
+    return "normalin_ustu" if "normalin_ustu" in (ndmi, fill) else "normal"
+
+
+def heat_label(heat: HeatInput | None) -> Seviye | None:
+    if heat is None or heat.karisik_piksel or heat.fark_c is None or heat.bant is None:
+        return None
+    p10, p25, p75, p90 = heat.bant
+    return "belirgin_yuksek" if heat.fark_c > p90 else "normalin_ustu" if heat.fark_c > p75 else "belirgin_dusuk" if heat.fark_c < p10 else "normalin_alti" if heat.fark_c < p25 else "normal"
+
+
+def change_label(kinds: list[str]) -> Seviye:
+    """Ani değişim dağılım değil olay sayımıdır: olay yok = normal; yalnız radar = normalin altı; optik düşüş (tek başına ya da radarla) = belirgin."""
+    return "belirgin_dusuk" if "optik düşüş" in kinds else "normalin_alti" if kinds else "normal"
+
+
 # ----------------------------------------------------------------------------- kademe
 def tier_of(score: int, rule: DurumV2Kurali) -> Kademe:
     return "iyi" if score >= rule.iyi_min else "izle" if score >= rule.izle_min else "dikkat" if score >= rule.dikkat_min else "sorun"
@@ -189,6 +255,21 @@ def _stale(day: date | None, today: date, limit: int) -> bool:
     return day is None or (today - day).days > limit
 
 
+def _phrase(name: str, label: Seviye | None, month: str | None, *, up_is_bad: bool = False) -> str:
+    where = f"{month} normalinin" if month else "dönem normalinin"
+    if label is None:
+        return f"{name}: değerlendirilemedi."
+    text = {
+        "belirgin_dusuk": f"{where} belirgin altında", "normalin_alti": f"{where} altında", "normal": f"{month or 'dönem'} normali ile uyumlu",
+        "normalin_ustu": f"{where} üstünde", "belirgin_yuksek": f"{where} belirgin üstünde",
+    }[label]
+    return f"{name}, {text}."
+
+
+def _is_bad(label: Seviye | None, up_is_bad: bool) -> bool:
+    return label is not None and label in (BAD_UP if up_is_bad else BAD_DOWN)
+
+
 def evaluate(inp: StatusInputs, rule: DurumV2Kurali) -> DurumV2:
     today = inp.bugun
     ndvi_p, ndvi_why = index_points(inp.ndvi, rule.sigma_taban_ndvi, rule)
@@ -200,40 +281,44 @@ def evaluate(inp: StatusInputs, rule: DurumV2Kurali) -> DurumV2:
     heat_stale = inp.isi is None or _stale(inp.isi.tarih, today, rule.bayat_landsat_gun)
     fill_p = fill_points(inp.doluluk, rule)
     change_p, change_kinds = change_points(inp.degisimler, today, rule)
-    month = AY_ADLARI[(inp.ndvi or inp.ndmi or inp.ndre).tarih.month] if (inp.ndvi or inp.ndmi or inp.ndre) else None  # type: ignore[union-attr]
+    anchor = inp.ndvi or inp.ndmi or inp.ndre
+    month = AY_ADLARI[anchor.tarih.month] if anchor is not None else None
 
-    def vs_normal(name: str, points: int | None, why: str, stale: bool) -> str:
-        if points is None:
-            return f"{name}: {why}."
-        if stale:
-            return f"{name}: veri bayat."
-        return f"{name} {month} normalinin altında." if points < rule.bilesen_normal_min and month else f"{name} {month or 'dönem'} normali ile uyumlu."
+    # etiketler: TEK kural (p25–p75 normal · p10–p25 / p75–p90 altı/üstü · <p10 / >p90 belirgin); bayat/eksik bileşen etiketsizdir
+    ndvi_l = None if s2_stale else index_label(inp.ndvi, rule)
+    ndre_l = None if s2_stale else index_label(inp.ndre, rule)
+    ndmi_l = None if s2_stale else index_label(inp.ndmi, rule)
+    fill_l = position_label(inp.doluluk, inp.doluluk_bant, rule) if inp.doluluk is not None and inp.doluluk_bant is not None else None
+    heat_l = None if heat_stale else heat_label(inp.isi)
 
-    # Su: S2 bayatsa NDMI dışarıda kalır, kök bölgesi doluluğu (ERA5) tek başına sürer
+    def lbl_or_points(label: Seviye | None, points: int | None) -> Seviye | None:
+        return label if label is not None else level_of(points, rule)  # dağılım yoksa (ör. doluluk bandı) puan eşiğine düşülür
+
     ndmi_use = None if s2_stale else ndmi_p
     water_p = combine_water(ndmi_use, fill_p, rule)
+    water_l = water_label(ndmi_l, lbl_or_points(fill_l, fill_p))
     if water_p is None:
-        water_why = "NDMI ve kök bölgesi nemi yok"
-    elif water_p < rule.bilesen_normal_min:
-        water_why = "Su, dönem normalinin altında" + (" (kök bölgesi ve yaprak suyu birlikte düşük)" if ndmi_use is not None and ndmi_use < rule.bilesen_normal_min and fill_p is not None and fill_p < rule.bilesen_normal_min else "")
-        water_why += "."
+        water_why = "NDMI ve kök bölgesi nemi yok."
     else:
-        water_why = "Su dönem normali ile uyumlu."
+        water_why = _phrase("Su", water_l, month)
+        if BAD_DOWN.get(ndmi_l or "", 0) and BAD_DOWN.get(lbl_or_points(fill_l, fill_p) or "", 0):
+            water_why += " Kök bölgesi ve yaprak suyu birlikte düşük."
 
-    raw = [
-        ("agac_gucu", rule.w_agac_gucu, None if s2_stale else ndvi_p, s2_stale and ndvi_p is not None, vs_normal("Ağaç gücü", ndvi_p, ndvi_why, s2_stale), inp.ndvi.tarih if inp.ndvi else None),
-        ("su", rule.w_su, water_p, False, water_why, inp.doluluk_tarihi or (inp.ndmi.tarih if inp.ndmi else None)),
-        ("beslenme", rule.w_beslenme, None if s2_stale else ndre_p, s2_stale and ndre_p is not None, vs_normal("Beslenme", ndre_p, ndre_why, s2_stale), inp.ndre.tarih if inp.ndre else None),
+    raw: list[tuple[str, float, int | None, bool, str, Seviye | None, date | None]] = [
+        ("agac_gucu", rule.w_agac_gucu, None if s2_stale else ndvi_p, s2_stale and ndvi_p is not None, _phrase("Ağaç gücü", ndvi_l, month) if ndvi_p is not None and not s2_stale else (f"Ağaç gücü: {'veri bayat' if s2_stale and ndvi_p is not None else ndvi_why}."), ndvi_l, inp.ndvi.tarih if inp.ndvi else None),
+        ("su", rule.w_su, water_p, False, water_why, water_l, inp.doluluk_tarihi or (inp.ndmi.tarih if inp.ndmi else None)),
+        ("beslenme", rule.w_beslenme, None if s2_stale else ndre_p, s2_stale and ndre_p is not None, _phrase("Beslenme", ndre_l, month) if ndre_p is not None and not s2_stale else (f"Beslenme: {'veri bayat' if s2_stale and ndre_p is not None else ndre_why}."), ndre_l, inp.ndre.tarih if inp.ndre else None),
         (
             "ani_degisim", rule.w_ani_degisim, None if (s2_stale and not any(s.kaynak == "radar" for s in inp.degisimler)) else change_p, False,
-            f"Son {rule.ani_pencere_gun} günde {' ve '.join(change_kinds)} görüldü." if change_kinds else f"Son {rule.ani_pencere_gun} günde ani değişim görülmedi.", s2_day,
+            f"Son {rule.ani_pencere_gun} günde {' ve '.join(change_kinds)} görüldü." if change_kinds else f"Son {rule.ani_pencere_gun} günde ani değişim görülmedi.", change_label(change_kinds), s2_day,
         ),
-        ("isi", rule.w_isi, None if heat_stale else heat_p, heat_stale and inp.isi is not None and heat_p is not None, ("Isı: veri bayat." if heat_stale and inp.isi is not None else f"Isı: {heat_why}.") if heat_p is None or heat_stale else ("Isı, aynı ay bandının üstünde." if heat_p < rule.bilesen_normal_min else "Isı, aynı ay bandı ile uyumlu."), inp.isi.tarih if inp.isi else None),
+        ("isi", rule.w_isi, None if heat_stale else heat_p, heat_stale and inp.isi is not None and heat_p is not None, _phrase("Isı", heat_l, "aynı ay", up_is_bad=True) if heat_p is not None and not heat_stale else (f"Isı: {'veri bayat' if heat_stale and inp.isi is not None else heat_why}."), heat_l, inp.isi.tarih if inp.isi else None),
     ]
-    usable_weight = sum(w for _, w, p, _, _, _ in raw if p is not None)
+    usable_weight = sum(w for _, w, p, _, _, _, _ in raw if p is not None)
     components: list[BilesenV2] = []
-    for kod, w, p, stale, why, day in raw:
-        components.append(BilesenV2(kod, BILESEN_ADI[kod], p, level_of(p, rule), p is not None, stale, w, (w / usable_weight if usable_weight > 0 and p is not None else 0.0), why, day))
+    for kod, w, p, stale, why, label, day in raw:
+        shown = None if p is None else (label if label is not None else level_of(p, rule))
+        components.append(BilesenV2(kod, BILESEN_ADI[kod], p, shown, p is not None, stale, w, (w / usable_weight if usable_weight > 0 and p is not None else 0.0), why, day))
     score = round(sum((c.puan or 0) * c.etkin_agirlik for c in components)) if usable_weight >= rule.min_toplam_agirlik else None
 
     high = any(r.seviye == "yuksek" for r in inp.riskler)
@@ -248,7 +333,9 @@ def evaluate(inp: StatusInputs, rule: DurumV2Kurali) -> DurumV2:
     else:
         tier, capped = apply_caps(tier_of(score, rule), inp.riskler, inp.kirmizi_uyari)
 
-    losses = sorted(((c.etkin_agirlik * (100 - c.puan), c) for c in components if c.puan is not None and c.puan < rule.bilesen_normal_min), key=lambda t: t[0], reverse=True)
+    losses = sorted(
+        ((c.etkin_agirlik * (100 - c.puan), c) for c in components if c.puan is not None and c.puan < 100 and _is_bad(c.seviye, c.kod == "isi")), key=lambda t: t[0], reverse=True
+    )  # kademeyi düşüren: kötü yönde etiketli ve puan kaybı olan bileşenler
     lowering = [c.kod for _, c in losses[:2]]
     missing = [c for c in components if not c.kullanilabilir and c.kod != "ani_degisim"]
     low_samples = any(i is not None and len(i.gecmis) < rule.asgari_ornek for i in (inp.ndvi, inp.ndmi, inp.ndre))

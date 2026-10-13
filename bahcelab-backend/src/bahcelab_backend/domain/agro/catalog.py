@@ -196,6 +196,8 @@ class SuKurali(KuralBlok):
     # Yüzey–hava sıcaklık farkı (Landsat geçişi ≈ 11:00 yerel): bahçenin AYNI AY Landsat geçmişine göre p25–p75 bandı; sabit eşik yok
     sicaklik_normal_alt: float = 25.0
     sicaklik_normal_ust: float = 75.0
+    sicaklik_belirgin_alt: float = 10.0  # p10 altı / p90 üstü: «belirgin» (her bileşende aynı etiket kuralı)
+    sicaklik_belirgin_ust: float = 90.0
     sicaklik_min_sahne: int = Field(default=8, ge=3)  # aynı ayda bundan az geçmiş sahne varsa «yetersiz geçmiş»
     karisik_piksel_c: float = 1.5  # |bahçe − tampon| bunu aşarsa «karışık piksel»
     landsat_gecis_saati: int = 11  # yerel saat; hava sıcaklığı bu saatin ERA5 değeri
@@ -218,6 +220,10 @@ class DurumV2Kurali(KuralBlok):
     doluluk_normal_min: float = 40.0  # dönem normaline göre kök bölgesi doluluğu ≥ bu: ceza yok
     doluluk_sifir: float = 10.0  # ≤ bu: puan 0
     isi_sifir_c: float = 3.0  # aynı ay bandının üstünde bu kadar °C sapmada ısı puanı 0
+    bant_belirgin_alt: float = 10.0  # ETİKET kuralı (tüm bileşenler): p25–p75 normal · p10–p25 / p75–p90 normalin altı/üstü · <p10 / >p90 belirgin
+    bant_normal_alt: float = 25.0
+    bant_normal_ust: float = 75.0
+    bant_belirgin_ust: float = 90.0
     ani_pencere_gun: int = 30  # ani değişim bileşeni son bu kadar günün olaylarına bakar
     ani_s2_puan: int = 40
     ani_radar_puan: int = 60
@@ -248,6 +254,12 @@ class OlayKurali(KuralBlok):
     s2_alan_min_da: float = Field(default=5.0, gt=0)
     s2_yumusatma: int = Field(default=3, ge=1)
     s2_azami_aralik_gun: int = Field(default=30, ge=1)  # iki net görüntü arası bundan uzunsa mevsimsel değişim olay sayılmaz
+    s2_pencere_gun: int = Field(default=15, ge=1)  # mevsimden arındırma: piksel, DİĞER yılların aynı ±gün penceresindeki kendi dağılımıyla kıyaslanır
+    s2_normal_alt_yuzde: float = Field(default=10.0, gt=0, lt=50)  # düşüş, pikselin dönem p10'unun ALTINA inmeli (Δ tek başına yetmez)
+    s2_min_ornek: int = Field(default=8, ge=3)  # pikselin dönem dağılımı için en az örnek; yoksa piksel değerlendirilmez
+    s2_kalicilik_orani: float = Field(default=0.5, ge=0, le=1)  # sonraki net görüntüde yama piksellerinin en az bu payı hâlâ p10 altında olmalı
+    s2_tum_bahce_orani: float = Field(default=0.90, ge=0, le=1)  # bahçenin bundan fazlası düşüyorsa hava/radar desteği şart
+    s2_destek_gun: int = Field(default=5, ge=0)  # destek sinyali ±bu kadar gün içinde olmalı
     don_c: float = 0.0
     don_siddetli_c: float = -2.0
     yagis_24s_mm: float = 50.0

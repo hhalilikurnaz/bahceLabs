@@ -29,6 +29,7 @@ class EventModel(Base):
     siddet: Mapped[str | None] = mapped_column(String(10), nullable=True)
     katman: Mapped[str | None] = mapped_column(String(20), nullable=True)
     tahmin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    durum: Mapped[str] = mapped_column(String(10), nullable=False, default="olay", server_default="olay")  # olay | suphe (atmosfer şüphesi: olay değildir)
     ayrinti: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     formul_surumu: Mapped[str] = mapped_column(String(40), nullable=False)
     hesaplama: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

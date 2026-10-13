@@ -9,6 +9,7 @@ from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
 import httpx
+import numpy as np
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,6 +117,22 @@ class WaterService:
             out.append(wb.Climatology(p_alt=float(p2), p_ust=float(p98), normal_alt=float(p10), normal_ust=float(p90)))
         return out
 
+    async def fill_band(self, cell: uuid.UUID, ref: date, clims: list[wb.Climatology], rule: cat.SuKurali) -> list[float] | None:
+        """Kök bölgesi doluluğunun AYNI DÖNEM (±pencere, 2015–2025) dağılımı: [p10, p25, p75, p90]. Etiket kuralı (p25–p75 normal …) bununla çalışır."""
+        rows = (
+            await self.session.execute(
+                text(
+                    "SELECT sm0, sm1, sm2, sm3 FROM era5_daily WHERE cell_id = :cell AND toprak_kaynak = 'era5_land' AND sm0 IS NOT NULL AND tarih BETWEEN :s AND :e "
+                    "AND LEAST(ABS(EXTRACT(DOY FROM tarih)::int - :doy), 366 - ABS(EXTRACT(DOY FROM tarih)::int - :doy)) <= :w"
+                ),
+                {"cell": cell, "s": date(rule.klima_ilk_yil, 1, 1), "e": date(rule.klima_son_yil, 12, 31), "doy": ref.timetuple().tm_yday, "w": rule.klima_pencere_gun},
+            )
+        ).all()
+        fills = [f for r in rows if (f := wb.root_zone_fill(list(r), clims, rule.kok_katman_agirliklari)) is not None]
+        if len(fills) < 30:
+            return None
+        return [float(v) for v in np.percentile(fills, [rule.sicaklik_belirgin_alt, rule.sicaklik_normal_alt, rule.sicaklik_normal_ust, rule.sicaklik_belirgin_ust])]
+
     # ------------------------------------------------------------------ ana hesap
     async def su(self, garden_id: uuid.UUID, today: date | None = None) -> SuYaniti:
         row = await self.gardens.get(garden_id)
@@ -136,6 +153,8 @@ class WaterService:
         ref_day = usable_days[-1] if usable_days else today
         clims = await self.climatology(cell, rule, ref_day)  # bugünün DÖNEMİ (±15 gün) — doluluk ve normal aralık buna göre
         profile = self._profile(rows, clims, today, rule)
+        if profile.bugun_tarihi is not None:
+            profile = profile.model_copy(update={"kok_bolgesi_bant": await self.fill_band(cell, ref_day, clims, rule)})
 
         # toprak kovası
         taw = None
@@ -253,7 +272,7 @@ class WaterService:
         points: list[SicaklikNoktasi] = []
         for day, garden_c, buffer_c, air in rows[-6:]:
             p = wb.thermal_point(day, float(garden_c), None if buffer_c is None else float(buffer_c), None if air is None else float(air), wb.thermal_normal(history, day, rule), rule)
-            normal = None if p.normal is None else SicaklikNormali(alt_c=p.normal.alt, ortanca_c=p.normal.ortanca, ust_c=p.normal.ust, sahne=p.normal.sahne)
+            normal = None if p.normal is None else SicaklikNormali(alt_c=p.normal.alt, ortanca_c=p.normal.ortanca, ust_c=p.normal.ust, sahne=p.normal.sahne, p10_c=p.normal.p10, p90_c=p.normal.p90)
             points.append(
                 SicaklikNoktasi(
                     tarih=p.tarih, ay=p.ay, yuzey_bahce_c=p.yuzey_bahce_c, yuzey_tampon_c=p.yuzey_tampon_c, hava_c=p.hava_c, fark_c=p.fark_c, normal=normal, sapma_c=p.sapma_c,

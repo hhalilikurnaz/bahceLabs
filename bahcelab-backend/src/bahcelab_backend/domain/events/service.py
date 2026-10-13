@@ -46,8 +46,10 @@ async def weather_days(session: AsyncSession, cell: uuid.UUID, today: date) -> l
     return [er.HourDay(r[0], cast("list[float | None]", r[1] or pad), cast("list[float | None]", r[2] or pad), cast("list[float | None]", r[3] or pad), r[4] == "model" or r[5] == "model", f"{cell}:{r[0].isoformat()}") for r in rows]
 
 
-async def s2_signals(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali) -> list[er.Signal]:
-    """Ardışık net S2 görüntü çiftleri (≤ `s2_azami_aralik_gun` arayla): NDVI bitişik düşüş yaması varsa sinyal."""
+async def s2_candidates(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali) -> list[tuple[er.Signal, bool | None, float]]:
+    """Ardışık net S2 çiftleri (≤ `s2_azami_aralik_gun` arayla) için aday düşüşler: (sinyal, sonraki görüntüde sürdü mü [None: sonraki yok], düşen piksel payı).
+
+    Mevsimden arındırma: piksel değeri, pikselin DİĞER yılların aynı ±`s2_pencere_gun` penceresindeki kendi p10'u ile kıyaslanır."""
     repo = AcquisitionRepository(session)
     geometry = await repo.geometry_geojson(garden_id)
     mask = masking.mask_for(geometry) if geometry else None
@@ -56,28 +58,43 @@ async def s2_signals(session: AsyncSession, storage: StorageBackend, garden_id: 
             select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == S2_SOURCE, AcquisitionModel.durum == ACQ_NET, AcquisitionModel.izgara_yolu.is_not(None)).order_by(AcquisitionModel.tarih)
         )
     ).scalars().all()
-    signals: list[er.Signal] = []
-    previous: tuple[AcquisitionModel, np.ndarray] | None = None
+    loaded: list[tuple[AcquisitionModel, np.ndarray]] = []
     for acq in scenes:
         if not acq.izgara_yolu or not storage.exists(acq.izgara_yolu):
             continue
         grid = decode_grids(storage.read(acq.izgara_yolu)).get("ndvi")
         if grid is None:
             continue
-        grid = masking.apply(grid, mask) if mask is not None else grid
-        if previous is not None and (acq.tarih - previous[0].tarih).days <= rule.s2_azami_aralik_gun:
-            patch = er.s2_patch(previous[1], grid, rule)
-            if patch is not None:
-                area_da, delta, _ = patch
-                signals.append(
-                    er.Signal(
-                        "s2_dusus", previous[0].tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
-                        kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(previous[0].id), "s2_dusus", previous[0].tarih)),
-                        ayrinti={"delta_ndvi": round(delta, 3)},
-                    )
-                )
-        previous = (acq, grid)
-    return signals
+        loaded.append((acq, er.smooth_valid(masking.apply(grid, mask) if mask is not None else grid, rule.s2_yumusatma)))
+
+    def floor_of(index: int) -> np.ndarray:
+        day = loaded[index][0].tarih
+        history = [g for a, g in loaded if a.tarih.year != day.year and er.circular_doy_gap(a.tarih, day) <= rule.s2_pencere_gun]
+        return er.period_percentile(history, rule)
+
+    out: list[tuple[er.Signal, bool | None, float]] = []
+    for i in range(1, len(loaded)):
+        (prev, prev_grid), (acq, grid) = loaded[i - 1], loaded[i]
+        if (acq.tarih - prev.tarih).days > rule.s2_azami_aralik_gun:
+            continue
+        floor = floor_of(i)
+        if floor.shape != grid.shape:
+            continue
+        patch = er.s2_patch(prev_grid, grid, floor, rule)
+        if patch is None:
+            continue
+        area_da, delta, mask_patch, share = patch
+        persists: bool | None = None
+        if i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun:
+            nxt_floor = floor_of(i + 1)
+            persists = er.s2_persists(loaded[i + 1][1], nxt_floor, mask_patch, rule) if nxt_floor.shape == grid.shape else None
+        signal = er.Signal(
+            "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
+            kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
+            ayrinti={"delta_ndvi": round(delta, 3)},
+        )
+        out.append((signal, persists, share))
+    return out
 
 
 async def radar_signals(session: AsyncSession, garden_id: uuid.UUID) -> list[er.Signal]:
@@ -90,7 +107,9 @@ async def collect_signals(session: AsyncSession, storage: StorageBackend, garden
     rule = cat.load_catalog().olay
     cell, _, _ = await garden_cell(session, garden_id)
     days = await weather_days(session, cell, today)
-    return [*er.frost_signals(days, rule), *er.rain_signals(days, rule), *er.wind_signals(days, rule), *await s2_signals(session, storage, garden_id, rule), *await radar_signals(session, garden_id)]
+    others = [*er.frost_signals(days, rule), *er.rain_signals(days, rule), *er.wind_signals(days, rule), *await radar_signals(session, garden_id)]
+    s2 = [er.classify_s2(sig, persists, share, others, rule) for sig, persists, share in await s2_candidates(session, storage, garden_id, rule)]
+    return [*others, *s2]
 
 
 async def compute_events_for(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, today: date | None = None) -> dict[str, int]:
@@ -104,7 +123,7 @@ async def compute_events_for(session: AsyncSession, storage: StorageBackend, gar
         row = existing.pop(ev.anahtar, None)
         values = {
             "tur": ev.tur, "turler": list(ev.turler), "baslangic": ev.baslangic, "bitis": ev.bitis, "alan_da": ev.alan_da, "guven": ev.guven, "siddet": ev.siddet,
-            "katman": ev.katman, "tahmin": er.is_forecast(ev, today), "ayrinti": ev.ayrinti or None, "formul_surumu": er.FORMULA_VERSION,
+            "katman": ev.katman, "durum": ev.durum, "tahmin": er.is_forecast(ev, today), "ayrinti": ev.ayrinti or None, "formul_surumu": er.FORMULA_VERSION,
         }
         if row is None:
             row = EventModel(garden_id=garden_id, anahtar=ev.anahtar, **values)
@@ -142,11 +161,13 @@ class EventView:
     katman: str | None
     tahmin: bool
     kaynak_sayisi: int
+    durum: str = "olay"
+    neden: str | None = None
 
 
-async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: date | None = None, until: date | None = None) -> list[EventView]:
+async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: date | None = None, until: date | None = None, suphe: bool = False) -> list[EventView]:
     """Olaylar (yeniden eskiye). Radar alanı `change_events`ten OKUNUR (kopyalanmaz)."""
-    query = select(EventModel).where(EventModel.garden_id == garden_id)
+    query = select(EventModel).where(EventModel.garden_id == garden_id, EventModel.durum == ("suphe" if suphe else "olay"))
     if since is not None:
         query = query.where(EventModel.bitis >= since)
     if until is not None:
@@ -165,7 +186,7 @@ async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: dat
     return [
         EventView(
             r.id, r.tur, list(r.turler), r.baslangic, r.bitis, max([a for a in [r.alan_da, *areas.get(r.id, [])] if a is not None], default=None), r.guven, r.siddet, r.katman, r.tahmin,
-            count.get(r.id, 0),
+            count.get(r.id, 0), r.durum, str((r.ayrinti or {}).get("s2_dusus.neden")) if (r.ayrinti or {}).get("s2_dusus.neden") else None,
         )
         for r in rows
     ]

@@ -16,7 +16,7 @@ from scipy.ndimage import label, uniform_filter
 
 from bahcelab_backend.domain.agro.catalog import OlayKurali
 
-FORMULA_VERSION = "olay-v1"
+FORMULA_VERSION = "olay-v2"
 Tur = Literal["don", "asiri_yagis", "ruzgar", "s2_dusus", "radar_degisim"]
 PRIORITY: tuple[str, ...] = ("don", "asiri_yagis", "ruzgar", "s2_dusus", "radar_degisim")  # birleşik olayda baskın tür
 FAMILY: dict[str, str] = {"don": "hava", "asiri_yagis": "hava", "ruzgar": "hava", "s2_dusus": "s2", "radar_degisim": "radar"}
@@ -43,6 +43,7 @@ class Signal:
     siddet: str | None = None
     kaynaklar: tuple[SourceRef, ...] = ()
     ayrinti: dict[str, float | str | None] = field(default_factory=dict)
+    durum: Literal["olay", "suphe"] = "olay"  # suphe: atmosfer şüphesi — kaydedilir, olay DEĞİLDİR (bildirim ve birleştirme dışı)
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class Event:
     katman: str | None
     kaynaklar: tuple[SourceRef, ...]
     ayrinti: dict[str, float | str | None]
+    durum: Literal["olay", "suphe"] = "olay"
 
     @property
     def anahtar(self) -> str:
@@ -156,19 +158,42 @@ def wind_signals(days: list[HourDay], rule: OlayKurali) -> list[Signal]:
 
 
 # ----------------------------------------------------------------------------- S2 ani düşüş
-def s2_patch(previous: np.ndarray, current: np.ndarray, rule: OlayKurali) -> tuple[float, float, int] | None:
-    """NDVI ızgaraları (bahçe dışı NaN): (alan da, medyan Δ, piksel). Δ ≤ −eşik piksellerinin EN BÜYÜK bitişik (8-komşuluk) yaması ≥ min(pay × bahçe, alan_min_da); yoksa None."""
+def smooth_valid(grid: np.ndarray, window: int) -> np.ndarray:
+    """Geçerli komşu ortalamasıyla yumuşatma (NaN sayılmaz, NaN kalır)."""
+    if window <= 1:
+        return grid
+    valid = np.isfinite(grid)
+    total = uniform_filter(np.where(valid, grid, 0.0), size=window, mode="nearest")
+    count = uniform_filter(valid.astype(np.float64), size=window, mode="nearest")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where(valid & (count > 0), total / count, np.nan)
+
+
+def circular_doy_gap(a: date, b: date) -> int:
+    d = abs(a.timetuple().tm_yday - b.timetuple().tm_yday)
+    return min(d, 366 - d)
+
+
+def period_percentile(history: list[np.ndarray], rule: OlayKurali) -> np.ndarray:
+    """Pikselin DİĞER yılların aynı dönemindeki (±pencere) kendi dağılımının alt yüzdeliği (varsayılan p10). Örnek sayısı yetersiz piksel NaN (değerlendirilmez)."""
+    if not history:
+        return np.full((1, 1), np.nan)
+    stack = np.stack(history)
+    count = np.isfinite(stack).sum(axis=0)
+    with np.errstate(all="ignore"):
+        q = np.nanpercentile(stack, rule.s2_normal_alt_yuzde, axis=0)
+    return np.where(count >= rule.s2_min_ornek, q, np.nan)
+
+
+def s2_patch(previous: np.ndarray, current: np.ndarray, floor: np.ndarray, rule: OlayKurali) -> tuple[float, float, np.ndarray, float] | None:
+    """NDVI ızgaraları (yumuşatılmış, bahçe dışı NaN). Düşüş pikseli = Δ ≤ −eşik VE değer pikselin dönem p10'unun (`floor`) altında.
+    Dönüş: (alan da, medyan Δ, yama maskesi, düşen piksel payı); EN BÜYÜK bitişik (8-komşuluk) yama ≥ min(pay × bahçe, alan_min_da) değilse None."""
     delta = current - previous
-    valid = np.isfinite(delta)
+    valid = np.isfinite(current)
     n = int(valid.sum())
     if n == 0:
         return None
-    if rule.s2_yumusatma > 1:
-        total = uniform_filter(np.where(valid, delta, 0.0), size=rule.s2_yumusatma, mode="nearest")
-        count = uniform_filter(valid.astype(np.float64), size=rule.s2_yumusatma, mode="nearest")
-        with np.errstate(divide="ignore", invalid="ignore"):
-            delta = np.where(valid & (count > 0), total / count, np.nan)
-    drop = np.isfinite(delta) & (delta <= -rule.s2_ndvi_dusus)
+    drop = np.isfinite(delta) & (delta <= -rule.s2_ndvi_dusus) & np.isfinite(floor) & (current < floor)
     labels, count_labels = label(drop, structure=np.ones((3, 3), dtype=int))
     if not count_labels:
         return None
@@ -178,7 +203,35 @@ def s2_patch(previous: np.ndarray, current: np.ndarray, rule: OlayKurali) -> tup
     if biggest < need:
         return None
     patch = labels == (int(np.argmax(sizes)) + 1)
-    return biggest * PIXEL_M2 / DA_M2, float(np.median(delta[patch])), biggest
+    return biggest * PIXEL_M2 / DA_M2, float(np.median(delta[patch])), patch, float(drop.sum()) / n
+
+
+def s2_persists(following: np.ndarray, floor: np.ndarray, patch: np.ndarray, rule: OlayKurali) -> bool:
+    """Kalıcılık: sonraki net görüntüde yama piksellerinin en az `s2_kalicilik_orani` kadarı hâlâ dönem p10'unun altında mı? Tek görüntülük düşüş atmosfer şüphesidir."""
+    known = patch & np.isfinite(following) & np.isfinite(floor)
+    if int(known.sum()) == 0:
+        return False
+    return float((following[known] < floor[known]).sum()) / float(patch.sum()) >= rule.s2_kalicilik_orani
+
+
+def classify_s2(candidate: Signal, persists: bool | None, drop_share: float, others: list[Signal], rule: OlayKurali) -> Signal:
+    """Aday S2 düşüşünü olay ya da atmosfer şüphesi yapar:
+    · sonraki net görüntüde sürmediyse (False) ya da sonraki görüntü yoksa (None) → şüphe;
+    · bahçenin > %90'ı düşüyorsa hava (don/yağış/rüzgâr) ya da radar sinyali ±destek gün içinde yoksa → şüphe."""
+    reason: str | None = None
+    if persists is False:
+        reason = "toparlandi"
+    elif persists is None:
+        reason = "teyit_bekliyor"
+    elif drop_share > rule.s2_tum_bahce_orani:
+        window = timedelta(days=rule.s2_destek_gun)
+        supported = any(o.tur != "s2_dusus" and o.baslangic - window <= candidate.bitis and o.bitis + window >= candidate.baslangic for o in others)
+        if not supported:
+            reason = "tum_bahce_destek_yok"
+    detail = {**candidate.ayrinti, "dusen_pay": round(drop_share, 3), "kalici": None if persists is None else str(persists)}
+    if reason is not None:
+        return Signal("s2_dusus", candidate.baslangic, candidate.bitis, candidate.guven, candidate.alan_da, None, candidate.kaynaklar, {**detail, "neden": reason}, durum="suphe")
+    return Signal("s2_dusus", candidate.baslangic, candidate.bitis, candidate.guven, candidate.alan_da, None, candidate.kaynaklar, detail)
 
 
 # ----------------------------------------------------------------------------- birleştirme ve güven
@@ -224,8 +277,14 @@ def to_event(group: list[Signal], rule: OlayKurali) -> Event:
     )
 
 
+def suspect_event(s: Signal) -> Event:
+    """Atmosfer şüphesi: kendi kaydıdır, birleşmez, güveni düşüktür; olay listelerine ve bildirime girmez."""
+    return Event("s2_suphe", ("s2_dusus",), s.baslangic, s.bitis, s.alan_da, "dusuk", None, "degisim", s.kaynaklar, {f"s2_dusus.{k}": v for k, v in s.ayrinti.items()}, "suphe")
+
+
 def build_events(signals: list[Signal], rule: OlayKurali) -> list[Event]:
-    return [to_event(g, rule) for g in cluster(signals, rule)]
+    real = [s for s in signals if s.durum == "olay"]
+    return [*(to_event(g, rule) for g in cluster(real, rule)), *(suspect_event(s) for s in signals if s.durum == "suphe")]
 
 
 def is_forecast(event: Event, today: date) -> bool:

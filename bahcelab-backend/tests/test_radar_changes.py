@@ -133,9 +133,9 @@ def test_and_mode_needs_both_share_and_absolute_area() -> None:
 
 def test_wet_candidates_have_low_confidence_and_dry_or_unknown_do_not() -> None:
     assert rc.event_confidence(rc.ADAY, True) == "dusuk"
-    assert rc.event_confidence(rc.ADAY, False) == "normal"
-    assert rc.event_confidence(rc.ADAY, None) == "normal"  # bilinmiyor: güven düşürülmez, not da yok
-    assert rc.event_confidence(rc.GURULTU, True) == "normal"
+    assert rc.event_confidence(rc.ADAY, False) == "orta"
+    assert rc.event_confidence(rc.ADAY, None) == "orta"  # bilinmiyor: güven düşürülmez, not da yok
+    assert rc.event_confidence(rc.GURULTU, True) == "orta"
 
 
 def test_bitisik_rule_needs_one_connected_patch_not_scattered_pixels() -> None:

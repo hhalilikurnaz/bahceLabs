@@ -45,22 +45,92 @@ def grids(shape=(40, 40)):  # noqa: ANN001, ANN201
     return base.copy(), base.copy()
 
 
-def test_s2_drop_needs_a_contiguous_patch_not_scattered_pixels() -> None:
+def floor_grid(shape=(40, 40), level=0.62):  # noqa: ANN001, ANN201
+    """Pikselin dönem p10'u (diğer yılların aynı ±15 günü): sağlıklı bahçede 0,62."""
+    return np.full(shape, level)
+
+
+def test_s2_drop_needs_a_contiguous_patch_that_is_also_below_the_periods_p10() -> None:
     prev, cur = grids()
-    cur[5:25, 5:25] -= 0.15  # 20×20 = 400 piksel = 40 da bitişik düşüş, delta 0,15 ≥ 0,08
-    patch = er.s2_patch(prev, cur, RULE)
-    assert patch is not None and patch[0] == pytest.approx(40.0, rel=0.2) and patch[1] <= -0.08 and patch[2] >= 300
+    cur[5:25, 5:25] -= 0.15  # 20×20 = 400 piksel = 40 da bitişik düşüş; 0,55 < p10 (0,62) ve Δ = −0,15
+    patch = er.s2_patch(prev, cur, floor_grid(), RULE)
+    assert patch is not None and patch[0] == pytest.approx(40.0, rel=0.01) and patch[1] <= -0.08 and patch[2].sum() == 400 and patch[3] == pytest.approx(400 / 1600)
     prev, cur = grids()
     rng = np.random.default_rng(0)
-    idx = rng.choice(1600, size=500, replace=False)  # dağınık %31 piksel: toplamda pay yüksek ama tek yama yok
-    cur.ravel()[idx] -= 0.15
-    assert er.s2_patch(prev, cur, RULE) is None
+    cur.ravel()[rng.choice(1600, size=500, replace=False)] -= 0.15  # dağınık %31 piksel: tek bir bitişik yama yok
+    assert er.s2_patch(prev, er.smooth_valid(cur, RULE.s2_yumusatma), floor_grid(), RULE) is None  # hat içinde görüntüler önce yumuşatılır
     prev, cur = grids()
     cur[5:9, 5:9] -= 0.15  # 16 piksel = 1,6 da < min(%25, 5 da)
-    assert er.s2_patch(prev, cur, RULE) is None
+    assert er.s2_patch(prev, cur, floor_grid(), RULE) is None
     prev, cur = grids()
-    cur[5:25, 5:25] -= 0.05  # eşik altı düşüş
-    assert er.s2_patch(prev, cur, RULE) is None
+    cur[5:25, 5:25] -= 0.05  # eşik altı Δ
+    assert er.s2_patch(prev, cur, floor_grid(), RULE) is None
+
+
+def test_a_seasonal_drop_that_stays_inside_the_normal_band_is_not_an_event_even_if_delta_is_large() -> None:
+    prev, cur = grids()
+    prev[:] = 0.85  # yüksek mevsim başı
+    cur[:] = 0.74  # Δ = −0,11 (≥ 0,08) AMA 0,74 pikselin dönem p10'unun (0,62) ÜSTÜNDE: bu tarihte normal değer
+    assert er.s2_patch(prev, cur, floor_grid(), RULE) is None
+    cur[5:25, 5:25] = 0.55  # aynı Δ, p10 altı: olay adayı
+    assert er.s2_patch(prev, cur, floor_grid(), RULE) is not None
+    unknown = np.full((40, 40), np.nan)  # dönem dağılımı yok (örnek yetersiz): değerlendirilmez
+    assert er.s2_patch(prev, cur, unknown, RULE) is None
+
+
+def test_period_floor_uses_other_years_and_needs_enough_samples() -> None:
+    few = [np.full((4, 4), 0.7) for _ in range(RULE.s2_min_ornek - 1)]
+    assert np.isnan(er.period_percentile(few, RULE)).all()
+    enough = [np.full((4, 4), 0.5 + 0.02 * i) for i in range(RULE.s2_min_ornek + 4)]
+    floor = er.period_percentile(enough, RULE)
+    assert np.isfinite(floor).all() and floor[0, 0] == pytest.approx(np.percentile([0.5 + 0.02 * i for i in range(RULE.s2_min_ornek + 4)], 10))
+    assert er.circular_doy_gap(date(2020, 1, 3), date(2019, 12, 30)) <= 6 and er.circular_doy_gap(date(2020, 6, 1), date(2019, 6, 10)) == 8
+
+
+def test_persistence_requires_the_following_scene_to_stay_below_the_floor() -> None:
+    patch = np.zeros((40, 40), dtype=bool)
+    patch[5:25, 5:25] = True
+    following = np.full((40, 40), 0.7)
+    following[5:25, 5:25] = 0.55  # hâlâ p10 altında
+    assert er.s2_persists(following, floor_grid(), patch, RULE)
+    recovered = np.full((40, 40), 0.7)  # toparlandı: tek görüntülük düşüş
+    assert not er.s2_persists(recovered, floor_grid(), patch, RULE)
+    half = np.full((40, 40), 0.7)
+    half[5:15, 5:25] = 0.55  # yamanın yarısı sürüyor: eşik %50 → sürer
+    assert er.s2_persists(half, floor_grid(), patch, RULE)
+
+
+def candidate(day: int = 20) -> er.Signal:
+    return er.Signal("s2_dusus", D0 + timedelta(days=day - 5), D0 + timedelta(days=day), "orta", alan_da=12.0)
+
+
+def test_unconfirmed_or_recovered_drops_are_atmosphere_suspicions_not_events() -> None:
+    assert er.classify_s2(candidate(), True, 0.4, [], RULE).durum == "olay"
+    recovered = er.classify_s2(candidate(), False, 0.4, [], RULE)
+    assert recovered.durum == "suphe" and recovered.ayrinti["neden"] == "toparlandi"
+    waiting = er.classify_s2(candidate(), None, 0.4, [], RULE)
+    assert waiting.durum == "suphe" and waiting.ayrinti["neden"] == "teyit_bekliyor"
+
+
+def test_a_drop_over_ninety_percent_of_the_garden_needs_weather_or_radar_support_within_five_days() -> None:
+    frost = er.Signal("don", D0 + timedelta(days=18), D0 + timedelta(days=18), "orta", siddet="normal")
+    far = er.Signal("don", D0 + timedelta(days=40), D0 + timedelta(days=40), "orta")
+    radar = er.Signal("radar_degisim", D0 + timedelta(days=24), D0 + timedelta(days=24), "orta")
+    assert er.classify_s2(candidate(), True, 0.95, [], RULE).ayrinti["neden"] == "tum_bahce_destek_yok"
+    assert er.classify_s2(candidate(), True, 0.95, [far], RULE).durum == "suphe"  # destek ±5 gün dışında
+    assert er.classify_s2(candidate(), True, 0.95, [frost], RULE).durum == "olay"
+    assert er.classify_s2(candidate(), True, 0.95, [radar], RULE).durum == "olay"
+    assert er.classify_s2(candidate(), True, 0.90, [], RULE).durum == "olay"  # %90 sınırın üstü değil (> 0,90 gerekir)
+    assert er.classify_s2(candidate(), True, 0.5, [], RULE).durum == "olay"  # kısmi düşüş destek istemez
+
+
+def test_suspicions_are_recorded_separately_never_merged_and_have_low_confidence() -> None:
+    frost = sig("don", 18, siddet="normal")
+    suspect = er.classify_s2(candidate(), False, 0.4, [], RULE)
+    events = er.build_events([frost, suspect], RULE)
+    assert [e.durum for e in events].count("suphe") == 1 and [e.durum for e in events].count("olay") == 1
+    s = next(e for e in events if e.durum == "suphe")
+    assert s.tur == "s2_suphe" and s.guven == "dusuk" and s.anahtar.startswith("s2_suphe:")
 
 
 def sig(tur, start, end=None, guven="orta", **kw):  # noqa: ANN001, ANN003, ANN201

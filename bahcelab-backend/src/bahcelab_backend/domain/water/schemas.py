@@ -31,6 +31,7 @@ class NemProfili(BaseModel):
     kok_bolgesi_sinif: Literal["nemli", "orta", "kuru", "bilinmiyor"]
     gecis_gunu: date | None  # ERA5-Land → model geçişinin ilk model günü (yoksa None)
     model_ofset: dict[str, float] | None  # katman başına uygulanan model–ERA5-Land farkı
+    kok_bolgesi_bant: list[float] | None = None  # dönem dağılımında kök bölgesi doluluğunun p10, p25, p75, p90 değerleri (etiket kuralı için)
     donem: str | None = None  # «Ekim»: doluluk ve normal aralık bu ayın ±15 günüyle karşılaştırılır
     donem_pencere_gun: int = 15
 
@@ -61,6 +62,8 @@ class SicaklikNormali(BaseModel):
     ortanca_c: float
     ust_c: float  # p75
     sahne: int
+    p10_c: float = 0.0
+    p90_c: float = 0.0
 
 
 class SicaklikNoktasi(BaseModel):

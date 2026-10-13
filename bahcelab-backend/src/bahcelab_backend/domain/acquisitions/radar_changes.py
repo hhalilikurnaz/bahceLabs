@@ -160,5 +160,5 @@ def wet_note(daily_rain_mm: list[float | None], threshold_mm: float) -> tuple[bo
 
 
 def event_confidence(durum: str, islaklik_olabilir: bool | None) -> str:
-    """Olay adayının güveni: «ıslaklık olabilir» notlu aday düşük güvenlidir (9F bunu bildirime çevirmez); gürültü kaydında güven anlamsız (normal)."""
-    return "dusuk" if durum == ADAY and islaklik_olabilir else "normal"
+    """Olay adayının güveni: «ıslaklık olabilir» notlu aday düşük güvenlidir (9F bunu bildirime çevirmez); gürültü kaydında güven anlamsız (orta)."""
+    return "dusuk" if durum == ADAY and islaklik_olabilir else "orta"

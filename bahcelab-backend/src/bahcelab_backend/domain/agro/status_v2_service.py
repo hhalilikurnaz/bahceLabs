@@ -37,7 +37,8 @@ def heat_input(water: SuYaniti) -> sv.HeatInput | None:
     if not water.sicaklik.noktalar:
         return None
     p = water.sicaklik.noktalar[-1]
-    return sv.HeatInput(p.tarih, p.fark_c, p.normal.ust_c if p.normal else None, p.karisik_piksel)
+    band = (p.normal.p10_c, p.normal.alt_c, p.normal.ust_c, p.normal.p90_c) if p.normal else None
+    return sv.HeatInput(p.tarih, p.fark_c, p.normal.ust_c if p.normal else None, p.karisik_piksel, band)
 
 
 async def collect(
@@ -49,5 +50,6 @@ async def collect(
     changes = [sv.ChangeSignal("s2", e.bitis) for e in recent if "s2_dusus" in e.turler and not e.tahmin] + [sv.ChangeSignal("radar", e.bitis) for e in recent if "radar_degisim" in e.turler and not e.tahmin]
     inputs = sv.StatusInputs(
         today, idx["ndvi"], idx["ndmi"], idx["ndre"], water.profil.kok_bolgesi_doluluk, water.profil.bugun_tarihi, changes, heat_input(water), risks, red_alert,
+        doluluk_bant=tuple(water.profil.kok_bolgesi_bant) if water.profil.kok_bolgesi_bant and len(water.profil.kok_bolgesi_bant) == 4 else None,  # type: ignore[arg-type]
     )
     return inputs, water

@@ -183,6 +183,8 @@ class ThermalNormal:
     ortanca: float
     ust: float
     sahne: int
+    p10: float = 0.0
+    p90: float = 0.0
 
 
 def thermal_normal(history: list[tuple[date, float]], day: date, rule: SuKurali) -> ThermalNormal | None:
@@ -190,8 +192,8 @@ def thermal_normal(history: list[tuple[date, float]], day: date, rule: SuKurali)
     diffs = [d for t, d in history if t.month == day.month and t != day]
     if len(diffs) < rule.sicaklik_min_sahne:
         return None
-    lo, mid, hi = np.percentile(diffs, [rule.sicaklik_normal_alt, 50.0, rule.sicaklik_normal_ust])
-    return ThermalNormal(float(lo), float(mid), float(hi), len(diffs))
+    p10, lo, mid, hi, p90 = np.percentile(diffs, [rule.sicaklik_belirgin_alt, rule.sicaklik_normal_alt, 50.0, rule.sicaklik_normal_ust, rule.sicaklik_belirgin_ust])
+    return ThermalNormal(float(lo), float(mid), float(hi), len(diffs), float(p10), float(p90))
 
 
 @dataclass(frozen=True)

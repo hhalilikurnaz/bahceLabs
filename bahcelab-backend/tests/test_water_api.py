@@ -167,3 +167,11 @@ async def test_hava_and_su_endpoints_return_the_same_irrigation_decision(user_cl
     assert su["karar"].split(" Kök bölgesini doldurmak")[0] == su["karar_detay"]["cumle"]
     assert hava["cumle"].startswith(su["karar_detay"]["cumle"])  # aynı cümle; yalnız gerekliyse miktar eklenir
     assert (hava["ihtiyac_mm"] or 0) > 0 if su["karar_detay"]["gerekli"] else not hava["ihtiyac_mm"]
+
+
+async def test_root_zone_fill_band_gives_the_seasons_p10_p25_p75_p90_for_the_one_label_rule(user_client, factory):
+    gid = await seed(user_client, factory)
+    body = (await user_client.get(f"/gardens/{gid}/su")).json()
+    band = body["profil"]["kok_bolgesi_bant"]
+    assert band is not None and len(band) == 4 and band == sorted(band) and 0 <= band[0] and band[3] <= 100
+    assert body["sicaklik"]["noktalar"][-1]["normal"] is None or body["sicaklik"]["noktalar"][-1]["normal"]["p10_c"] <= body["sicaklik"]["noktalar"][-1]["normal"]["alt_c"]

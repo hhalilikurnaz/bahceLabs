@@ -119,7 +119,7 @@ class ChangeEventModel(Base):
     art_arda: Mapped[bool] = mapped_column(Boolean, nullable=False)
     islaklik_olabilir: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     yagis_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    guven: Mapped[str] = mapped_column(String(10), nullable=False, default="normal")  # dusuk: ıslaklık olabilir notlu aday
+    guven: Mapped[str] = mapped_column(String(10), nullable=False, default="orta")  # orta | dusuk (dusuk: ıslaklık olabilir notlu aday); radar tek başına «orta» güvendir
     formul_surumu: Mapped[str] = mapped_column(String(40), nullable=False)
     hesaplama: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

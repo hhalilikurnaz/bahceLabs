@@ -131,3 +131,60 @@ def test_ani_degisim_enters_the_score_and_names_the_sources() -> None:
     hit = evaluate(inputs(degisimler=[ChangeSignal("s2", TODAY - timedelta(days=4)), ChangeSignal("radar", TODAY - timedelta(days=6))]), RULE)
     assert (hit.ic_puan or 0) < (quiet.ic_puan or 0) and "optik düşüş ve radar değişimi" in next(c for c in hit.bilesenler if c.kod == "ani_degisim").neden
     assert "ani_degisim" in hit.dusuren
+
+
+# ----------------------------------------------------------------------------- tek etiket kuralı (9F düzeltmesi)
+BAND = (5.0, 7.0, 9.0, 11.0)  # p10, p25, p75, p90
+
+
+def test_one_label_rule_for_every_component_p25_p75_normal_outer_bands_below_or_above_and_beyond_p10_p90_distinct() -> None:
+    from bahcelab_backend.domain.agro.status_v2 import position_label
+
+    labels = [position_label(v, BAND, RULE) for v in (4.0, 6.0, 8.0, 10.0, 12.0)]
+    assert labels == ["belirgin_dusuk", "normalin_alti", "normal", "normalin_ustu", "belirgin_yuksek"]
+    assert position_label(7.0, BAND, RULE) == "normal" and position_label(9.0, BAND, RULE) == "normal"  # sınırlar normal bandın içindedir
+    assert position_label(5.0, BAND, RULE) == "normalin_alti" and position_label(11.0, BAND, RULE) == "normalin_ustu"  # tam p10/p90: «belirgin» için aşılması gerekir
+
+
+def test_index_label_uses_the_gardens_own_same_month_history() -> None:
+    from bahcelab_backend.domain.agro.status_v2 import index_label
+
+    history = [0.60 + 0.01 * i for i in range(20)]  # 0,60 … 0,79
+    assert index_label(idx(0.70, history=history), RULE) == "normal"
+    assert index_label(idx(0.62, history=history), RULE) == "normalin_alti"  # p10–p25
+    assert index_label(idx(0.50, history=history), RULE) == "belirgin_dusuk"
+    assert index_label(idx(0.95, history=history), RULE) == "belirgin_yuksek"
+    assert index_label(idx(0.5, history=history[: RULE.asgari_ornek - 1]), RULE) is None  # örnek yetersiz: etiket yok
+
+
+def test_water_label_follows_the_points_rule_worse_when_both_low_otherwise_at_most_normalin_alti() -> None:
+    from bahcelab_backend.domain.agro.status_v2 import water_label
+
+    assert water_label("belirgin_dusuk", "normalin_alti") == "belirgin_dusuk" and water_label("normalin_alti", "belirgin_dusuk") == "belirgin_dusuk"
+    assert water_label("belirgin_dusuk", "normal") == "normalin_alti" and water_label("normal", "normalin_alti") == "normalin_alti"  # tek sinyal: puan ortalaması gibi sınırlı
+    assert water_label("normal", "normal") == "normal" and water_label(None, "belirgin_dusuk") == "belirgin_dusuk" and water_label("normalin_ustu", "normal") == "normalin_ustu" and water_label(None, None) is None
+
+
+def test_heat_label_is_by_the_same_rule_and_mixed_pixels_have_no_label() -> None:
+    from bahcelab_backend.domain.agro.status_v2 import heat_label
+
+    heat = lambda f, mixed=False: HeatInput(TODAY, f, BAND[2], mixed, BAND)  # noqa: E731
+    assert [heat_label(heat(v)) for v in (4.0, 6.0, 8.0, 10.0, 12.0)] == ["belirgin_dusuk", "normalin_alti", "normal", "normalin_ustu", "belirgin_yuksek"]
+    assert heat_label(heat(12.0, True)) is None and heat_label(None) is None
+
+
+def test_the_garden_that_is_1_6_degrees_above_its_p75_but_below_p90_is_labelled_normalin_ustu_not_belirgin() -> None:
+    # jlnnlk 25 Eylül: fark 12,0 °C, aynı ay p75 = 10,4 °C; p90 = 12,6 °C → p75–p90: «normalin üstü»
+    band = (6.9, 7.8, 10.4, 12.6)
+    result = evaluate(inputs(isi=HeatInput(TODAY - timedelta(days=10), 12.0, 10.4, False, band)), RULE)
+    heat = next(c for c in result.bilesenler if c.kod == "isi")
+    assert heat.seviye == "normalin_ustu" and heat.puan is not None and heat.puan < 100  # cezası sürer (yukarı yön kötü), etiketi p10/p90 kuralına göre
+    assert "isi" in result.dusuren and "üstünde" in heat.neden
+    beyond = evaluate(inputs(isi=HeatInput(TODAY - timedelta(days=10), 13.0, 10.4, False, band)), RULE)
+    assert next(c for c in beyond.bilesenler if c.kod == "isi").seviye == "belirgin_yuksek"
+
+
+def test_the_change_component_is_labelled_by_event_kind_not_by_a_distribution() -> None:
+    from bahcelab_backend.domain.agro.status_v2 import change_label
+
+    assert change_label([]) == "normal" and change_label(["radar değişimi"]) == "normalin_alti" and change_label(["optik düşüş"]) == "belirgin_dusuk" and change_label(["optik düşüş", "radar değişimi"]) == "belirgin_dusuk"

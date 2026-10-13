@@ -136,6 +136,8 @@ su:
   doluluk_kuru_max: 35
   sicaklik_normal_alt: 25
   sicaklik_normal_ust: 75
+  sicaklik_belirgin_alt: 10
+  sicaklik_belirgin_ust: 90
   sicaklik_min_sahne: 8
   karisik_piksel_c: 1.5
   landsat_gecis_saati: 11
@@ -162,6 +164,10 @@ durum_v2:
   doluluk_normal_min: 40
   doluluk_sifir: 10
   isi_sifir_c: 3.0
+  bant_belirgin_alt: 10
+  bant_normal_alt: 25
+  bant_normal_ust: 75
+  bant_belirgin_ust: 90
   ani_pencere_gun: 30
   ani_s2_puan: 40
   ani_radar_puan: 60
@@ -179,7 +185,7 @@ durum_v2:
 olay:
   durum: dogrulanmadi
   kaynak: >-
-    Ön değer · mühendis onayı bekliyor: S2 ani düşüş = NDVI Δ ≥ 0,08 ve bitişik alan ≥ min(%25, 5 da), iki net görüntü ≤ 30 gün arayla; radar yalnız güven=yüksek aday;
+    Ön değer · mühendis onayı bekliyor: S2 ani düşüş = NDVI Δ ≥ 0,08 VE pikselin dönem (±15 gün, diğer yıllar) p10'unun altı, bitişik alan ≥ min(%25, 5 da), iki net görüntü ≤ 30 gün arayla; sonraki net görüntüde de sürmeli (aksi atmosfer şüphesi, olay değil); bahçenin >%90'ı düşüyorsa hava/radar ±5 gün desteği şart; radar yalnız güven=yüksek aday;
     don ≤ 0 °C (≤ −2 °C şiddetli); aşırı yağış 24 saatte ≥ 50 mm; kuvvetli rüzgâr hamle ≥ 60 km/s. ±5 gün içindeki sinyaller tek olay (en çok 10 gün yayılır);
     güven kaynak ailesi sayısı ve sinyal güveniyle artar. ERA5 31 km hamleyi olduğundan düşük gösterir: geçmiş hamle olayları güven=düşük.
   s2_ndvi_dusus: 0.08
@@ -187,6 +193,12 @@ olay:
   s2_alan_min_da: 5
   s2_yumusatma: 3
   s2_azami_aralik_gun: 30
+  s2_pencere_gun: 15
+  s2_normal_alt_yuzde: 10
+  s2_min_ornek: 8
+  s2_kalicilik_orani: 0.5
+  s2_tum_bahce_orani: 0.90
+  s2_destek_gun: 5
   don_c: 0
   don_siddetli_c: -2
   yagis_24s_mm: 50

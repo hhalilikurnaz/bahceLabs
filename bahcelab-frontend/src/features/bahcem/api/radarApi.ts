@@ -41,7 +41,7 @@ export interface RadarDegisim {
   islaklik_olabilir: boolean | null
   yagis_mm: number | null
   /** dusuk: «ıslaklık olabilir» notlu aday (9F bildirime çevirmez) */
-  guven: 'normal' | 'dusuk'
+  guven: 'orta' | 'dusuk'
 }
 export interface RadarDegisimler {
   yorungeler: RadarYorunge[]

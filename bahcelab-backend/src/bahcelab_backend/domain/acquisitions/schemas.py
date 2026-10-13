@@ -112,7 +112,7 @@ class RadarDegisim(BaseModel):
     art_arda: bool
     islaklik_olabilir: bool | None  # null: yağış verisi yok
     yagis_mm: float | None
-    guven: Literal["normal", "dusuk"]  # dusuk: ıslaklık olabilir notlu aday (9F bildirime çevirmez)
+    guven: Literal["orta", "dusuk"]  # dusuk: ıslaklık olabilir notlu aday (9F bildirime çevirmez)
 
 
 class RadarEdinim(BaseModel):
