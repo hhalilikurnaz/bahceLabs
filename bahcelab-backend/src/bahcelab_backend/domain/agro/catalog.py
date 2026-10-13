@@ -189,7 +189,7 @@ class SuKurali(KuralBlok):
     normal_aralik_ust: float = 90.0
     klima_ilk_yil: int = 2015
     klima_son_yil: int = 2025
-    kok_katman_agirliklari: tuple[float, float, float] = (7.0, 21.0, 72.0)  # 0–7, 7–28, 28–100 cm kalınlıkları (kök bölgesi 0–100 cm)
+    kok_katman_agirliklari: tuple[float, float, float, float] = (15.0, 35.0, 50.0, 0.0)  # kök DAĞILIMI (kalınlık değil): 0–7, 7–28, 28–100, 100–255 cm; ön değer · mühendis onayı bekliyor
     doluluk_nemli_min: float = Field(default=60.0, ge=0, le=100)  # «normale göre doluluk» ≥ bu: nemli
     doluluk_kuru_max: float = Field(default=35.0, ge=0, le=100)  # ≤ bu: kuru
     kucuk_yagis_esigi_mm: float = Field(default=2.0, ge=0)  # günlük yağış bunun altındaysa su dengesinde sayılmaz (etkili yağış)
@@ -201,6 +201,64 @@ class SuKurali(KuralBlok):
     landsat_gecis_saati: int = 11  # yerel saat; hava sıcaklığı bu saatin ERA5 değeri
 
 
+class DurumV2Kurali(KuralBlok):
+    """Durum v2 (ADR 0018): bileşen ağırlıkları, bahçenin KENDİ dönem normuna göre ceza eşikleri ve kademe sınırları. Hepsi «ön değer · v2»."""
+
+    w_agac_gucu: float = 0.35
+    w_su: float = 0.25
+    w_beslenme: float = 0.20
+    w_ani_degisim: float = 0.10
+    w_isi: float = 0.10
+    z_tolerans: float = Field(default=1.0, gt=0)  # ortanca/MAD sapması bu değere kadar ceza yok (yalnız aşağı yön)
+    z_sifir: float = Field(default=3.0, gt=0)  # bu sapmada bileşen puanı 0
+    sigma_taban_ndvi: float = 0.03  # MAD'den türeyen ölçek (1,4826·MAD) bunun altına inmez: dar geçmişte küçük oynama büyük ceza olmasın
+    sigma_taban_ndmi: float = 0.03
+    sigma_taban_ndre: float = 0.02
+    asgari_ornek: int = Field(default=12, ge=4)  # aynı takvim ayında en az bu kadar geçmiş sahne; yoksa bileşen «yetersiz geçmiş»
+    doluluk_normal_min: float = 40.0  # dönem normaline göre kök bölgesi doluluğu ≥ bu: ceza yok
+    doluluk_sifir: float = 10.0  # ≤ bu: puan 0
+    isi_sifir_c: float = 3.0  # aynı ay bandının üstünde bu kadar °C sapmada ısı puanı 0
+    ani_pencere_gun: int = 30  # ani değişim bileşeni son bu kadar günün olaylarına bakar
+    ani_s2_puan: int = 40
+    ani_radar_puan: int = 60
+    ani_ikisi_puan: int = 30
+    bayat_s2_gun: int = 15
+    bayat_landsat_gun: int = 30
+    min_toplam_agirlik: float = 0.40  # kullanılabilir ağırlık bunun altındaysa kademe «veri yok» (yalnız risk/uyarı)
+    iyi_min: int = 85
+    izle_min: int = 70
+    dikkat_min: int = 50
+    bilesen_normal_min: int = 90
+    bilesen_belirgin_dusuk_max: int = 49
+
+    @model_validator(mode="after")
+    def _weights(self) -> DurumV2Kurali:
+        if abs(self.w_agac_gucu + self.w_su + self.w_beslenme + self.w_ani_degisim + self.w_isi - 1.0) > 1e-6:
+            raise ValueError("Durum v2 ağırlıkları toplamı 1 olmalı.")
+        if not (self.iyi_min > self.izle_min > self.dikkat_min):
+            raise ValueError("Durum v2 kademe sınırları azalan sırada olmalı.")
+        return self
+
+
+class OlayKurali(KuralBlok):
+    """Olay motoru (ADR 0018): kaynak eşikleri, birleştirme ve güven kuralı. Hepsi ön değer · mühendis onayı bekliyor."""
+
+    s2_ndvi_dusus: float = Field(default=0.08, gt=0)  # NDVI'da son net görüntüye göre düşüş (piksel)
+    s2_alan_orani: float = Field(default=0.25, ge=0, le=1)  # en büyük bitişik yama ≥ min(pay × bahçe, s2_alan_min_da)
+    s2_alan_min_da: float = Field(default=5.0, gt=0)
+    s2_yumusatma: int = Field(default=3, ge=1)
+    s2_azami_aralik_gun: int = Field(default=30, ge=1)  # iki net görüntü arası bundan uzunsa mevsimsel değişim olay sayılmaz
+    don_c: float = 0.0
+    don_siddetli_c: float = -2.0
+    yagis_24s_mm: float = 50.0
+    hamle_kmh: float = 60.0
+    birlestirme_gun: int = Field(default=5, ge=0)  # ardışık sinyaller arası en çok bu kadar gün → tek olay
+    birlestirme_azami_sure_gun: int = Field(default=10, ge=1)  # bir olay en çok bu kadar gün yayılır (zincirleme birleşmeyi sınırlar)
+    guven_orta_puan: int = 2  # sinyal güveni «orta» = 2, «düşük» = 1; kaynak ailesi başına en iyi sinyal toplanır
+    guven_yuksek_min: int = 4
+    guven_orta_min: int = 2
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -208,6 +266,8 @@ class Katalog(BaseModel):
     normal_bant: NormalBant
     radar: RadarKurali
     su: SuKurali
+    durum_v2: DurumV2Kurali
+    olay: OlayKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

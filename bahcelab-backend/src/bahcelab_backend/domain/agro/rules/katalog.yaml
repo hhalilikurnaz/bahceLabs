@@ -131,7 +131,7 @@ su:
   normal_aralik_ust: 90
   klima_ilk_yil: 2015
   klima_son_yil: 2025
-  kok_katman_agirliklari: [7, 21, 72]
+  kok_katman_agirliklari: [15, 35, 50, 0]  # kök dağılımı yüzdesi (0–7, 7–28, 28–100, 100–255 cm)
   doluluk_nemli_min: 60
   doluluk_kuru_max: 35
   sicaklik_normal_alt: 25
@@ -139,6 +139,63 @@ su:
   sicaklik_min_sahne: 8
   karisik_piksel_c: 1.5
   landsat_gecis_saati: 11
+
+# Durum v2 (ADR 0018): her bileşen bahçenin KENDİ dönem normuna göre; ortanca/MAD sapması, yalnız aşağı yön ceza. Hepsi ön değer · v2
+durum_v2:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · v2: ağırlıklar Ağaç gücü %35 · Su %25 · Beslenme %20 · Ani değişim %10 · Isı %10; ceza 1 ölçekli MAD sapmasından başlar, 3'te sıfırlanır;
+    aynı takvim ayında ≥ 12 geçmiş sahne; kök bölgesi doluluğu ≥ %40 ceza yok, ≤ %10 puan 0; ısı: aynı ay yüzey–hava bandının üstünde 3 °C'de puan 0;
+    S2 15 gün, Landsat 30 gün üstü bayat (ağırlık diğerlerine dağıtılır, güven düşer). Kademe: ≥85 İyi · 70–84 İzle · 50–69 Dikkat · <50 Sorun.
+    Mühendis onayı bekliyor.
+  w_agac_gucu: 0.35
+  w_su: 0.25
+  w_beslenme: 0.20
+  w_ani_degisim: 0.10
+  w_isi: 0.10
+  z_tolerans: 1.0
+  z_sifir: 3.0
+  sigma_taban_ndvi: 0.03
+  sigma_taban_ndmi: 0.03
+  sigma_taban_ndre: 0.02
+  asgari_ornek: 12
+  doluluk_normal_min: 40
+  doluluk_sifir: 10
+  isi_sifir_c: 3.0
+  ani_pencere_gun: 30
+  ani_s2_puan: 40
+  ani_radar_puan: 60
+  ani_ikisi_puan: 30
+  bayat_s2_gun: 15
+  bayat_landsat_gun: 30
+  min_toplam_agirlik: 0.40
+  iyi_min: 85
+  izle_min: 70
+  dikkat_min: 50
+  bilesen_normal_min: 90
+  bilesen_belirgin_dusuk_max: 49
+
+# Olay motoru (ADR 0018): kaynak eşikleri ve birleştirme. Hepsi ön değer
+olay:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor: S2 ani düşüş = NDVI Δ ≥ 0,08 ve bitişik alan ≥ min(%25, 5 da), iki net görüntü ≤ 30 gün arayla; radar yalnız güven=yüksek aday;
+    don ≤ 0 °C (≤ −2 °C şiddetli); aşırı yağış 24 saatte ≥ 50 mm; kuvvetli rüzgâr hamle ≥ 60 km/s. ±5 gün içindeki sinyaller tek olay (en çok 10 gün yayılır);
+    güven kaynak ailesi sayısı ve sinyal güveniyle artar. ERA5 31 km hamleyi olduğundan düşük gösterir: geçmiş hamle olayları güven=düşük.
+  s2_ndvi_dusus: 0.08
+  s2_alan_orani: 0.25
+  s2_alan_min_da: 5
+  s2_yumusatma: 3
+  s2_azami_aralik_gun: 30
+  don_c: 0
+  don_siddetli_c: -2
+  yagis_24s_mm: 50
+  hamle_kmh: 60
+  birlestirme_gun: 5
+  birlestirme_azami_sure_gun: 10
+  guven_orta_puan: 2
+  guven_yuksek_min: 4
+  guven_orta_min: 2
 
 urunler:
   limon:

@@ -13,6 +13,8 @@ from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
 from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.agro import catalog as cat
+from bahcelab_backend.domain.agro import status_v2 as sv
+from bahcelab_backend.domain.agro import status_v2_service as sv2
 from bahcelab_backend.domain.agro.irrigation import DayInput, IrrigationResult, StageKc, recommend
 from bahcelab_backend.domain.agro.repository import AgroRepository
 from bahcelab_backend.domain.agro.risks import (
@@ -28,9 +30,11 @@ from bahcelab_backend.domain.agro.rulebook import (
     load_risk_rules,
 )
 from bahcelab_backend.domain.agro.schemas import (
+    BilesenV2Yanit,
     BugunMaddesiYanit,
     BugunYanit,
     CipYanit,
+    DurumV2Yanit,
     DurumYanit,
     EvreYanit,
     FenolojiDuzeltme,
@@ -59,6 +63,7 @@ from bahcelab_backend.domain.agro.score import (
     Skor,
     active_risks_of,
     assess,
+    summary_sentence,
 )
 from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
 from bahcelab_backend.domain.agro.today import Girdi, build_today
@@ -487,6 +492,31 @@ class AgroService:
     async def status(self, garden_id: uuid.UUID) -> DurumYanit:
         result, _, _, _, _ = await self.assess(garden_id)
         return to_status_response(result, self._today())
+
+    async def status_v2_result(self, garden_id: uuid.UUID, today: date | None = None) -> sv.DurumV2:
+        """Durum v2 (alan sonucu; iç puan dahil — yalnız karşılaştırma ve testler için). API `status_v2` iç puanı yanıta koymaz."""
+        garden = await self._garden(garden_id)
+        today = today or self._today()
+        weather = await self._weather_or_none(garden_id)
+        history = await self._history(garden_id, today)
+        risks = await self._compute_risks(garden, history, weather, today)
+        red = any(a.seviye == "kirmizi" for a in (weather.uyarilar if weather else []))
+        inputs, _ = await sv2.collect(self.ndvi.session, self.gardens.workspace_id, garden_id, today, active_risks_of(risks), red)
+        return sv.evaluate(inputs, self.catalog.durum_v2)
+
+    async def status_v2(self, garden_id: uuid.UUID) -> DurumV2Yanit:
+        today = self._today()
+        result = await self.status_v2_result(garden_id, today)
+        rule = self.catalog.durum_v2
+        weather = await self._weather_or_none(garden_id)
+        garden = await self._garden(garden_id)
+        risks = active_risks_of(await self._compute_risks(garden, await self._history(garden_id, today), weather, today))
+        return DurumV2Yanit(
+            durum=result.kademe, etiket=KADEME_ADLARI[result.kademe], ozet=summary_sentence(result.kademe),
+            bilesenler=[BilesenV2Yanit(kod=c.kod, ad=c.ad, seviye=c.seviye, kullanilabilir=c.kullanilabilir, bayat=c.bayat, neden=c.neden, veri_tarihi=c.veri_tarihi) for c in result.bilesenler],  # type: ignore[arg-type]
+            riskler=[r.metin for r in risks], guven=result.guven, guven_nedeni=result.guven_nedeni, nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
+            esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
+        )
 
     # ------------------------------------------------------------------ bugün
     async def today(self, garden_id: uuid.UUID) -> BugunYanit:

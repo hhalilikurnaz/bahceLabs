@@ -156,6 +156,33 @@ class DurumYanit(BaseModel):
     hesaplama_tarihi: date
 
 
+class BilesenV2Yanit(BaseModel):
+    kod: Literal["agac_gucu", "su", "beslenme", "ani_degisim", "isi"]
+    ad: str
+    seviye: Literal["normal", "normalin_alti", "belirgin_dusuk"] | None  # sayı yok; None = veri yok
+    kullanilabilir: bool
+    bayat: bool
+    neden: str
+    veri_tarihi: date | None
+
+
+class DurumV2Yanit(BaseModel):
+    """Durum v2 (ADR 0018): kademe + 5 bileşen çipi + risk satırı. İç puan bu yanıtta YOKTUR."""
+
+    durum: Durum
+    etiket: str
+    ozet: str
+    bilesenler: list[BilesenV2Yanit]
+    riskler: list[str]
+    guven: GuvenSeviyesi
+    guven_nedeni: str
+    nasil: list[str]  # «Nasıl hesaplandı?»: en çok 3 cümle
+    dusuren: list[str]
+    risk_sinirladi: bool
+    esik_durumu: str
+    hesaplama_tarihi: date
+
+
 class BugunMaddesiYanit(BaseModel):
     tur: str
     oncelik: Literal["kritik", "uyari", "bilgi"]
