@@ -40,7 +40,7 @@ export function SuDengesi({ denge }: { denge: SuYaniti['denge'] }) {
         {gunler.map((g, i) =>
           g.veri_eksik ? null : (
             <g key={g.tarih}>
-              {(g.yagis_mm ?? 0) > 0 && <rect x={X(i) - bar / 2} y={yUst(g.yagis_mm ?? 0)} width={bar} height={yMid - yUst(g.yagis_mm ?? 0)} fill={SU_RENK.su} opacity={g.tahmin ? 0.55 : 1} data-testid="yagis-cubugu"><title>{`${gunAy(g.tarih)} · yağış ${sayi(g.yagis_mm ?? 0, 1)} mm (${g.yagis_kaynagi})`}</title></rect>}
+              {(g.yagis_mm ?? 0) > 0 && <rect x={X(i) - bar / 2} y={yUst(g.yagis_mm ?? 0)} width={bar} height={yMid - yUst(g.yagis_mm ?? 0)} fill={SU_RENK.su} opacity={(g.etkili_yagis_mm ?? 0) === 0 ? 0.3 : g.tahmin ? 0.55 : 1} data-testid="yagis-cubugu" data-sayilan={String((g.etkili_yagis_mm ?? 0) > 0)}><title>{`${gunAy(g.tarih)} · yağış ${sayi(g.yagis_mm ?? 0, 1)} mm (${g.yagis_kaynagi})${(g.etkili_yagis_mm ?? 0) === 0 ? ' · eşiğin altında: dengede sayılmaz' : ''}`}</title></rect>}
               <rect x={X(i) - bar / 2} y={yMid} width={bar} height={Math.max(0, yAlt(g.etc_mm ?? 0) - yMid)} fill={SU_RENK.etc} opacity={g.tahmin ? 0.55 : 1}><title>{`${gunAy(g.tarih)} · ETc ${sayi(g.etc_mm ?? 0, 1)} mm`}</title></rect>
             </g>
           ),
@@ -50,7 +50,7 @@ export function SuDengesi({ denge }: { denge: SuYaniti['denge'] }) {
         {[0, Math.floor(n / 2), n - 1].map((i) => <text key={i} x={X(i)} y={YUKSEKLIK - 6} textAnchor="middle" fontSize={10} fill="var(--color-app-text-muted)">{gunAy(gunler[i].tarih)}</text>)}
       </svg>
       <p className="mt-0.5 text-[11.5px] leading-snug text-app-text-muted">
-        <span style={{ color: SU_RENK.su }}>■</span> yağış (↑) · <span style={{ color: SU_RENK.etc }}>■</span> ETc (↓) · siyah çizgi: birikimli (yağış − ETc; kendi ölçeğinde, son değer sağda), 30 gün geçmiş + 7 gün tahmin (gri bant, soluk çubuk).
+        <span style={{ color: SU_RENK.su }}>■</span> yağış (↑) · <span style={{ color: SU_RENK.etc }}>■</span> ETc (↓) · siyah çizgi: birikimli (yağış − ETc; kendi ölçeğinde, son değer sağda), 30 gün geçmiş + 7 gün tahmin (gri bant, soluk çubuk); çok soluk yağış çubuğu = günlük 2 mm altı, dengede sayılmaz.
         {denge.taw_mm != null && <> Kullanılabilir su kapasitesi ≈ {sayi(denge.taw_mm, 0)} mm, stres eşiği {sayi(denge.tukenme_esigi_mm ?? 0, 0)} mm tükenme. Sulama kaydı yoktur.</>}
       </p>
       <p className="text-[11.5px] leading-snug text-app-text-muted" data-testid="kc-notu">{denge.kc_notu}.</p>

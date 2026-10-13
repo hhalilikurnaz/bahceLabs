@@ -57,6 +57,10 @@ async function suCekimleri(page, ad, width) {
   for (const [id, dosya] of [['su-karar', 'karar'], ['su-profil', 'nem-profili'], ['su-denge', 'su-dengesi'], ['bulut-altinda-gorus', 'bulut-altinda-gorus'], ['su-sicaklik', 'yuzey-hava-sicakligi']]) {
     await cekim(page, page.getByTestId(id), join(CIKTI, `su-${dosya}-${ad}.png`), dar)
   }
+  // Panel ↔ harita: geçişe dokununca Yüzey sıcaklığı katmanı o tarihte açılır
+  await page.getByTestId('yuzey-hava').getByTestId('sicaklik-noktasi').nth(2).click()
+  await page.waitForTimeout(3500)
+  await page.screenshot({ path: join(CIKTI, `yuzey-hava-tiklama-harita-${ad}.png`) })
   await page.goto(`${WEB}/bahceler/${BAHCE}`)
   await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
   await page.waitForTimeout(3000)
@@ -68,7 +72,7 @@ async function suCekimleri(page, ad, width) {
 }
 const browser = await chromium.launch({ executablePath: PW_CHROME_PATH, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
-for (const [ad, width, height] of [['1440', 1440, 900], ['390', 390, 844]]) {
+for (const [ad, width, height] of [['1440', 1440, 900], ['1024', 1024, 768], ['390', 390, 844]]) {
   const context = await browser.newContext({ viewport: { width, height }, colorScheme: 'light' })
   const page = await context.newPage()
   await page.goto(`${WEB}/login`)

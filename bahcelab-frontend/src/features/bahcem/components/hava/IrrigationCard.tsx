@@ -1,10 +1,12 @@
 import { Droplets } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useUpdateGarden } from '../../api/useGardens'
 import { Card, ErrorState, SelectField, Skeleton } from '@/components/ui'
 import { useIrrigation } from '../../api/agroApi'
 import { describeError } from '../../api/gardensApi'
 import { IRRIGATION_SYSTEMS, type Garden, type SulamaSistemi } from '../../api/types'
+import { gardenPagePath } from '../../lib/routes'
 import { RuleBadge } from '../garden-page/RuleBadge'
 import { useToast } from '../layout/toastContext'
 
@@ -54,6 +56,13 @@ export function IrrigationCard({ garden }: { garden: Garden }) {
           <p className="text-body font-semibold text-app-text" data-testid="irrigation-sentence">
             {data.cumle}
           </p>
+          {data.kararKaynagi === 'su' ? (
+            <Link to={gardenPagePath(garden.id, 'su')} className="inline-flex min-h-11 items-center text-small font-semibold text-app-text underline underline-offset-2" data-testid="irrigation-su-link">
+              Gerekçesi Su sekmesinde: toprak nemi, su dengesi →
+            </Link>
+          ) : (
+            <p className="text-caption text-app-text-dim" data-testid="irrigation-hava-notu">Toprak nemi verisi henüz yok; yalnız hava verisine dayanan yaklaşık hesap.</p>
+          )}
           {figures.length > 0 && (
             <dl className="grid grid-cols-2 gap-2 text-small" data-testid="irrigation-figures">
               {figures.map((f) => (

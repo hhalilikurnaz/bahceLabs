@@ -51,7 +51,7 @@ export function NemProfili({ profil }: { profil: Profil }) {
         )}
       </svg>
       <p className="mt-0.5 text-[11.5px] leading-snug text-app-text-muted">
-        <span style={{ color: SU_RENK.su }}>●</span> bugün{profil.katmanlar.some((l) => l.bugun_kaynak === 'model') ? ' (içi boş: model tahmini)' : ''} · <svg width={22} height={8} className="inline-block align-middle" aria-hidden><line x1={1} x2={21} y1={4} y2={4} stroke={SU_RENK.suSoluk} strokeWidth={1.8} strokeDasharray="4 3" /></svg> 30 gün önce · gri bant: bu bahçenin normal aralığı (p10–p90, 2015–2025). m³/m³; 100–255 cm modelde yoktur.
+        <span style={{ color: SU_RENK.su }}>●</span> bugün{profil.katmanlar.some((l) => l.bugun_kaynak === 'model') ? ' (içi boş: model tahmini)' : ''} · <svg width={22} height={8} className="inline-block align-middle" aria-hidden><line x1={1} x2={21} y1={4} y2={4} stroke={SU_RENK.suSoluk} strokeWidth={1.8} strokeDasharray="4 3" /></svg> 30 gün önce · gri bant: {profil.donem ?? 'dönem'} normal aralığı (yılın aynı ±{profil.donem_pencere_gun} günü, p10–p90, 2015–2025). m³/m³; 100–255 cm modelde yoktur.
       </p>
     </div>
   )

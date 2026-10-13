@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedRadar, seedScenes, seedWater } from './yardimcilar'
+import { createGarden, newUser, seedRadar, seedScenes, seedWater, seedWeather } from './yardimcilar'
 
 /** Su ve sıcaklık dilimi (9E), GERÇEK arka uçla: ERA5 önbelleği + toprak profili tohumlanır, Landsat gerçek doldurma hattından geçer. */
 async function kurulum(page: Page, ad: string, lng: number) {
@@ -34,10 +34,15 @@ test('Su sekmesi: karar cümlesi üstte, dört kanıt grafiği ve kaynak çipler
   await expect(page.getByTestId('kaynak-denge')).toBeVisible()
   // 3) bulut altında görüş (9D)
   await expect(page.getByTestId('bulut-altinda-gorus')).toBeVisible()
-  // 4) yüzey–hava sıcaklığı: son 6 Landsat geçişi, stres eşiği
+  // 4) yüzey–hava sıcaklığı: son 6 Landsat geçişi; sabit eşik yok, bahçenin aynı ay bandı
   const yuzey = page.getByTestId('yuzey-hava')
   await expect(yuzey).toBeVisible()
   expect(await yuzey.getByTestId('sicaklik-noktasi').count()).toBe(6)
+  await expect(yuzey.getByTestId('sicaklik-cumlesi')).toContainText(/normaline göre|normali içinde/) // aynı ay geçmişi yeterli (≥ 8 geçiş)
+  expect(await yuzey.getByTestId('ay-normali').count()).toBeGreaterThan(0)
+  await expect(yuzey.getByTestId('stres-esigi')).toHaveCount(0) // sabit +5 °C eşiği kaldırıldı
+  await expect(page.getByTestId('su-doluluk')).toBeVisible()
+  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre kök bölgesi doluluğu/)
   await expect(page.getByTestId('kaynak-sicaklik')).toContainText('Landsat')
   // doğrulama kaynakları (SMAP/IMERG/CHIRPS) arayüzde görünmez; yalnız «Nasıl hesaplandı?» içinde anılabilir
   await expect(page.getByTestId('su-karar')).not.toContainText(/SMAP|IMERG|CHIRPS/)
@@ -60,4 +65,37 @@ test('Yüzey sıcaklığı katmanı: Sıcaklık grubu, 100 m notu, Landsat tarih
   const once = await page.getByTestId('secili-tarih').innerText()
   await page.getByRole('button', { name: 'Önceki görüntü' }).click()
   await expect(page.getByTestId('secili-tarih')).not.toHaveText(once)
+})
+
+test('Yüzey–hava grafiğinde bir geçişe dokununca harita Yüzey sıcaklığı katmanını o tarihte açar', async ({ page }) => {
+  const g = await kurulum(page, 'Sicaklik Tikla', 27.63)
+  await page.goto(`/bahceler/${g.id}/su`)
+  const noktalar = page.getByTestId('yuzey-hava').getByTestId('sicaklik-noktasi')
+  await expect(noktalar).toHaveCount(6, { timeout: 30_000 })
+  const hedef = noktalar.nth(2)
+  const tarih = await hedef.getAttribute('data-tarih')
+  await hedef.click()
+  await expect(page.getByTestId('katman-menusu')).toContainText('Yüzey sıcaklığı (Landsat)')
+  await expect(page.getByTestId('histogram-lejant')).toContainText('°C', { timeout: 30_000 })
+  const [, ay, gun] = (tarih ?? '').split('-').map(Number)
+  await expect(page.getByTestId('secili-tarih')).toContainText(`${gun}`)
+  expect(ay).toBeGreaterThan(0)
+  await expect(hedef).toHaveAttribute('role', 'button')
+  // klavye ile de açılır
+  await noktalar.nth(4).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('secili-tarih')).toBeVisible()
+})
+
+test('TEK sulama kararı: Hava sekmesindeki sulama kartı ile Su sekmesi aynı cümleyi söyler', async ({ page }) => {
+  const g = await kurulum(page, 'Tek Karar', 27.64)
+  seedWeather(g.id)
+  await page.goto(`/bahceler/${g.id}/su`)
+  const suKarar = (await page.getByTestId('su-karar-cumlesi').innerText({ timeout: 30_000 })).trim()
+  await page.goto(`/bahceler/${g.id}/hava`)
+  const hava = page.getByTestId('irrigation-sentence')
+  await expect(hava).toBeVisible({ timeout: 30_000 })
+  expect((await hava.innerText()).trim().startsWith(suKarar)).toBe(true) // gerekliyse sonuna miktar eklenir; karar kısmı aynıdır
+  await page.getByTestId('irrigation-su-link').click()
+  await expect(page).toHaveURL(/\/su$/)
 })

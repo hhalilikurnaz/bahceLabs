@@ -26,33 +26,56 @@ export interface NemProfili {
   kok_bolgesi_sinif: 'nemli' | 'orta' | 'kuru' | 'bilinmiyor'
   gecis_gunu: string | null
   model_ofset: Record<string, number> | null
+  donem: string | null
+  donem_pencere_gun: number
 }
 export interface DengeGunu {
   tarih: string
   yagis_mm: number | null
   etc_mm: number | null
+  etkili_yagis_mm: number | null
   tukenme_mm: number | null
   birikimli_mm: number | null
   tahmin: boolean
   yagis_kaynagi: 'era5' | 'imerg' | 'model' | 'yok'
   veri_eksik: boolean
 }
+export interface SicaklikNormali {
+  alt_c: number
+  ortanca_c: number
+  ust_c: number
+  sahne: number
+}
 export interface SicaklikNoktasi {
   tarih: string
+  ay: string
   yuzey_bahce_c: number
   yuzey_tampon_c: number | null
   hava_c: number | null
   fark_c: number | null
+  normal: SicaklikNormali | null
+  sapma_c: number | null
+  durum: 'ustunde' | 'icinde' | 'altinda' | 'yetersiz_gecmis' | 'bilinmiyor'
   stres: boolean | null
   karisik_piksel: boolean | null
   bahce_tampon_fark_c: number | null
 }
+/** TEK sulama kararı: Su sekmesi ve Hava sekmesi aynı nesneyi gösterir (sunucuda tek fonksiyon). */
+export interface SulamaKarari {
+  durum: 'sulama' | 'izle' | 'gerekmiyor' | 'veri_yok'
+  gerekli: boolean
+  cumle: string
+  doluluk: number | null
+  donem: string | null
+  ihtiyac_mm: number | null
+}
 export interface SuYaniti {
   karar: string
+  karar_detay: SulamaKarari
   on_deger: boolean
   profil: NemProfili
   denge: { taw_mm: number | null; tukenme_esigi_mm: number | null; gunler: DengeGunu[]; yagis_kaynagi: 'era5' | 'imerg'; yagis_karari: string; kc_notu: string }
-  sicaklik: { noktalar: SicaklikNoktasi[]; stres_esigi_c: number; karisik_piksel_esigi_c: number }
+  sicaklik: { noktalar: SicaklikNoktasi[]; karisik_piksel_esigi_c: number; normal_alt_yuzde: number; normal_ust_yuzde: number; min_sahne: number }
   toprak: { kum_yuzde: number | null; kil_yuzde: number | null; silt_yuzde: number | null; organik_karbon_g_kg: number | null; tarla_kapasitesi: number | null; solma_noktasi: number | null; kaynak: string | null }
   kaynaklar: Record<'profil' | 'denge' | 'sicaklik', KaynakCipi>
   dogrulama: string[]

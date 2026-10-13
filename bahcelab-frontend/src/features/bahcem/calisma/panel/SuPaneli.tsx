@@ -15,7 +15,7 @@ const KART = 'rounded-md border border-app-border bg-app-card p-3.5'
 export function SuPaneli({ garden }: { garden: Garden }) {
   const { data, isLoading, isError, refetch, isFetching } = useSu(garden.id)
   return (
-    <div className="grid gap-4 p-5" data-testid="su-paneli">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 p-5" data-testid="su-paneli">
       {isLoading ? (
         <Skeleton className="h-28" aria-label="Su durumu yükleniyor" />
       ) : isError || !data ? (
@@ -26,7 +26,7 @@ export function SuPaneli({ garden }: { garden: Garden }) {
             <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">Su</div>
             <h2 className="text-[20px] font-bold leading-snug" data-testid="su-karar-cumlesi">{data.karar}</h2>
             <p className="text-[12.5px] text-app-text-muted" data-testid="su-on-deger">
-              {data.profil.kok_bolgesi_doluluk != null && <>Normale göre kök bölgesi doluluğu <b className="num text-app-text">%{Math.round(data.profil.kok_bolgesi_doluluk)}</b> · </>}
+              {data.profil.kok_bolgesi_doluluk != null && <>{data.profil.donem ?? 'Dönem'} normaline göre kök bölgesi doluluğu <b className="num text-app-text" data-testid="su-doluluk">%{Math.round(data.profil.kok_bolgesi_doluluk)}</b> · </>}
               ön değer · mühendis onayı bekliyor
             </p>
           </section>
@@ -49,8 +49,8 @@ export function SuPaneli({ garden }: { garden: Garden }) {
           <details className={KART} data-testid="su-nasil">
             <summary className="flex min-h-9 cursor-pointer items-center text-[13px] font-semibold max-[560px]:min-h-11">Nasıl hesaplandı?</summary>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-[12.5px] leading-snug text-app-text-muted">
-              <li>Nem profili: ERA5-Land (9 km, saatlik); son günler ve ileri için Open-Meteo model tahmini, ERA5-Land ile örtüşen günlerden katman farkıyla düzeltilmiş. «Normale göre doluluk»: her katmanın 2015–2025 klimatolojisinde p2 = 0, p98 = 100.</li>
-              <li>Su dengesi: ETc = Kc × ET0; Kc, NDVI'dan ön değer ilişkiyle. Kova: kullanılabilir su = (tarla kapasitesi − solma noktası) × kök derinliği{data.toprak.tarla_kapasitesi != null && <> ({sayi(data.toprak.tarla_kapasitesi, 2)} − {sayi(data.toprak.solma_noktasi ?? 0, 2)} m³/m³)</>}. {data.toprak.kaynak}. Bu eşikler ERA5'in mutlak nemine uygulanmaz.</li>
+              <li>Nem profili: ERA5-Land (9 km, saatlik); son günler ve ileri için Open-Meteo model tahmini, ERA5-Land ile örtüşen günlerden katman farkıyla düzeltilmiş. «Dönem normaline göre doluluk»: her katman için ERA5-Land'in yılın aynı ±15 günü (2015–2025) dağılımında p2 = 0, p98 = 100.</li>
+              <li>Su dengesi: ETc = Kc × ET0; Kc, NDVI'dan ön değer ilişkiyle. Kova: kullanılabilir su = (tarla kapasitesi − solma noktası) × kök derinliği{data.toprak.tarla_kapasitesi != null && <> ({sayi(data.toprak.tarla_kapasitesi, 2)} − {sayi(data.toprak.solma_noktasi ?? 0, 2)} m³/m³)</>}. {data.toprak.kaynak}. Bu eşikler ERA5'in mutlak nemine uygulanmaz. Günlük 2 mm'nin altındaki yağış dengede sayılmaz (ön değer). Sulama kararı: «sulama planlayın» yalnız doluluk dönem normaline göre düşükken ve kova stres eşiğinde ya da 7 gün içinde ona inerken çıkar; Hava sekmesindeki sulama kartı aynı kararı gösterir.</li>
               <li>Yüzey sıcaklığı: Landsat 8/9 (30 m ürün, 100 m fiziksel çözünürlük); hava sıcaklığı ERA5-Land.</li>
               <li data-testid="yagis-karari">Yağış kaynağı: {data.denge.yagis_karari}</li>
               {data.dogrulama.map((d) => <li key={d}>{d}</li>)}

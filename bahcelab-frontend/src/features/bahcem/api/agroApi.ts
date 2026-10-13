@@ -258,6 +258,8 @@ export interface Irrigation {
   sistem: { kod: string | null; ad: string | null; verimlilik: number | null }
   gerekli: boolean
   cumle: string
+  /** su: karar Su sekmesindekiyle AYNI fonksiyondan gelir; hava: toprak nemi verisi yok, yalnız hava tabanlı yaklaşık hesap */
+  kararKaynagi: 'su' | 'hava'
   not: string
   kurallar: { etkiliYagis: RuleMeta; sistem: RuleMeta; kc: RuleMeta | null }
 }
@@ -306,6 +308,7 @@ export const sulamaRiskApi = {
       sistem: { kod: string | null; ad: string | null; verimlilik: number | null }
       gerekli: boolean
       cumle: string
+      karar_kaynagi: 'su' | 'hava'
       not_: string
       etkili_yagis_kural: ApiKuralMeta
       sistem_kural: ApiKuralMeta
@@ -323,6 +326,7 @@ export const sulamaRiskApi = {
       sistem: raw.sistem,
       gerekli: raw.gerekli,
       cumle: raw.cumle,
+      kararKaynagi: raw.karar_kaynagi,
       not: raw.not_,
       kurallar: { etkiliYagis: meta(raw.etkili_yagis_kural) as RuleMeta, sistem: meta(raw.sistem_kural) as RuleMeta, kc: meta(raw.kc_kural) },
     }
