@@ -70,6 +70,29 @@ async function suCekimleri(page, ad, width) {
   await page.screenshot({ path: join(CIKTI, `katman-yuzey-sicakligi-${ad}.png`) })
   await page.getByTestId('tarih-kutusu').screenshot({ path: join(CIKTI, `tarih-kutusu-landsat-${ad}.png`) })
 }
+/** 9F: Durum v2 (kademe şeridi, 5 çip, risk satırı, «Nasıl hesaplandı?»), Bugün, bildirim paneli (özet kartı) ve kesintisiz canlılık eğrisi. */
+async function durumCekimleri(page, ad, width) {
+  const dar = width < 700
+  await page.goto(`${WEB}/bahceler/${BAHCE}`)
+  await page.getByTestId('durum-karti').waitFor({ timeout: 60000 })
+  await page.getByTestId('sezon-egrisi').waitFor({ timeout: 30000 })
+  await page.waitForTimeout(3500)
+  await page.screenshot({ path: join(CIKTI, `durum-v2-ust-${ad}.png`) })
+  await cekim(page, page.getByTestId('durum-karti'), join(CIKTI, `durum-v2-kademe-ve-bilesenler-${ad}.png`), dar)
+  await page.getByTestId('nasil-hesaplandi').getByText('Nasıl hesaplandı?').click()
+  await cekim(page, page.getByTestId('durum-karti'), join(CIKTI, `durum-v2-nasil-hesaplandi-${ad}.png`), dar)
+  await cekim(page, page.getByTestId('today-card'), join(CIKTI, `durum-bugun-onem-sirasi-${ad}.png`), dar)
+  const sezon = page.getByTestId('sezon-egrisi')
+  await sezon.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(800)
+  await cekim(page, sezon, join(CIKTI, `sezon-kesintisiz-egri-${ad}.png`), dar)
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.getByTestId('bildirim-ac').click()
+  await page.getByTestId('notifications-panel').waitFor({ timeout: 15000 })
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: join(CIKTI, `bildirim-paneli-onem-rozetleri-${ad}.png`) })
+  await page.keyboard.press('Escape')
+}
 const browser = await chromium.launch({ executablePath: PW_CHROME_PATH, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
 for (const [ad, width, height] of [['1440', 1440, 900], ['1024', 1024, 768], ['390', 390, 844]]) {
@@ -83,6 +106,11 @@ for (const [ad, width, height] of [['1440', 1440, 900], ['1024', 1024, 768], ['3
   await page.goto(`${WEB}/bahceler/${BAHCE}`)
   await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
   await page.waitForTimeout(5000)
+  if (KUME === '9f') {
+    await durumCekimleri(page, ad, width)
+    await context.close()
+    continue
+  }
   if (KUME === '9e') {
     await suCekimleri(page, ad, width)
     await context.close()

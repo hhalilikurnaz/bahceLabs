@@ -292,7 +292,7 @@ class EgriKurali(KuralBlok):
     sigma_taban: float = 0.02  # artık dağılımı bunun altına inmez
     belirsizlik_z: float = 1.645  # %90 yaklaşık bant (sezgisel, istatistiksel aralık değil)
     belirsizlik_tau_gun: float = Field(default=10.0, gt=0)  # bant genişliği en yakın gözleme uzaklık d için × sqrt(1 + (d/τ)²)
-    gozlem_yakin_gun: int = Field(default=2, ge=0)  # en yakın gözlem bu kadar günden yakınsa nokta «gözlem destekli», değilse «tahmini»
+    gozlem_yakin_gun: int = Field(default=6, ge=0)  # en yakın gözlem bu kadar günden yakınsa nokta «gözlem destekli», değilse «tahmini»
     ekstrapolasyon_azami_gun: int = Field(default=30, ge=0)  # son gözlemden sonra en çok bu kadar gün tahmin çizilir
     radar_bosluk_gun: int = Field(default=12, ge=1)  # optik gözlem boşluğu bundan uzunsa radar «değişim var/yok» işareti çizilir
 

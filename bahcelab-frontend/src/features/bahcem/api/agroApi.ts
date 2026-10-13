@@ -1,5 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/apiClient'
+import type { SeviyeKodu } from '../lib/kademe'
 import type { ApiBugun, ApiDurum, ApiFenoloji, ApiKatalog, ApiKuralMeta, ApiSeriler } from './dto/agro'
 
 export type RuleStatus = 'dogrulanmadi' | 'muhendis_onayli'
@@ -58,41 +59,37 @@ export interface Series {
   notlar: string[]
 }
 
-export type Seviye = 'normal' | 'normalin_alti' | 'belirgin_dusuk'
+export type Seviye = SeviyeKodu
 
-export interface StatusChip {
-  kod: 'agac_gucu' | 'su' | 'risk'
+export interface StatusBilesen {
+  kod: 'agac_gucu' | 'su' | 'beslenme' | 'ani_degisim' | 'isi'
   ad: string
   seviye: Seviye | null
-  aciklama: string
-  /** Görünen seviye yazısı (Risk çipinde «orta» / «yüksek»); boşsa seviye adı */
-  etiket?: string | null
+  kullanilabilir: boolean
+  bayat: boolean
+  neden: string
+  veriTarihi: string | null
 }
 
-/** Durum kademesi (İyi · İzle · Dikkat · Sorun · Veri yok). Sayısal skor arayüze çıkmaz. */
+/** Durum (v2): kademe + 5 bileşen + risk satırı. Sayısal skor arayüze çıkmaz. */
 export interface GardenStatus {
   durum: 'iyi' | 'izle' | 'dikkat' | 'sorun' | 'veri_yok'
   etiket: string
   ozet: string
-  veriYeterli: boolean
-  veriYetersizNedeni: string | null
-  cipler: StatusChip[]
-  nasil: {
-    veri: string[]
-    sonGoruntuTarihi: string | null
-    guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmisGun: number; sonGoruntuYasiGun: number | null }
-    dusurenBilesen: StatusChip['kod'] | null
-    kademeNedeni: string
-    /** «Nasıl hesaplandı?»: en fazla 3 kısa cümle (neden · güven banda göre · son görüntü) */
-    cumleler: string[]
-    esikDurumu: string
-    formulNotu: string
-  }
+  bilesenler: StatusBilesen[]
+  riskler: string[]
+  guven: 'yuksek' | 'orta' | 'dusuk'
+  guvenNedeni: string
+  /** «Nasıl hesaplandı?»: en fazla 3 kısa cümle (kademeyi en çok düşüren bileşen(ler) · veri tarihleri · güven) */
+  nasil: string[]
+  dusuren: string[]
+  riskSinirladi: boolean
+  esikDurumu: string
 }
 
 export interface TodayItem {
   tur: string
-  oncelik: 'kritik' | 'uyari' | 'bilgi'
+  oncelik: 'kritik' | 'onemli' | 'bilgi'
   baslik: string
   metin: string
   sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'
@@ -154,22 +151,9 @@ export const agroApi = {
   async status(gardenId: string): Promise<GardenStatus> {
     const raw = await apiRequest<ApiDurum>(`/gardens/${gardenId}/durum`)
     return {
-      durum: raw.durum,
-      etiket: raw.etiket,
-      ozet: raw.ozet,
-      veriYeterli: raw.veri_yeterli,
-      veriYetersizNedeni: raw.veri_yetersiz_nedeni,
-      cipler: raw.cipler,
-      nasil: {
-        veri: raw.nasil.veri,
-        sonGoruntuTarihi: raw.nasil.son_goruntu_tarihi,
-        guven: { seviye: raw.nasil.guven.seviye, aciklama: raw.nasil.guven.aciklama, gecmisGun: raw.nasil.guven.gecmis_gun, sonGoruntuYasiGun: raw.nasil.guven.son_goruntu_yasi_gun },
-        dusurenBilesen: raw.nasil.dusuren_bilesen,
-        kademeNedeni: raw.nasil.kademe_nedeni,
-        cumleler: raw.nasil.cumleler,
-        esikDurumu: raw.nasil.esik_durumu,
-        formulNotu: raw.nasil.formul_notu,
-      },
+      durum: raw.durum, etiket: raw.etiket, ozet: raw.ozet, riskler: raw.riskler, guven: raw.guven, guvenNedeni: raw.guven_nedeni, nasil: raw.nasil, dusuren: raw.dusuren,
+      riskSinirladi: raw.risk_sinirladi, esikDurumu: raw.esik_durumu,
+      bilesenler: raw.bilesenler.map((b) => ({ kod: b.kod, ad: b.ad, seviye: b.seviye, kullanilabilir: b.kullanilabilir, bayat: b.bayat, neden: b.neden, veriTarihi: b.veri_tarihi })),
     }
   },
   async today(gardenId: string): Promise<TodayItem[]> {

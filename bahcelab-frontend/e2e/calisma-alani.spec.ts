@@ -244,6 +244,8 @@ test.describe('1024 ve 390 yerleşim düzeltmeleri', () => {
     await newUser(page)
     const a = await createGarden(page.request, { ad: 'Etiketli Bahçe', lng: 27.79, lat: 38.79, sideM: 150 })
     seedScenes(a.id)
+    await page.goto(`/bahceler/${a.id}`) // Durum sekmesi kademeyi hesaplar ve kaydeder; liste/harita etiketi aynı (TEK) kademeyi okur
+    await expect(page.getByTestId('kademe-ad')).toHaveText(/İyi|İzle|Dikkat|Sorun/, { timeout: 30_000 })
     await page.goto('/bahceler')
     await expect(page.getByTestId('komsu-etiketi').first()).toBeVisible({ timeout: 30_000 })
     await expect(page.getByTestId('etiket-kademe').first()).toBeVisible()

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createGarden, newUser, seedNotification } from './yardimcilar'
+import { createGarden, newUser, seedNotification, seedOlayOzet } from './yardimcilar'
 
 test('bildirim gelir → rozet → tıkla → bahçe ve sekme açılır → okundu olur', async ({ page }) => {
   await newUser(page)
@@ -80,4 +80,33 @@ test('yaşam döngüsü: çözüldü ve ertelendi sekmelerine geçer; geri alın
   await expect(items).toHaveCount(1)
   await expect(items.first()).toHaveAttribute('data-state', 'ertelendi')
   await expect(items.first()).toContainText('ertelendi')
+})
+
+test('karar katmanı: kritik olay anında listede, önemli olay günlük özet kartında; önem rozetleri ve «Bugün» önem sırası', async ({ page }) => {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad: 'Karar Katmanı', lng: 27.82, lat: 38.82 })
+  await page.route('**/api/gardens/*/weather', (route) => route.abort())
+  seedOlayOzet(garden.id)
+  await page.goto('/bahceler')
+  await page.getByTestId('bildirim-ac').click()
+  const items = page.getByTestId('notification-item')
+  await expect(items.first()).toBeVisible()
+  const onemler = await items.evaluateAll((els) => els.map((e) => e.getAttribute('data-priority')))
+  expect(onemler).toContain('kritik') // don: anında, tek başına
+  const ozet = items.filter({ has: page.getByTestId('ozet-ogeleri') })
+  await expect(ozet).toHaveCount(1) // önemli olay AYRI bildirim değil, günlük özet kartındadır
+  await expect(ozet.getByTestId('notification-onem')).toHaveText('Özet')
+  await expect(ozet.getByTestId('ozet-ogesi')).toHaveCount(1)
+  await expect(ozet).toContainText('aşırı yağış')
+  const kritik = items.filter({ hasText: 'don olayı' })
+  await expect(kritik.getByTestId('notification-onem')).toHaveText('Kritik')
+  expect(await items.filter({ hasText: 'aşırı yağış' }).count()).toBe(1) // yalnız özet kartı içinde geçer
+  if (process.env.EKRAN_CIKTI) await page.getByTestId('notifications-panel').screenshot({ path: `${process.env.EKRAN_CIKTI}/bildirim-paneli-kritik-ve-ozet-karti-e2e-tohumlu.png` }) // ekran görüntüsü (gerçek jlnnlk'ta taze olay yok: karar katmanı e2e tohumuyla gösterilir)
+  // «Bugün»: olaylar önem sırasıyla (kritik önce)
+  await page.goto(`/bahceler/${garden.id}`)
+  const bugun = page.getByTestId('today-item')
+  await expect(bugun.first()).toBeVisible({ timeout: 30_000 })
+  await expect(bugun.first().getByTestId('today-onem')).toHaveAttribute('data-onem', 'kritik')
+  await expect(bugun.first()).toContainText('don olayı')
+  await expect(bugun.first().getByTestId('today-action')).toHaveCount(1) // madde başına tek eylem
 })

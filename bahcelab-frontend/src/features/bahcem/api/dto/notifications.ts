@@ -1,6 +1,15 @@
 /** Backend `domain/notifications/schemas.py` yanıt biçimleri. */
 
-export type ApiNotificationPriority = 'kritik' | 'uyari' | 'bilgi'
+export type ApiNotificationPriority = 'kritik' | 'onemli' | 'bilgi'
+
+/** Günlük özet kartının kapsadığı madde (önem, başlık, metin, bağlantı, tür). */
+export interface ApiDigestItem {
+  onem: ApiNotificationPriority
+  baslik: string
+  metin: string
+  baglanti: string
+  tur: string
+}
 
 export interface ApiNotification {
   id: string
@@ -15,6 +24,7 @@ export interface ApiNotification {
   durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
   ertelendi_bitis: string | null
   olusturma: string
+  ogeler?: ApiDigestItem[]
 }
 
 export interface ApiNotificationList {

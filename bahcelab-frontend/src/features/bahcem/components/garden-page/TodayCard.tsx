@@ -4,12 +4,13 @@ import { Card, ErrorState, Skeleton, cx } from '@/components/ui'
 import { useToday, type TodayItem } from '../../api/agroApi'
 import { gardenPath } from '../../lib/routes'
 
-const ICON = { kritik: CircleAlert, uyari: TriangleAlert, bilgi: Info } as const
-const TONE = { kritik: 'text-app-danger', uyari: 'text-app-warn', bilgi: 'text-app-accent' } as const
+const ICON = { kritik: CircleAlert, onemli: TriangleAlert, bilgi: Info } as const
+const TONE = { kritik: 'text-app-danger', onemli: 'text-app-warn', bilgi: 'text-app-accent' } as const
+const ONEM_AD = { kritik: 'Kritik', onemli: 'Önemli', bilgi: 'Bilgi' } as const
 /** Her madde tek eylem: ilgili sekmeye geçiş (etiket sekme adıdır). Görev ve takvim eylemleri İşlerim ile (Faz 1.5) gelecek. */
 const ACTION_LABEL: Record<TodayItem['sekme'], string> = { durum: 'Durum', analiz: 'Analiz', hava: 'Hava', gunluk: 'Günlük', rapor: 'Rapor' }
 
-/** «Bugün»: öncelik sırasıyla en fazla 3 madde; satır = ikon · başlık · kısa açıklama · sağda tek eylem. */
+/** «Bugün»: ÖNEM sırasıyla (kritik → önemli → bilgi) en fazla 3 madde — olaylar ve riskler dahil; satır = ikon · başlık · kısa açıklama · sağda tek eylem. */
 export function TodayCard({ gardenId }: { gardenId: string }) {
   const { data, isLoading, isError, refetch, isFetching } = useToday(gardenId)
   if (isLoading) return <Skeleton className="h-44" aria-label="Bugün yükleniyor" />
@@ -31,7 +32,10 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
             <li key={`${item.tur}-${item.baslik}`} className="flex items-center gap-3 py-3" data-testid="today-item" data-kind={item.tur}>
               <Icon className={cx('h-5 w-5 shrink-0', done ? 'text-app-success' : TONE[item.oncelik])} aria-hidden />
               <div className="min-w-0 flex-1">
-                <p className="text-body font-semibold leading-snug text-app-text">{item.baslik}</p>
+                <p className="text-body font-semibold leading-snug text-app-text">
+                  <span className={cx('mr-1.5 rounded-[3px] border border-app-border px-1.5 py-px align-middle text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="today-onem" data-onem={item.oncelik}>{ONEM_AD[item.oncelik]}</span>
+                  {item.baslik}
+                </p>
                 <p className="text-small text-app-text-muted">{item.metin}</p>
                 {item.ayrinti && item.tur === 'indeks_dususu' && (
                   <details className="mt-1 text-small text-app-text-muted" data-testid="today-ayrinti">

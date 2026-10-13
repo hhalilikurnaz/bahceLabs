@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/apiClient'
-import type { ApiNotification, ApiNotificationList, ApiNotificationPriority, ApiPreference } from './dto/notifications'
+import type { ApiDigestItem, ApiNotification, ApiNotificationList, ApiNotificationPriority, ApiPreference } from './dto/notifications'
 
 export interface AppNotification {
   id: string
@@ -16,6 +16,8 @@ export interface AppNotification {
   durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
   ertelendiBitis: string | null
   olusturma: string
+  /** Günlük özet kartı: kapsanan maddeler (özet dışında boş) */
+  ogeler: ApiDigestItem[]
 }
 
 export type NotificationView = 'aktif' | 'ertelendi' | 'cozuldu'
@@ -45,7 +47,7 @@ export interface Preference {
 
 const mapItem = (n: ApiNotification): AppNotification => ({
   id: n.id, bahceId: n.bahce_id, tur: n.tur, turAdi: n.tur_adi, oncelik: n.oncelik, baslik: n.baslik, metin: n.metin,
-  baglanti: n.baglanti, okundu: n.okundu, durum: n.durum, ertelendiBitis: n.ertelendi_bitis, olusturma: n.olusturma,
+  baglanti: n.baglanti, okundu: n.okundu, durum: n.durum, ertelendiBitis: n.ertelendi_bitis, olusturma: n.olusturma, ogeler: n.ogeler ?? [],
 })
 
 export const PAGE_SIZE = 20

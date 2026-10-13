@@ -444,18 +444,23 @@ async def test_changing_the_boundary_discards_old_acquisitions_and_rebuilds(user
     assert count >= len(before) // 2  # yeni sınırla yeniden dolduruldu
 
 
-async def test_completion_notification_is_published_once(user_client: AsyncClient, fake):
+async def cok_yillik(factory, garden_id: str) -> list:  # noqa: ANN001
+    """Bilgi türü bildirim günlük özette bekler (listede görünmez): kayıtlar doğrudan okunur."""
+    from sqlalchemy import text
+
+    async with factory() as session:
+        return list((await session.execute(text("SELECT baslik, baglanti, oncelik, teslim FROM notifications WHERE tur = 'cok_yillik' AND garden_id = :g"), {"g": uuid.UUID(garden_id)})).all())
+
+
+async def test_completion_notification_is_published_once(user_client: AsyncClient, fake, factory):
     garden = await new_garden(user_client)
     await user_client.post(url(garden["id"]))
-    notes = (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()
-    assert (
-        notes["toplam"] == 1 and notes["ogeler"][0]["baglanti"] == f"/bahceler/{garden['id']}/analiz"
-    )
-    assert "çok yıllık analiz hazır" in notes["ogeler"][0]["baslik"]
+    notes = await cok_yillik(factory, garden["id"])
+    assert len(notes) == 1 and notes[0].baglanti == f"/bahceler/{garden['id']}/analiz"
+    assert "çok yıllık analiz hazır" in notes[0].baslik and notes[0].oncelik == "bilgi" and notes[0].teslim == "ozet"  # bilgi: günlük özette
+    assert (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()["toplam"] == 0  # özet gelene kadar listede görünmez
     await user_client.post(url(garden["id"]))  # tekrar başlatma: yeni bildirim üretmez
-    assert (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()[
-        "toplam"
-    ] == 1
+    assert len(await cok_yillik(factory, garden["id"])) == 1
 
 
 async def test_reprocessing_the_same_analysis_does_not_notify_again(user_client: AsyncClient, fake, factory):
@@ -470,8 +475,7 @@ async def test_reprocessing_the_same_analysis_does_not_notify_again(user_client:
             await session.execute(text("UPDATE multiyear_runs SET geometry_hash = 'eski', updated_at = now() WHERE garden_id = :g"), {"g": gid})
             await session.commit()
         await user_client.post(url(garden["id"]))
-    notes = (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()
-    assert notes["toplam"] == 1
+    assert len(await cok_yillik(factory, garden["id"])) == 1
 
 
 # ----------------------------------------------------------------------------- saf birimler

@@ -112,3 +112,21 @@ test('Yeni bahçe eklenince ERA5 besleme işi kendiliğinden çalışır ve Su s
   await expect(page.getByTestId('su-karar-cumlesi')).not.toBeEmpty()
   await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre kök bölgesi doluluğu/)
 })
+
+test('Kesintisiz canlılık eğrisi: Durum sekmesindeki sezon eğrisi Sentinel-2 + HLS gözlemlerini ve belirsizliği gösterir', async ({ page }) => {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad: 'Kesintisiz Eğri', lng: 27.72, lat: 38.62, sideM: 200 })
+  seedScenes(garden.id)
+  await page.goto(`/bahceler/${garden.id}`)
+  const sezon = page.getByTestId('sezon-egrisi')
+  await expect(async () => {
+    await page.reload()
+    await expect(sezon.getByTestId('kesintisiz-egri')).toBeVisible({ timeout: 4_000 })
+  }).toPass({ timeout: 90_000, intervals: [2_000, 3_000, 5_000] }) // HLS gözlemleri bahçe eklenince arka planda dolar
+  await expect(sezon.getByTestId('egri-gozlem-parca').first()).toBeVisible()
+  expect(await sezon.locator('[data-testid="egri-gozlem"][data-kaynak="s2"]').count()).toBeGreaterThan(0)
+  expect(await sezon.locator('[data-testid="egri-gozlem"][data-kaynak="hls"]').count()).toBeGreaterThan(0)
+  await expect(sezon.getByTestId('egri-notu')).toContainText('Kademe yalnız gerçek gözleme dayanır')
+  await sezon.getByTestId('sezon-ndre').click()
+  await expect(sezon.getByTestId('kesintisiz-egri')).toHaveCount(0) // kesintisiz eğri yalnız canlılık (NDVI) içindir
+})

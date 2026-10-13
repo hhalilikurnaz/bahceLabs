@@ -235,7 +235,7 @@ egri:
   sigma_taban: 0.02
   belirsizlik_z: 1.645
   belirsizlik_tau_gun: 10
-  gozlem_yakin_gun: 2
+  gozlem_yakin_gun: 6
   ekstrapolasyon_azami_gun: 30
   radar_bosluk_gun: 12
 

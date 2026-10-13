@@ -13,10 +13,15 @@ const TYPES = [
   { value: 'indeks_dususu', label: 'Uydu uyarısı' },
   { value: 'sulama', label: 'Sulama' },
   { value: 'cok_yillik', label: 'Çok yıllık analiz' },
+  { value: 'olay', label: 'Olay' },
+  { value: 'kademe_dususu', label: 'Durum kademesi düşüşü' },
+  { value: 'ozet', label: 'Günlük özet' },
 ] as const
 
-const ICON = { kritik: CircleAlert, uyari: TriangleAlert, bilgi: Info } as const
-const TONE = { kritik: 'text-app-danger', uyari: 'text-app-warn', bilgi: 'text-app-accent' } as const
+const ICON = { kritik: CircleAlert, onemli: TriangleAlert, bilgi: Info } as const
+const TONE = { kritik: 'text-app-danger', onemli: 'text-app-warn', bilgi: 'text-app-accent' } as const
+/** Önem rozeti: renk + metin (renk körlüğü). Kritik anında gelir; önemli ve bilgi günlük özette. */
+const ONEM = { kritik: 'Kritik', onemli: 'Önemli', bilgi: 'Bilgi' } as const
 
 const VIEWS: { value: NotificationView; label: string }[] = [
   { value: 'aktif', label: 'Aktif' },
@@ -33,10 +38,22 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
         <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2">
+            <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>{item.tur === 'ozet' ? 'Özet' : ONEM[item.oncelik]}</span>
             <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
             {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
           </span>
-          <span className="mt-0.5 line-clamp-3 block text-small text-app-text-muted">{item.metin}</span>
+          {item.tur === 'ozet' && item.ogeler.length > 0 ? (
+            <span className="mt-1 block space-y-1" data-testid="ozet-ogeleri">
+              {item.ogeler.map((o, i) => (
+                <span key={`${o.baglanti}-${i}`} className="flex items-baseline gap-2 text-small text-app-text-muted" data-testid="ozet-ogesi" data-onem={o.onem}>
+                  <span aria-hidden className={cx('text-[10px]', TONE[o.onem])}>{o.onem === 'onemli' ? '▲' : '●'}</span>
+                  <span className="min-w-0">{o.baslik}</span>
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span className="mt-0.5 line-clamp-3 block text-small text-app-text-muted">{item.metin}</span>
+          )}
           <span className="mt-1 block text-caption text-app-text-dim">
             {item.turAdi}
             {gardenName ? ` · ${gardenName}` : ''} · {timeAgo(item.olusturma) ?? ''}
@@ -44,7 +61,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
           </span>
         </span>
       </button>
-      <div className="flex flex-wrap gap-2 px-3 pb-3 pl-11">
+      <div className="flex flex-wrap gap-2 px-3 pb-3 pl-11" data-testid="notification-actions">
         {item.durum === 'cozuldu' || item.durum === 'ertelendi' ? (
           <button type="button" className={actionBtn} onClick={() => onState(item, 'goruldu')}>{item.durum === 'cozuldu' ? 'Yeniden aç' : 'Ertelemeyi kaldır'}</button>
         ) : (
@@ -130,7 +147,7 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
           <EmptyState
             icon={<Bell className="h-6 w-6" aria-hidden />}
             title={filters.tur || filters.bahce || filters.yalnizOkunmamis ? 'Bu süzgeçle bildirim yok' : (filters.gorunum ?? 'aktif') === 'cozuldu' ? 'Çözülen bildirim yok' : (filters.gorunum ?? 'aktif') === 'ertelendi' ? 'Ertelenen bildirim yok' : 'Henüz bildirim yok'}
-            description="Don, sıcak, zararlı riski, uydu uyarısı ve sulama ihtiyacı oluştuğunda burada listelenir."
+            description="Kritik uyarılar (don, şiddetli olay, yüksek risk) anında; önemli ve bilgi bildirimleri her sabah tek özet olarak burada listelenir."
           />
         ) : (
           <>

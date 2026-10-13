@@ -73,37 +73,34 @@ export interface ApiSeriler {
   notlar: string[]
 }
 
-export interface ApiCip {
-  kod: 'agac_gucu' | 'su' | 'risk'
+export type ApiSeviye = 'belirgin_dusuk' | 'normalin_alti' | 'normal' | 'normalin_ustu' | 'belirgin_yuksek'
+export interface ApiBilesen {
+  kod: 'agac_gucu' | 'su' | 'beslenme' | 'ani_degisim' | 'isi'
   ad: string
-  seviye: 'normal' | 'normalin_alti' | 'belirgin_dusuk' | null
-  aciklama: string
-  /** Risk çipinde «orta» / «yüksek» */
-  etiket?: string | null
+  seviye: ApiSeviye | null
+  kullanilabilir: boolean
+  bayat: boolean
+  neden: string
+  veri_tarihi: string | null
 }
 
-/** Durum kademesi yanıtı: iç skor YOKTUR (arayüze sayı çıkmaz). */
+/** Durum (v2, ADR 0018): kademe + 5 bileşen. İç puan YOKTUR (arayüze sayı çıkmaz). */
 export interface ApiDurum {
   durum: 'iyi' | 'izle' | 'dikkat' | 'sorun' | 'veri_yok'
   etiket: string
   ozet: string
-  veri_yeterli: boolean
-  veri_yetersiz_nedeni: string | null
-  cipler: ApiCip[]
-  nasil: {
-    veri: string[]
-    son_goruntu_tarihi: string | null
-    guven: { seviye: 'yuksek' | 'orta' | 'dusuk'; aciklama: string; gecmis_gun: number; son_goruntu_yasi_gun: number | null }
-    dusuren_bilesen: 'agac_gucu' | 'su' | 'risk' | null
-    kademe_nedeni: string
-    cumleler: string[]
-    esik_durumu: string
-    formul_notu: string
-  }
+  bilesenler: ApiBilesen[]
+  riskler: string[]
+  guven: 'yuksek' | 'orta' | 'dusuk'
+  guven_nedeni: string
+  nasil: string[]
+  dusuren: string[]
+  risk_sinirladi: boolean
+  esik_durumu: string
   hesaplama_tarihi: string
 }
 
 export interface ApiBugun {
   tarih: string
-  maddeler: { tur: string; oncelik: 'kritik' | 'uyari' | 'bilgi'; baslik: string; metin: string; sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'; ayrinti?: string | null }[]
+  maddeler: { tur: string; oncelik: 'kritik' | 'onemli' | 'bilgi'; baslik: string; metin: string; sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'; ayrinti?: string | null }[]
 }

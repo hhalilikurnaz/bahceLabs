@@ -1,12 +1,14 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useEdinimler, type GostergeId } from '../../api/edinimApi'
+import { useCanlilikEgrisi } from '../../api/egriApi'
+import { bantYolu, cizgiYolu, parcala, tahminEtiketi, yilNoktalari } from '../../lib/canlilikEgrisi'
 import { usePhenology } from '../../api/agroApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { useNormalBantlar } from '../../api/normalBantApi'
 import { useDarEkran } from '../../hooks/useDarEkran'
 import { useElementWidth } from '../../hooks/useElementWidth'
 import { sayi } from '../../lib/format'
-import { AY_KISA, ayTarihi, bandAylari, evreAraligi, sezonNoktalari } from '../../lib/sezon'
+import { AY_KISA, ayTarihi, bandAylari, evreAraligi, sezonNoktalari, yilIciKonum } from '../../lib/sezon'
 import { useCalismaStore } from '../calismaStore'
 import { GOSTERGE_KATMAN, KATMANLAR } from '../katmanlar'
 
@@ -30,6 +32,11 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
   const setKatman = useCalismaStore((s) => s.setKatman)
   const setTarih = useCalismaStore((s) => s.setTarih)
   const yil = new Date().getFullYear()
+  const egriSorgu = useCanlilikEgrisi(gardenId)
+  const kesintisiz = gosterge === 'ndvi' && egriSorgu.data?.yeterli ? egriSorgu.data : null // yalnız canlılık (NDVI) için: HLS + Sentinel-2 gözlemlerinden
+  const egriNoktalari = useMemo(() => (kesintisiz ? yilNoktalari(kesintisiz.noktalar, yil) : []), [kesintisiz, yil])
+  const gozlemler = useMemo(() => (kesintisiz ? yilNoktalari(kesintisiz.gozlemler, yil) : []), [kesintisiz, yil])
+  const radarIsaretleri = useMemo(() => (kesintisiz ? yilNoktalari(kesintisiz.radar_isaretleri, yil) : []), [kesintisiz, yil])
   const noktalar = useMemo(() => sezonNoktalari(edinim.data?.edinimler ?? [], gosterge, yil), [edinim.data, gosterge, yil])
   const band = bantlar.data?.gostergeler[gosterge]
   const { koyu, acik } = bandAylari(band)
@@ -41,13 +48,13 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
   const ih = YUKSEKLIK - KENAR.ust - KENAR.alt
 
   const [lo, hi] = useMemo(() => {
-    const vals = [...noktalar.map((n) => n.deger), ...acik.flatMap((b) => [b.p10!, b.p90!]), ...koyu.flatMap((b) => [b.p25!, b.p75!])]
+    const vals = [...noktalar.map((n) => n.deger), ...egriNoktalari.flatMap((n) => [n.alt, n.ust]), ...acik.flatMap((b) => [b.p10!, b.p90!]), ...koyu.flatMap((b) => [b.p25!, b.p75!])]
     if (!vals.length) return [0, 1] as const
     const a = Math.min(...vals)
     const b = Math.max(...vals)
     const pay = (b - a) * 0.12 || 0.05
     return [a - pay, b + pay] as const
-  }, [noktalar, acik, koyu])
+  }, [noktalar, egriNoktalari, acik, koyu])
   const X = (konum: number) => KENAR.sol + (konum / 12) * iw
   const Y = (v: number) => KENAR.ust + (1 - (v - lo) / (hi - lo || 1)) * ih
   const aySerisi = (list: typeof koyu, alt: 'p25' | 'p10', ust: 'p75' | 'p90') => {
@@ -108,8 +115,29 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
             {ortancaSonrasi && <path d={ortancaSonrasi} fill="none" stroke="var(--color-app-text-muted)" strokeWidth={1} strokeDasharray="2 4" opacity={0.4} data-testid="band-ortanca-sonrasi" />}
             {sonOrtanca && <text x={w - KENAR.sag} y={KENAR.ust + ih - 4} textAnchor="end" fontSize={10} fill="var(--color-app-text-muted)" data-testid="band-ortanca-etiket">geçmiş yılların ortancası</text>}
             <line x1={X(bugunAy - 1 + new Date().getDate() / 31)} x2={X(bugunAy - 1 + new Date().getDate() / 31)} y1={KENAR.ust} y2={KENAR.ust + ih} stroke="var(--color-app-border-strong)" strokeWidth={1} />
-            {egri && <path d={egri} fill="none" stroke="var(--color-app-text)" strokeWidth={1.8} strokeLinejoin="round" data-testid="sezon-yili-egrisi" />}
-            {noktalar.map((n) => <circle key={n.tarih} cx={X(n.x)} cy={Y(n.deger)} r={2.2} fill="var(--color-app-text)" />)}
+            {egriNoktalari.length > 0 ? (
+              <g data-testid="kesintisiz-egri">
+                {parcala(egriNoktalari).filter((p) => p.tahmini).map((p, i) => <path key={`b${i}`} d={bantYolu(p.noktalar, X, Y)} fill="var(--color-app-text)" opacity={0.09} data-testid="egri-belirsizlik-bandi" />)}
+                {parcala(egriNoktalari).map((p, i) => (
+                  <path key={`c${i}`} d={cizgiYolu(p.noktalar, X, Y)} fill="none" stroke="var(--color-app-text)" strokeWidth={p.tahmini ? 1.4 : 1.9} strokeDasharray={p.tahmini ? '4 3' : undefined} strokeLinejoin="round" opacity={p.tahmini ? 0.75 : 1} data-testid={p.tahmini ? 'egri-tahmini-parca' : 'egri-gozlem-parca'} />
+                ))}
+                {gozlemler.map((g) => <circle key={`${g.tarih}${g.kaynak}`} cx={X(yilIciKonum(g.tarih))} cy={Y(g.deger)} r={g.kaynak === 's2' ? 2.7 : 2.2} fill="var(--color-app-text)" opacity={g.kaynak === 's2' ? 1 : 0.7} data-testid="egri-gozlem" data-kaynak={g.kaynak}><title>{`${g.tarih} · ${g.kaynak === 's2' ? 'Sentinel-2' : 'HLS'} · ${sayi(g.deger, 2)}`}</title></circle>)}
+                {radarIsaretleri.map((r) => (
+                  <path key={r.tarih} d={`M${X(yilIciKonum(r.tarih)) - 3.5},${KENAR.ust + ih - 1} l3.5,-6.5 l3.5,6.5 z`} fill={r.degisim ? 'var(--color-app-text)' : 'none'} stroke="var(--color-app-text-muted)" strokeWidth={1} data-testid="radar-isareti" data-degisim={String(r.degisim)}>
+                    <title>{`${r.tarih} · radar geçişi: ${r.degisim ? 'değişim var' : 'değişim yok'} (NDVI değildir)`}</title>
+                  </path>
+                ))}
+                {tahminEtiketi(egriNoktalari) && (() => {
+                  const son = egriNoktalari[egriNoktalari.length - 1]
+                  return <text x={Math.min(X(yilIciKonum(son.tarih)) + 4, w - 44)} y={Y(son.deger) + 14} fontSize={10} fontStyle="italic" fill="var(--color-app-text-muted)" data-testid="egri-tahmini-etiket">tahmini</text>
+                })()}
+              </g>
+            ) : (
+              <>
+                {egri && <path d={egri} fill="none" stroke="var(--color-app-text)" strokeWidth={1.8} strokeLinejoin="round" data-testid="sezon-yili-egrisi" />}
+                {noktalar.map((n) => <circle key={n.tarih} cx={X(n.x)} cy={Y(n.deger)} r={2.2} fill="var(--color-app-text)" />)}
+              </>
+            )}
             {son && (
               <text x={Math.min(X(son.x) + 6, w - 40)} y={Y(son.deger) - 6} fontSize={11} fontWeight={700} fill="var(--color-app-text)" className="num" data-testid="sezon-son-deger">{yil} · {sayi(son.deger, gosterge === 'lai' ? 1 : 2)}</text>
             )}
@@ -139,6 +167,7 @@ export function SezonEgrisi({ gardenId }: { gardenId: string }) {
           <button key={a} type="button" onClick={() => aya(i + 1)} data-testid={`ay-${i + 1}`} className="sr-only min-[480px]:not-sr-only min-h-9 rounded text-[11px] font-medium text-app-text-muted hover:bg-app-card-hover hover:text-app-text">{a}</button>
         ))}
       </div>
+      {kesintisiz && <p className="mt-1 text-[11.5px] text-app-text-muted" data-testid="egri-notu">Kesintisiz eğri: Sentinel-2 + HLS gözlemlerinden yumuşatılmıştır (dolu nokta = gerçek gözlem; kesikli çizgi ve soluk bant = tahmin; üçgen = bulutlu dönemde radar geçişi, «değişim var/yok», NDVI değildir). Kademe yalnız gerçek gözleme dayanır.</p>}
       <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: geçmiş yılların ortancası · çizgi: {yil}. Grafiğe ya da aya dokununca harita o aya geçer.</p>
     </section>
   )
