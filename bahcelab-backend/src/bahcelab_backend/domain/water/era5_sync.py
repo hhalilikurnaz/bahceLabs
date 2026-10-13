@@ -64,6 +64,43 @@ async def upsert_days(session: AsyncSession, cell_id: uuid.UUID, rows: dict[date
     return len(values)
 
 
+OFFSET_DAYS = 7  # model–ERA5-Land katman farkı, örtüşen son bu kadar günün ortalamasından kestirilir
+
+
+def model_offsets(era5_rows: dict[date, dict[str, Any]], model_days: dict[date, dict[str, list[float | None]]], last_era5_day: date) -> list[float | None]:
+    """Katman başına ortalama (ERA5-Land − model) farkı (örtüşen son `OFFSET_DAYS` gün). Modelin ERA5-Land'den sistematik sapması yüzünden geçiş gününde yapay sıçrama olmasın.
+    Yeterli örtüşme (≥ 3 gün) yoksa o katman için None (düzeltme yapılmaz)."""
+    out: list[float | None] = []
+    days = [d for d in sorted(era5_rows) if d <= last_era5_day and d in model_days][-OFFSET_DAYS:]
+    for i in range(4):
+        diffs = []
+        for d in days:
+            era = era5_rows[d].get(f"sm{i}")
+            mod = aggregate_day(model_days[d]).sm[i]
+            if era is not None and mod is not None and era5_rows[d]["toprak_kaynak"] == ERA5:
+                diffs.append(era - mod)
+        out.append(sum(diffs) / len(diffs) if len(diffs) >= 3 else None)
+    return out
+
+
+def apply_offsets(row: dict[str, Any], offsets: list[float | None]) -> dict[str, Any]:
+    """Model kaynaklı bir günün toprak nemini (günlük + saatlik) katman farkıyla düzeltir; [0; 0,6] aralığında kırpar. Uygulanan fark `saatlik.model_ofset`te saklanır."""
+    out = dict(row)
+    hourly = {k: list(v) for k, v in (row.get("saatlik") or {}).items()}
+    applied: dict[str, float] = {}
+    for i, off in enumerate(offsets):
+        key = f"sm{i}"
+        if off is None or out.get(key) is None:
+            continue
+        out[key] = min(0.6, max(0.0, out[key] + off))
+        if key in hourly:
+            hourly[key] = [None if v is None else min(0.6, max(0.0, v + off)) for v in hourly[key]]
+        applied[key] = round(off, 4)
+    if applied:
+        out["saatlik"] = {**hourly, "model_ofset": applied}
+    return out
+
+
 async def sync_cell(session: AsyncSession, client: Era5Client, cell_id: uuid.UUID, lat: float, lng: float, start: date, today: date, *, past_days: int = 10, forecast_days: int = 8) -> dict[str, int]:
     """[start, today] arşivi + son günler ve ileri için model tahmini. Dönüş: yazılan gün sayısı ve model günü sayısı."""
     archive_end = today - timedelta(days=1)
@@ -81,5 +118,9 @@ async def sync_cell(session: AsyncSession, client: Era5Client, cell_id: uuid.UUI
             row = merge_day(None, None, hours)
             if row is not None:
                 rows[day] = row
+    era5_rows = {d: r for d, r in rows.items() if r["toprak_kaynak"] == ERA5}
+    if era5_rows:  # modelin ERA5-Land'den sistematik sapması: örtüşen günlerden katman farkı → model günlerine uygulanır
+        offsets = model_offsets(era5_rows, model, max(era5_rows))
+        rows = {d: (apply_offsets(r, offsets) if r["toprak_kaynak"] == MODEL else r) for d, r in rows.items()}
     written = await upsert_days(session, cell_id, rows)
     return {"gun": written, "model_gunu": sum(1 for r in rows.values() if r["toprak_kaynak"] == MODEL or r["hava_kaynak"] == MODEL)}

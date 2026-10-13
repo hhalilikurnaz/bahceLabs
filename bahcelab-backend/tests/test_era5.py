@@ -66,3 +66,20 @@ def test_merge_prefers_era5_land_soil_and_era5_weather_and_falls_back_to_the_mod
 def test_year_chunks_split_the_archive_calls() -> None:
     chunks = era5.year_chunks(date(2015, 1, 1), date(2016, 3, 5))
     assert chunks == [(date(2015, 1, 1), date(2015, 12, 31)), (date(2016, 1, 1), date(2016, 3, 5))]
+
+
+def test_model_is_shifted_by_the_overlap_bias_so_the_transition_day_has_no_artificial_jump() -> None:
+    from bahcelab_backend.domain.water.era5_sync import apply_offsets, model_offsets
+
+    days = [date(2026, 10, d) for d in range(1, 8)]
+    era5_rows = {d: {"sm0": 0.30, "sm1": 0.25, "sm2": 0.27, "sm3": 0.20, "toprak_kaynak": ERA5} for d in days}
+    model = {d: {"sm0": [0.21] * 24, "sm1": [0.24] * 24, "sm2": [0.17] * 24, "sm3": [None] * 24} for d in days}
+    offsets = model_offsets(era5_rows, model, days[-1])
+    assert offsets[0] == pytest.approx(0.09) and offsets[1] == pytest.approx(0.01) and offsets[2] == pytest.approx(0.10) and offsets[3] is None
+    row = {"sm0": 0.213, "sm1": 0.206, "sm2": 0.183, "sm3": None, "toprak_kaynak": MODEL, "saatlik": {"sm0": [0.213] * 24}}
+    fixed = apply_offsets(row, offsets)
+    assert fixed["sm0"] == pytest.approx(0.303) and fixed["sm2"] == pytest.approx(0.283) and fixed["sm3"] is None
+    assert fixed["saatlik"]["model_ofset"]["sm0"] == pytest.approx(0.09) and fixed["saatlik"]["sm0"][0] == pytest.approx(0.303)
+    assert apply_offsets(row, [None] * 4) == row  # örtüşme yoksa düzeltme yapılmaz
+    short = {d: era5_rows[d] for d in days[:2]}
+    assert model_offsets(short, model, days[1]) == [None, None, None, None]  # < 3 gün örtüşme

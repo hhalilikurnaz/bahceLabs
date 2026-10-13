@@ -30,6 +30,7 @@ from bahcelab_backend.shared.http_range import open_remote
 logger = logging.getLogger(__name__)
 SMAP, IMERG, CHIRPS = "smap-l3", "imerg-daily", "chirps-daily"
 WORKERS = 8
+CHIRPS_WORKERS = 2  # data.chc.ucsb.edu hız sınırı uygular (403): az eşzamanlı, aralıklı istek
 
 
 def _earthaccess() -> Any:
@@ -96,7 +97,7 @@ def fetch_chirps(lat: float, lng: float, days: list[date]) -> dict[date, list[Ob
             obs = None
         return day, [obs] if obs is not None else []
 
-    with ThreadPoolExecutor(WORKERS) as pool:
+    with ThreadPoolExecutor(CHIRPS_WORKERS) as pool:
         return {day: obs for day, obs in pool.map(one, days) if obs}
 
 
