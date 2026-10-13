@@ -22,7 +22,7 @@ class FakeHlsProvider:
     cloudy_every = 5  # her 5. geçiş bulutlu (tüm pikseller geçersiz)
 
     def search(self, geometry: dict[str, Any], start: date, end: date) -> list[HlsRef]:  # noqa: ARG002
-        first = date(2020, 1, 1)
+        first = date(2024, 1, 1)  # test sağlayıcısı: 2024'ten (üç günde bir ≈ 330 sahne); e2e her bahçe eklemede bunu çalıştırır, CI yavaşlamasın
         days = [first + timedelta(days=i) for i in range(0, (end - first).days + 1, STEP_DAYS)]
         return [HlsRef(d, f"HLS.S30.FAKE.{d.isoformat()}", "hls-s30", 90.0 if i % self.cloudy_every == 0 else 5.0, handle=(i % self.cloudy_every == 0, d)) for i, d in enumerate(days) if start <= d <= end]
 
