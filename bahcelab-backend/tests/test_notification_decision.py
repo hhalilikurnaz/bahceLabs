@@ -262,3 +262,28 @@ async def test_job_turns_fresh_events_and_tier_drops_into_candidates_and_the_dig
     assert (await send_digest(factory, FakeProvider(), now_local=local(8, today))).uretilen == 0  # aynı gün ikinci özet yok
     listed = (await user_client.get("/notifications")).json()
     assert any(n["tur"] == "ozet" and any("aşırı yağış" in o["baslik"] for o in n["ogeler"]) for n in listed["ogeler"])
+
+
+async def test_a_pending_drop_notification_closes_with_an_atmosphere_note_when_the_next_scene_does_not_confirm(user_client, factory):
+    from bahcelab_backend.domain.events.models import EventModel
+    from bahcelab_backend.jobs.tasks import generate_notifications
+
+    from .test_weather_api import FakeProvider
+
+    gid, ws = await setup(user_client, factory)
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
+    start = today - timedelta(days=6)
+    async with factory() as session:
+        session.add(EventModel(garden_id=gid, anahtar=f"s2_dusus:{start}", tur="s2_dusus", turler=["s2_dusus"], baslangic=start, bitis=today - timedelta(days=2), alan_da=8.0, guven="orta", durum="bekliyor", tahmin=False, ayrinti={"s2_dusus.neden": None}, formul_surumu="t"))
+        await session.commit()
+    await generate_notifications(factory, FakeProvider(), workspace_id=ws)  # «doğrulama bekliyor» önemli bildirim → özette bekler
+    async with factory() as session:
+        row = (await session.execute(text("SELECT baslik, metin, durum, teslim, oncelik FROM notifications WHERE workspace_id = :w AND dedupe_key = :k"), {"w": ws, "k": f"olay:{gid}:s2_dusus:{start}"})).one()
+    assert row.oncelik == "onemli" and row.teslim == "ozet" and "doğrulama bekliyor" in row.baslik and row.durum == "olustu"
+    async with factory() as session:  # sonraki net görüntü doğrulamadı: olay şüpheye döndü
+        await session.execute(text("UPDATE events SET durum = 'suphe', tur = 's2_suphe', anahtar = :a, ayrinti = CAST(:d AS jsonb) WHERE garden_id = :g"), {"a": f"s2_suphe:{start}", "g": gid, "d": '{"s2_dusus.neden": "toparlandi"}'})
+        await session.commit()
+    await generate_notifications(factory, FakeProvider(), workspace_id=ws)
+    async with factory() as session:
+        closed = (await session.execute(text("SELECT baslik, metin, durum, otomatik_cozuldu FROM notifications WHERE workspace_id = :w AND dedupe_key = :k"), {"w": ws, "k": f"olay:{gid}:s2_dusus:{start}"})).one()
+    assert closed.durum == "cozuldu" and closed.otomatik_cozuldu and "atmosfer" in closed.metin and closed.baslik.endswith("— atmosfer") and "doğrulama bekliyor" not in closed.baslik

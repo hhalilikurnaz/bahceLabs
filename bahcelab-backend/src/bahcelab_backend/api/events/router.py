@@ -13,13 +13,14 @@ from bahcelab_backend.domain.notifications.templates import EVENT_TITLES
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 router = APIRouter(tags=["olaylar"], dependencies=[Depends(get_current_user)])
-NAMES = {**{k: v.capitalize() for k, v in EVENT_TITLES.items()}, "s2_suphe": "Atmosfer şüphesi"}
+NAMES = {**{k: v.capitalize() for k, v in EVENT_TITLES.items()}, "s2_dusus": "Ani düşüş (optik)", "radar_degisim": "Radar değişimi", "s2_suphe": "Atmosfer şüphesi"}
 
 
 def to_response(e: EventView) -> OlayYanit:
+    name = "Don + optik hasar izi" if e.tur == "don" and "s2_dusus" in e.turler else NAMES.get(e.tur, e.tur)
     return OlayYanit(
-        id=e.id, tur=e.tur, tur_adi=NAMES.get(e.tur, e.tur), turler=e.turler, baslangic=e.baslangic, bitis=e.bitis, alan_da=e.alan_da, guven=e.guven,  # type: ignore[arg-type]
-        siddet=e.siddet, katman=e.katman, tahmin=e.tahmin, kaynak_sayisi=e.kaynak_sayisi,
+        id=e.id, tur=e.tur, tur_adi=name + (" (doğrulama bekliyor)" if e.durum == "bekliyor" else ""), turler=e.turler, baslangic=e.baslangic, bitis=e.bitis, alan_da=e.alan_da, guven=e.guven,  # type: ignore[arg-type]
+        siddet=e.siddet, katman=e.katman, tahmin=e.tahmin, kaynak_sayisi=e.kaynak_sayisi, durum=e.durum, neden=e.neden,  # type: ignore[arg-type]
     )
 
 

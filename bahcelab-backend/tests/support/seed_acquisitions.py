@@ -61,7 +61,8 @@ async def main(garden_id: uuid.UUID, basit: bool) -> None:
         for month in months:
             session.add(BackfillMonthModel(garden_id=garden_id, source_id=SOURCE_ID, ay=month, durum=MONTH_DONE, net_sahne=2, aday_sayisi=2, geometry_hash=ghash))
             season = 0.08 * math.sin((month.month - 4) / 12 * 2 * math.pi)  # yaz yüksek, kış düşük
-            for day in (4, 19):
+            days = (4, 19) if (month.year, month.month) != (today.year, today.month) else tuple(sorted({4, max(1, today.day - 2)}))  # güncel ayda son sahne HER ZAMAN ≤ 3 gün önce (testler «taze görüntü» varsayar; takvim gününe bağlı olmasın)
+            for day in days:
                 tarih = date(month.year, month.month, day)
                 if tarih > today:
                     continue

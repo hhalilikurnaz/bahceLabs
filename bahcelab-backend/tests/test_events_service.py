@@ -136,9 +136,9 @@ async def test_frost_s2_and_radar_within_five_days_merge_into_one_event_that_ref
     assert cell is not None
 
 
-async def s2_scenario(user_client, factory, *, next_drop: float | None, whole: bool = False, frost: bool = False):  # noqa: ANN001, ANN201
+async def s2_scenario(user_client, factory, *, next_drop: float | None, whole: bool = False, frost: bool = False, ago: int = 60):  # noqa: ANN001, ANN201
     gid = await seed(user_client, factory)
-    d = TODAY - timedelta(days=60)
+    d = TODAY - timedelta(days=ago)
     await add_history(factory, gid, d)
     await add_era5(factory, gid, {d + timedelta(days=3): (-2.5, 10.0)} if frost else {d: (10.0, 10.0)})
     await add_s2(factory, gid, d - timedelta(days=5), None)
@@ -153,14 +153,50 @@ async def s2_scenario(user_client, factory, *, next_drop: float | None, whole: b
     return [e for e in real if "s2_dusus" in e.turler], doubt
 
 
-async def test_a_single_scene_drop_or_one_without_a_following_scene_is_an_atmosphere_suspicion_not_an_event(user_client, factory):
+async def test_a_single_scene_drop_that_recovers_is_an_atmosphere_suspicion_not_an_event(user_client, factory):
     real, doubt = await s2_scenario(user_client, factory, next_drop=0.0)  # sonraki görüntüde toparlandı
     assert real == [] and len(doubt) == 1 and doubt[0].tur == "s2_suphe" and doubt[0].durum == "suphe" and doubt[0].neden == "toparlandi" and doubt[0].guven == "dusuk"
 
 
-async def test_a_drop_with_no_following_scene_waits_for_confirmation_as_a_suspicion(user_client, factory):
-    real, doubt = await s2_scenario(user_client, factory, next_drop=None)
-    assert real == [] and len(doubt) == 1 and doubt[0].neden == "teyit_bekliyor"
+async def test_a_drop_in_the_latest_scene_waits_for_confirmation_as_a_pending_event_not_a_suspicion(user_client, factory):
+    real, doubt = await s2_scenario(user_client, factory, next_drop=None, ago=12)  # düşüşü gören görüntü 9 gün önce: sonraki net görüntü henüz yok
+    assert doubt == [] and len(real) == 1 and real[0].durum == "bekliyor" and real[0].guven == "orta" and real[0].tur == "s2_dusus"
+    old_real, old_doubt = await s2_scenario(user_client, factory, next_drop=None, ago=80)  # 30 günden uzun süredir sonraki görüntü yok: doğrulanamadı
+    assert old_real == [] and len(old_doubt) == 1 and old_doubt[0].neden == "teyit_edilemedi"
+
+
+async def test_the_pending_drop_is_promoted_when_the_next_scene_confirms_and_keeps_the_same_event_key(user_client, factory):
+    gid = await seed(user_client, factory)
+    d = TODAY - timedelta(days=12)
+    await add_history(factory, gid, d)
+    await add_era5(factory, gid, {d: (10.0, 10.0)})
+    await add_s2(factory, gid, d - timedelta(days=5), None)
+    await add_s2(factory, gid, d + timedelta(days=3), 0.25)
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+        pending = (await session.execute(select(EventModel).where(EventModel.garden_id == gid, EventModel.tur == "s2_dusus"))).scalar_one()
+    assert pending.durum == "bekliyor"
+    await add_s2(factory, gid, d + timedelta(days=8), 0.25)  # sonraki net görüntü doğruladı
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+        confirmed = (await session.execute(select(EventModel).where(EventModel.garden_id == gid, EventModel.tur == "s2_dusus"))).scalar_one()
+    assert confirmed.id == pending.id and confirmed.anahtar == pending.anahtar and confirmed.durum == "olay"  # aynı kimlik: bildirim tekrarlanmaz
+
+
+async def test_the_events_endpoint_marks_pending_drops_and_the_damage_trace_name(user_client, factory):
+    gid = await seed(user_client, factory)
+    d = TODAY - timedelta(days=12)
+    await add_history(factory, gid, d)
+    await add_era5(factory, gid, {d + timedelta(days=1): (-2.5, 10.0)})
+    await add_s2(factory, gid, d - timedelta(days=5), None)
+    await add_s2(factory, gid, d + timedelta(days=3), 0.25)  # donun hemen ardından düşüş; sonraki görüntü yok
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+    body = (await user_client.get(f"/gardens/{gid}/olaylar")).json()
+    assert [(o["durum"], o["tur_adi"]) for o in body["olaylar"] if o["tur"] == "s2_dusus"] == [("bekliyor", "Ani düşüş (optik) (doğrulama bekliyor)")]
 
 
 async def test_a_persistent_partial_drop_is_an_event_without_extra_support(user_client, factory):

@@ -43,7 +43,7 @@ class Signal:
     siddet: str | None = None
     kaynaklar: tuple[SourceRef, ...] = ()
     ayrinti: dict[str, float | str | None] = field(default_factory=dict)
-    durum: Literal["olay", "suphe"] = "olay"  # suphe: atmosfer şüphesi — kaydedilir, olay DEĞİLDİR (bildirim ve birleştirme dışı)
+    durum: Literal["olay", "bekliyor", "suphe"] = "olay"  # bekliyor: en son sahnedeki düşüş, sonraki net görüntü doğrulayacak · suphe: atmosfer şüphesi — olay DEĞİLDİR (bildirim ve birleştirme dışı)
 
 
 @dataclass(frozen=True)
@@ -58,7 +58,7 @@ class Event:
     katman: str | None
     kaynaklar: tuple[SourceRef, ...]
     ayrinti: dict[str, float | str | None]
-    durum: Literal["olay", "suphe"] = "olay"
+    durum: Literal["olay", "bekliyor", "suphe"] = "olay"
 
     @property
     def anahtar(self) -> str:
@@ -214,24 +214,36 @@ def s2_persists(following: np.ndarray, floor: np.ndarray, patch: np.ndarray, rul
     return float((following[known] < floor[known]).sum()) / float(patch.sum()) >= rule.s2_kalicilik_orani
 
 
-def classify_s2(candidate: Signal, persists: bool | None, drop_share: float, others: list[Signal], rule: OlayKurali) -> Signal:
-    """Aday S2 düşüşünü olay ya da atmosfer şüphesi yapar:
-    · sonraki net görüntüde sürmediyse (False) ya da sonraki görüntü yoksa (None) → şüphe;
-    · bahçenin > %90'ı düşüyorsa hava (don/yağış/rüzgâr) ya da radar sinyali ±destek gün içinde yoksa → şüphe."""
-    reason: str | None = None
+def frost_precedes(frost: Signal, s2: Signal, rule: OlayKurali) -> bool:
+    """Asimetrik hasar penceresi: S2 düşüşünün BAŞLAYABİLECEĞİ aralık [önceki görüntü + 1 gün, düşüşü gören görüntü] don bitişinden sonraki 0..+`don_hasar_gun` pencere ile kesişiyor mu?"""
+    return s2.bitis >= frost.bitis and s2.baslangic <= frost.bitis + timedelta(days=rule.don_hasar_gun)
+
+
+def classify_s2(candidate: Signal, persists: bool | None, drop_share: float, others: list[Signal], rule: OlayKurali, today: date | None = None) -> Signal:
+    """Aday S2 düşüşünü olay, «doğrulama bekliyor» ya da atmosfer şüphesi yapar (sıra önemlidir):
+    1. sonraki net görüntüde toparlandıysa (persists=False) → şüphe (toparlandi);
+    2. bahçenin > %90'ı düşüyorsa hava/radar ±destek gün içinde ya da önceki `don_hasar_gun` günde don yoksa → şüphe (tum_bahce_destek_yok);
+    3. sonraki net görüntü yoksa (None): düşüşü gören görüntü son `s2_azami_aralik_gun` içindeyse → **bekliyor** (şüphe değil; sonraki görüntü doğrularsa olaya yükselir), daha eskiyse → şüphe (teyit_edilemedi);
+    4. aksi → olay."""
+    detail: dict[str, float | str | None] = {**candidate.ayrinti, "dusen_pay": round(drop_share, 3), "kalici": None if persists is None else str(persists)}
+
+    def make(durum: Literal["olay", "bekliyor", "suphe"], reason: str | None = None) -> Signal:
+        extra = {**detail, "neden": reason} if reason else detail
+        return Signal("s2_dusus", candidate.baslangic, candidate.bitis, candidate.guven, candidate.alan_da, None, candidate.kaynaklar, extra, durum=durum)
+
     if persists is False:
-        reason = "toparlandi"
-    elif persists is None:
-        reason = "teyit_bekliyor"
-    elif drop_share > rule.s2_tum_bahce_orani:
+        return make("suphe", "toparlandi")
+    if drop_share > rule.s2_tum_bahce_orani:
         window = timedelta(days=rule.s2_destek_gun)
-        supported = any(o.tur != "s2_dusus" and o.baslangic - window <= candidate.bitis and o.bitis + window >= candidate.baslangic for o in others)
+        supported = any(
+            (o.tur == "don" and frost_precedes(o, candidate, rule)) or (o.tur != "s2_dusus" and o.baslangic - window <= candidate.bitis and o.bitis + window >= candidate.baslangic) for o in others
+        )
         if not supported:
-            reason = "tum_bahce_destek_yok"
-    detail = {**candidate.ayrinti, "dusen_pay": round(drop_share, 3), "kalici": None if persists is None else str(persists)}
-    if reason is not None:
-        return Signal("s2_dusus", candidate.baslangic, candidate.bitis, candidate.guven, candidate.alan_da, None, candidate.kaynaklar, {**detail, "neden": reason}, durum="suphe")
-    return Signal("s2_dusus", candidate.baslangic, candidate.bitis, candidate.guven, candidate.alan_da, None, candidate.kaynaklar, detail)
+            return make("suphe", "tum_bahce_destek_yok")
+    if persists is None:
+        recent = today is not None and (today - candidate.bitis).days <= rule.s2_azami_aralik_gun
+        return make("bekliyor") if recent else make("suphe", "teyit_edilemedi")
+    return make("olay")
 
 
 # ----------------------------------------------------------------------------- birleştirme ve güven
@@ -270,7 +282,13 @@ def to_event(group: list[Signal], rule: OlayKurali) -> Event:
     layer = "degisim" if "s2_dusus" in kinds else LAYER[main]
     detail: dict[str, float | str | None] = {}
     for s in group:
-        detail.update({f"{s.tur}.{k}": v for k, v in s.ayrinti.items()})
+        for k, v in s.ayrinti.items():
+            key = f"{s.tur}.{k}"
+            old = detail.get(key)
+            if isinstance(old, (int, float)) and isinstance(v, (int, float)):
+                detail[key] = min(old, v) if k.startswith("en_dusuk") else max(old, v)  # birleşen aynı türde en uç değer (en düşük sıcaklık / en yüksek yağış, hamle) kalır
+            else:
+                detail[key] = v
     return Event(
         main, tuple(kinds), min(s.baslangic for s in group), max(s.bitis for s in group), max(areas) if areas else None, confidence(group, rule),
         "siddetli" if "siddetli" in severities else ("normal" if severities else None), layer, tuple(r for s in group for r in s.kaynaklar), detail,
@@ -282,9 +300,41 @@ def suspect_event(s: Signal) -> Event:
     return Event("s2_suphe", ("s2_dusus",), s.baslangic, s.bitis, s.alan_da, "dusuk", None, "degisim", s.kaynaklar, {f"s2_dusus.{k}": v for k, v in s.ayrinti.items()}, "suphe")
 
 
+def _can_join(group: list[Signal], s: Signal, rule: OlayKurali) -> bool:
+    last_end = max(x.bitis for x in group)
+    first_start = min(x.baslangic for x in group)
+    gap = max((s.baslangic - last_end).days, (first_start - s.bitis).days)  # aralıklar arası boşluk (çakışma ≤ 0)
+    return gap <= rule.birlestirme_gun and (max(s.bitis, last_end) - min(s.baslangic, first_start)).days <= rule.birlestirme_azami_sure_gun
+
+
+def merge_optical(groups: list[list[Signal]], s2_signals: list[Signal], rule: OlayKurali) -> list[list[Signal]]:
+    """S2 düşüşlerini hava/radar gruplarına bağlar (iki aşama: önce hava+radar kendi içinde kümelenir, sonra her S2 düşüşü yerleştirilir).
+
+    Don → S2 bağlama (ASİMETRİK pencere, `don_hasar_gun`): düşüş, başlayabileceği aralık donun bitişinden sonraki 0..+N günle kesişen EN YAKIN dona bağlanır (don + optik hasar izi; kaynak ailesi sayısı arttığı için güven yüksek).
+    Don yoksa standart kural: ±`birlestirme_gun` içindeki gruba (en çok `birlestirme_azami_sure_gun` yayılımla) katılır; hiçbirine uymazsa kendi olayı olur."""
+    out = [list(g) for g in groups]
+    for s in sorted(s2_signals, key=lambda x: (x.baslangic, x.bitis)):
+        frost_hosts = [g for g in out if any(f.tur == "don" and frost_precedes(f, s, rule) for f in g)]
+        if frost_hosts:
+            max(frost_hosts, key=lambda g: max(f.bitis for f in g if f.tur == "don")).append(s)
+            continue
+        host = next((g for g in out if _can_join(g, s, rule)), None)
+        if host is not None:
+            host.append(s)
+        else:
+            out.append([s])
+    return out
+
+
+def pending_event(s: Signal) -> Event:
+    """Doğrulama bekleyen S2 düşüşü: kendi kaydıdır (birleşmez), güveni orta (önemli düzeyde bildirim); sonraki net görüntü doğrularsa olaya yükselir."""
+    return Event("s2_dusus", ("s2_dusus",), s.baslangic, s.bitis, s.alan_da, "orta", None, "degisim", s.kaynaklar, {f"s2_dusus.{k}": v for k, v in s.ayrinti.items()}, "bekliyor")
+
+
 def build_events(signals: list[Signal], rule: OlayKurali) -> list[Event]:
     real = [s for s in signals if s.durum == "olay"]
-    return [*(to_event(g, rule) for g in cluster(real, rule)), *(suspect_event(s) for s in signals if s.durum == "suphe")]
+    groups = merge_optical(cluster([s for s in real if s.tur != "s2_dusus"], rule), [s for s in real if s.tur == "s2_dusus"], rule)
+    return [*(to_event(g, rule) for g in groups), *(pending_event(s) for s in signals if s.durum == "bekliyor"), *(suspect_event(s) for s in signals if s.durum == "suphe")]
 
 
 def is_forecast(event: Event, today: date) -> bool:

@@ -32,14 +32,21 @@ def tr_number(v: float, digits: int = 1) -> str:
     return f"{v:.{digits}f}".replace(".", ",")
 
 
-def event_text(garden: str, tur: str, start: date, end: date, data: dict[str, float | str | None], *, forecast: bool = False, severe: bool = False) -> tuple[str, str]:
+def event_text(garden: str, tur: str, start: date, end: date, data: dict[str, float | str | None], *, forecast: bool = False, severe: bool = False, pending: bool = False, damage: bool = False) -> tuple[str, str]:
     """Olay bildirimi: başlık «<Bahçe>: <tarih> <tür>», gövde şablondan. Eksik veri alanı boş geçilir, uydurulmaz."""
     body = EVENT_BODIES[tur].format(
         en_dusuk_c=tr_number(float(data.get("en_dusuk_c") or 0)), siddetli=" (şiddetli)" if severe else "", yagis_mm=tr_number(float(data.get("yagis_mm") or 0), 0),
         hamle_kmh=tr_number(float(data.get("hamle_kmh") or 0), 0), alan_da=tr_number(float(data.get("alan_da") or 0)),
     )
     prefix = "Tahmin: " if forecast else ""
-    return f"{garden}: {prefix}{span_text(start, end)} {EVENT_TITLES[tur]}", body
+    title = f"{garden}: {prefix}{span_text(start, end)} {EVENT_TITLES[tur]}"
+    if damage:  # don + optik hasar izi
+        title = f"{garden}: {span_text(start, end)} don + optik hasar izi"
+        body += " Uydu görüntüsünde canlılık düşüşü de görüldü."
+    if pending:
+        title += " (doğrulama bekliyor)"
+        body += " Sonraki net uydu görüntüsü doğrulayacak; doğrulanmazsa bildirim atmosfer notuyla kapanır."
+    return title, body
 
 
 def tier_text(garden: str, old: str, new: str, sentences: list[str]) -> tuple[str, str]:

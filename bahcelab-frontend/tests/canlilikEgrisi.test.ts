@@ -28,3 +28,17 @@ describe('kesintisiz canlılık eğrisi', () => {
     expect(bantYolu(pts, X, Y).endsWith('Z')).toBe(true)
   })
 })
+
+describe('radar izleme aralıkları', () => {
+  it('ardışık radar geçişleri tek aralıkta birleşir; değişim var denen geçiş ayrıca anılır', async () => {
+    const { radarAraliklari } = await import('../src/features/bahcem/lib/canlilikEgrisi')
+    const marks = ['2026-01-02', '2026-01-08', '2026-01-14', '2026-01-20', '2026-03-01', '2026-03-07'].map((tarih) => ({ tarih, degisim: tarih === '2026-01-14' }))
+    const araliklar = radarAraliklari(marks)
+    expect(araliklar).toEqual([
+      { baslangic: '2026-01-02', bitis: '2026-01-20', gecis: 4, degisimler: ['2026-01-14'] },
+      { baslangic: '2026-03-01', bitis: '2026-03-07', gecis: 2, degisimler: [] },
+    ])
+    expect(radarAraliklari([])).toEqual([])
+    expect(radarAraliklari([{ tarih: '2026-05-05', degisim: false }])).toHaveLength(1)
+  })
+})

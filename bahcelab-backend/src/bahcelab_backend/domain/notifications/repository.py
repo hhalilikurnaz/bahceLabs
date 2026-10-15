@@ -147,6 +147,14 @@ class NotificationRepository:
         notification.durum, notification.okundu, notification.okundu_zamani = "olustu", False, None
         await self.session.flush()
 
+    async def close_with_note(self, notification: NotificationModel, note: str) -> None:
+        """Doğrulanmayan («bekliyor») olay bildirimi: sistem notla kapatır (atmosfer); kullanıcı elle çözmüşse dokunulmaz."""
+        if notification.durum == "cozuldu":
+            return
+        notification.metin = f"{notification.metin} {note}".strip()
+        notification.baslik = notification.baslik.replace(" (doğrulama bekliyor)", "") + " — atmosfer"
+        await self.resolve_auto(notification)
+
     async def by_key(self, dedupe_key: str) -> NotificationModel | None:
         return (
             await self.session.execute(select(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.dedupe_key == dedupe_key))

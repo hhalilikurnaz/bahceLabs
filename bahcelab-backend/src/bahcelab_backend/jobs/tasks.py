@@ -121,6 +121,15 @@ async def event_and_tier_candidates(session: AsyncSession, agro: AgroService, ga
         candidate = event_candidate(garden_id, name, e, today, rule, e.anahtar)
         if candidate is not None:
             out.append(candidate)
+    from bahcelab_backend.domain.notifications import decision
+    from bahcelab_backend.domain.notifications.repository import NotificationRepository
+
+    notifier = NotificationRepository(session, agro.gardens.workspace_id)
+    for doubt in await list_events(session, garden_id, suphe=True, since=today - timedelta(days=60)):
+        if doubt.neden in ("toparlandi", "teyit_edilemedi"):  # sonraki net görüntü doğrulamadı: önceden gönderilen «doğrulama bekliyor» bildirimi atmosfer notuyla kapanır
+            sent = await notifier.by_key(decision.event_dedupe_key(garden_id, f"s2_dusus:{doubt.baslangic.isoformat()}"))
+            if sent is not None:
+                await notifier.close_with_note(sent, "Sonraki net uydu görüntüsü düşüşü doğrulamadı: bulut/hava (atmosfer) kaynaklı olabilir; olay sayılmadı.")
     status = await agro.status_v2_result(garden_id, today)
     snapshots = StatusSnapshotRepository(session)
     previous = await snapshots.get(garden_id)

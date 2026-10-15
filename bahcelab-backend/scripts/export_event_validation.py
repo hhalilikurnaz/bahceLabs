@@ -19,7 +19,7 @@ from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F4
 
 TUR = {"don": "Don", "asiri_yagis": "Aşırı yağış", "ruzgar": "Kuvvetli rüzgâr", "s2_dusus": "Ani düşüş (optik)", "radar_degisim": "Radar değişimi", "s2_suphe": "Atmosfer şüphesi (olay DEĞİL)"}
 GUVEN = {"yuksek": "yüksek", "orta": "orta", "dusuk": "düşük"}
-NEDEN = {"toparlandi": "sonraki görüntüde toparlandı", "tum_bahce_destek_yok": "bahçenin >%90'ı düştü, hava/radar desteği yok", "teyit_bekliyor": "sonraki net görüntü yok"}
+NEDEN = {"toparlandi": "sonraki görüntüde toparlandı", "tum_bahce_destek_yok": "bahçenin >%90'ı düştü, hava/radar/don desteği yok", "teyit_edilemedi": "sonraki net görüntü gelmedi (30 gün içinde teyit yok)"}
 EMPTY = "gerçekleşti / gerçekleşmedi / bilinmiyor"
 
 
@@ -59,13 +59,14 @@ async def sources_text(session, event: EventModel) -> str:  # noqa: ANN001
 
 async def section(session, gid: uuid.UUID, name: str) -> str:  # noqa: ANN001
     area = (await session.execute(text("SELECT alan_dekar FROM gardens WHERE id = :g"), {"g": gid})).scalar_one()
-    events = (await session.execute(select(EventModel).where(EventModel.garden_id == gid, EventModel.durum == "olay").order_by(EventModel.baslangic))).scalars().all()
+    events = (await session.execute(select(EventModel).where(EventModel.garden_id == gid, EventModel.durum.in_(("olay", "bekliyor"))).order_by(EventModel.baslangic))).scalars().all()
     doubts = (await session.execute(select(EventModel).where(EventModel.garden_id == gid, EventModel.durum == "suphe").order_by(EventModel.baslangic))).scalars().all()
     lines = [f"## {name} ({tr(float(area))} da)", "", f"Olay: {len(events)} · atmosfer şüphesi (olay değil): {len(doubts)}", "", "### Olaylar", ""]
     lines += ["| # | Tarih | Tür | Güven | Kaynaklar | Çiftçi doğrulaması |", "|---|---|---|---|---|---|"]
     for i, e in enumerate(events, 1):
         span = fmt_day(e.baslangic) if e.baslangic == e.bitis else f"{fmt_day(e.baslangic)} – {fmt_day(e.bitis)}"
-        kinds = TUR[e.tur] + (f" + {', '.join(TUR[k].lower() for k in e.turler if k != e.tur)}" if len(e.turler) > 1 else "") + (" (şiddetli)" if e.siddet == "siddetli" else "") + (" — TAHMİN" if e.tahmin else "")
+        kinds = "Don + optik hasar izi" if e.tur == "don" and "s2_dusus" in e.turler else TUR[e.tur] + (f" + {', '.join(TUR[k].lower() for k in e.turler if k != e.tur)}" if len(e.turler) > 1 else "")
+        kinds += (" (şiddetli)" if e.siddet == "siddetli" else "") + (" — TAHMİN" if e.tahmin else "") + (" — DOĞRULAMA BEKLİYOR (sonraki net görüntü)" if e.durum == "bekliyor" else "")
         lines.append(f"| {i} | {span} | {kinds} | {GUVEN[e.guven]} | {await sources_text(session, e)} | {EMPTY} |")
     lines += ["", "### Atmosfer şüpheleri (olay sayılmadı; bilgi için)", "", "| # | Tarih | Neden olay sayılmadı | Kaynaklar |", "|---|---|---|---|"]
     for i, e in enumerate(doubts, 1):

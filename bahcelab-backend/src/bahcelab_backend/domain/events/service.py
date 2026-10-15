@@ -108,7 +108,7 @@ async def collect_signals(session: AsyncSession, storage: StorageBackend, garden
     cell, _, _ = await garden_cell(session, garden_id)
     days = await weather_days(session, cell, today)
     others = [*er.frost_signals(days, rule), *er.rain_signals(days, rule), *er.wind_signals(days, rule), *await radar_signals(session, garden_id)]
-    s2 = [er.classify_s2(sig, persists, share, others, rule) for sig, persists, share in await s2_candidates(session, storage, garden_id, rule)]
+    s2 = [er.classify_s2(sig, persists, share, others, rule, today) for sig, persists, share in await s2_candidates(session, storage, garden_id, rule)]
     return [*others, *s2]
 
 
@@ -169,7 +169,8 @@ class EventView:
 
 async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: date | None = None, until: date | None = None, suphe: bool = False) -> list[EventView]:
     """Olaylar (yeniden eskiye). Radar alanı `change_events`ten OKUNUR (kopyalanmaz)."""
-    query = select(EventModel).where(EventModel.garden_id == garden_id, EventModel.durum == ("suphe" if suphe else "olay"))
+    states = ("suphe",) if suphe else ("olay", "bekliyor")  # bekliyor: doğrulama bekleyen S2 düşüşü (olay listesinde, kendi rozetiyle)
+    query = select(EventModel).where(EventModel.garden_id == garden_id, EventModel.durum.in_(states))
     if since is not None:
         query = query.where(EventModel.bitis >= since)
     if until is not None:

@@ -38,6 +38,34 @@ export function bantYolu(noktalar: EgriNoktasi[], X: (konum: number) => number, 
   return `M${[...ust, ...alt].join(' L')}Z`
 }
 
+export interface RadarAraligi {
+  baslangic: string
+  bitis: string
+  /** aralıktaki radar geçişi sayısı */
+  gecis: number
+  /** aralıkta «değişim var» denen geçiş tarihleri (yalnız bunlar ayrıca işaretlenir) */
+  degisimler: string[]
+}
+
+const gunFarki = (a: string, b: string): number => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)
+
+/** Ardışık radar geçişlerini TEK «radar izleme» aralığında birleştirir (geçişler arası ≤ `maxBosluk` gün): çubuklarda üçgen kalabalığı olmaz. */
+export function radarAraliklari(isaretler: { tarih: string; degisim: boolean }[], maxBosluk = 14): RadarAraligi[] {
+  const sirali = [...isaretler].sort((a, b) => a.tarih.localeCompare(b.tarih))
+  const out: RadarAraligi[] = []
+  for (const r of sirali) {
+    const son = out[out.length - 1]
+    if (son && gunFarki(son.bitis, r.tarih) <= maxBosluk) {
+      son.bitis = r.tarih
+      son.gecis += 1
+      if (r.degisim) son.degisimler.push(r.tarih)
+    } else {
+      out.push({ baslangic: r.tarih, bitis: r.tarih, gecis: 1, degisimler: r.degisim ? [r.tarih] : [] })
+    }
+  }
+  return out
+}
+
 /** Eğrinin en son noktası tahminiyse gösterilecek etiket metni; yoksa null. */
 export function tahminEtiketi(noktalar: EgriNoktasi[]): string | null {
   const son = noktalar[noktalar.length - 1]

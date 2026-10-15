@@ -104,12 +104,23 @@ def candidate(day: int = 20) -> er.Signal:
     return er.Signal("s2_dusus", D0 + timedelta(days=day - 5), D0 + timedelta(days=day), "orta", alan_da=12.0)
 
 
-def test_unconfirmed_or_recovered_drops_are_atmosphere_suspicions_not_events() -> None:
-    assert er.classify_s2(candidate(), True, 0.4, [], RULE).durum == "olay"
-    recovered = er.classify_s2(candidate(), False, 0.4, [], RULE)
+def test_recovered_drop_is_an_atmosphere_suspicion_and_a_drop_in_the_latest_scene_waits_for_confirmation() -> None:
+    today = D0 + timedelta(days=25)
+    assert er.classify_s2(candidate(), True, 0.4, [], RULE, today).durum == "olay"
+    recovered = er.classify_s2(candidate(), False, 0.4, [], RULE, today)
     assert recovered.durum == "suphe" and recovered.ayrinti["neden"] == "toparlandi"
-    waiting = er.classify_s2(candidate(), None, 0.4, [], RULE)
-    assert waiting.durum == "suphe" and waiting.ayrinti["neden"] == "teyit_bekliyor"
+    waiting = er.classify_s2(candidate(), None, 0.4, [], RULE, today)  # en son sahne: sonraki net görüntü henüz yok
+    assert waiting.durum == "bekliyor" and "neden" not in waiting.ayrinti  # ŞÜPHE DEĞİL: doğrulama bekliyor
+    stale = er.classify_s2(candidate(), None, 0.4, [], RULE, D0 + timedelta(days=20 + RULE.s2_azami_aralik_gun + 1))
+    assert stale.durum == "suphe" and stale.ayrinti["neden"] == "teyit_edilemedi"  # sonraki görüntü uzun süre gelmedi: doğrulanamadı
+
+
+def test_a_pending_drop_is_its_own_event_with_medium_confidence_never_merged() -> None:
+    frost = sig("don", 18, siddet="normal")
+    waiting = er.classify_s2(candidate(), None, 0.4, [], RULE, D0 + timedelta(days=25))
+    events = er.build_events([frost, waiting], RULE)
+    pending = next(e for e in events if e.durum == "bekliyor")
+    assert pending.guven == "orta" and pending.tur == "s2_dusus" and pending.anahtar.startswith("s2_dusus:") and len(events) == 2
 
 
 def test_a_drop_over_ninety_percent_of_the_garden_needs_weather_or_radar_support_within_five_days() -> None:
@@ -147,8 +158,8 @@ def test_signals_within_five_days_become_one_event_and_confidence_grows_with_sou
     assert e.tur == "don" and e.turler == ("don", "s2_dusus", "radar_degisim") and e.guven == "yuksek" and e.alan_da == 12.0 and e.katman == "degisim" and e.siddet == "normal"
     assert e.baslangic == D0 and e.bitis == D0 + timedelta(days=5)
     # 6 gün sonraki sinyal ayrı olay
-    separate = er.build_events([frost, sig("s2_dusus", 7, alan_da=9.0)], RULE)
-    assert len(separate) == 2
+    separate = er.build_events([frost, sig("s2_dusus", 40, alan_da=9.0)], RULE)
+    assert len(separate) == 2  # don sonrası 21 günden sonra başlayan düşüş ayrı olay (21 gün içindeyse hasar izi olarak bağlanır)
 
 
 def test_confidence_levels_single_sources_and_combinations() -> None:
@@ -168,3 +179,37 @@ def test_chained_signals_cannot_make_an_unbounded_event() -> None:
 def test_event_key_is_stable_and_forecast_flag() -> None:
     e = er.build_events([sig("don", 2)], RULE)[0]
     assert e.anahtar == f"don:{D0 + timedelta(days=2)}" and er.is_forecast(e, D0) and not er.is_forecast(e, D0 + timedelta(days=3))
+
+
+def test_s2_drop_after_frost_within_21_days_joins_the_frost_event_as_damage_trace_with_high_confidence() -> None:
+    frost = sig("don", 0, 1, siddet="siddetli")  # gün 0–1
+    after = sig("s2_dusus", 6, 15, alan_da=12.0)  # önceki görüntü 5. gün, düşüşü gören görüntü 15. gün → düşüş don sonrası başlayabilir
+    far = sig("s2_dusus", 40, 50, alan_da=9.0)  # don bitişinden 21 günden sonra başlayabilir
+    before = sig("s2_dusus", -20, -10, alan_da=7.0)  # donu gören görüntü donundan ÖNCE: iz değil
+    events = er.build_events([frost, after, far, before], RULE)
+    merged = next(e for e in events if e.tur == "don")
+    assert merged.turler == ("don", "s2_dusus") and merged.guven == "yuksek" and merged.alan_da == 12.0 and merged.siddet == "siddetli"
+    assert merged.baslangic == D0 and merged.bitis == D0 + timedelta(days=15)  # birleşik olay hasar penceresini kapsar (10 günlük sınır muaf)
+    assert sorted(e.tur for e in events) == ["don", "s2_dusus", "s2_dusus"]  # uzak ve önceki düşüşler AYRI olay
+
+
+def test_damage_window_overlap_rule_uses_when_the_drop_could_have_started() -> None:
+    frost = sig("don", 10, 12)
+    assert er.frost_precedes(frost, sig("s2_dusus", 11, 40), RULE)  # önceki görüntü don sırasında: düşüş donla birlikte/sonra başlamış olabilir
+    assert er.frost_precedes(frost, sig("s2_dusus", 12 + RULE.don_hasar_gun, 60), RULE) and not er.frost_precedes(frost, sig("s2_dusus", 12 + RULE.don_hasar_gun + 1, 60), RULE)
+    assert not er.frost_precedes(frost, sig("s2_dusus", 0, 11), RULE)  # düşüşü gören görüntü donun bitişinden önce
+
+
+def test_a_whole_garden_drop_is_supported_by_a_frost_in_the_previous_21_days() -> None:
+    frost = er.Signal("don", D0 + timedelta(days=2), D0 + timedelta(days=3), "orta", siddet="normal")
+    cand = er.Signal("s2_dusus", D0 + timedelta(days=15), D0 + timedelta(days=24), "orta", alan_da=12.0)  # don 21 gün penceresinde, ±5 gün dışında
+    assert er.classify_s2(cand, True, 0.97, [frost], RULE).durum == "olay"
+    old_frost = er.Signal("don", D0 - timedelta(days=30), D0 - timedelta(days=29), "orta")
+    assert er.classify_s2(cand, True, 0.97, [old_frost], RULE).durum == "suphe"
+
+
+def test_merged_same_kind_signals_keep_the_extreme_value_not_the_last_one() -> None:
+    first = er.Signal("don", D0, D0 + timedelta(days=1), "orta", siddet="siddetli", ayrinti={"en_dusuk_c": -4.5})
+    second = er.Signal("don", D0 + timedelta(days=3), D0 + timedelta(days=3), "orta", siddet="normal", ayrinti={"en_dusuk_c": -0.1})
+    (event,) = er.build_events([first, second], RULE)
+    assert event.ayrinti["don.en_dusuk_c"] == -4.5 and event.siddet == "siddetli"

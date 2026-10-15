@@ -74,7 +74,7 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
           {unread > 0 && <span data-testid="unread-badge" className="num absolute right-0.5 top-0.5 min-w-[15px] rounded-full bg-app-warn px-1 text-center text-[9.5px] font-semibold leading-[15px] text-white">{badgeText(unread)}</span>}
         </button>
         {bildirim && (
-          <div className="glass absolute right-0 top-11 z-40 flex max-h-[min(640px,80vh)] w-[420px] max-w-[calc(100vw-24px)] flex-col overflow-hidden">
+          <div className="glass absolute right-0 top-11 z-40 flex max-h-[min(640px,80vh)] w-[420px] max-w-[calc(100vw-24px)] flex-col overflow-hidden max-[560px]:fixed max-[560px]:inset-x-3 max-[560px]:right-auto max-[560px]:top-[60px] max-[560px]:w-auto max-[560px]:max-w-none">
             <NotificationsPanel onNavigate={() => setBildirim(false)} />
           </div>
         )}

@@ -10,7 +10,8 @@ mkdirSync(CIKTI, { recursive: true })
 /** Dar ekranda görünüm geçici olarak uzatılır, öğe bütün hâliyle çekilir (yapışkan alt katmanlar kırpmasın). */
 async function cekim(page, el, yol, dar) {
   const boyut = page.viewportSize()
-  if (dar) await page.setViewportSize({ width: boyut.width, height: 1600 })
+  if (dar) await page.setViewportSize({ width: boyut.width, height: 2400 })
+  await page.waitForTimeout(1200) // yeniden yerleşim otursun (kırpılmış/boş alt bölüm olmasın)
   await el.evaluate((n) => n.scrollIntoView({ block: 'start' }))
   await page.waitForTimeout(600)
   await el.screenshot({ path: yol })

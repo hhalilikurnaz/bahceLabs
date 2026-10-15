@@ -260,6 +260,7 @@ class OlayKurali(KuralBlok):
     s2_kalicilik_orani: float = Field(default=0.5, ge=0, le=1)  # sonraki net görüntüde yama piksellerinin en az bu payı hâlâ p10 altında olmalı
     s2_tum_bahce_orani: float = Field(default=0.90, ge=0, le=1)  # bahçenin bundan fazlası düşüyorsa hava/radar desteği şart
     s2_destek_gun: int = Field(default=5, ge=0)  # destek sinyali ±bu kadar gün içinde olmalı
+    don_hasar_gun: int = Field(default=21, ge=0)  # ASİMETRİK pencere: don olayından sonra 0..+bu kadar gün içinde başlayabilen S2 düşüşü aynı olaya bağlanır («don + optik hasar izi»)
     don_c: float = 0.0
     don_siddetli_c: float = -2.0
     yagis_24s_mm: float = 50.0
