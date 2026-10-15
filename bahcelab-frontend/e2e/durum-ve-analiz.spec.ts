@@ -102,8 +102,9 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await expect(page.getByTestId('gosterge-cubuklari')).toBeVisible({ timeout: 30_000 })
     const KONUM_SEVIYE: Record<string, string[]> = { ust: ['normalin_ustu', 'belirgin_yuksek', 'normal'], normal: ['normal'], alt: ['normalin_alti'], en_dusuk: ['belirgin_dusuk'] }
     for (const [cip, gosterge] of [['agac_gucu', 'ndvi'], ['beslenme', 'ndre']] as const) {
-      const konum = await page.locator(`[data-testid="gosterge-satiri"][data-gosterge="${gosterge}"]`).getAttribute('data-konum')
-      expect(konum, `${gosterge} bandı yeterli olmalı`).not.toBe('yetersiz')
+      const satir = page.locator(`[data-testid="gosterge-satiri"][data-gosterge="${gosterge}"]`)
+      await expect(satir, `${gosterge} bandı yeterli olmalı (bantlar yüklenene kadar «yetersiz» görünebilir)`).not.toHaveAttribute('data-konum', 'yetersiz', { timeout: 30_000 }) // yavaş koşuda bant sorgusu geç gelebilir: yeniden dener
+      const konum = await satir.getAttribute('data-konum')
       const seviye = await page.locator(`[data-testid="durum-cip"][data-kod="${cip}"]`).getAttribute('data-seviye')
       expect(KONUM_SEVIYE[konum ?? ''], `${cip}: çubuk konumu ${konum}, çip ${seviye}`).toContain(seviye)
     }
