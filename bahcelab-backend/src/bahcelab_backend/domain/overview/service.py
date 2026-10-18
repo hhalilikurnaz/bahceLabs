@@ -12,7 +12,6 @@ from typing import cast
 from zoneinfo import ZoneInfo
 
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.agro.score import ScoreConfig
 from bahcelab_backend.domain.gardens.repository import GardenRepository, GardenRow
 from bahcelab_backend.domain.ndvi.persist import thumbnail_url_path
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
@@ -49,7 +48,6 @@ class GardenOverviewService:
         self.ndvi = ndvi
         self.weather = weather
         self.settings = get_settings()
-        self.score_cfg = ScoreConfig.from_settings(self.settings)
 
     async def overview(self, indeks: str = "ndvi") -> BahceOzetiYanit:
         if indeks not in VALID_INDICES:

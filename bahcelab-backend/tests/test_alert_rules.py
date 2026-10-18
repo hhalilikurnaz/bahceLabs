@@ -6,12 +6,12 @@ from datetime import date, timedelta
 import pytest
 
 from bahcelab_backend.config import Settings
-from bahcelab_backend.domain.agro.score import ScoreConfig
+from bahcelab_backend.domain.ndvi.baseline import BaselineConfig
 from bahcelab_backend.domain.ndvi.models import IndexObservationModel, SceneObservationModel
 from bahcelab_backend.domain.ndvi.repository import SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 
-CFG = ScoreConfig.from_settings(Settings())
+CFG = BaselineConfig.from_settings(Settings())
 GID = uuid.uuid4()
 
 

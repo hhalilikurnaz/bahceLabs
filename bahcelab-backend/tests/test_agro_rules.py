@@ -1,20 +1,10 @@
-"""Agro kuralları: katalog, sezon/evre tarihleri, seriler, skor, «Bugün» (saf birim testleri; veritabanı gerekmez)."""
+"""Agro kuralları: katalog, sezon/evre tarihleri, seriler, «Bugün» (saf birim testleri; veritabanı gerekmez)."""
 
 from datetime import date, timedelta
 
 import pytest
 
-from bahcelab_backend.config import Settings
 from bahcelab_backend.domain.agro import catalog as cat
-from bahcelab_backend.domain.agro.score import (
-    AktifRisk,
-    SceneValue,
-    ScoreConfig,
-    assess,
-    baseline,
-    derive_status,
-    deviation_points,
-)
 from bahcelab_backend.domain.agro.series import (
     DayWeather,
     build_season,
@@ -24,8 +14,6 @@ from bahcelab_backend.domain.agro.series import (
 )
 from bahcelab_backend.domain.agro.today import Girdi, build_today
 
-CFG = ScoreConfig.from_settings(Settings())
-SPANS = {"ndvi": 0.9, "ndmi": 0.8}
 TODAY = date(2026, 10, 10)
 
 
@@ -103,89 +91,6 @@ def test_cumulative_series_skips_missing_days_and_leap_day_shift():
     assert coverage(rows, date(2025, 10, 1), date(2025, 10, 3)) == pytest.approx(2 / 3)
 
 
-# ----------------------------------------------------------------------------- skor
-def series(start: date, values: list[float], step: int = 5) -> list[SceneValue]:
-    return [SceneValue(start + timedelta(days=i * step), {"ndvi": v, "ndmi": 0.2}) for i, v in enumerate(values)]
-
-
-def test_deviation_points_boundaries():
-    assert deviation_points(0.60, 0.60, 0.9, CFG) == 100
-    assert deviation_points(0.60 - 0.045, 0.60, 0.9, CFG) == 100  # tam tolerans (%5 aralık)
-    assert deviation_points(0.60 - 0.27, 0.60, 0.9, CFG) == 0  # %30 aralık
-    mid = deviation_points(0.60 - 0.1575, 0.60, 0.9, CFG)  # toleransla sıfır arasının ortası
-    assert 45 <= mid <= 55
-    assert deviation_points(0.9, 0.5, 0.9, CFG) == 100  # artış cezalandırılmaz
-
-
-def test_baseline_prefers_same_period_last_year_then_recent_days_then_none():
-    latest = date(2026, 6, 1)
-    last_year = [(date(2025, 5, 25) + timedelta(days=i * 5), 0.6) for i in range(4)]
-    recent = [(latest - timedelta(days=80 - i * 10), 0.5) for i in range(6)]
-    assert baseline(last_year + recent, latest, CFG).kaynak == "gecmis_sezon"  # type: ignore[union-attr]
-    assert baseline(recent, latest, CFG).kaynak == "son_gunler"  # type: ignore[union-attr]
-    assert baseline(recent[:2], latest, CFG) is None  # yetersiz geçmiş
-    assert baseline([], latest, CFG) is None
-
-
-def test_normal_garden_scores_high_and_is_labelled_good():
-    scenes = series(date(2026, 6, 1), [0.62, 0.61, 0.63, 0.62, 0.61] * 4)
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih + timedelta(days=2), cfg=CFG)
-    assert result.veri_yeterli and result.skor == 100 and result.durum == "iyi"
-    assert result.guven.seviye in ("orta", "yuksek") and "kendi" in result.bilesenler[0].neden
-
-
-def test_sudden_drop_lowers_score_and_names_the_cause():
-    base = [0.62] * 19
-    scenes = series(date(2026, 6, 1), [*base, 0.40])
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG)
-    assert result.skor is not None and result.skor < 75
-    vigor = next(b for b in result.bilesenler if b.kod == "canlilik")
-    assert vigor.puan is not None and vigor.puan < 50 and "altında" in vigor.neden and "%" in vigor.neden
-    assert "Ağaç gücü" in result.kademe_nedeni and result.dusuren == "agac_gucu"
-
-
-def test_homogeneous_constant_garden_does_not_break_scoring():
-    scenes = [SceneValue(date(2026, 6, 1) + timedelta(days=5 * i), {"ndvi": 0.5, "ndmi": 0.1}) for i in range(20)]
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=None, today=scenes[-1].tarih, cfg=CFG)
-    assert result.skor == 100  # hava bileşeni (yok) dışarıda kalır, kalan ağırlıklar yeniden normalleştirilir
-    assert next(b for b in result.bilesenler if b.kod == "hava").kullanilabilir is False
-
-
-def test_insufficient_history_gives_no_score_with_reason():
-    scenes = series(date(2026, 9, 1), [0.6, 0.6])
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih, cfg=CFG)
-    assert result.skor is None and not result.veri_yeterli
-    assert "yeterli geçmiş" in (result.veri_yetersiz_nedeni or "") and result.guven.seviye == "dusuk"
-
-
-def test_no_images_means_no_data_but_red_weather_alert_still_shows_attention():
-    result = assess([], spans=SPANS, sat_severities=[], weather_severities=[], today=TODAY, cfg=CFG)
-    assert result.durum == "veri_yok" and result.skor is None
-    red = assess([], spans=SPANS, sat_severities=[], weather_severities=["kirmizi"], today=TODAY, cfg=CFG)
-    assert red.durum == "dikkat"
-
-
-def test_stale_last_image_suppresses_the_score():
-    scenes = series(date(2026, 3, 1), [0.6] * 10)
-    result = assess(scenes, spans=SPANS, sat_severities=[], weather_severities=[], today=scenes[-1].tarih + timedelta(days=CFG.stale_image_days + 1), cfg=CFG)
-    assert result.skor is None and "günlük" in (result.veri_yetersiz_nedeni or "")
-
-
-def test_red_alert_caps_the_label_even_with_a_high_score():
-    scenes = series(date(2026, 6, 1), [0.62] * 20)
-    red = assess(scenes, spans=SPANS, sat_severities=["kirmizi"], weather_severities=[], today=scenes[-1].tarih, cfg=CFG)
-    yellow = assess(scenes, spans=SPANS, sat_severities=["sari"], weather_severities=[], today=scenes[-1].tarih, cfg=CFG)
-    assert red.durum == "dikkat" and yellow.durum == "izle"
-    assert yellow.skor is not None and yellow.skor < 100  # uyarı bileşeni puanı düşürür
-
-
-def test_label_thresholds_come_from_one_function():
-    assert derive_status(has_data=True, severities=[], score=CFG.good_min, cfg=CFG) == "iyi"
-    assert derive_status(has_data=True, severities=[], score=CFG.good_min - 1, cfg=CFG) == "izle"
-    assert derive_status(has_data=True, severities=[], score=CFG.watch_min - 1, cfg=CFG) == "dikkat"
-    assert derive_status(has_data=True, severities=[], score=CFG.caution_min - 1, cfg=CFG) == "sorun"
-
-
 # ----------------------------------------------------------------------------- bugün
 EMPTY = Girdi(hava_uyarilari=[], zararli_riskleri=[], ilaclama=[], uydu_uyarilari=[], sulama=None)
 PRIORITY = ("hava_uyarisi", "olay", "zararli_riski", "ilaclama", "indeks_dususu", "sulama")
@@ -232,20 +137,9 @@ def test_today_risk_item_is_plain_with_technical_detail_kept_separately():
     assert build_today(low, TODAY, PRIORITY, 3)[0].tur == "her_sey_yolunda"
 
 
-def test_high_pest_risk_lowers_points_and_caps_the_tier_at_attention():
-    scenes = series(date(2026, 6, 1), [0.62] * 20)
-    kwargs = {"spans": SPANS, "sat_severities": [], "weather_severities": [], "today": scenes[-1].tarih, "cfg": CFG}
-    plain = assess(scenes, **kwargs)
-    risky = assess(scenes, **kwargs, active_risks=[AktifRisk("Meyve sineği", "yuksek")])
-    heavy = assess(scenes, **kwargs, active_risks=[AktifRisk(f"Risk {i}", "yuksek") for i in range(9)])  # alt sınır 0
-    assert plain.skor == 100 and risky.skor is not None and risky.skor < plain.skor
-    weather = next(b for b in risky.bilesenler if b.kod == "hava")
-    assert weather.puan == 100 - CFG.risk_penalty_per_high and "risk tahmini" in weather.neden
-    assert next(b for b in heavy.bilesenler if b.kod == "hava").puan == 0
-    assert plain.durum == "iyi" and risky.durum == "dikkat"  # yüksek zararlı riski kademeyi en fazla Dikkat yapar (orta: İzle)
-
-
-def test_today_lists_events_and_risks_by_importance_then_kind_priority_with_one_action_each() -> None:
+def test_today_lists_events_and_risks_by_importance_then_kind_priority_with_one_action_each() -> (
+    None
+):
     data = Girdi(
         hava_uyarilari=[("sari", "Sıcak uyarısı", "m")], zararli_riskleri=[("orta", "Meyve sineği", "sade", "neden")], ilaclama=[], uydu_uyarilari=[], sulama=None,
         olaylar=[("bilgi", "Küçük olay", "m", "durum"), ("kritik", "Don olayı", "m", "hava"), ("onemli", "Kuvvetli rüzgâr olayı", "m", "hava")],

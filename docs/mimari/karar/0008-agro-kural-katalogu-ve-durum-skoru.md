@@ -1,6 +1,6 @@
 # ADR 0008 — Sürümlü agro kural kataloğu ve bahçe durum skoru
 
-**Durum:** kabul (Adım 8A)
+**Durum:** kabul (Adım 8A) — durum skoru bölümü ADR 0018 ile yerini Durum v2'ye bıraktı; `score.py` ve sayısal skor 9G'de kaldırıldı (katalog kısmı geçerli).
 
 **Bağlam.** Fenoloji tarihleri, Kc, GDD tabanı ve (8B'de) zararlı/hastalık eşikleri tarımsal bilgidir; kodda sabit olursa kimin ne zaman, hangi kaynağa dayanarak değiştirdiği izlenemez ve ziraat mühendisi onayı süreci kurulamaz. Durum etiketi (İyi/İzle/Dikkat) ise yalnızca uyarılardan türetiliyordu; bahçenin kendi geçmişini hesaba katmıyordu.
 

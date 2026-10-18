@@ -1,5 +1,5 @@
-"""Bahçe durum etiketi: TEK fonksiyon `domain/agro/score.py: derive_status` (skor + uyarılar). Bu modül yalnızca yeniden dışa aktarır."""
+"""Bahçe listesi için kademe tipleri (Durum v2; kademe `garden_status_snapshots`ten okunur)."""
 
-from bahcelab_backend.domain.agro.score import Durum, Seviye, derive_status
+from bahcelab_backend.domain.agro.tiers import Durum, Seviye
 
-__all__ = ["Durum", "Seviye", "derive_status"]
+__all__ = ["Durum", "Seviye"]

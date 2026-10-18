@@ -6,7 +6,6 @@ from datetime import date, timedelta
 import pytest
 
 from bahcelab_backend.domain.agro.catalog import load_catalog
-from bahcelab_backend.domain.agro.score import AktifRisk
 from bahcelab_backend.domain.agro.status_v2 import (
     ChangeSignal,
     HeatInput,
@@ -20,6 +19,7 @@ from bahcelab_backend.domain.agro.status_v2 import (
     index_points,
     robust_center_scale,
 )
+from bahcelab_backend.domain.agro.tiers import AktifRisk
 
 RULE = load_catalog().durum_v2
 TODAY = date(2026, 10, 13)

@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.api.deps import get_weather_provider
 from bahcelab_backend.domain.ndvi.thumbnail import make_thumbnail
-from bahcelab_backend.domain.overview.status import derive_status
 from bahcelab_backend.shared.storage import get_storage
 
 from .conftest import make_client, register
@@ -61,24 +60,6 @@ def real_png(size: tuple[int, int] = (400, 300)) -> bytes:
     out = io.BytesIO()
     image.save(out, format="PNG")
     return out.getvalue()
-
-
-# --- durum etiketi (tek fonksiyon)
-def test_status_rules():
-    """Tek durum fonksiyonu: skor etiketi + uyarılar (kırmızı en fazla «dikkat», sarı en fazla «izle» bırakır)."""
-    assert derive_status(has_data=True, severities=[], score=90) == "iyi"
-    assert derive_status(has_data=True, severities=[], score=85) == "iyi"  # sınır dahil
-    assert derive_status(has_data=True, severities=[], score=84) == "izle"
-    assert derive_status(has_data=True, severities=[], score=70) == "izle"
-    assert derive_status(has_data=True, severities=[], score=69) == "dikkat"
-    assert derive_status(has_data=True, severities=[], score=50) == "dikkat"
-    assert derive_status(has_data=True, severities=[], score=49) == "sorun"
-    assert derive_status(has_data=True, severities=["sari"], score=95) == "izle"  # sarı uyarı «iyi»yi engeller
-    assert derive_status(has_data=True, severities=["sari", "kirmizi"], score=95) == "dikkat"
-    assert derive_status(has_data=True, severities=[], score=None) == "iyi"  # skor yok (geçmiş yetersiz), uyarı da yok
-    assert derive_status(has_data=True, severities=["sari"], score=None) == "izle"
-    assert derive_status(has_data=False, severities=[], score=None) == "veri_yok"
-    assert derive_status(has_data=False, severities=["kirmizi"], score=None) == "dikkat"  # kırmızı hava uyarısı veri yokken de görünür
 
 
 def test_thumbnail_crops_transparent_margin_and_limits_size():

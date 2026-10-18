@@ -12,7 +12,7 @@ from shapely.ops import transform as shapely_transform
 from shapely.ops import unary_union
 
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.agro.score import ScoreConfig, baseline
+from bahcelab_backend.domain.ndvi.baseline import BaselineConfig, baseline
 from bahcelab_backend.domain.ndvi.repository import SceneWithIndices
 from bahcelab_backend.domain.ndvi.schemas import Uyari
 
@@ -100,7 +100,7 @@ def _change_pct(previous: float, latest: float) -> float:
     return round((latest - previous) / previous * 100, 2)
 
 
-def _drop_alert(indeks: str, series: list[tuple[date, float]], cfg: ScoreConfig) -> Uyari | None:
+def _drop_alert(indeks: str, series: list[tuple[date, float]], cfg: BaselineConfig) -> Uyari | None:
     """Mevsim normuna göre düzeltilmiş düşüş; norm (geçen yıl aynı dönem / kendi taban) yoksa uyarı üretilmez."""
     rule = DROP_RULES[indeks]
     window = _compare_window(series)
@@ -189,13 +189,13 @@ def _components(alerts: list[Uyari], overlaps: dict[tuple[str, str], float]) -> 
     return list(groups.values())
 
 
-def build_alerts(scenes: list[SceneWithIndices], cfg: ScoreConfig | None = None) -> list[Uyari]:
+def build_alerts(scenes: list[SceneWithIndices], cfg: BaselineConfig | None = None) -> list[Uyari]:
     """Uyarılar: mevsim normuna göre düzeltilmiş düşüşler (skorla aynı norm).
 
     Aynı gün aynı bölgede birden fazla indeks düşüyorsa bunlar TEK olayda birleşir (bir olay = bir uyarı):
     `indeksler` etkilenen tüm indeksleri listeler ve öncelik yüksektir; bölgeleri ayrı olanlar kendi uyarılarını korur.
     """
-    cfg = cfg or ScoreConfig.from_settings(get_settings())
+    cfg = cfg or BaselineConfig.from_settings(get_settings())
     alerts: list[Uyari] = []
     for indeks in DROP_RULES:
         alert = _drop_alert(indeks, index_series(scenes, indeks), cfg)

@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from bahcelab_backend.domain.agro.catalog import DurumV2Kurali
-from bahcelab_backend.domain.agro.score import AY_ADLARI, AktifRisk
+from bahcelab_backend.domain.agro.tiers import AY_ADLARI, AktifRisk
 
 Kademe = Literal["iyi", "izle", "dikkat", "sorun", "veri_yok"]
 Seviye = Literal["belirgin_dusuk", "normalin_alti", "normal", "normalin_ustu", "belirgin_yuksek"]

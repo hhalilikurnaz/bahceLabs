@@ -11,7 +11,7 @@ from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro import status_v2 as sv
-from bahcelab_backend.domain.agro.score import AktifRisk
+from bahcelab_backend.domain.agro.tiers import AktifRisk
 from bahcelab_backend.domain.events import service as events
 from bahcelab_backend.domain.water.schemas import SuYaniti
 from bahcelab_backend.domain.water.service import WaterService

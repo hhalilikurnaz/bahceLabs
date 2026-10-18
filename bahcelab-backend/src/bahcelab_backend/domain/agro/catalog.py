@@ -115,25 +115,6 @@ class Urun(BaseModel):
     cesitler: list[Cesit]
 
 
-class DurumKademesi(KuralBlok):
-    """Durum kademesi eşikleri (v1, ön değer): iç skor (0–100) → İyi · İzle · Dikkat · Sorun. Skor arayüze çıkmaz.
-    Bileşen çipleri: puan ≥ `bilesen_normal_min` normal; ≤ `bilesen_belirgin_dusuk_max` belirgin düşük; arası normalin altı."""
-
-    iyi_min: int = Field(ge=1, le=100)
-    izle_min: int = Field(ge=1, le=100)
-    dikkat_min: int = Field(ge=1, le=100)
-    bilesen_normal_min: int = Field(ge=1, le=100)
-    bilesen_belirgin_dusuk_max: int = Field(ge=0, le=99)
-
-    @model_validator(mode="after")
-    def _ordered(self) -> DurumKademesi:
-        if not (self.iyi_min > self.izle_min > self.dikkat_min):
-            raise ValueError("Kademe eşikleri iyi_min > izle_min > dikkat_min olmalı.")
-        if self.bilesen_belirgin_dusuk_max >= self.bilesen_normal_min:
-            raise ValueError("Bileşen eşikleri: belirgin_dusuk_max < normal_min olmalı.")
-        return self
-
-
 class NormalBant(KuralBlok):
     """Normal bant (gösterge × ay) asgari yıl şartları (ön değer): altında «yetersiz geçmiş»; yüzdelikler gösterilmez."""
 
@@ -301,7 +282,6 @@ class EgriKurali(KuralBlok):
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
-    durum_kademesi: DurumKademesi
     normal_bant: NormalBant
     radar: RadarKurali
     su: SuKurali

@@ -6,12 +6,7 @@ import uuid
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.domain.acquisitions.band_refs import band_refs_for
-from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
-from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.agro import status_v2 as sv
 from bahcelab_backend.domain.agro import status_v2_service as sv2
@@ -33,18 +28,14 @@ from bahcelab_backend.domain.agro.schemas import (
     BilesenV2Yanit,
     BugunMaddesiYanit,
     BugunYanit,
-    CipYanit,
     DurumV2Yanit,
-    DurumYanit,
     EvreYanit,
     FenolojiDuzeltme,
     FenolojiYanit,
-    GuvenYanit,
     KatalogCesit,
     KatalogUrun,
     KatalogYanit,
     KuralMeta,
-    NasilHesaplandi,
     RiskleriYanit,
     RiskYanit,
     SeriGunu,
@@ -55,21 +46,16 @@ from bahcelab_backend.domain.agro.schemas import (
     SulamaYanit,
     TuzakArayuzu,
 )
-from bahcelab_backend.domain.agro.score import (
+from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
+from bahcelab_backend.domain.agro.tiers import (
     KADEME_ADLARI,
-    SceneValue,
-    ScoreConfig,
     Seviye,
-    Skor,
     active_risks_of,
-    assess,
     summary_sentence,
 )
-from bahcelab_backend.domain.agro.series import DayWeather, build_season, coverage, one_year_earlier
 from bahcelab_backend.domain.agro.today import Girdi, Oncelik, Sekme, build_today
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
-from bahcelab_backend.domain.ndvi.indices import INDICES
 from bahcelab_backend.domain.ndvi.repository import NdviRepository, SceneWithIndices
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.notifications.repository import StatusSnapshotRepository
@@ -80,9 +66,6 @@ from bahcelab_backend.domain.weather.schemas import HavaYanit
 from bahcelab_backend.domain.weather.service import WeatherService
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
-FORMUL_NOTU = "v1: kademe mevcut skorun geçici türetmesidir; tam formül 9F’de (Durum v2)."
-VERI_KAYNAKLARI = ["Canlılık (NDVI) · Sentinel-2 10 m", "Yaprak suyu (NDMI) · Sentinel-2 20 m", "Uydu uyarıları", "Hava ve zararlı/hastalık risk tahminleri"]
-
 
 def _meta(block: cat.KuralBlok | None) -> KuralMeta | None:
     if block is None:
@@ -90,31 +73,14 @@ def _meta(block: cat.KuralBlok | None) -> KuralMeta | None:
     return KuralMeta(durum=block.durum, kaynak=block.kaynak, onaylayan=block.onaylayan, onay_tarihi=block.onay_tarihi)
 
 
-def scene_values(scenes: list[SceneWithIndices]) -> list[SceneValue]:
-    """Bulutsuz sahnelerin parametre ortalamaları (skorun girdisi)."""
-    return [
-        SceneValue(item.scene.tarih, {name: row.ortalama for name, row in item.indices.items()})
-        for item in scenes
-        if item.scene.durum == "tamam" and item.indices
-    ]
-
-
-async def acquisition_values(session: AsyncSession, garden_id: uuid.UUID) -> list[SceneValue]:
-    """Net edinimlerin bahçe medyanları (normal bantların ve gösterge çubuklarının kullandığı değer)."""
-    rows = await AcquisitionRepository(session).net_with_stats(garden_id, SOURCE_ID)
-    return [SceneValue(a.tarih, {st.indeks: st.medyan for st in stats if st.indeks in ("ndvi", "ndmi")}) for a, stats in rows if stats]
-
-
-def satellite_severities(scenes: list[SceneWithIndices]) -> tuple[list[Seviye], list[tuple[Seviye, str, str, str | None]]]:
+def satellite_severities(
+    scenes: list[SceneWithIndices],
+) -> tuple[list[Seviye], list[tuple[Seviye, str, str, str | None]]]:
     alerts = build_alerts(scenes)
     levels: list[tuple[Seviye, str, str, str | None]] = [
         ("kirmizi" if a.oncelik == "yuksek" else "sari", a.baslik, a.mesaj, a.ayrinti) for a in alerts
     ]
     return [lvl for lvl, _, _, _ in levels], levels
-
-
-def score_spans() -> dict[str, float]:
-    return {name: INDICES[name].max - INDICES[name].min for name in ("ndvi", "ndmi")}
 
 
 def _meta_of(block: cat.KuralBlok) -> KuralMeta:
@@ -123,31 +89,6 @@ def _meta_of(block: cat.KuralBlok) -> KuralMeta:
 
 IRRIGATION_NOTE = "Yaklaşık öneridir, sulama reçetesi değildir; toprak nemi, ağaç durumu ve yerel koşullar sahada kontrol edilmelidir."
 RISK_NOTE = "Hava koşullarından türetilen risk tahminidir; teşhis ya da ilaçlama tavsiyesi değildir. Sahada kontrol edin."
-
-
-def to_status_response(result: Skor, today: date) -> DurumYanit:
-    """İç skor yanıta GİRMEZ: arayüze kademe, çipler ve «Nasıl hesaplandı?» döner."""
-    rule = cat.load_catalog().durum_kademesi
-    age = result.guven.son_goruntu_yasi_gun
-    return DurumYanit(
-        durum=result.durum,
-        etiket=KADEME_ADLARI[result.durum],
-        ozet=result.ozet,
-        veri_yeterli=result.veri_yeterli,
-        veri_yetersiz_nedeni=result.veri_yetersiz_nedeni,
-        cipler=[CipYanit(**c.__dict__) for c in result.cipler],
-        nasil=NasilHesaplandi(
-            veri=VERI_KAYNAKLARI,
-            son_goruntu_tarihi=today - timedelta(days=age) if age is not None else None,
-            guven=GuvenYanit(**result.guven.__dict__),
-            dusuren_bilesen=result.dusuren,  # type: ignore[arg-type]
-            kademe_nedeni=result.kademe_nedeni,
-            cumleler=result.cumleler,
-            esik_durumu="ön değer · v1" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v1",
-            formul_notu=FORMUL_NOTU,
-        ),
-        hesaplama_tarihi=today,
-    )
 
 
 class AgroService:
@@ -466,29 +407,25 @@ class AgroService:
         except AppError:
             return None
 
-    async def assess(
+    async def collect(
         self, garden_id: uuid.UUID
-    ) -> tuple[Skor, list[SceneWithIndices], HavaYanit | None, list[tuple[RiskSonucu, str, str]], IrrigationResult | None]:
+    ) -> tuple[
+        list[SceneWithIndices],
+        HavaYanit | None,
+        list[tuple[RiskSonucu, str, str]],
+        IrrigationResult | None,
+    ]:
+        """Bugün listesi ve bildirim işi için ortak girdiler: sahneler, hava, riskler ve sulama sonucu (Durum v2 kademesi `status_v2_result`'tan gelir)."""
         garden = await self._garden(garden_id)
         today = self._today()
         scenes = await self.ndvi.list_scenes(garden_id)
         weather = await self._weather_or_none(garden_id)
         history = await self._history(garden_id, today)
         risks = await self._compute_risks(garden, history, weather, today)
-        irrigation, _ = await self._compute_irrigation(garden, history, weather, today, await self._daily_et0(garden_id, today))
-        sat_levels, _ = satellite_severities(scenes)
-        weather_levels: list[Seviye] | None = None
-        if weather is not None:
-            # Hava bileşeni: don/sıcak uyarıları (etiketi sınırlar); yüksek zararlı riski yalnızca puanı düşürür
-            weather_levels = [a.seviye for a in weather.uyarilar]
-        bands = (await band_refs_for(self.ndvi.session, [garden_id], today.month)).get(garden_id, {})
-        values = await acquisition_values(self.ndvi.session, garden_id) or scene_values(scenes)  # bant ve bugünkü değer AYNI veri hattından (edinim medyanı)
-        result = assess(
-            values, spans=score_spans(), sat_severities=sat_levels,
-            weather_severities=weather_levels, today=today, cfg=ScoreConfig.from_settings(self.settings),
-            active_risks=active_risks_of(risks), bands=bands,
+        irrigation, _ = await self._compute_irrigation(
+            garden, history, weather, today, await self._daily_et0(garden_id, today)
         )
-        return result, scenes, weather, risks, irrigation
+        return scenes, weather, risks, irrigation
 
     async def status_v2_result(self, garden_id: uuid.UUID, today: date | None = None) -> sv.DurumV2:
         """Durum v2 (alan sonucu; iç puan dahil — yalnız karşılaştırma ve testler için). API `status_v2` iç puanı yanıta koymaz."""
@@ -542,7 +479,7 @@ class AgroService:
 
     # ------------------------------------------------------------------ bugün
     async def today(self, garden_id: uuid.UUID) -> BugunYanit:
-        _, scenes, weather, risks, irrigation = await self.assess(garden_id)
+        scenes, weather, risks, irrigation = await self.collect(garden_id)
         today = self._today()
         _, sat = satellite_severities(scenes)
         spray = []

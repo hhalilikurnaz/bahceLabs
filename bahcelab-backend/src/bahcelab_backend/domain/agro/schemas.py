@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
-from bahcelab_backend.domain.agro.score import Durum, GuvenSeviyesi
+from bahcelab_backend.domain.agro.tiers import Durum, GuvenSeviyesi
 
 _MMDD = re.compile(r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$")
 
@@ -111,49 +111,6 @@ class SerilerYanit(BaseModel):
     eksik_gun: int
     onceki_sezon_var: bool
     notlar: list[str]
-
-
-class CipYanit(BaseModel):
-    """Bileşen çipi: sayı yok; yalnız seviye (None = veri yok) ve tek cümle neden."""
-
-    kod: Literal["agac_gucu", "su", "risk"]
-    ad: str
-    seviye: Literal["normal", "normalin_alti", "belirgin_dusuk"] | None
-    aciklama: str
-    etiket: str | None = None  # Risk çipinde «orta» / «yüksek»
-
-
-class NasilHesaplandi(BaseModel):
-    """«Nasıl hesaplandı?» kutusu: veri, tarih, güven, hangi bileşenin kademeyi düşürdüğü ve kural durumu."""
-
-    veri: list[str]
-    son_goruntu_tarihi: date | None
-    guven: GuvenYanit
-    dusuren_bilesen: Literal["agac_gucu", "su", "risk"] | None
-    kademe_nedeni: str
-    cumleler: list[str]  # «Nasıl hesaplandı?»: en fazla 3 kısa cümle (neden · güven banda göre · son görüntü)
-    esik_durumu: str  # «ön değer · v1» (katalogdan)
-    formul_notu: str
-
-
-class GuvenYanit(BaseModel):
-    seviye: GuvenSeviyesi
-    aciklama: str
-    gecmis_gun: int
-    son_goruntu_yasi_gun: int | None
-
-
-class DurumYanit(BaseModel):
-    """Durum kademesi (İyi · İzle · Dikkat · Sorun · Veri yok). İç skor bu yanıtta YOKTUR (arayüze sayı çıkmaz)."""
-
-    durum: Durum
-    etiket: str
-    ozet: str
-    veri_yeterli: bool
-    veri_yetersiz_nedeni: str | None
-    cipler: list[CipYanit]
-    nasil: NasilHesaplandi
-    hesaplama_tarihi: date
 
 
 class BilesenV2Yanit(BaseModel):

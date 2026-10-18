@@ -12,8 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.domain.agro.repository import AgroRepository
-from bahcelab_backend.domain.agro.score import active_risks_of
 from bahcelab_backend.domain.agro.service import AgroService
+from bahcelab_backend.domain.agro.tiers import active_risks_of
 from bahcelab_backend.domain.auth.models import WorkspaceModel
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
@@ -219,7 +219,7 @@ async def generate_notifications(factory: SessionFactory, provider: WeatherProvi
                     GardenRepository(session, workspace_id), NdviRepository(session),
                     WeatherService(WeatherRepository(session, workspace_id), provider), AgroRepository(session),
                 )
-                _, scenes, weather, risks, irrigation = await agro.assess(garden_id)
+                scenes, weather, risks, irrigation = await agro.collect(garden_id)
                 extra = await event_and_tier_candidates(session, agro, garden_id, name)
                 candidates = build_candidates(
                     garden_id, name,

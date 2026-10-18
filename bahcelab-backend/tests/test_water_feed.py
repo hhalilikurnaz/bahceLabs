@@ -132,3 +132,106 @@ async def test_custom_era5_client_is_refused_outside_debug(monkeypatch):
     monkeypatch.setattr(settings, "era5_client", "tests.support.fake_era5:FakeEra5Client")
     with pytest.raises(RuntimeError, match="API_DEBUG"):
         feed.get_era5_client()
+
+
+async def test_add_then_immediately_delete_a_garden_many_times_ends_the_feed_silently_without_deadlock_or_orphans(
+    user_client, factory, monkeypatch, caplog
+):
+    """Bahçe ekle → hemen sil yarışı (ADR 0019): kuyruktaki/süren besleme işleri iptal edilir ya da bahçe yoksa sessizce biter; kilitlenme ve yetim satır olmaz."""
+    import logging
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "era5_auto_feed", True)
+    monkeypatch.setattr(settings, "api_debug", True)
+    monkeypatch.setattr(settings, "era5_client", "tests.support.fake_era5:FakeEra5Client")
+    monkeypatch.setattr(settings, "hls_client", "tests.support.fake_hls:FakeHlsProvider")
+    monkeypatch.setattr(settings, "hls_enabled", True)
+    monkeypatch.setattr(settings, "earthdata_token", "")
+    monkeypatch.setattr(
+        settings, "ndvi_enabled", False
+    )  # eski NDVI işleme hattı bu testin konusu değil; besleme işleri start_initial içinden yine başlar
+    caplog.set_level(logging.WARNING)
+    ids = []
+    for i in range(6):
+        response = await user_client.post(
+            "/gardens", json=garden_body(geometry=square(150, LNG + 0.6 + i * 0.01, LAT + 0.5))
+        )
+        assert response.status_code == 201
+        gid = uuid.UUID(response.json()["id"])
+        ids.append(gid)
+        await asyncio.sleep(
+            0.05 * (i % 3)
+        )  # farklı gecikmeler: besleme ERA5 / HLS / doğrulama aşamalarının farklı yerinde yakalanır
+        assert (await user_client.delete(f"/gardens/{gid}")).status_code == 204
+    results = await asyncio.gather(*list(job_feed._TASKS), return_exceptions=True)
+    assert not [
+        r for r in results if isinstance(r, Exception) and not isinstance(r, asyncio.CancelledError)
+    ]  # hiçbir iş hata ile bitmedi
+    bad = [
+        r for r in caplog.records if r.levelno >= logging.ERROR or "Kilitlenme" in r.getMessage()
+    ]
+    assert not bad, [r.getMessage() for r in bad]  # ne hata günlüğü ne kilitlenme uyarısı
+    async with factory() as session:
+        for gid in ids:
+            assert (
+                await session.execute(
+                    text("SELECT count(*) FROM hls_observations WHERE garden_id = :g"), {"g": gid}
+                )
+            ).scalar_one() == 0
+
+
+async def test_deadlock_errors_are_retried_with_backoff_three_times_and_other_errors_are_not():
+    from bahcelab_backend.shared.concurrency import is_deadlock, retry_on_deadlock
+
+    class DeadlockDetectedError(Exception):
+        sqlstate = "40P01"
+
+    calls = {"n": 0}
+
+    async def flaky():  # noqa: ANN202
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise DeadlockDetectedError("deadlock detected")
+        return "tamam"
+
+    assert await retry_on_deadlock(flaky, base_delay=0.01) == "tamam" and calls["n"] == 3
+    calls["n"] = 0
+
+    async def always():  # noqa: ANN202
+        calls["n"] += 1
+        raise DeadlockDetectedError("deadlock detected")
+
+    with pytest.raises(DeadlockDetectedError):
+        await retry_on_deadlock(always, attempts=3, base_delay=0.01)
+    assert calls["n"] == 3  # tam üç deneme
+
+    async def other():  # noqa: ANN202
+        calls["n"] += 10
+        raise ValueError("başka hata")
+
+    calls["n"] = 0
+    with pytest.raises(ValueError):
+        await retry_on_deadlock(other, base_delay=0.01)
+    assert calls["n"] == 10 and not is_deadlock(ValueError("x"))  # başka hata yeniden denenmez
+
+
+async def test_two_feeds_for_the_same_garden_run_one_after_the_other(user_client, factory):
+    import time
+
+    from bahcelab_backend.database import engine
+    from bahcelab_backend.shared.concurrency import advisory_lock
+
+    order: list[tuple[str, float]] = []
+
+    async def worker(name: str) -> None:
+        async with advisory_lock(engine, "feed:test-seri"):
+            order.append((name + ":basla", time.monotonic()))
+            await asyncio.sleep(0.2)
+            order.append((name + ":bitti", time.monotonic()))
+
+    await asyncio.gather(worker("a"), worker("b"))
+    names = [n for n, _ in order]
+    assert names in (
+        ["a:basla", "a:bitti", "b:basla", "b:bitti"],
+        ["b:basla", "b:bitti", "a:basla", "a:bitti"],
+    )  # iç içe geçmez: seri

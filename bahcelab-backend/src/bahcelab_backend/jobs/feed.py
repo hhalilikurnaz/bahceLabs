@@ -9,33 +9,68 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Any
 
+from sqlalchemy import text
+
 from bahcelab_backend.config import get_settings
-from bahcelab_backend.database import async_session_factory
+from bahcelab_backend.database import async_session_factory, engine
 from bahcelab_backend.domain.water import feed
+from bahcelab_backend.shared.concurrency import advisory_lock, retry_on_deadlock
 
 logger = logging.getLogger(__name__)
 _TASKS: set[asyncio.Task[None]] = set()
+_BY_GARDEN: dict[uuid.UUID, asyncio.Task[Any]] = {}
 _ARQ_POOL: Any | None = None
 
 
-async def run_garden_feed(garden_id: uuid.UUID) -> dict[str, Any]:
-    """ERA5 → toprak profili → doğrulama. Hata günlüğe yazılır ve bir sonraki günlük işte yeniden denenir."""
-    out: dict[str, Any] = {}
+async def garden_exists(garden_id: uuid.UUID) -> bool:
+    async with async_session_factory() as session:
+        return (
+            await session.execute(text("SELECT 1 FROM gardens WHERE id = :g"), {"g": garden_id})
+        ).first() is not None
+
+
+async def _stage(garden_id: uuid.UUID, name: str, fn: Callable[[], Awaitable[Any]]) -> Any:
+    """Bir besleme aşaması: bahçe yoksa SESSİZCE biter; kilitlenmede 3 deneme; diğer hatalar günlüğe yazılır (günlük iş yeniden dener)."""
+    if not await garden_exists(garden_id):
+        return "bahce_yok"
     try:
-        out["era5"] = await feed.feed_garden(async_session_factory, garden_id)
+        return await retry_on_deadlock(fn)
+    except asyncio.CancelledError:
+        raise
     except Exception:  # noqa: BLE001
-        logger.exception("ERA5 beslemesi başarısız (bahçe %s); günlük iş yeniden dener", garden_id)
-        out["era5"] = "hata"
-    out["hls"] = await feed_hls(garden_id)
-    out["dogrulama"] = await feed.feed_validation(async_session_factory, garden_id)
+        if not await garden_exists(
+            garden_id
+        ):  # bahçe silindi: yarım kalan yazım yabancı anahtar hatası verebilir, bu hata değildir
+            return "bahce_yok"
+        logger.exception(
+            "%s beslemesi başarısız (bahçe %s); günlük iş yeniden dener", name, garden_id
+        )
+        return "hata"
+
+
+async def run_garden_feed(garden_id: uuid.UUID) -> dict[str, Any]:
+    """ERA5 → toprak profili → HLS → doğrulama. Bahçe başına SERİ (advisory lock); bahçe silinirse iş sessizce biter."""
+    out: dict[str, Any] = {}
+    async with advisory_lock(engine, f"feed:{garden_id}"):
+        out["era5"] = await _stage(
+            garden_id, "ERA5", lambda: feed.feed_garden(async_session_factory, garden_id)
+        )
+        if out["era5"] == "bahce_yok":
+            return out
+        out["hls"] = await _feed_hls_unlocked(garden_id)
+    if out.get("hls") == "bahce_yok":
+        return out
+    out["dogrulama"] = await _stage(
+        garden_id, "Doğrulama", lambda: feed.feed_validation(async_session_factory, garden_id)
+    )  # uzun sürer: kilit dışında (başka besleme işlerini bekletmesin)
     logger.info("Su verisi beslemesi bitti (bahçe %s): %s", garden_id, out)
     return out
 
 
-async def feed_hls(garden_id: uuid.UUID, days: int | None = None) -> dict[str, Any] | str:
-    """HLS NDVI gözlemleri (2020→ ya da son `days` gün): idempotent; hata günlüğe yazılır, günlük iş yeniden dener."""
+async def _feed_hls_unlocked(garden_id: uuid.UUID, days: int | None = None) -> Any:
     from datetime import UTC, date, datetime, timedelta
 
     from bahcelab_backend.domain.imagery.registry import get_hls_provider
@@ -46,12 +81,18 @@ async def feed_hls(garden_id: uuid.UUID, days: int | None = None) -> dict[str, A
         return "kapali"
     today = datetime.now(UTC).date()
     start = date.fromisoformat(settings.hls_start) if days is None else today - timedelta(days=days)
-    try:
+
+    async def run() -> dict[str, int]:
         async with async_session_factory() as session:
             return await sync_hls(session, garden_id, start, today, get_hls_provider())
-    except Exception:  # noqa: BLE001
-        logger.exception("HLS beslemesi başarısız (bahçe %s)", garden_id)
-        return "hata"
+
+    return await _stage(garden_id, "HLS", run)
+
+
+async def feed_hls(garden_id: uuid.UUID, days: int | None = None) -> dict[str, Any] | str:
+    """HLS NDVI gözlemleri (2020→ ya da son `days` gün): bahçe başına seri; idempotent."""
+    async with advisory_lock(engine, f"feed:{garden_id}"):
+        return await _feed_hls_unlocked(garden_id, days)
 
 
 async def _enqueue_arq(garden_id: uuid.UUID) -> None:
@@ -71,4 +112,17 @@ def start_garden_feed(garden_id: uuid.UUID) -> None:
     coro = _enqueue_arq(garden_id) if settings.job_backend == "arq" else run_garden_feed(garden_id)
     task: asyncio.Task[Any] = asyncio.get_running_loop().create_task(coro)
     _TASKS.add(task)
+    _BY_GARDEN[garden_id] = task
     task.add_done_callback(_TASKS.discard)
+    task.add_done_callback(
+        lambda t: _BY_GARDEN.pop(garden_id, None) if _BY_GARDEN.get(garden_id) is t else None
+    )
+
+
+def cancel_garden_feed(garden_id: uuid.UUID) -> bool:
+    """Bahçe silinirken süreç içindeki besleme işini iptal eder (arq kuyruğundaki iş başlarken bahçe yok ise sessizce biter)."""
+    task = _BY_GARDEN.pop(garden_id, None)
+    if task is not None and not task.done():
+        task.cancel()
+        return True
+    return False

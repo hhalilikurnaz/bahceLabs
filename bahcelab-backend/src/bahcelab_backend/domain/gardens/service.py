@@ -157,6 +157,11 @@ class GardenService:
 
     async def delete(self, garden_id: uuid.UUID) -> None:
         row = await self._get_model(garden_id)
+        from bahcelab_backend.jobs.feed import cancel_garden_feed
+
+        cancel_garden_feed(
+            garden_id
+        )  # kuyruktaki/süren besleme işleri iptal edilir (silinen bahçeye yazmasın)
         await self.repo.delete(row.garden)
         if self.ndvi:
             self.ndvi.purge_files(garden_id)

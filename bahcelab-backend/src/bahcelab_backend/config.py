@@ -84,25 +84,13 @@ class Settings(BaseSettings):
     archive_default_page_size: int = 100
     archive_max_page_size: int = 200
 
-    # Bahçe durumu skoru (domain/agro/score.py). Ağırlıklar kullanılabilen bileşenler üzerinden yeniden normalleştirilir.
-    score_weight_vigor: float = 0.40  # canlılık (NDVI) – bahçenin kendi normuna göre sapma
-    score_weight_water: float = 0.20  # yaprak suyu (NDMI) – aynı mantık
-    score_weight_alerts: float = 0.20  # uydu uyarıları
-    score_weight_weather: float = 0.20  # hava riskleri (don/sıcak; zararlı riski 8B'de)
-    score_tolerance_share: float = 0.05  # normdan bu pay (indeks aralığının oranı) kadar sapma kayıpsız sayılır
-    score_zero_share: float = 0.30  # bu paydan fazla düşüş 0 puan
-    score_alert_points_yellow: int = 50
-    score_alert_points_red: int = 0
-    score_risk_penalty_per_medium: int = 10  # orta zararlı/hastalık riski başına hava bileşeninden düşülen puan
-    score_risk_penalty_per_high: int = 25  # yüksek zararlı/hastalık riski başına hava bileşeninden düşülen puan (etiketi doğrudan düşürmez)
-    score_period_half_window_days: int = 15  # "aynı dönem": geçen yılın ±bu kadar günü
-    score_period_min_points: int = 3
-    score_fallback_window_days: int = 90  # geçmiş yetersizse kendi son günleri
-    score_fallback_exclude_days: int = 10  # en son görüntülere yakın günler tabana katılmaz
-    score_fallback_min_points: int = 4
-    score_fallback_min_span_days: int = 40
-    score_stale_image_days: int = 30  # son net görüntü bundan eskiyse skor üretilmez
-    score_aging_image_days: int = 14  # bundan eskiyse güven düşer
+    # Uydu uyarıları için bahçenin kendi tabanı (domain/ndvi/baseline.py): «aynı dönem» geçen yılın ±gün penceresi, yetersizse son günler
+    baseline_period_half_window_days: int = 15
+    baseline_period_min_points: int = 3
+    baseline_fallback_window_days: int = 90  # geçmiş yetersizse kendi son günleri
+    baseline_fallback_exclude_days: int = 10  # en son görüntülere yakın günler tabana katılmaz
+    baseline_fallback_min_points: int = 4
+    baseline_fallback_min_span_days: int = 40
     agro_prev_season_min_coverage: float = 0.8  # geçen sezon serisi için gerekli gün oranı
 
     # "Bugün" listesi
