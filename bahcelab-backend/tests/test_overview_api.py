@@ -1,5 +1,6 @@
 import io
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import AsyncClient
@@ -20,7 +21,7 @@ from .test_weather_api import (  # noqa: F401  (autouse hava hücresi temizliği
     clean_cells,
 )
 
-TODAY = datetime.now(UTC).date()
+TODAY = datetime.now(ZoneInfo("Europe/Istanbul")).date()
 
 
 async def set_tier(factory, garden_id: str, tier: str) -> None:  # noqa: ANN001

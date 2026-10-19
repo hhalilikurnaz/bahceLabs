@@ -1,7 +1,7 @@
 """Bildirim merkezi, zamanlanmış işler (idempotent), sulama ve risk uçları (yetki dahil)."""
 
 import uuid
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -323,7 +323,7 @@ async def test_notification_lifecycle_created_seen_resolved_or_snoozed(user_clie
 
     # Erteleme süresi dolunca bildirim yeniden «oluştu» olarak görünür
     async with test_engine.begin() as conn:
-        await conn.execute(text("UPDATE notifications SET ertelendi_bitis = now() - interval '1 minute' WHERE id = :i"), {"i": second["id"]})
+        await conn.execute(text("UPDATE notifications SET ertelendi_bitis = CAST(:now AS timestamptz) - interval '1 minute' WHERE id = :i"), {"i": second["id"], "now": datetime.now(UTC)})
     back = [n for n in (await listing(user_client))["ogeler"] if n["id"] == second["id"]]
     assert back and back[0]["durum"] == "olustu"
 

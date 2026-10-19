@@ -213,3 +213,22 @@ def test_merged_same_kind_signals_keep_the_extreme_value_not_the_last_one() -> N
     second = er.Signal("don", D0 + timedelta(days=3), D0 + timedelta(days=3), "orta", siddet="normal", ayrinti={"en_dusuk_c": -0.1})
     (event,) = er.build_events([first, second], RULE)
     assert event.ayrinti["don.en_dusuk_c"] == -4.5 and event.siddet == "siddetli"
+
+
+# ----------------------------------------------------------------------------- dona bağlı değişim anomalisi
+OTHERS = [-0.01, 0.0, -0.02, 0.01, -0.03, 0.0, -0.015, 0.005, -0.04, -0.02, 0.01, -0.005]
+
+
+def test_change_anomaly_needs_a_delta_below_the_other_years_p10_and_enough_samples() -> None:
+    p10 = er.anomaly_threshold(OTHERS, RULE)
+    assert p10 is not None and -0.04 <= p10 <= -0.025
+    assert er.is_change_anomaly(-0.10, OTHERS, RULE) and not er.is_change_anomaly(-0.01, OTHERS, RULE)
+    assert not er.is_change_anomaly(0.05, OTHERS, RULE)  # artış anomali değil
+    assert er.anomaly_threshold(OTHERS[: RULE.anomali_min_ornek - 1], RULE) is None
+    assert not er.is_change_anomaly(-0.5, OTHERS[:2], RULE)  # örnek yetersiz: karşılaştırılamaz, olay üretmez
+
+
+def test_change_anomaly_persistence_requires_half_of_the_drop_to_remain() -> None:
+    assert er.anomaly_persists(-0.10, -0.08, RULE) is True  # sonraki görüntüde düşüşün %80'i sürüyor
+    assert er.anomaly_persists(-0.10, -0.03, RULE) is False  # büyük kısmı toparlandı
+    assert er.anomaly_persists(-0.10, None, RULE) is None  # sonraki net görüntü yok

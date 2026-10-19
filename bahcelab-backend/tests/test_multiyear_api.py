@@ -2,7 +2,8 @@
 Uydu kaynağı sahtedir (ağ yok); veritabanı gerçektir."""
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
@@ -34,7 +35,7 @@ from .test_gardens_api import LAT, LNG, garden_body, square
 
 GEOMETRY = square(400, LNG, LAT)  # 40 × 40 piksel
 BASE = "/gardens/{id}/bolgeler/cok-yillik"
-TODAY = datetime.now(UTC).date()
+TODAY = datetime.now(ZoneInfo("Europe/Istanbul")).date()
 LAST = last_complete_year(TODAY, 9)
 YEARS = list(range(2018, LAST + 1))
 

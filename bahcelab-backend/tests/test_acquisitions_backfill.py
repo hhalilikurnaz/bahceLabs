@@ -3,6 +3,7 @@ Uydu kaynağı sahtedir (ağ yok); veritabanı ve depolama gerçektir."""
 
 import uuid
 from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
@@ -182,7 +183,7 @@ async def test_incremental_refresh_takes_only_new_scenes_and_respects_the_budget
 
     gid = await new_garden(user_client)
     provider, runner, settings = make(factory, "2024-01-01")
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
     settings = settings.model_copy(update={"acq_start": f"{today.year}-01-01", "acq_incremental_days": 45})
     runner = BackfillRunner(factory, provider, get_storage(), settings)
     await run_backfill(factory, runner, settings, provider, gid, today=today)

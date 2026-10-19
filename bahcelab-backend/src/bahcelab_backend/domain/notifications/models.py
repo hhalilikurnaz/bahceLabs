@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -43,7 +43,7 @@ class NotificationModel(Base):
     teslim: Mapped[str] = mapped_column(String(8), nullable=False, server_default="anlik", default="anlik")  # anlik | ozet
     ozet_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     ayrinti: Mapped[list[dict[str, str]] | None] = mapped_column(JSONB, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=lambda: datetime.now(UTC), nullable=False)
 
 
 class GardenStatusSnapshotModel(Base):

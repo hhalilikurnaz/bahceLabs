@@ -185,9 +185,11 @@ durum_v2:
 olay:
   durum: dogrulanmadi
   kaynak: >-
-    Ön değer · mühendis onayı bekliyor: S2 ani düşüş = NDVI Δ ≥ 0,08 VE pikselin dönem (±15 gün, diğer yıllar) p10'unun altı, bitişik alan ≥ min(%25, 5 da), iki net görüntü ≤ 30 gün arayla; sonraki net görüntüde de sürmeli (aksi atmosfer şüphesi, olay değil); bahçenin >%90'ı düşüyorsa hava/radar ±5 gün desteği (ya da önceki 21 günde don) şart; don olayından sonra 0..+21 günde başlayabilen S2 düşüşü aynı olaya bağlanır (don + optik hasar izi); en son sahnedeki düşüş «doğrulama bekliyor» (şüphe değil); radar yalnız güven=yüksek aday;
+    Ön değer · mühendis onayı bekliyor: S2 ani düşüş = NDVI Δ ≥ 0,08 VE pikselin dönem (±15 gün, diğer yıllar) p10'unun altı, bitişik alan ≥ min(%25, 5 da), iki net görüntü ≤ 30 gün arayla; sonraki net görüntüde de sürmeli (aksi atmosfer şüphesi, olay değil); bahçenin >%90'ı düşüyorsa hava/radar ±5 gün desteği (ya da önceki 21 günde don) şart; don olayından sonra 0..+21 günde başlayabilen S2 düşüşü aynı olaya bağlanır (don + optik hasar izi); YALNIZ dona bağlı adaylar için ikinci yol «değişim anomalisi»: bahçe ortancası Δ'sı, diğer yılların aynı ±15 gün penceresindeki Δ dağılımının p10'unun altında (≥ 5 örnek) VE sonraki net görüntüde düşüşün ≥ yarısı sürüyor; en son sahnedeki düşüş «doğrulama bekliyor» (şüphe değil); radar yalnız güven=yüksek aday;
     don ≤ 0 °C (≤ −2 °C şiddetli); aşırı yağış 24 saatte ≥ 50 mm; kuvvetli rüzgâr hamle ≥ 60 km/s. ±5 gün içindeki sinyaller tek olay (en çok 10 gün yayılır);
     güven kaynak ailesi sayısı ve sinyal güveniyle artar. ERA5 31 km hamleyi olduğundan düşük gösterir: geçmiş hamle olayları güven=düşük.
+  anomali_min_ornek: 5
+  anomali_kalicilik_orani: 0.5
   s2_ndvi_dusus: 0.08
   s2_alan_orani: 0.25
   s2_alan_min_da: 5

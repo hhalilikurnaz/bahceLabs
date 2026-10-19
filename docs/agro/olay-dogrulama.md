@@ -1,6 +1,6 @@
 # Olay doğrulama listesi (çiftçi için)
 
-Oluşturma: 2026-10-15 · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşikler ön değerdir; mühendis onayı bekliyor.
+Oluşturma: 2026-10-19 · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşikler ön değerdir; mühendis onayı bekliyor.
 
 **Nasıl kullanılır:** «Çiftçi doğrulaması» sütununa her olay için **gerçekleşti**, **gerçekleşmedi** ya da **bilinmiyor** yazın. Tarihler uydu geçiş ve ERA5 günlük tarihleridir; gerçek olay birkaç gün önce/sonra olabilir. Don, yağış ve rüzgâr olayları 9–31 km ERA5 ızgarasından gelir (bahçeye birebir ölçüm değildir); rüzgâr hamlesi ERA5'te düşük çıkar, bu yüzden güven düşüktür.
 
@@ -8,7 +8,7 @@ Oluşturma: 2026-10-15 · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşik
 
 ## jlnnlk (15,1 da)
 
-Olay: 31 · atmosfer şüphesi (olay değil): 7
+Olay: 31 · atmosfer şüphesi (olay değil): 6
 
 ### Olaylar
 
@@ -34,16 +34,16 @@ Olay: 31 · atmosfer şüphesi (olay değil): 7
 | 18 | 24.12.2019 | Aşırı yağış | orta | ERA5 saatlik yağış: 24 saatte en çok 53,9 mm | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 19 | 30.12.2019 – 31.12.2019 | Aşırı yağış | orta | ERA5 saatlik yağış: 24 saatte en çok 52,7 mm | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 20 | 07.01.2020 – 13.01.2020 | Aşırı yağış + radar değişimi | yüksek | ERA5 saatlik yağış: 24 saatte en çok 88,8 mm; Sentinel-1 yörünge 167 13.01.2020: azalış 2,5 dB, 6,1 da | gerçekleşti / gerçekleşmedi / bilinmiyor |
-| 21 | 06.02.2020 – 11.02.2020 | Don + kuvvetli rüzgâr (şiddetli) | orta | ERA5-Land saatlik 2 m sıcaklık: en düşük -2,6 °C (3 gün); ERA5 hamle (31 km, düşük güven): en çok 65 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
+| 21 | 06.02.2020 – 19.03.2020 | Don + optik hasar izi (şiddetli) | yüksek | ERA5-Land saatlik 2 m sıcaklık: en düşük -2,6 °C (3 gün); ERA5 hamle (31 km, düşük güven): en çok 65 km/s; Sentinel-2 NDVI 18.02.2020 → 19.03.2020, Δ NDVI -0,12 | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 22 | 18.02.2020 | Radar değişimi | orta | Sentinel-1 yörünge 167 18.02.2020: azalış 2,6 dB, 5,1 da | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 23 | 13.03.2020 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 66 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 24 | 20.03.2020 – 29.03.2020 | Ani düşüş (optik) | orta | Sentinel-2 NDVI 19.03.2020 → 29.03.2020, Δ NDVI -0,12 | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 25 | 13.01.2021 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 63 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 26 | 17.03.2021 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 65 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
-| 27 | 13.03.2022 – 16.03.2022 | Don (şiddetli) | orta | ERA5-Land saatlik 2 m sıcaklık: en düşük -2,0 °C (3 gün) | gerçekleşti / gerçekleşmedi / bilinmiyor |
+| 27 | 13.03.2022 – 13.04.2022 | Don + optik hasar izi (şiddetli) | yüksek | ERA5-Land saatlik 2 m sıcaklık: en düşük -2,0 °C (3 gün); Sentinel-2 NDVI 14.03.2022 → 13.04.2022, Δ NDVI -0,13 | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 28 | 29.03.2023 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 62 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 29 | 26.11.2023 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 78 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
-| 30 | 22.02.2025 – 23.02.2025 | Don (şiddetli) | orta | ERA5-Land saatlik 2 m sıcaklık: en düşük -4,9 °C (2 gün) | gerçekleşti / gerçekleşmedi / bilinmiyor |
+| 30 | 17.02.2025 – 13.03.2025 | Don + optik hasar izi (şiddetli) | yüksek | ERA5-Land saatlik 2 m sıcaklık: en düşük -4,9 °C (2 gün); Sentinel-2 NDVI 16.02.2025 → 13.03.2025, Δ NDVI -0,10 | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 31 | 13.02.2026 – 18.02.2026 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 71 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 
 ### Atmosfer şüpheleri (olay sayılmadı; bilgi için)
@@ -56,7 +56,6 @@ Olay: 31 · atmosfer şüphesi (olay değil): 7
 | 4 | 10.12.2021 – 24.12.2021 | sonraki görüntüde toparlandı | Sentinel-2 NDVI 09.12.2021 → 24.12.2021, Δ NDVI -0,10 |
 | 5 | 19.04.2023 – 18.05.2023 | sonraki görüntüde toparlandı | Sentinel-2 NDVI 18.04.2023 → 18.05.2023, Δ NDVI -0,12 |
 | 6 | 08.05.2024 – 22.05.2024 | bahçenin >%90'ı düştü, hava/radar/don desteği yok | Sentinel-2 NDVI 07.05.2024 → 22.05.2024, Δ NDVI -0,14 |
-| 7 | 17.02.2025 – 13.03.2025 | sonraki görüntüde toparlandı | Sentinel-2 NDVI 16.02.2025 → 13.03.2025, Δ NDVI -0,10 |
 
 ## soğuk hava (25,1 da)
 

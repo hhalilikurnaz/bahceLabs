@@ -2,7 +2,8 @@
 
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
@@ -28,7 +29,7 @@ from .test_gardens_api import LAT, LNG, garden_body, square
 from .test_weather_api import FakeProvider
 
 GEOMETRY = square(300, LNG + 0.41, LAT + 0.31)
-TODAY = datetime.now(UTC).date()
+TODAY = datetime.now(ZoneInfo("Europe/Istanbul")).date()
 
 
 @pytest.fixture
@@ -264,3 +265,43 @@ async def test_events_endpoint_lists_events_and_suspicions_separately_with_owner
     async with make_client(app) as other:
         await register(other)
         assert (await other.get(f"/gardens/{gid}/olaylar")).status_code == 404
+
+
+async def add_pair_history(factory, gid: uuid.UUID, day, count: int = 9) -> None:  # noqa: ANN001
+    """Diğer yıllarda AYNI pencerede ardışık iki net görüntü (Δ = 0): değişim anomalisinin karşılaştırma dağılımı."""
+    for k in range(1, count + 1):
+        await add_s2(factory, gid, (day - timedelta(days=5)).replace(year=day.year - k, day=min((day - timedelta(days=5)).day, 28)), None)
+        await add_s2(factory, gid, (day + timedelta(days=3)).replace(year=day.year - k, day=min((day + timedelta(days=3)).day, 28)), None)
+
+
+async def anomaly_events(user_client, factory, *, frost: bool, next_drop: float | None):  # noqa: ANN001, ANN201
+    gid = await seed(user_client, factory)
+    d = TODAY - timedelta(days=60)
+    await add_pair_history(factory, gid, d)
+    await add_era5(factory, gid, {d: (-3.0 if frost else 4.0, 10.0)})
+    await add_s2(factory, gid, d - timedelta(days=5), None)
+    await add_s2(factory, gid, d + timedelta(days=3), 0.05, whole=True)  # bahçe geneli küçük düşüş: yama kuralı (Δ ≥ 0,08) YAKALAMAZ
+    if next_drop is not None:
+        await add_s2(factory, gid, d + timedelta(days=10), next_drop, whole=True)
+    async with factory() as session:
+        await events.compute_events_for(session, get_storage(), gid, TODAY)
+        await session.commit()
+        rows = (await session.execute(select(EventModel).where(EventModel.garden_id == gid))).scalars().all()
+    return rows
+
+
+async def test_frost_bound_change_anomaly_becomes_a_damage_trace_when_the_drop_persists(user_client, factory):
+    rows = await anomaly_events(user_client, factory, frost=True, next_drop=0.05)
+    real = [r for r in rows if r.durum == "olay"]
+    assert len(real) == 1 and real[0].tur == "don" and "s2_dusus" in real[0].turler  # «don + optik hasar izi»
+    assert real[0].ayrinti["s2_dusus.yol"] == "degisim_anomalisi" and real[0].ayrinti["s2_dusus.diger_yil_p10"] == 0.0
+
+
+async def test_change_anomaly_without_a_preceding_frost_is_not_an_event(user_client, factory):
+    rows = await anomaly_events(user_client, factory, frost=False, next_drop=0.05)
+    assert [r for r in rows if r.tur == "s2_dusus" or "s2_dusus" in r.turler] == []  # anomali yolu YALNIZ dona bağlı adaylar içindir
+
+
+async def test_change_anomaly_that_recovers_by_the_next_scene_is_a_suspicion_not_an_event(user_client, factory):
+    rows = await anomaly_events(user_client, factory, frost=True, next_drop=None)  # sonraki net görüntü yok ve 60 gün eski: teyit edilemedi
+    assert not [r for r in rows if r.durum == "olay" and "s2_dusus" in r.turler]

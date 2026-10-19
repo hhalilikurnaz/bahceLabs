@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -9,6 +8,7 @@ from bahcelab_backend.api.deps import get_current_user, get_db_session, get_work
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.gecmis.schemas import GecmisOzeti
 from bahcelab_backend.domain.gecmis.service import build_summary
+from bahcelab_backend.shared.clock import today_istanbul
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 router = APIRouter(tags=["gecmis"], dependencies=[Depends(get_current_user)])
@@ -23,4 +23,4 @@ async def get_history_summary(
     """Geçmiş sayfası: yıl yıl özet (canlılık sapması kademe diliyle, olay sayısı, uyumsuz yıl, hasat) ve güvenilir yeşerme başlangıçları."""
     if await GardenRepository(session, workspace_id).get(garden_id) is None:
         raise AppError(404, AppErrorCode.NOT_FOUND, "Bahçe bulunamadı.")
-    return await build_summary(session, garden_id, date.today())
+    return await build_summary(session, garden_id, today_istanbul())

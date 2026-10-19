@@ -47,7 +47,9 @@ async def weather_days(session: AsyncSession, cell: uuid.UUID, today: date) -> l
     return [er.HourDay(r[0], cast("list[float | None]", r[1] or pad), cast("list[float | None]", r[2] or pad), cast("list[float | None]", r[3] or pad), r[4] == "model" or r[5] == "model", f"{cell}:{r[0].isoformat()}") for r in rows]
 
 
-async def s2_candidates(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali) -> list[tuple[er.Signal, bool | None, float]]:
+async def s2_candidates(
+    session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali, frosts: list[er.Signal] | None = None
+) -> list[tuple[er.Signal, bool | None, float]]:
     """Ardışık net S2 çiftleri (≤ `s2_azami_aralik_gun` arayla) için aday düşüşler: (sinyal, sonraki görüntüde sürdü mü [None: sonraki yok], düşen piksel payı).
 
     Mevsimden arındırma: piksel değeri, pikselin DİĞER yılların aynı ±`s2_pencere_gun` penceresindeki kendi p10'u ile kıyaslanır."""
@@ -73,6 +75,20 @@ async def s2_candidates(session: AsyncSession, storage: StorageBackend, garden_i
         history = [g for a, g in loaded if a.tarih.year != day.year and er.circular_doy_gap(a.tarih, day) <= rule.s2_pencere_gun]
         return er.period_percentile(history, rule)
 
+    def garden_delta(i: int, j: int) -> float | None:
+        """Görüntü i → j arasında bahçe piksellerinin ortanca Δ NDVI'sı (yumuşatılmış ızgaralar); ızgaralar uyuşmuyorsa ya da geçerli piksel yoksa None."""
+        a, b = loaded[i][1], loaded[j][1]
+        if a.shape != b.shape:
+            return None
+        diff = (b - a)[np.isfinite(b - a)]
+        return float(np.median(diff)) if diff.size else None
+
+    # Diğer yılların aynı pencere Δ dağılımı için TÜM ardışık çiftler (≤ azami aralık)
+    pair_deltas: list[tuple[date, float]] = []
+    for i in range(1, len(loaded)):
+        if (loaded[i][0].tarih - loaded[i - 1][0].tarih).days <= rule.s2_azami_aralik_gun and (d := garden_delta(i - 1, i)) is not None:
+            pair_deltas.append((loaded[i][0].tarih, d))
+
     out: list[tuple[er.Signal, bool | None, float]] = []
     for i in range(1, len(loaded)):
         (prev, prev_grid), (acq, grid) = loaded[i - 1], loaded[i]
@@ -82,19 +98,42 @@ async def s2_candidates(session: AsyncSession, storage: StorageBackend, garden_i
         if floor.shape != grid.shape:
             continue
         patch = er.s2_patch(prev_grid, grid, floor, rule)
-        if patch is None:
-            continue
-        area_da, delta, mask_patch, share = patch
-        persists: bool | None = None
-        if i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun:
-            nxt_floor = floor_of(i + 1)
-            persists = er.s2_persists(loaded[i + 1][1], nxt_floor, mask_patch, rule) if nxt_floor.shape == grid.shape else None
-        signal = er.Signal(
-            "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
-            kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
-            ayrinti={"delta_ndvi": round(delta, 3)},
-        )
-        out.append((signal, persists, share))
+        # Piksel yaması yolu (kalıcılık: yama piksellerinin sonraki görüntüde de p10 altında kalması)
+        patch_entry: tuple[er.Signal, bool | None, float] | None = None
+        if patch is not None:
+            area_da, delta, mask_patch, share = patch
+            persists: bool | None = None
+            if i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun:
+                nxt_floor = floor_of(i + 1)
+                persists = er.s2_persists(loaded[i + 1][1], nxt_floor, mask_patch, rule) if nxt_floor.shape == grid.shape else None
+            signal = er.Signal(
+                "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
+                kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
+                ayrinti={"delta_ndvi": round(delta, 3)},
+            )
+            patch_entry = (signal, persists, share)
+        # İkinci yol (YALNIZ dona bağlı adaylar): değişim anomalisi — bahçe ortancası Δ'sı diğer yılların aynı penceredeki p10'unun altında VE kalıcı.
+        # Yama yolu «VEYA» anomali yolu; kalıcılık şartı her yolda kendi ölçüsüyle aranır, biri sağlıyorsa aday kalıcıdır.
+        candidate = er.Signal("s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta")
+        anomaly_entry: tuple[er.Signal, bool | None, float] | None = None
+        if any(er.frost_precedes(f, candidate, rule) for f in frosts or []):
+            delta_g = garden_delta(i - 1, i)
+            others = [d for day, d in pair_deltas if day.year != acq.tarih.year and er.circular_doy_gap(day, acq.tarih) <= rule.s2_pencere_gun]
+            if delta_g is not None and er.is_change_anomaly(delta_g, others, rule):
+                following = i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun
+                kept = er.anomaly_persists(delta_g, garden_delta(i - 1, i + 1) if following else None, rule)
+                signal = er.Signal(
+                    "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=None,
+                    kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
+                    ayrinti={"delta_ndvi": round(delta_g, 3), "yol": "degisim_anomalisi", "diger_yil_p10": round(float(er.anomaly_threshold(others, rule) or 0.0), 3)},
+                )
+                anomaly_entry = (signal, kept, 0.0)
+        if patch_entry and anomaly_entry and patch_entry[1] is not True and anomaly_entry[1] is True:
+            out.append(anomaly_entry)  # yama kalıcı değil ama bahçe ortancası düşüşü sürüyor: anomali yoluyla olay
+        elif patch_entry:
+            out.append(patch_entry)
+        elif anomaly_entry:
+            out.append(anomaly_entry)
     return out
 
 
@@ -109,7 +148,7 @@ async def collect_signals(session: AsyncSession, storage: StorageBackend, garden
     cell, _, _ = await garden_cell(session, garden_id)
     days = await weather_days(session, cell, today)
     others = [*er.frost_signals(days, rule), *er.rain_signals(days, rule), *er.wind_signals(days, rule), *await radar_signals(session, garden_id)]
-    s2 = [er.classify_s2(sig, persists, share, others, rule, today) for sig, persists, share in await s2_candidates(session, storage, garden_id, rule)]
+    s2 = [er.classify_s2(sig, persists, share, others, rule, today) for sig, persists, share in await s2_candidates(session, storage, garden_id, rule, [o for o in others if o.tur == "don"])]
     return [*others, *s2]
 
 

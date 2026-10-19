@@ -1,7 +1,8 @@
 """HLS NDVI gözlemleri ve kesintisiz canlılık eğrisi uç noktası (ADR 0018). Ağsız: sahte HLS sağlayıcısı + tohumlanmış S2 kayıtları."""
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
@@ -95,7 +96,7 @@ async def add_s2(factory, gid: uuid.UUID, day: date, ndvi: float, valid: float =
 
 async def test_curve_endpoint_combines_s2_and_hls_marks_estimated_days_and_adds_radar_marks_only_in_gaps(user_client, factory):
     gid = await new_garden(user_client)
-    today = datetime.now(UTC).date()
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
     for i in range(0, 120, 6):
         await add_s2(factory, gid, today - timedelta(days=200 - i), 0.62 + 0.0005 * i)
     async with factory() as session:

@@ -214,6 +214,26 @@ def s2_persists(following: np.ndarray, floor: np.ndarray, patch: np.ndarray, rul
     return float((following[known] < floor[known]).sum()) / float(patch.sum()) >= rule.s2_kalicilik_orani
 
 
+def anomaly_threshold(others: list[float], rule: OlayKurali) -> float | None:
+    """Diğer yılların aynı pencerede ardışık görüntü çifti Δ'larının alt yüzdeliği (p10); örnek yetersizse None (karşılaştırılamaz)."""
+    if len(others) < rule.anomali_min_ornek:
+        return None
+    return float(np.percentile(others, rule.s2_normal_alt_yuzde))
+
+
+def is_change_anomaly(delta: float, others: list[float], rule: OlayKurali) -> bool:
+    """Değişim anomalisi: bahçe ortancası Δ'sı diğer yılların aynı penceredeki p10'unun ALTINDA (ve gerçek bir düşüş: Δ < 0)."""
+    threshold = anomaly_threshold(others, rule)
+    return threshold is not None and delta < 0 and delta < threshold
+
+
+def anomaly_persists(delta: float, delta_to_next: float | None, rule: OlayKurali) -> bool | None:
+    """Kalıcılık: bir sonraki net görüntüde bahçe ortancası, önceki görüntüye göre hâlâ düşüşün en az `anomali_kalicilik_orani` kadarı düşük mü? Sonraki görüntü yoksa None."""
+    if delta_to_next is None:
+        return None
+    return delta_to_next <= rule.anomali_kalicilik_orani * delta
+
+
 def frost_precedes(frost: Signal, s2: Signal, rule: OlayKurali) -> bool:
     """Asimetrik hasar penceresi: S2 düşüşünün BAŞLAYABİLECEĞİ aralık [önceki görüntü + 1 gün, düşüşü gören görüntü] don bitişinden sonraki 0..+`don_hasar_gun` pencere ile kesişiyor mu?"""
     return s2.bitis >= frost.bitis and s2.baslangic <= frost.bitis + timedelta(days=rule.don_hasar_gun)

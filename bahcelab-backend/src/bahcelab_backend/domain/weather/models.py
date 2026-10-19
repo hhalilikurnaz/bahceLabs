@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, String, UniqueConstraint, func
@@ -41,5 +41,5 @@ class WeatherDailyModel(Base):
     # arsiv: ERA5 · tahmin: tahmin API'sinin geçmiş günü 
     kaynak: Mapped[str] = mapped_column(String(10), nullable=False, default="arsiv")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), default=lambda: datetime.now(UTC), nullable=False  # uygulama saati: test saatiyle tutarlı
     )

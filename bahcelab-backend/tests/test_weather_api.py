@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -119,7 +119,7 @@ async def test_forecast_is_cached_for_an_hour(user_client: AsyncClient, provider
 
     async with test_engine.begin() as conn:
         await conn.execute(
-            text("UPDATE weather_cells SET tahmin_zamani = now() - interval '61 minutes' WHERE enlem > 38 AND enlem < 39")
+            text("UPDATE weather_cells SET tahmin_zamani = CAST(:now AS timestamptz) - interval '61 minutes' WHERE enlem > 38 AND enlem < 39"), {"now": datetime.now(UTC)}  # uygulama (sabit) saati
         )
     await user_client.get(url)
     assert provider.forecast_calls == 2
@@ -164,7 +164,7 @@ async def test_offline_shows_last_cache_with_update_time(user_client: AsyncClien
     url = f"/gardens/{garden['id']}/weather"
     first = (await user_client.get(url)).json()
     async with test_engine.begin() as conn:
-        await conn.execute(text("UPDATE weather_cells SET tahmin_zamani = now() - interval '3 hours' WHERE enlem > 38 AND enlem < 39"))
+        await conn.execute(text("UPDATE weather_cells SET tahmin_zamani = CAST(:now AS timestamptz) - interval '3 hours' WHERE enlem > 38 AND enlem < 39"), {"now": datetime.now(UTC)})
     provider.offline = True
     response = await user_client.get(url)
     assert response.status_code == 200

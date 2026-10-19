@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
@@ -9,6 +9,7 @@ from bahcelab_backend.api.deps import get_current_user, get_db_session, get_work
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.series import service
 from bahcelab_backend.domain.series.schemas import CanlilikEgrisi, EgriNoktasi, Gozlem, RadarIsareti
+from bahcelab_backend.shared.clock import today_istanbul
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 router = APIRouter(tags=["canlilik-egrisi"], dependencies=[Depends(get_current_user)])
@@ -24,7 +25,7 @@ async def get_curve(
     """Kesintisiz günlük canlılık (NDVI) eğrisi: gözlemler (Sentinel-2 + HLS), yumuşatılmış eğri, belirsizlik bandı ve boşluklarda radar değişim işareti."""
     if await GardenRepository(session, workspace_id).get(garden_id) is None:
         raise AppError(404, AppErrorCode.NOT_FOUND, "Bahçe bulunamadı.")
-    end = date.today()
+    end = today_istanbul()
     result = await service.curve_for(session, garden_id, end - timedelta(days=gun), end)
     rule = result["kural"]
     return CanlilikEgrisi(

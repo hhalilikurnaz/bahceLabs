@@ -69,19 +69,30 @@ def p10_of(values: list[float]) -> float:
 
 async def report_for(session, storage, gid, name: str, rule: cat.OlayKurali, today: date) -> list[str]:  # noqa: ANN001
     pairs = await pairs_of(session, storage, gid, rule)
-    frosts = sorted((s for s in await events.collect_signals(session, storage, gid, today) if s.tur == "don"), key=lambda s: s.baslangic)
-    lines = [f"### {name}", "", f"Net S2 çifti: {len(pairs)}; don olayı: {len(frosts)}.", "", "| Don (bitiş) | Bağlanan S2 çifti | Δ NDVI (bahçe ortancası) | Diğer yıllar aynı pencere: n | p10 | medyan | Δ ≤ p10? |", "|---|---|---|---|---|---|---|"]
+    signals = await events.collect_signals(session, storage, gid, today)
+    frosts = sorted((s for s in signals if s.tur == "don"), key=lambda s: s.baslangic)
+    s2 = {s.bitis: s for s in signals if s.tur in ("s2_dusus", "s2_suphe")}
+    lines = [f"### {name}", "", f"Net S2 çifti: {len(pairs)}; don olayı: {len(frosts)}.", "", "| Don (bitiş) | Bağlanan S2 çifti | Δ NDVI (bahçe ortancası) | Diğer yıllar aynı pencere: n | p10 | medyan | Δ < p10? | Motorun kararı (kural) |", "|---|---|---|---|---|---|---|---|"]
     for frost in frosts:
-        bound = next((p for p in pairs if p.sonraki >= frost.bitis and p.onceki + timedelta(days=1) <= frost.bitis + timedelta(days=rule.don_hasar_gun)), None)
-        if bound is None:
-            lines.append(f"| {frost.bitis:%d.%m.%Y} | çift yok (pencerede net görüntü yok) | — | — | — | — | — |")
+        bound_pairs = [p for p in pairs if p.sonraki >= frost.bitis and p.onceki + timedelta(days=1) <= frost.bitis + timedelta(days=rule.don_hasar_gun)]
+        if not bound_pairs:
+            lines.append(f"| {frost.bitis:%d.%m.%Y} | çift yok (pencerede net görüntü yok) | — | — | — | — | — | olay yok |")
             continue
-        others = [p.delta for p in pairs if p.sonraki.year != bound.sonraki.year and er.circular_doy_gap(p.sonraki, bound.sonraki) <= rule.s2_pencere_gun]
-        if len(others) < 3:
-            lines.append(f"| {frost.bitis:%d.%m.%Y} | {bound.onceki:%d.%m.%Y} → {bound.sonraki:%d.%m.%Y} | {tr(bound.delta)} | {len(others)} | — | — | karşılaştırılamaz (örnek az) |")
-            continue
-        p10 = p10_of(others)
-        lines.append(f"| {frost.bitis:%d.%m.%Y} | {bound.onceki:%d.%m.%Y} → {bound.sonraki:%d.%m.%Y} | {tr(bound.delta)} | {len(others)} | {tr(p10)} | {tr(statistics.median(others))} | {'evet' if bound.delta <= p10 else 'hayır'} |")
+        for bound in bound_pairs:  # dona bağlanabilen TÜM çiftler (0..+21 gün penceresi)
+            found = s2.get(bound.sonraki)
+            if found is None:
+                verdict = "aday yok"
+            else:
+                path = "anomali yolu" if found.ayrinti.get("yol") == "degisim_anomalisi" else "yama yolu"
+                why = f", {found.ayrinti.get('neden')}" if found.ayrinti.get("neden") else ""
+                verdict = f"{found.durum} ({path}{why})"
+            others = [p.delta for p in pairs if p.sonraki.year != bound.sonraki.year and er.circular_doy_gap(p.sonraki, bound.sonraki) <= rule.s2_pencere_gun]
+            span = f"{bound.onceki:%d.%m.%Y} → {bound.sonraki:%d.%m.%Y}"
+            if len(others) < 3:
+                lines.append(f"| {frost.bitis:%d.%m.%Y} | {span} | {tr(bound.delta)} | {len(others)} | — | — | karşılaştırılamaz (örnek az) | {verdict} |")
+                continue
+            p10 = p10_of(others)
+            lines.append(f"| {frost.bitis:%d.%m.%Y} | {span} | {tr(bound.delta)} | {len(others)} | {tr(p10)} | {tr(statistics.median(others))} | {'evet' if bound.delta < p10 else 'hayır'} | {verdict} |")
     return [*lines, ""]
 
 

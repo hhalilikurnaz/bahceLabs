@@ -4,8 +4,11 @@ _testdb.prepare()  # bahcelab_backend içe aktarılmadan ÖNCE: DATABASE_URL iş
 
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
+import time_machine
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -17,6 +20,24 @@ from bahcelab_backend.main import create_app
 
 TEST_EMAIL_DOMAIN = "@pytest.example.com"
 TEST_PASSWORD = "test-sifre-123"
+
+
+# Saat SABİT: testlerin «bugün»ü sistem saatine ya da gece yarısına bağlı değildir. Başlangıç anı Europe/Istanbul 2026-10-10 12:00; saat bu andan itibaren
+# ilerler (tick), böylece asyncio zamanlayıcıları ve zaman aşımları çalışır, ama koşu gece yarısını GEÇEMEZ (12 saat pay). `pytest_configure`: toplama
+# aşamasında modül düzeyindeki `TODAY = datetime.now(...)` sabitleri de sabit saati görür.
+FIXED_NOW = datetime(2026, 10, 10, 12, 0, tzinfo=ZoneInfo("Europe/Istanbul"))
+_clock: time_machine.travel | None = None
+
+
+def pytest_configure(config):  # noqa: ANN001, ANN201
+    global _clock
+    _clock = time_machine.travel(FIXED_NOW, tick=True)
+    _clock.start()
+
+
+def pytest_unconfigure(config):  # noqa: ANN001, ANN201
+    if _clock is not None:
+        _clock.stop()
 
 
 @pytest.fixture(scope="session")
