@@ -263,6 +263,8 @@ def _phrase(name: str, label: Seviye | None, month: str | None, *, up_is_bad: bo
         "belirgin_dusuk": f"{where} belirgin altında", "normalin_alti": f"{where} altında", "normal": f"{month or 'dönem'} normali ile uyumlu",
         "normalin_ustu": f"{where} üstünde", "belirgin_yuksek": f"{where} belirgin üstünde",
     }[label]
+    if name == "Su" and label in ("normalin_ustu", "belirgin_yuksek"):
+        text = f"{month or 'dönem'} normalinden nemli"
     return f"{name}, {text}."
 
 

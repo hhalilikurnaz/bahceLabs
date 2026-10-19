@@ -279,6 +279,23 @@ class EgriKurali(KuralBlok):
     radar_bosluk_gun: int = Field(default=12, ge=1)  # optik gözlem boşluğu bundan uzunsa radar «değişim var/yok» işareti çizilir
 
 
+class GecmisKurali(KuralBlok):
+    """Geçmiş sayfası (9G): yıl özeti ve yeşerme başlangıcı. Hepsi ön değer; yeşerme başlangıcı yalnız güvenilirse ve «ön değer» etiketiyle gösterilir."""
+
+    yaz_ilk_ay: int = Field(default=6, ge=1, le=12)  # «yaz» = bu aydan ...
+    yaz_son_ay: int = Field(default=9, ge=1, le=12)  # ... bu aya (dahil); yıl değeri = aylık temsilci değerlerin ortalaması
+    yaz_asgari_ay: int = Field(default=3, ge=1, le=12)  # yılda bu kadar yaz ayı verisi yoksa yıl «yetersiz»
+    asgari_diger_yil: int = Field(default=5, ge=3)  # bir yılı yargılamak için DİĞER yıllardan en az bu kadarı
+    yesillenme_taban_son: str = "02-15"  # kış tabanı = Ocak başı ile bu tarih arası ortanca
+    yesillenme_tepe_ilk: str = "03-01"  # ilkbahar tepesi aralığı
+    yesillenme_tepe_son: str = "06-15"
+    yesillenme_esik_orani: float = Field(default=0.25, gt=0, lt=1)  # başlangıç = eğri tabandan tepeye farkın bu oranını aştığı ilk gün
+    yesillenme_asgari_genlik: float = Field(default=0.05, gt=0)  # tepe − taban bundan küçükse belirgin bir yeşerme yok: güvenilir sayılmaz
+    yesillenme_asgari_gozlem: int = Field(default=8, ge=3)  # Şubat–Haziran aralığında en az bu kadar gerçek gözlem
+    yesillenme_gozlem_orani: float = Field(default=0.6, gt=0, le=1)  # arama aralığındaki eğri noktalarının en az bu payı «gözlem destekli» (tahmini değil)
+    yesillenme_kalicilik_gun: int = Field(default=14, ge=1)  # eşik aşımı bu kadar gün boyunca geri düşmemeli
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -289,6 +306,7 @@ class Katalog(BaseModel):
     olay: OlayKurali
     bildirim: BildirimKurali
     egri: EgriKurali
+    gecmis: GecmisKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

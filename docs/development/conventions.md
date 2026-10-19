@@ -6,6 +6,7 @@
 - **React functional components** — class component yok
 - **Named exports** — default export sadece page/route entry
 - **Dosya boyutu** — max ~150 satır/component, büyükse böl
+- **Backend biçimlendirme** — `ruff format` KULLANILMAZ (proje biçimlendirici çalıştırmıyor; toplu çalıştırmak yüzlerce dosyada gürültülü diff üretir). Yalnızca `ruff check` (Makefile: `backend-typecheck`) ve `mypy` koşulur; yeni kod çevresindeki stile uyar.
 
 ## Klasör Kuralları
 

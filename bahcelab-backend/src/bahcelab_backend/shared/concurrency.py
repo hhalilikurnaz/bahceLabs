@@ -8,7 +8,8 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +53,20 @@ async def retry_on_deadlock[T](
 
 @asynccontextmanager
 async def advisory_lock(engine: AsyncEngine, key: str) -> AsyncIterator[None]:
-    """Oturum düzeyinde advisory lock: aynı anahtarlı işler SERİ çalışır (ikinci iş ilkinin bitmesini bekler). Kilit ayrı bir bağlantıda tutulur."""
-    async with engine.connect() as conn:
-        await conn.execute(text("SELECT pg_advisory_lock(hashtextextended(:k, 0))"), {"k": key})
-        try:
-            yield
-        finally:
-            await conn.execute(
-                text("SELECT pg_advisory_unlock(hashtextextended(:k, 0))"), {"k": key}
-            )
-            await conn.rollback()
+    """Oturum düzeyinde advisory lock: aynı anahtarlı işler SERİ çalışır (ikinci iş ilkinin bitmesini bekler).
+
+    Kilit, havuzsuz (NullPool) ayrı bir bağlantıda tutulur: kilit bağlantısı havuza dönmez (kilit sızmaz) ve başka bir event loop'ta
+    açılmış havuz bağlantısına bağımlı olmaz (testlerde loop'lar arası "different loop" hatasının kaynağıydı)."""
+    lock_engine = create_async_engine(engine.url, poolclass=NullPool)
+    try:
+        async with lock_engine.connect() as conn:
+            await conn.execute(text("SELECT pg_advisory_lock(hashtextextended(:k, 0))"), {"k": key})
+            try:
+                yield
+            finally:
+                await conn.execute(
+                    text("SELECT pg_advisory_unlock(hashtextextended(:k, 0))"), {"k": key}
+                )
+                await conn.rollback()
+    finally:
+        await lock_engine.dispose()

@@ -240,6 +240,26 @@ egri:
   ekstrapolasyon_azami_gun: 30
   radar_bosluk_gun: 12
 
+# Geçmiş sayfası (9G): yıl özeti ve yeşerme başlangıcı — ön değer
+gecmis:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor: yıl değeri = Haziran–Eylül aylık temsilci NDVI'larının ortalaması (en az 3 ay); yıl, DİĞER yılların dağılımına (≥ 5 yıl) göre
+    tek etiket kuralıyla (p25–p75 normal · p10–p25 / p75–p90 altı/üstü · <p10 / >p90 belirgin) etiketlenir, sayı gösterilmez. Yeşerme başlangıcı: kış tabanı (Ocak–15 Şubat ortancası)
+    ile ilkbahar tepesi (1 Mart–15 Haziran) arasındaki farkın %25'ini kalıcı (14 gün) aştığı ilk gün; genlik ≥ 0,05, ≥ 8 gerçek gözlem ve ≥ %60 gözlem destekli eğri yoksa HİÇ gösterilmez.
+  yaz_ilk_ay: 6
+  yaz_son_ay: 9
+  yaz_asgari_ay: 3
+  asgari_diger_yil: 5
+  yesillenme_taban_son: "02-15"
+  yesillenme_tepe_ilk: "03-01"
+  yesillenme_tepe_son: "06-15"
+  yesillenme_esik_orani: 0.25
+  yesillenme_asgari_genlik: 0.05
+  yesillenme_asgari_gozlem: 8
+  yesillenme_gozlem_orani: 0.6
+  yesillenme_kalicilik_gun: 14
+
 urunler:
   limon:
     ad: Limon

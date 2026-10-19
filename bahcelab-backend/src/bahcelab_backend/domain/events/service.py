@@ -25,6 +25,7 @@ from bahcelab_backend.domain.acquisitions.store import decode_grids
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events import rules as er
 from bahcelab_backend.domain.events.models import EventModel, EventSourceModel
+from bahcelab_backend.domain.notifications.templates import EVENT_TITLES
 from bahcelab_backend.domain.water.era5_sync import garden_cell
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -165,6 +166,15 @@ class EventView:
     neden: str | None = None
     ayrinti: dict[str, float | str | None] | None = None
     anahtar: str = ""
+
+
+NAMES = {**{k: v.capitalize() for k, v in EVENT_TITLES.items()}, "s2_dusus": "Ani düşüş (optik)", "radar_degisim": "Radar değişimi", "s2_suphe": "Atmosfer şüphesi"}
+
+
+def event_name(e: EventView) -> str:
+    """Kullanıcıya gösterilen olay adı (birleşen don + optik iz tek iz olarak adlandırılır)."""
+    name = "Don + optik hasar izi" if e.tur == "don" and "s2_dusus" in e.turler else NAMES.get(e.tur, e.tur)
+    return name + (" (doğrulama bekliyor)" if e.durum == "bekliyor" else "")
 
 
 async def list_events(session: AsyncSession, garden_id: uuid.UUID, *, since: date | None = None, until: date | None = None, suphe: bool = False) -> list[EventView]:
