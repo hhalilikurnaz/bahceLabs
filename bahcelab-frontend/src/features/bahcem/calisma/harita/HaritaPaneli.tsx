@@ -15,6 +15,7 @@ import { HistogramLejant } from './HistogramLejant'
 import { KomsuEtiketleri } from './KomsuEtiketleri'
 import { KatmanMenusu } from './KatmanMenusu'
 import { NoktaInceleme } from './NoktaInceleme'
+import { OlayKarti } from './OlayKarti'
 import { TarihKutusu } from './TarihKutusu'
 
 // Çizim aracı (terra-draw) ağırdır: yalnız sınır düzenlenirken yüklenir
@@ -37,7 +38,7 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
         <BolgeKatmani gardenId={garden.id} visible={katman === 'bolgeler'} />
         <div className="absolute left-3.5 top-3.5 z-20"><KatmanMenusu gardenId={garden.id} /></div>
         <div className="absolute right-3.5 top-3.5 z-10 max-[1279px]:left-3.5 max-[1279px]:right-auto max-[1279px]:top-[66px]"><TarihKutusu gardenId={garden.id} view={view} /></div>
-        <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)]">{katman === 'bolgeler' ? <BolgeLejanti gardenId={garden.id} /> : <HistogramLejant view={view} />}</div>
+        <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)] max-[560px]:bottom-9">{katman === 'bolgeler' ? <BolgeLejanti gardenId={garden.id} /> : <HistogramLejant view={view} />}</div>
         <div className="absolute bottom-9 right-3.5 z-10 max-[900px]:hidden"><HaritaKosesi garden={garden} /></div>
         {view.hata && (
           <div className="glass absolute left-1/2 top-1/2 z-10 w-[min(360px,calc(100%-28px))] -translate-x-1/2 -translate-y-1/2">
@@ -45,6 +46,7 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
           </div>
         )}
         {view.neden && <div role="status" className="glass absolute left-1/2 top-[70px] z-10 -translate-x-1/2 px-3 py-2 text-[12.5px]">{view.neden}</div>}
+        <OlayKarti gardenId={garden.id} />
         {!drawing && <NoktaInceleme gardenId={garden.id} view={view} />}
         {drawing && (
           <Suspense fallback={null}>

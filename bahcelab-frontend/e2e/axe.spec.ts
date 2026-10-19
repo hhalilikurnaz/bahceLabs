@@ -27,7 +27,7 @@ for (const tema of ['acik', 'koyu'] as const) {
       for (const [yol, hazir] of [
         [`/bahceler/${garden.id}`, 'durum-karti'],
         [`/bahceler/${garden.id}/analiz`, 'analiz-yok'],
-        [`/bahceler/${garden.id}/gecmis`, 'bos-gecmis'],
+        [`/bahceler/${garden.id}/gecmis`, 'gecmis-sayfasi'],
         [`/bahceler/${garden.id}/defter`, 'bos-defter'],
         [`/bahceler/${garden.id}/su`, 'bos-su'],
       ] as const) {

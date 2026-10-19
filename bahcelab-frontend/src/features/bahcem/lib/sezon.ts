@@ -3,6 +3,7 @@ import type { Edinim, GostergeId } from '../api/edinimApi'
 import type { BandKonumu, NormalBantAy } from '../api/normalBantApi'
 
 export const AY_KISA = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'] as const
+export const AY_ADI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] as const
 export const AY_UZUN = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] as const
 
 /** Tarihin yıl içindeki konumu: 0 (1 Ocak) … 12 (31 Aralık). Takvim ayı ekseniyle uyumlu (her ay 1 birim). */

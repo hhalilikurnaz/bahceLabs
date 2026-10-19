@@ -24,6 +24,8 @@ export function seviyeMeta(kod: string, seviye: SeviyeKodu | null): { ad: string
   if (!seviye) return null
   if (kod === 'isi' && seviye === 'normalin_ustu') return { ad: 'normalin üstü', isaret: '▲', renk: 'var(--color-app-watch)' }
   if (kod === 'isi' && seviye === 'belirgin_yuksek') return { ad: 'belirgin yüksek', isaret: '■', renk: 'var(--color-app-danger)' }
+  // Su'da yukarı yön (nemli) ceza değil, kötü haber de değil: nötr dille «normalden nemli» denir.
+  if (kod === 'su' && (seviye === 'normalin_ustu' || seviye === 'belirgin_yuksek')) return { ad: 'normalden nemli', isaret: '▲', renk: 'var(--color-app-text-muted)' }
   return SEVIYE_META[seviye]
 }
 

@@ -94,7 +94,7 @@ test('geçmiş ve saha defteri sayfaları: adlar ve odak', async ({ page }) => {
   const g = await createGarden(page.request, { ad: 'Erişim Sayfa', lng: 27.55, lat: 38.55, sideM: 200 })
   for (const yol of ['gecmis', 'defter']) {
     await page.goto(`/bahceler/${g.id}/${yol}`)
-    await expect(page.getByTestId(yol === 'gecmis' ? 'bos-gecmis' : 'bos-defter')).toBeVisible()
+    await expect(page.getByTestId(yol === 'gecmis' ? 'gecmis-sayfasi' : 'bos-defter')).toBeVisible()
     expect(await audit(page, { touch: false })).toEqual([])
     expect(await focusIndicators(page, 20)).toEqual([])
   }

@@ -1,15 +1,5 @@
 import type { Garden } from '../api/types'
-import { BosDurum } from '../kabuk/BosDurum'
 import '../varliklar/defter.css'
-
-/** Geçmiş (9G): limon yılı çarkı, sezon grafikleri, ridgeline, küçük çoklular ve görüntü arşivi buraya taşınacak. */
-export function GecmisSayfasi() {
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
-      <BosDurum gravur="kesit" baslik="Geçmiş sayfası 9G’de" fayda="Bahçenin yıllar içindeki seyri tek sayfada: sezon karşılaştırması, limon yılı çarkı, yıl yıl dağılım ve tüm görüntüler." adim="Adım 9G" testId="bos-gecmis" />
-    </div>
-  )
-}
 
 /** Saha Defteri (9G): editoryal görünüm yalnız bu sayfada (`.notebook` kapsamı). */
 export function DefterSayfasi({ garden }: { garden: Garden }) {

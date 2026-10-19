@@ -71,7 +71,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
           </div>
         )}
       </div>
-      <nav role="tablist" aria-label="Bahçe sekmeleri" className="flex h-[52px] gap-0.5 max-[560px]:order-3 max-[560px]:h-11 max-[560px]:w-full max-[560px]:overflow-x-auto">
+      <nav role="tablist" aria-label="Bahçe sekmeleri" className="flex h-[52px] gap-0.5 max-[560px]:order-3 max-[560px]:h-11 max-[560px]:w-full max-[560px]:overflow-x-auto max-[560px]:[scrollbar-width:none]">
         {GARDEN_TABS.map((t) => (
           <NavLink
             key={t}
@@ -79,7 +79,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
             end
             role="tab"
             aria-selected={tab === t}
-            className={`relative flex items-center whitespace-nowrap px-3 text-[14px] font-medium ${tab === t ? 'text-app-text after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:bg-app-text' : 'text-app-text-muted hover:text-app-text'}`}
+            className={`relative flex shrink-0 items-center whitespace-nowrap px-3 text-[14px] font-medium max-[560px]:min-h-11 ${tab === t ? 'text-app-text after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:bg-app-text' : 'text-app-text-muted hover:text-app-text'}`}
           >
             {GARDEN_TAB_LABELS[t]}
           </NavLink>

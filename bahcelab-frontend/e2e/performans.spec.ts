@@ -1,3 +1,4 @@
+import { loadavg } from 'node:os'
 import { expect, test } from '@playwright/test'
 import { createGarden, newUser, seedRadar, seedScenes, seedWater } from './yardimcilar'
 
@@ -10,6 +11,9 @@ const KATMAN_MAKS_MS = Number(process.env.E2E_KATMAN_MAKS_MS ?? 150) // medyan
 const KATMAN_P95_MAKS_MS = Number(process.env.E2E_KATMAN_P95_MAKS_MS ?? 200)
 const FPS_MIN = Number(process.env.E2E_FPS_MIN ?? 30)
 const KARE_P95_MAKS_MS = Number(process.env.E2E_KARE_P95_MAKS_MS ?? 66)
+/** Koşul: varsayılan «bos» = arka plan indirmesi/işi YOK (ölçüm bu iş bitene kadar bekler) ve p95 eşiği geçerli. E2E_PERF_YUKLU=1: makine yükte (örn. tam paket ya da arka plan indirme) koşulur;
+ *  p95 AYRI raporlanır (kosul: 'yuklu') ve eşik olarak sınanmaz (yalnız medyan ve fps sınanır). */
+const YUKLU = process.env.E2E_PERF_YUKLU === '1'
 
 const yuzdelik = (v: number[], q: number) => [...v].sort((a, b) => a - b)[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)]
 const medyan = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)]
@@ -25,6 +29,13 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   seedWater(garden.id) // yüzey sıcaklığı katmanı da ölçülür
   await page.goto(`/bahceler/${garden.id}`)
   await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
+  if (!YUKLU) {
+    // Arka plan indirmesi kapalı koşul: bahçenin geçmiş doldurması ve besleme işleri bitmeden ölçülmez
+    await expect
+      .poll(async () => (await (await page.request.get(`/api/gardens/${garden.id}/gecmis-doldurma`)).json()).durum, { timeout: 90_000, intervals: [1000] })
+      .not.toBe('isleniyor')
+    await page.waitForTimeout(3000) // besleme ve olay hesabı artçıları otursun
+  }
   await page.waitForTimeout(1500)
 
   // 1) Katman değişimi: tıklama → ilk karede boyanmış katman. Canlılık ↔ Yaprak suyu ↔ Değişim, birkaç tur.
@@ -109,11 +120,11 @@ test('katman değişimi eşik altında ve harita sürüklenirken kare hızı yet
   const sirali = [...kareler].sort((a, b) => a - b)
   const p95 = sirali[Math.floor(sirali.length * 0.95)] ?? 0
 
-  const sonuc = { katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanP95Ms: Math.round(p95Katman), katmanOlcumleri: sureler.map(Math.round), sogukIlkAcilisMs: sogukIlkAcilis, fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, KATMAN_P95_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
+  const sonuc = { kosul: YUKLU ? 'yuklu' : 'bos', makineYuku1dk: Math.round(loadavg()[0] * 100) / 100, katmanMedyanMs: Math.round(med), katmanMaksMs: Math.round(max), katmanP95Ms: Math.round(p95Katman), katmanOlcumleri: sureler.map(Math.round), sogukIlkAcilisMs: sogukIlkAcilis, fps: Math.round(fps * 10) / 10, kareP95Ms: Math.round(p95), esikler: { KATMAN_MAKS_MS, KATMAN_P95_MAKS_MS, FPS_MIN, KARE_P95_MAKS_MS } }
   console.log('PERFORMANS ' + JSON.stringify(sonuc))
   await testInfo.attach('performans.json', { body: JSON.stringify(sonuc, null, 2), contentType: 'application/json' })
 
-  expect(p95Katman, `katman değişimi p95 ${Math.round(p95Katman)} ms (eşik ${KATMAN_P95_MAKS_MS})`).toBeLessThanOrEqual(KATMAN_P95_MAKS_MS)
+  if (!YUKLU) expect(p95Katman, `katman değişimi p95 ${Math.round(p95Katman)} ms (eşik ${KATMAN_P95_MAKS_MS})`).toBeLessThanOrEqual(KATMAN_P95_MAKS_MS)
   expect(med, `katman değişimi medyanı ${Math.round(med)} ms (eşik ${KATMAN_MAKS_MS})`).toBeLessThan(KATMAN_MAKS_MS)
   expect(fps, `harita fps ${fps.toFixed(1)} (eşik ${FPS_MIN})`).toBeGreaterThanOrEqual(FPS_MIN)
   expect(p95, `kare süresi p95 ${Math.round(p95)} ms (eşik ${KARE_P95_MAKS_MS})`).toBeLessThan(KARE_P95_MAKS_MS)

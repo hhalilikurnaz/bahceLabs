@@ -43,7 +43,7 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
   const icon = 'relative grid shrink-0 h-9 w-9 max-[560px]:h-11 max-[560px]:w-11 place-items-center rounded-md border border-transparent text-app-text hover:border-app-border'
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-5 border-b border-app-border bg-app-panel px-5 max-[560px]:gap-2.5 max-[560px]:px-3">
+    <header className="flex h-14 shrink-0 items-center gap-5 border-b border-app-border bg-app-panel px-5 max-[560px]:gap-2 max-[560px]:px-3">
       <NavLink to="/bahceler" className="flex items-center justify-center gap-2.5 whitespace-nowrap text-[16px] max-[560px]:h-11 max-[560px]:w-11 font-semibold tracking-tight text-app-text" aria-label="BahçeLab">
         <Logo size={30} />
         <span className="max-[560px]:hidden">BahçeLab</span>
@@ -54,7 +54,7 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
             key={item.key}
             to={item.path}
             className={({ isActive }) =>
-              `relative flex h-14 items-center gap-1.5 whitespace-nowrap px-3 text-[14px] font-medium ${isActive ? 'text-app-text after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-app-primary' : 'text-app-text-muted hover:text-app-text'}`
+              `relative flex h-14 items-center gap-1.5 whitespace-nowrap px-3 text-[14px] font-medium max-[560px]:px-2 max-[560px]:text-[13px] ${item.soon ? 'max-[560px]:hidden' : ''} ${isActive ? 'text-app-text after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-app-primary max-[560px]:after:inset-x-2' : 'text-app-text-muted hover:text-app-text'}`
             }
           >
             {item.label}
@@ -79,7 +79,7 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
           </div>
         )}
       </div>
-      <button type="button" className={icon} aria-label={tema === 'koyu' ? 'Açık temaya geç' : 'Koyu temaya geç'} onClick={degistir} data-testid="tema">
+      <button type="button" className={`${icon} max-[560px]:hidden`} aria-label={tema === 'koyu' ? 'Açık temaya geç' : 'Koyu temaya geç'} onClick={degistir} data-testid="tema">
         {tema === 'koyu' ? <Sun className="h-[19px] w-[19px]" strokeWidth={1.5} aria-hidden /> : <Moon className="h-[19px] w-[19px]" strokeWidth={1.5} aria-hidden />}
       </button>
       <div ref={hRef} className="relative shrink-0">
@@ -89,6 +89,9 @@ export function UstGezinme({ onKomut }: { onKomut: () => void }) {
         {hesap && (
           <div className="glass absolute right-0 top-11 z-40 w-56 p-1.5" role="menu">
             <div className="px-2.5 py-2 text-[12.5px]"><b className="block">{user?.name}</b><span className="text-app-text-muted">{user?.email}</span></div>
+            <button role="menuitem" type="button" onClick={() => (setHesap(false), degistir())} data-testid="tema-menu" className="hidden w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-app-card-hover max-[560px]:flex max-[560px]:min-h-11">
+              {tema === 'koyu' ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />} {tema === 'koyu' ? 'Açık tema' : 'Koyu tema'}
+            </button>
             <button role="menuitem" type="button" onClick={() => (setHesap(false), navigate(SETTINGS_PATH))} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-app-card-hover"><Settings className="h-4 w-4" aria-hidden /> Ayarlar</button>
             <button role="menuitem" type="button" onClick={async () => { await logout(); navigate('/login', { replace: true }) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-app-card-hover"><LogOut className="h-4 w-4" aria-hidden /> Çıkış yap</button>
           </div>

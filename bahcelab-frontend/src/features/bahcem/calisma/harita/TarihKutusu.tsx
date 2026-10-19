@@ -9,6 +9,19 @@ import type { HaritaGorunumu } from '../useHaritaGorunumu'
 /** Sağ üst: ‹ tarih › (net görüntüler arasında) + kaynak satırı + «Geçmiş ↗». */
 export function TarihKutusu({ gardenId, view }: { gardenId: string; view: HaritaGorunumu }) {
   const setTarih = useCalismaStore((s) => s.setTarih)
+  const yil = useCalismaStore((s) => s.yil)
+  if (yil !== null && view.tanim.id === 'canlilik') {
+    return (
+      <div className="glass flex items-center gap-1 p-1" data-testid="tarih-kutusu" data-yil={yil}>
+        <div className="min-w-[132px] px-2 leading-tight">
+          <b className="num block text-[13px]" data-testid="secili-tarih">{yil} yazı</b>
+          <span className="num block text-[10.5px] text-app-text-muted">Haz–Eyl ortancası · çok yıllı kompozit</span>
+        </div>
+        <button type="button" onClick={() => setTarih(null)} data-testid="yil-gorunumunden-cik" className="flex h-9 max-[560px]:h-11 items-center rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text">Son görüntü</button>
+        <Link to={gardenPagePath(gardenId, 'gecmis')} className="ml-1 flex h-9 max-[560px]:h-11 items-center rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text">Geçmiş ↗</Link>
+      </div>
+    )
+  }
   const list = view.sahneler
   const i = view.sahne ? list.findIndex((s) => s.tarih === view.sahne!.tarih) : -1
   const go = (step: number) => {

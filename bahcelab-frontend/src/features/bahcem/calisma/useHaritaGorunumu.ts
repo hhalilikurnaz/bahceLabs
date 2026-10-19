@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useEdinimIzgara, useEdinimler, type Edinim } from '../api/edinimApi'
+import { useYilGrid } from '../api/multiyearApi'
 import { useNormalBantlar } from '../api/normalBantApi'
 import { useLandsatEdinimler, useLandsatIzgara, type LandsatEdinim } from '../api/suApi'
 import { useRadarDegisimler, useRadarEdinimler, useRadarIzgara, type RadarEdinim } from '../api/radarApi'
@@ -60,6 +61,7 @@ const radarSahne = (e: RadarEdinim): Sahne => ({ tarih: e.tarih, bulutOrani: nul
 export function useHaritaGorunumu(gardenId: string | null): HaritaGorunumu {
   const katman = useCalismaStore((s) => s.katman)
   const tarih = useCalismaStore((s) => s.tarih)
+  const yil = useCalismaStore((s) => s.yil)
   const skala = useCalismaStore((s) => s.skala)
   const tanim = KATMANLAR[katman]
   const gosterge = tanim.gosterge
@@ -92,11 +94,13 @@ export function useHaritaGorunumu(gardenId: string | null): HaritaGorunumu {
   const radarGrid = useRadarIzgara(gardenId, radarTuru ? (sahne?.tarih ?? null) : null, radarTuru === 'degisim' ? 'degisim' : 'vh_db', izgaraBilgisi)
   const grid = landsat ? landsatGrid.data : radarTuru ? radarGrid.data : optikGrid
   const prevGrid = useEdinimIzgara(gardenId, radarTuru || landsat ? null : (onceki?.tarih ?? null), gosterge, izgaraBilgisi).data
+  const yilSorgu = useYilGrid(gardenId, katman === 'canlilik' ? yil : null)
   const bantlar = useNormalBantlar(gardenId).data
   const tipik = gosterge ? bantlar?.tipik_bantlar[gosterge] : undefined
   const tipikBant = useMemo<TipikBant | null>(() => (tipik && katman !== 'degisim' ? { alt: tipik.alt, ust: tipik.ust, onDeger: tipik.durum !== 'muhendis_onayli' } : null), [tipik, katman])
   const yukleniyor = landsat ? landsatSorgu.isLoading : radarTuru ? radarSorgu.isLoading : edinimSorgu.isLoading
   return useMemo(() => {
+    const yilSahnesi: Sahne | null = yilSorgu.data ? { tarih: `${yilSorgu.data.yil}-07-15`, bulutOrani: null, sceneId: `yaz-${yilSorgu.data.yil}`, platform: undefined } : null
     const ramp = tanim.ramp ? RAMPS[tanim.ramp] : null
     const asP = (g: typeof grid): PGrid | null => (g ? { values: g.values, rows: g.rows, cols: g.cols, corners: g.corners as unknown as [number, number][] } : null)
     const aralik = gosterge ? GOSTERGE_ARALIK[gosterge] : null
@@ -124,8 +128,14 @@ export function useHaritaGorunumu(gardenId: string | null): HaritaGorunumu {
       const alan: [number, number] = diff ? (skala === 'kendi' ? symmetricDomain(diff) : [-(aralik?.fark ?? 0.25), aralik?.fark ?? 0.25]) : [-0.1, 0.1]
       return { tanim, sahneler, sahne, onceki, izgara: diff, alan, ramp, yukleniyor: yukleniyor || (Boolean(onceki) && !diff && !neden), neden, hata, tekrarDene, ortanca: diff ? median(diff) : null, tipikBant: null, soluk: null }
     }
+    if (katman === 'canlilik' && yil !== null) {
+      const izgara = yilSorgu.data ? { values: yilSorgu.data.values, rows: yilSorgu.data.rows, cols: yilSorgu.data.cols, corners: yilSorgu.data.corners } : null
+      const alan: [number, number] = izgara ? (skala === 'kendi' ? percentileDomain([izgara]) : [GOSTERGE_ARALIK.ndvi.min, GOSTERGE_ARALIK.ndvi.max]) : [0, 1]
+      const neden = yilSorgu.isError ? `${yil} yazı için görüntü yok.` : null
+      return { tanim, sahneler, sahne: yilSahnesi ?? sahne, onceki: null, izgara, alan, ramp, yukleniyor: yilSorgu.isLoading, neden, hata: false, tekrarDene, ortanca: izgara ? median(izgara) : null, tipikBant, soluk: null }
+    }
     const izgara = asP(grid)
     const alan: [number, number] = izgara && aralik ? (skala === 'kendi' ? percentileDomain([izgara]) : [aralik.min, aralik.max]) : [0, 1]
     return { tanim, sahneler, sahne, onceki, izgara, alan, ramp, yukleniyor: yukleniyor || (Boolean(gosterge && sahne) && !izgara), neden: null, hata, tekrarDene, ortanca: izgara ? median(izgara) : null, tipikBant, soluk: null }
-  }, [tanim, katman, gosterge, radarTuru, landsat, radarOlaylari, radarGrid.isError, sahneler, sahne, onceki, grid, prevGrid, skala, yukleniyor, hata, tekrarDene, tipikBant])
+  }, [tanim, katman, yil, yilSorgu.data, yilSorgu.isError, yilSorgu.isLoading, gosterge, radarTuru, landsat, radarOlaylari, radarGrid.isError, sahneler, sahne, onceki, grid, prevGrid, skala, yukleniyor, hata, tekrarDene, tipikBant])
 }

@@ -5,6 +5,7 @@ import { Bolucu } from './Bolucu'
 import { useCalismaStore } from './calismaStore'
 import { HaritaPaneli } from './harita/HaritaPaneli'
 import { SagPanel } from './panel/SagPanel'
+import { useUrlGorunumu } from './useUrlGorunumu'
 
 /** Bölünmüş çalışma alanı: solda tam harita, sağda sabit panel; aradaki bölücü sürüklenir (oran saklanır). Dar ekranda alt alta. */
 export function CalismaAlani({ garden, gardens, tab }: { garden: Garden; gardens: Garden[]; tab: GardenTab }) {
@@ -12,6 +13,7 @@ export function CalismaAlani({ garden, gardens, tab }: { garden: Garden; gardens
   const oran = useCalismaStore((s) => s.oran)
   const bahceDegisti = useCalismaStore((s) => s.bahceDegisti)
   useEffect(() => bahceDegisti(), [garden.id, bahceDegisti])
+  useUrlGorunumu(garden.id)
   return (
     <div ref={box} className="flex min-h-0 flex-1 max-[900px]:flex-col max-[900px]:overflow-y-auto" data-testid="calisma-alani">
       <div className="min-w-[320px] border-r border-app-border max-[900px]:h-[72vh] max-[900px]:min-h-[340px] max-[900px]:min-w-0 max-[900px]:shrink-0 max-[900px]:border-r-0" style={{ flexBasis: `${oran * 100}%`, flexGrow: 0, flexShrink: 0 }}>

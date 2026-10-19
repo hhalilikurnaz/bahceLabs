@@ -27,12 +27,13 @@ test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışı
   await expect(page.getByTestId('bos-su')).toContainText('9H')
 })
 
-test('tam sayfalar: Geçmiş ve Saha Defteri iskelet olarak açılır', async ({ page }) => {
+test('tam sayfalar: Geçmiş sayfası ve Saha Defteri açılır', async ({ page }) => {
   const garden = await createGarden(page.request, { ad: 'Sayfa Bahçesi', lng: 27.51, lat: 38.51 })
   await page.goto(`/bahceler/${garden.id}`)
   await page.getByRole('link', { name: 'Geçmiş ↗' }).click()
   await expect(page).toHaveURL(/\/gecmis$/)
-  await expect(page.getByTestId('bos-gecmis')).toContainText('9G')
+  await expect(page.getByTestId('gecmis-sayfasi')).toBeVisible()
+  await expect(page.getByTestId('gecmis-baslik')).toContainText('Geçmiş')
   await page.getByRole('link', { name: 'Saha Defteri ↗' }).click()
   await expect(page).toHaveURL(/\/defter$/)
   await expect(page.getByTestId('bos-defter')).toContainText('9G')

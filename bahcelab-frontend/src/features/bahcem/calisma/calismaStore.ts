@@ -3,6 +3,13 @@ import { create } from 'zustand'
 import type { KatmanId } from './katmanlar'
 
 export type Skala = 'kendi' | 'genel'
+/** Haritada odaklanılan olay (Geçmiş zaman çizelgesi, bildirim ve özet bağlantıları): ad + tarih aralığı; harita o tarihe açılır. */
+export interface OlayOdagi {
+  id: string
+  ad: string
+  baslangic: string
+  bitis: string
+}
 export interface Inceleme {
   lng: number
   lat: number
@@ -38,6 +45,9 @@ interface CalismaState extends Prefs {
   katman: KatmanId
   /** Seçili sahne tarihi; null = en güncel net görüntü */
   tarih: string | null
+  /** Yıl görünümü: o yılın yaz (Haz–Eyl) ortanca canlılığı haritada; null = tek sahne görünümü */
+  yil: number | null
+  olay: OlayOdagi | null
   /** Histogram üzerinde vurgulanan değer aralığı */
   vurgu: [number, number] | null
   inceleme: Inceleme | null
@@ -45,6 +55,8 @@ interface CalismaState extends Prefs {
   oran: number
   setKatman: (k: KatmanId) => void
   setTarih: (t: string | null) => void
+  setYil: (y: number | null) => void
+  setOlay: (o: OlayOdagi | null) => void
   setSkala: (s: Skala) => void
   setKontur: (k: boolean) => void
   setOpaklik: (o: number) => void
@@ -67,11 +79,15 @@ export const useCalismaStore = create<CalismaState>((set, get) => {
     ...prefs,
     katman: 'canlilik',
     tarih: null,
+    yil: null,
+    olay: null,
     vurgu: null,
     inceleme: null,
     oran: clampOran(read<number>(SPLIT_KEY, SPLIT_LIMITS.varsayilan)),
     setKatman: (katman) => set({ katman, vurgu: null }),
-    setTarih: (tarih) => set({ tarih, vurgu: null }),
+    setTarih: (tarih) => set({ tarih, yil: null, vurgu: null }),
+    setYil: (yil) => set(yil === null ? { yil } : { yil, katman: 'canlilik', vurgu: null }),
+    setOlay: (olay) => set({ olay }),
     setSkala: (skala) => (savePrefs({ skala }), set({ skala })),
     setKontur: (kontur) => (savePrefs({ kontur }), set({ kontur })),
     setOpaklik: (opaklik) => (savePrefs({ opaklik }), set({ opaklik })),
@@ -82,6 +98,6 @@ export const useCalismaStore = create<CalismaState>((set, get) => {
       write(SPLIT_KEY, oran)
       set({ oran })
     },
-    bahceDegisti: () => set({ tarih: null, vurgu: null, inceleme: null }),
+    bahceDegisti: () => set({ tarih: null, yil: null, olay: null, vurgu: null, inceleme: null }),
   }
 })

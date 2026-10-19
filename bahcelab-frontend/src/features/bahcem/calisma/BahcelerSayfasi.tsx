@@ -6,7 +6,8 @@ import { useToast } from '../components/layout/toastContext'
 import { GARDEN_TAB_LABELS, gardenPath, isGardenPage, isGardenTab, type GardenPage } from '../lib/routes'
 import { BahceCubugu } from './BahceCubugu'
 import { CalismaAlani } from './CalismaAlani'
-import { DefterSayfasi, GecmisSayfasi } from './TamSayfalar'
+import { GecmisSayfasi } from './GecmisSayfasi'
+import { DefterSayfasi } from './TamSayfalar'
 
 /** `/bahceler/:id[/:sekme|gecmis|defter]` */
 export function BahceSayfasi() {
@@ -31,7 +32,7 @@ export function BahceSayfasi() {
     <>
       <h1 className="sr-only">{garden.ad} · {page === 'gecmis' ? 'Geçmiş' : page === 'defter' ? 'Saha Defteri' : GARDEN_TAB_LABELS[tab]}</h1>
       <BahceCubugu garden={garden} gardens={gardens} tab={page ? null : tab} />
-      {page === 'gecmis' ? <GecmisSayfasi /> : page === 'defter' ? <DefterSayfasi garden={garden} /> : <CalismaAlani garden={garden} gardens={gardens} tab={tab} />}
+      {page === 'gecmis' ? <GecmisSayfasi garden={garden} /> : page === 'defter' ? <DefterSayfasi garden={garden} /> : <CalismaAlani garden={garden} gardens={gardens} tab={tab} />}
     </>
   )
 }

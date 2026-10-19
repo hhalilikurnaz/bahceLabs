@@ -84,3 +84,27 @@ export function useStartMultiyear(gardenId: string) {
     onSuccess: () => client.invalidateQueries({ queryKey: multiyearKey(gardenId) }),
   })
 }
+
+/** Bir yılın yaz (Haz–Eyl) ortanca canlılık ızgarası (çok yıllı analizin kompoziti): küçük haritalar ve çalışma alanı «yıl» görünümü. */
+export interface YilGrid {
+  yil: number
+  values: Float32Array
+  rows: number
+  cols: number
+  corners: [number, number][]
+}
+export const yilGridOptions = (gardenId: string | null, yil: number | null) => ({
+  queryKey: ['yil-grid', gardenId, yil] as const,
+  queryFn: async (): Promise<YilGrid> => {
+    const d = await apiRequest<{ yil: number; satir: number; sutun: number; koordinatlar: number[][]; degerler: (number | null)[] }>(`/gardens/${gardenId}/bolgeler/cok-yillik/yillar/${yil}/degerler`)
+    return { yil: d.yil, rows: d.satir, cols: d.sutun, corners: d.koordinatlar as [number, number][], values: Float32Array.from(d.degerler, (v) => (v === null ? Number.NaN : v)) }
+  },
+  enabled: gardenId !== null && yil !== null,
+  staleTime: Infinity,
+  gcTime: 30 * 60_000,
+  retry: false, // bu yıl için görüntü yoksa 404: sessizce boş
+})
+
+export function useYilGrid(gardenId: string | null, yil: number | null) {
+  return useQuery(yilGridOptions(gardenId, yil))
+}
