@@ -20,6 +20,7 @@ class OlayYanit(BaseModel):
     kaynak_sayisi: int
     durum: Literal["olay", "bekliyor", "suphe"] = "olay"  # bekliyor: sonraki net görüntü doğrulayacak
     neden: str | None = None  # şüphe nedeni (toparlandi | tum_bahce_destek_yok | teyit_edilemedi)
+    dogrulama: Literal["gerceklesti", "gerceklesmedi", "bilinmiyor"] | None = None  # çiftçinin «Uydu haklı mıydı?» yanıtı (Saha Defteri)
 
 
 class OlaylarYanit(BaseModel):

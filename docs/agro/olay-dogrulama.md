@@ -2,13 +2,13 @@
 
 Oluşturma: 2026-10-19 · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşikler ön değerdir; mühendis onayı bekliyor.
 
-**Nasıl kullanılır:** «Çiftçi doğrulaması» sütununa her olay için **gerçekleşti**, **gerçekleşmedi** ya da **bilinmiyor** yazın. Tarihler uydu geçiş ve ERA5 günlük tarihleridir; gerçek olay birkaç gün önce/sonra olabilir. Don, yağış ve rüzgâr olayları 9–31 km ERA5 ızgarasından gelir (bahçeye birebir ölçüm değildir); rüzgâr hamlesi ERA5'te düşük çıkar, bu yüzden güven düşüktür.
+**Nasıl kullanılır:** Bu dosya Saha Defteri'ndeki «Uydu haklı mıydı?» yanıtlarından ÜRETİLİR (elle düzenlemeyin; `scripts/export_event_validation.py`). Yanıtlanmamış olaylarda «Çiftçi doğrulaması» sütununda **gerçekleşti / gerçekleşmedi / bilinmiyor** seçenekleri durur; defterde ya da kâğıt üzerinde işaretleyebilirsiniz. Tarihler uydu geçiş ve ERA5 günlük tarihleridir; gerçek olay birkaç gün önce/sonra olabilir. Don, yağış ve rüzgâr olayları 9–31 km ERA5 ızgarasından gelir (bahçeye birebir ölçüm değildir); rüzgâr hamlesi ERA5'te düşük çıkar, bu yüzden güven düşüktür.
 
 **Güven:** yüksek = birden çok kaynak ailesi (ör. hava + uydu) aynı pencerede; orta = tek güvenilir kaynak; düşük = tek kaynak ve zayıf (geçmiş rüzgâr).
 
 ## jlnnlk (15,1 da)
 
-Olay: 31 · atmosfer şüphesi (olay değil): 6
+Olay: 31 · yanıtlanan: 0 · atmosfer şüphesi (olay değil): 6
 
 ### Olaylar
 
@@ -46,6 +46,18 @@ Olay: 31 · atmosfer şüphesi (olay değil): 6
 | 30 | 17.02.2025 – 13.03.2025 | Don + optik hasar izi (şiddetli) | yüksek | ERA5-Land saatlik 2 m sıcaklık: en düşük -4,9 °C (2 gün); Sentinel-2 NDVI 16.02.2025 → 13.03.2025, Δ NDVI -0,10 | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 31 | 13.02.2026 – 18.02.2026 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 71 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 
+### Doğruluk özeti (çiftçi yanıtlarından)
+
+Bir türde en az 5 doğrulama yoksa «henüz yeterli doğrulama yok» yazılır (eşik ön değer · mühendis onayı bekliyor).
+
+| Tür | Yanıtlanan | Gerçekleşti | Yanlış alarm | Bilinmiyor | Yanıt bekleyen | Özet |
+|---|---|---|---|---|---|---|
+| Don | 0 | 0 | 0 | 0 | 8 | henüz yeterli doğrulama yok (0/5) |
+| Aşırı yağış | 0 | 0 | 0 | 0 | 7 | henüz yeterli doğrulama yok (0/5) |
+| Rüzgâr | 0 | 0 | 0 | 0 | 10 | henüz yeterli doğrulama yok (0/5) |
+| Optik düşüş | 0 | 0 | 0 | 0 | 2 | henüz yeterli doğrulama yok (0/5) |
+| Radar değişimi | 0 | 0 | 0 | 0 | 4 | henüz yeterli doğrulama yok (0/5) |
+
 ### Atmosfer şüpheleri (olay sayılmadı; bilgi için)
 
 | # | Tarih | Neden olay sayılmadı | Kaynaklar |
@@ -59,7 +71,7 @@ Olay: 31 · atmosfer şüphesi (olay değil): 6
 
 ## soğuk hava (25,1 da)
 
-Olay: 28 · atmosfer şüphesi (olay değil): 7
+Olay: 28 · yanıtlanan: 0 · atmosfer şüphesi (olay değil): 7
 
 ### Olaylar
 
@@ -93,6 +105,18 @@ Olay: 28 · atmosfer şüphesi (olay değil): 7
 | 26 | 22.02.2025 – 23.02.2025 | Don (şiddetli) | orta | ERA5-Land saatlik 2 m sıcaklık: en düşük -4,9 °C (2 gün) | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 27 | 13.02.2026 – 18.02.2026 | Kuvvetli rüzgâr | düşük | ERA5 hamle (31 km, düşük güven): en çok 71 km/s | gerçekleşti / gerçekleşmedi / bilinmiyor |
 | 28 | 12.03.2026 | Radar değişimi | orta | Sentinel-1 yörünge 167 12.03.2026: azalış 2,7 dB, 5,3 da | gerçekleşti / gerçekleşmedi / bilinmiyor |
+
+### Doğruluk özeti (çiftçi yanıtlarından)
+
+Bir türde en az 5 doğrulama yoksa «henüz yeterli doğrulama yok» yazılır (eşik ön değer · mühendis onayı bekliyor).
+
+| Tür | Yanıtlanan | Gerçekleşti | Yanlış alarm | Bilinmiyor | Yanıt bekleyen | Özet |
+|---|---|---|---|---|---|---|
+| Don | 0 | 0 | 0 | 0 | 8 | henüz yeterli doğrulama yok (0/5) |
+| Aşırı yağış | 0 | 0 | 0 | 0 | 7 | henüz yeterli doğrulama yok (0/5) |
+| Rüzgâr | 0 | 0 | 0 | 0 | 10 | henüz yeterli doğrulama yok (0/5) |
+| Optik düşüş | 0 | 0 | 0 | 0 | 1 | henüz yeterli doğrulama yok (0/5) |
+| Radar değişimi | 0 | 0 | 0 | 0 | 2 | henüz yeterli doğrulama yok (0/5) |
 
 ### Atmosfer şüpheleri (olay sayılmadı; bilgi için)
 

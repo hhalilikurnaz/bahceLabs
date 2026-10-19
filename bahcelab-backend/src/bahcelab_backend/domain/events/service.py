@@ -25,6 +25,7 @@ from bahcelab_backend.domain.acquisitions.store import decode_grids
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events import rules as er
 from bahcelab_backend.domain.events.models import EventModel, EventSourceModel
+from bahcelab_backend.domain.multiyear.grid import canonical_grid, pixel_center_lnglat
 from bahcelab_backend.domain.notifications.templates import EVENT_TITLES
 from bahcelab_backend.domain.water.era5_sync import garden_cell
 from bahcelab_backend.shared.storage import StorageBackend
@@ -56,6 +57,7 @@ async def s2_candidates(
     repo = AcquisitionRepository(session)
     geometry = await repo.geometry_geojson(garden_id)
     mask = masking.mask_for(geometry) if geometry else None
+    canonical = canonical_grid(geometry) if geometry else None
     scenes = (
         await session.execute(
             select(AcquisitionModel).where(AcquisitionModel.garden_id == garden_id, AcquisitionModel.source_id == S2_SOURCE, AcquisitionModel.durum == ACQ_NET, AcquisitionModel.izgara_yolu.is_not(None)).order_by(AcquisitionModel.tarih)
@@ -106,10 +108,12 @@ async def s2_candidates(
             if i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun:
                 nxt_floor = floor_of(i + 1)
                 persists = er.s2_persists(loaded[i + 1][1], nxt_floor, mask_patch, rule) if nxt_floor.shape == grid.shape else None
+            rows_idx, cols_idx = np.nonzero(mask_patch)
+            lng, lat = pixel_center_lnglat(canonical, float(rows_idx.mean()), float(cols_idx.mean())) if canonical is not None else (None, None)  # saha turu: yamanın ağırlık merkezi
             signal = er.Signal(
                 "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
                 kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
-                ayrinti={"delta_ndvi": round(delta, 3)},
+                ayrinti={"delta_ndvi": round(delta, 3), "merkez_lng": None if lng is None else round(lng, 6), "merkez_lat": None if lat is None else round(lat, 6)},
             )
             patch_entry = (signal, persists, share)
         # İkinci yol (YALNIZ dona bağlı adaylar): değişim anomalisi — bahçe ortancası Δ'sı diğer yılların aynı penceredeki p10'unun altında VE kalıcı.

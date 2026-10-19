@@ -34,8 +34,13 @@ NOTE = (
 
 
 async def harvest_summary(session: AsyncSession, garden_id: uuid.UUID) -> dict[int, HasatOzeti]:
-    """Yıl → hasat kaydı özeti. Kaynak Saha Defteri kayıtlarıdır (B bölümünde bağlanır); kayıt yoksa boş → «kayıt yok»."""
-    return {}
+    """Yıl → hasat kaydı özeti. Kaynak yalnız Saha Defteri hasat kayıtlarıdır; kayıt yoksa yıl yer almaz → «kayıt yok» (uydurma yok)."""
+    from bahcelab_backend.domain.fieldbook.service import (
+        FieldbookService,  # geç içe aktarma: fieldbook ↔ gecmis şema bağımlılığı döngü kurmasın
+    )
+    from bahcelab_backend.shared.storage import get_storage
+
+    return await FieldbookService(session, get_storage()).harvest_by_year(garden_id)
 
 
 async def build_summary(session: AsyncSession, garden_id: uuid.UUID, today: date) -> GecmisOzeti:

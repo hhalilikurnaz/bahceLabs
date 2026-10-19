@@ -262,6 +262,20 @@ gecmis:
   yesillenme_gozlem_orani: 0.6
   yesillenme_kalicilik_gun: 14
 
+# Saha Defteri (9G-B): doğruluk özeti ve saha turu — ön değer
+saha:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor: bir olay türünde en az 5 çiftçi doğrulaması yoksa «henüz yeterli doğrulama yok» yazılır (oran verilmez); saha turu noktaları açık
+    uyarılardan (zayıf kesim, stres yaması, doğrulama bekleyen olay) otomatik çıkar; stres yaması = son net görüntüde bahçenin kendi p10'unun altında bitişik ≥ 1 da ve alt %10'daki piksellerin yarısından çoğunu içeren küme;
+    sıra en yakın komşu (yaklaşık, gerçek yürüyüş rotası değildir); süre 40 m/dk + nokta başına 4 dk.
+  dogruluk_asgari_n: 5
+  stres_yuzdelik: 10
+  stres_min_da: 1.0
+  tur_hiz_m_dk: 40
+  tur_nokta_dk: 4
+  tur_azami_nokta: 12
+
 urunler:
   limon:
     ad: Limon

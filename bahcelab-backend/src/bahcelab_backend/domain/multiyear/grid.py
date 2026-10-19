@@ -37,6 +37,15 @@ def utm_epsg(lng: float, lat: float) -> int:
     return (32600 if lat >= 0 else 32700) + zone
 
 
+def pixel_center_lnglat(grid: CanonicalGrid, row: float, col: float) -> tuple[float, float]:
+    """Kanonik ızgarada (ondalıklı) satır/sütun konumunun WGS84 (boylam, enlem) karşılığı. Piksel merkezi = +0,5."""
+    from rasterio.warp import transform as warp_transform
+
+    x, y = grid.transform * (col + 0.5, row + 0.5)
+    lngs, lats = warp_transform(grid.crs, "EPSG:4326", [x], [y])
+    return float(lngs[0]), float(lats[0])
+
+
 def canonical_grid(geometry_wgs84: dict[str, Any], margin_px: int = 1) -> CanonicalGrid:
     """Bahçeyi (1 piksel kenar payıyla) kapsayan, 10 m kafese oturan UTM ızgarası."""
     centroid = shape(geometry_wgs84).centroid

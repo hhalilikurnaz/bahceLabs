@@ -298,6 +298,17 @@ class GecmisKurali(KuralBlok):
     yesillenme_kalicilik_gun: int = Field(default=14, ge=1)  # eşik aşımı bu kadar gün boyunca geri düşmemeli
 
 
+class SahaKurali(KuralBlok):
+    """Saha Defteri (9G-B): doğruluk özeti ve saha turu. Hepsi ön değer · mühendis onayı bekliyor."""
+
+    dogruluk_asgari_n: int = Field(default=5, ge=1)  # bir türde bundan az doğrulama varsa «henüz yeterli doğrulama yok»; oran/sayı yorumlanmaz
+    stres_yuzdelik: float = Field(default=10.0, gt=0, lt=50)  # stres yaması: son net görüntüde bahçenin KENDİ canlılık dağılımının bu yüzdeliğinin altı
+    stres_min_da: float = Field(default=1.0, gt=0)  # en büyük bitişik yama en az bu kadar dekar olmalı (ve alt yüzdelikteki piksellerin çoğunu içermeli: küme, benek değil)
+    tur_hiz_m_dk: float = Field(default=40.0, gt=0)  # saha turu süre tahmini: yürüyüş hızı
+    tur_nokta_dk: float = Field(default=4.0, ge=0)  # nokta başına kontrol süresi
+    tur_azami_nokta: int = Field(default=12, ge=1)  # tura en çok bu kadar nokta alınır (en önemlileri)
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -309,6 +320,7 @@ class Katalog(BaseModel):
     bildirim: BildirimKurali
     egri: EgriKurali
     gecmis: GecmisKurali
+    saha: SahaKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

@@ -165,3 +165,6 @@ class GardenService:
         await self.repo.delete(row.garden)
         if self.ndvi:
             self.ndvi.purge_files(garden_id)
+        from bahcelab_backend.shared.storage import get_storage
+
+        get_storage().delete_prefix(f"field/{garden_id}")  # Saha Defteri fotoğrafları (kayıtlar FK ile silinir)
