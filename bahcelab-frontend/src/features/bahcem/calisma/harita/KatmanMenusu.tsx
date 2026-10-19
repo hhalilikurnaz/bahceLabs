@@ -35,7 +35,7 @@ function Ornek({ id }: { id: KatmanId }) {
 export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
-  const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik } = useCalismaStore()
+  const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik, saha, setSaha } = useCalismaStore()
   const { data } = useEdinimler(gardenId)
   const radar = useRadarEdinimler(gardenId).data
   const landsatListe = useLandsatEdinimler(gardenId).data
@@ -138,6 +138,10 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
               })}
             </div>
           ))}
+          <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-t border-app-border px-2 pt-2 text-[12.5px] font-medium hover:bg-app-card-hover">
+            <input type="checkbox" checked={saha} onChange={(e) => setSaha(e.target.checked)} data-testid="saha-katmani" className="h-4 w-4 accent-[var(--color-app-text)]" />
+            <span><b className="block text-[13px]">Saha kayıtları</b><span className="block text-[11.5px] text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>
+          </label>
         </div>
       )}
     </div>

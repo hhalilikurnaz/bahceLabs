@@ -36,7 +36,7 @@ test('tam sayfalar: Geçmiş sayfası ve Saha Defteri açılır', async ({ page 
   await expect(page.getByTestId('gecmis-baslik')).toContainText('Geçmiş')
   await page.getByRole('link', { name: 'Saha Defteri ↗' }).click()
   await expect(page).toHaveURL(/\/defter$/)
-  await expect(page.getByTestId('bos-defter')).toContainText('9G')
+  await expect(page.getByTestId('defter-baslik')).toHaveText('Saha Defteri')
 })
 
 test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', async ({ page }) => {

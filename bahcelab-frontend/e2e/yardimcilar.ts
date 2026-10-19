@@ -70,6 +70,11 @@ export function seedOlayOzet(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_olay_ozet', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
+/** Test aracı: saha turu için bahçeye iki «doğrulama bekliyor» olayı (yama merkezleriyle) yazar. */
+export function seedSaha(gardenId: string): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_saha', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
+}
+
 /** Test aracı: bahçenin hava önbelleğini kayıtlı örnek veriyle doldurur (ağsız; gerçek hava servisi ve risk motoru çalışır). */
 export function seedWeather(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_weather', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })

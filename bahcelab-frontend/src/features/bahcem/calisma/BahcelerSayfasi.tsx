@@ -7,7 +7,7 @@ import { GARDEN_TAB_LABELS, gardenPath, isGardenPage, isGardenTab, type GardenPa
 import { BahceCubugu } from './BahceCubugu'
 import { CalismaAlani } from './CalismaAlani'
 import { GecmisSayfasi } from './GecmisSayfasi'
-import { DefterSayfasi } from './TamSayfalar'
+import { DefterSayfasi } from './DefterSayfasi'
 
 /** `/bahceler/:id[/:sekme|gecmis|defter]` */
 export function BahceSayfasi() {

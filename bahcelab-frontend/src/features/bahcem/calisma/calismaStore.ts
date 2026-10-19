@@ -39,6 +39,8 @@ interface Prefs {
   skala: Skala
   kontur: boolean
   opaklik: number
+  /** Saha Defteri kayıtları haritada ayrı üst katman olarak görünsün mü */
+  saha: boolean
 }
 
 interface CalismaState extends Prefs {
@@ -60,6 +62,7 @@ interface CalismaState extends Prefs {
   setSkala: (s: Skala) => void
   setKontur: (k: boolean) => void
   setOpaklik: (o: number) => void
+  setSaha: (s: boolean) => void
   setVurgu: (v: [number, number] | null) => void
   setInceleme: (i: Inceleme | null) => void
   setOran: (o: number) => void
@@ -67,13 +70,13 @@ interface CalismaState extends Prefs {
   bahceDegisti: () => void
 }
 
-const prefs = read<Prefs>(PREFS_KEY, { skala: 'kendi', kontur: false, opaklik: 0.92 })
+const prefs: Prefs = { skala: 'kendi', kontur: false, opaklik: 0.92, saha: false, ...read<Partial<Prefs>>(PREFS_KEY, {}) }
 const clampOran = (o: number) => Math.min(SPLIT_LIMITS.max, Math.max(SPLIT_LIMITS.min, o))
 
 export const useCalismaStore = create<CalismaState>((set, get) => {
   const savePrefs = (patch: Partial<Prefs>) => {
-    const { skala, kontur, opaklik } = { ...get(), ...patch }
-    write(PREFS_KEY, { skala, kontur, opaklik })
+    const { skala, kontur, opaklik, saha } = { ...get(), ...patch }
+    write(PREFS_KEY, { skala, kontur, opaklik, saha })
   }
   return {
     ...prefs,
@@ -91,6 +94,7 @@ export const useCalismaStore = create<CalismaState>((set, get) => {
     setSkala: (skala) => (savePrefs({ skala }), set({ skala })),
     setKontur: (kontur) => (savePrefs({ kontur }), set({ kontur })),
     setOpaklik: (opaklik) => (savePrefs({ opaklik }), set({ opaklik })),
+    setSaha: (saha) => (savePrefs({ saha }), set({ saha })),
     setVurgu: (vurgu) => set({ vurgu }),
     setInceleme: (inceleme) => set({ inceleme }),
     setOran: (o) => {

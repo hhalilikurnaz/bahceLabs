@@ -17,6 +17,8 @@ export interface Olay {
   kaynak_sayisi: number
   durum: 'olay' | 'bekliyor' | 'suphe'
   neden: string | null
+  /** çiftçinin «Uydu haklı mıydı?» yanıtı (Saha Defteri); yoksa null */
+  dogrulama: 'gerceklesti' | 'gerceklesmedi' | 'bilinmiyor' | null
 }
 export interface Olaylar {
   olaylar: Olay[]

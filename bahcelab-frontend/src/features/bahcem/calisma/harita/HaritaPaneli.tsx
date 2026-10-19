@@ -16,6 +16,7 @@ import { KomsuEtiketleri } from './KomsuEtiketleri'
 import { KatmanMenusu } from './KatmanMenusu'
 import { NoktaInceleme } from './NoktaInceleme'
 import { OlayKarti } from './OlayKarti'
+import { SahaKatmani } from './SahaKatmani'
 import { TarihKutusu } from './TarihKutusu'
 
 // Çizim aracı (terra-draw) ağırdır: yalnız sınır düzenlenirken yüklenir
@@ -26,6 +27,7 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
   const { user } = useAuth()
   const view = useHaritaGorunumu(garden.id)
   const katman = useCalismaStore((s) => s.katman)
+  const saha = useCalismaStore((s) => s.saha)
   const others = useMemo(() => gardens.filter((g) => g.id !== garden.id), [gardens, garden.id])
   const drawing = useBahcemStore((s) => s.mode !== 'idle')
   if (!user) return null
@@ -46,6 +48,7 @@ export function HaritaPaneli({ garden, gardens }: { garden: Garden; gardens: Gar
           </div>
         )}
         {view.neden && <div role="status" className="glass absolute left-1/2 top-[70px] z-10 -translate-x-1/2 px-3 py-2 text-[12.5px]">{view.neden}</div>}
+        {saha && <SahaKatmani gardenId={garden.id} />}
         <OlayKarti gardenId={garden.id} />
         {!drawing && <NoktaInceleme gardenId={garden.id} view={view} />}
         {drawing && (

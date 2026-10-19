@@ -28,7 +28,7 @@ for (const tema of ['acik', 'koyu'] as const) {
         [`/bahceler/${garden.id}`, 'durum-karti'],
         [`/bahceler/${garden.id}/analiz`, 'analiz-yok'],
         [`/bahceler/${garden.id}/gecmis`, 'gecmis-sayfasi'],
-        [`/bahceler/${garden.id}/defter`, 'bos-defter'],
+        [`/bahceler/${garden.id}/defter`, 'defter-sayfasi'],
         [`/bahceler/${garden.id}/su`, 'bos-su'],
       ] as const) {
         await page.goto(yol)

@@ -53,7 +53,7 @@ function refreshSession(): Promise<boolean> {
 
 async function send(path: string, options: RequestInit): Promise<Response> {
   const headers = new Headers(options.headers)
-  if (options.body !== undefined) headers.set('Content-Type', 'application/json')
+  if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json') // FormData: tarayıcı sınır (boundary) ile kendisi ayarlar
   return fetch(`${getApiBaseUrl()}${path}`, { ...options, headers, credentials: 'include' })
 }
 
