@@ -34,7 +34,7 @@ def event_candidate(garden_id: uuid.UUID, garden: str, e: EventView, today: date
         "en_dusuk_c": d.get("don.en_dusuk_c"), "yagis_mm": d.get("asiri_yagis.en_yuksek_24s_mm"), "hamle_kmh": d.get("ruzgar.en_yuksek_hamle_kmh"), "alan_da": e.alan_da,
     }
     title, body = templates.event_text(garden, e.tur, e.baslangic, e.bitis, data, forecast=e.tahmin, severe=e.siddet == "siddetli", pending=e.durum == "bekliyor", damage="s2_dusus" in e.turler and e.tur == "don")
-    return Candidate(garden_id, "olay", importance, title, body, "hava" if e.tur in WEATHER_KINDS else "durum", decision.event_dedupe_key(garden_id, anahtar))
+    return Candidate(garden_id, "olay", importance, title, body, "durum", decision.event_dedupe_key(garden_id, anahtar), harita=f"olay={e.id}")  # harita olayın görüldüğü ilk net görüntüde açılır; hava olaylarında olay kartı Hava sekmesine bağlanır
 
 
 def tier_candidate(garden_id: uuid.UUID, garden: str, old: str | None, new: str, sentences: list[str], today: date) -> Candidate | None:

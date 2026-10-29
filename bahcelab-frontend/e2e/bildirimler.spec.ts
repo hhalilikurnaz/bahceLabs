@@ -110,3 +110,25 @@ test('karar katmanı: kritik olay anında listede, önemli olay günlük özet k
   await expect(bugun.first()).toContainText('don olayı')
   await expect(bugun.first().getByTestId('today-action')).toHaveCount(1) // madde başına tek eylem
 })
+
+test('kritik bildirim ve özet maddesi ilgili olayı haritada açar (olay kartı + olayın görüldüğü görüntü)', async ({ page }) => {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad: 'Haritaya Bağlantı', lng: 27.83, lat: 38.83 })
+  await page.route('**/api/gardens/*/weather', (route) => route.abort())
+  seedOlayOzet(garden.id)
+  await page.goto('/bahceler')
+  await page.getByTestId('bildirim-ac').click()
+  // 1) günlük özet maddesi: kendi bağlantısı var ve olayı açar
+  const madde = page.getByTestId('ozet-ogesi').first()
+  await expect(madde).toHaveAttribute('data-baglanti', new RegExp(`/bahceler/${garden.id}\\?olay=[0-9a-f-]{36}`))
+  await madde.click()
+  await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`)) // sorgu kullanıldı ve adresten silindi
+  const kart = page.getByTestId('olay-karti')
+  await expect(kart).toBeVisible({ timeout: 30_000 })
+  await expect(kart).toContainText('Aşırı yağış')
+  await expect(kart).toContainText('Hava sekmesinde ayrıntı')
+  // 2) kritik don bildirimi aynı yolla haritada açılır
+  await page.getByTestId('bildirim-ac').click()
+  await page.getByTestId('notification-item').filter({ hasText: 'don olayı' }).getByTestId('notification-open').click()
+  await expect(page.getByTestId('olay-karti')).toContainText('Don', { timeout: 30_000 })
+})

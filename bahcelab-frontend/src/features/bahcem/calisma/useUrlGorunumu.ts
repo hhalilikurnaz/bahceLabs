@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useEdinimler } from '../api/edinimApi'
 import { useOlaylar } from '../api/olayApi'
+import { useToast } from '../components/layout/toastContext'
 import { useCalismaStore } from './calismaStore'
 import { KATMAN_SIRASI, type KatmanId } from './katmanlar'
 
@@ -18,6 +19,7 @@ export function useUrlGorunumu(gardenId: string): void {
   const olayId = params.get('olay')
   const edinim = useEdinimler(olayId ? gardenId : null)
   const olaylar = useOlaylar(olayId ? gardenId : null)
+  const toast = useToast()
   const { setTarih, setKatman, setYil, setOlay } = useCalismaStore.getState()
 
   useEffect(() => {
@@ -43,9 +45,11 @@ export function useUrlGorunumu(gardenId: string): void {
       else setKatman('canlilik')
       setTarih(gorulen && gorulen !== sahneler[sahneler.length - 1] ? gorulen : null)
       setOlay({ id: olay.id, ad: olay.tur_adi, baslangic: olay.baslangic, bitis: olay.bitis })
+    } else {
+      toast.show('Bu olay artık listede yok (olay motoru yeniden hesaplamış olabilir).', { tone: 'warn' }) // bildirim eski, olay kimliği yeniden kurulmuş
     }
     const next = new URLSearchParams(params)
     next.delete('olay')
     setParams(next, { replace: true })
-  }, [olayId, olaylar.data, edinim.data, params, setParams, setTarih, setKatman, setOlay])
+  }, [olayId, olaylar.data, edinim.data, params, setParams, setTarih, setKatman, setOlay, toast])
 }

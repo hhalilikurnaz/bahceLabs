@@ -32,8 +32,10 @@ class Candidate:
     sekme: str
     dedupe_key: str
     ayrinti: dict[str, str] | None = None  # şablon verisi (özette madde olarak gösterilir)
+    harita: str | None = None  # bağlantıya eklenen sorgu: çalışma alanı haritasını ilgili olaya/katmana/tarihe açar (örn. «olay=<kimlik>», «katman=canlilik&tarih=2026-10-09»)
 
     def link(self) -> str:
         """Uygulama rotası (9B): Durum bahçenin kök adresidir; eski `/bahcem/...` kayıtları ön yüzde yönlenir."""
         base = f"/bahceler/{self.garden_id}"
-        return base if self.sekme == "durum" else f"{base}/{self.sekme}"
+        path = base if self.sekme == "durum" else f"{base}/{self.sekme}"
+        return f"{path}?{self.harita}" if self.harita else path

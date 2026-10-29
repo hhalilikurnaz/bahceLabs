@@ -287,3 +287,21 @@ async def test_a_pending_drop_notification_closes_with_an_atmosphere_note_when_t
     async with factory() as session:
         closed = (await session.execute(text("SELECT baslik, metin, durum, otomatik_cozuldu FROM notifications WHERE workspace_id = :w AND dedupe_key = :k"), {"w": ws, "k": f"olay:{gid}:s2_dusus:{start}"})).one()
     assert closed.durum == "cozuldu" and closed.otomatik_cozuldu and "atmosfer" in closed.metin and closed.baslik.endswith("— atmosfer") and "doğrulama bekliyor" not in closed.baslik
+
+
+def test_event_notifications_link_to_the_event_on_the_map_and_digest_items_carry_the_same_link() -> None:
+    frost = view("don", "yuksek", days_ago=1, siddet="siddetli")
+    c = event_candidate(GARDEN, "Bahçem", frost, TODAY, RULE, frost.anahtar)
+    assert c is not None and c.link() == f"/bahceler/{GARDEN}?olay={frost.id}"  # hava olayı da haritada açılır (olay kartı Hava sekmesine bağlar)
+    rain = view("asiri_yagis", "orta", days_ago=1)
+    r = event_candidate(GARDEN, "Bahçem", rain, TODAY, RULE, rain.anahtar)
+    assert r is not None and r.link().endswith(f"?olay={rain.id}")
+    tier = tier_candidate(GARDEN, "Bahçem", "iyi", "dikkat", ["Ağaç gücü normalin altında."], TODAY)
+    assert tier is not None and tier.link() == f"/bahceler/{GARDEN}"  # kademe düşüşü: bahçe ana ekranı (olay yok)
+
+
+def test_candidates_without_a_map_area_keep_their_tab_links() -> None:
+    plain = Candidate(GARDEN, "sulama", "bilgi", "t", "m", "hava", "k")  # type: ignore[arg-type]
+    assert plain.link() == f"/bahceler/{GARDEN}/hava"
+    mapped = Candidate(GARDEN, "cok_yillik", "bilgi", "t", "m", "analiz", "k2", harita="katman=bolgeler")  # type: ignore[arg-type]
+    assert mapped.link() == f"/bahceler/{GARDEN}/analiz?katman=bolgeler"

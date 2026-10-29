@@ -5,12 +5,13 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.api.deps import get_weather_provider
 from bahcelab_backend.config import Settings
 from bahcelab_backend.domain.notifications.channels import registry
+from bahcelab_backend.domain.notifications.models import NotificationModel
 from bahcelab_backend.jobs import arq_worker, queue
 from bahcelab_backend.jobs import registry as job_registry
 from bahcelab_backend.jobs.tasks import generate_notifications, refresh_weather
@@ -127,10 +128,17 @@ async def test_satellite_alert_becomes_one_notification_per_event(user_client: A
     garden = await new_garden(user_client)
     await seed_scenes(factory, garden["id"], last_ndvi=0.36, count=24)
     await run_job(factory, provider, user_client)
-    sat = [n for n in (await listing(user_client, tur="indeks_dususu"))["ogeler"]]
-    assert all(n["baglanti"] == f'/bahceler/{n["bahce_id"]}' for n in sat)
+
+    async def satellite_rows():  # noqa: ANN202
+        async with factory() as session:  # «önemli» düşüş özete bekler (teslim='ozet'): listede değil, kayıtta aranır
+            return (await session.execute(select(NotificationModel).where(NotificationModel.tur == "indeks_dususu"))).scalars().all()
+
+    sat = await satellite_rows()
+    assert sat  # düşüş uyarısı üretildi (boş küme üzerinde sahte doğrulama yok)
+    # düşüş bildirimi, düşüşü gören görüntüde ve göstergenin katmanında harita açar: ?katman=…&tarih=…
+    assert all(n.baglanti.startswith(f"/bahceler/{garden['id']}?katman=") and "&tarih=20" in n.baglanti for n in sat)
     again = await run_job(factory, provider, user_client)
-    assert again.uretilen == 0 and len((await listing(user_client, tur="indeks_dususu"))["ogeler"]) == len(sat)
+    assert again.uretilen == 0 and len(await satellite_rows()) == len(sat)  # aynı olay için tek bildirim
 
 
 # ----------------------------------------------------------------------------- liste, okundu, filtre

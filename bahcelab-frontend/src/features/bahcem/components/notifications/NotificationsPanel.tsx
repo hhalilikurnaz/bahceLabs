@@ -30,10 +30,38 @@ const VIEWS: { value: NotificationView; label: string }[] = [
 ]
 const actionBtn = 'min-h-9 rounded-md border border-app-border px-2.5 text-caption font-semibold text-app-text hover:bg-app-card-hover max-[560px]:min-h-11'
 
-function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; gardenName: string | null; onOpen: (item: AppNotification) => void; onState: (item: AppNotification, durum: 'goruldu' | 'cozuldu' | 'ertelendi', gun?: number) => void }) {
+function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; gardenName: string | null; onOpen: (item: AppNotification, baglanti?: string) => void; onState: (item: AppNotification, durum: 'goruldu' | 'cozuldu' | 'ertelendi', gun?: number) => void }) {
   const Icon = ICON[item.oncelik]
   return (
     <li className={cx('rounded-md border', item.okundu ? 'border-app-border bg-app-panel' : 'border-app-accent/40 bg-app-card shadow-e1')} data-testid="notification-item" data-read={item.okundu} data-state={item.durum} data-priority={item.oncelik}>
+      {item.tur === 'ozet' && item.ogeler.length > 0 ? (
+        <div className="flex w-full items-start gap-3 rounded-md p-3 text-left">
+          <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
+          <div className="min-w-0 flex-1">
+            <button type="button" onClick={() => onOpen(item)} data-testid="notification-open" className="flex w-full flex-wrap items-center gap-x-2 text-left">
+              <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>Özet</span>
+              <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
+              {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
+            </button>
+            {/* Özet maddeleri: her biri kendi harita bağlantısını (olay / katman + tarih) açar */}
+            <ul className="mt-1 space-y-0.5" data-testid="ozet-ogeleri">
+              {item.ogeler.map((o, i) => (
+                <li key={`${o.baglanti}-${i}`}>
+                  <button type="button" onClick={() => onOpen(item, o.baglanti)} data-testid="ozet-ogesi" data-onem={o.onem} data-baglanti={o.baglanti} className="flex min-h-9 w-full items-baseline gap-2 rounded-md text-left text-small text-app-text-muted hover:bg-app-card-hover hover:text-app-text max-[560px]:min-h-11">
+                    <span aria-hidden className={cx('text-[10px]', TONE[o.onem])}>{o.onem === 'onemli' ? '▲' : '●'}</span>
+                    <span className="min-w-0 underline-offset-2 group-hover:underline">{o.baslik}</span>
+                    <span aria-hidden className="ml-auto shrink-0 text-app-text-dim">↗</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <span className="mt-1 block text-caption text-app-text-dim">
+              {item.turAdi}
+              {gardenName ? ` · ${gardenName}` : ''} · {timeAgo(item.olusturma) ?? ''}
+            </span>
+          </div>
+        </div>
+      ) : (
       <button type="button" onClick={() => onOpen(item)} data-testid="notification-open" className="flex w-full items-start gap-3 rounded-md p-3 text-left transition-colors hover:bg-app-card-hover">
         <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
         <span className="min-w-0 flex-1">
@@ -42,18 +70,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
             <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
             {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
           </span>
-          {item.tur === 'ozet' && item.ogeler.length > 0 ? (
-            <span className="mt-1 block space-y-1" data-testid="ozet-ogeleri">
-              {item.ogeler.map((o, i) => (
-                <span key={`${o.baglanti}-${i}`} className="flex items-baseline gap-2 text-small text-app-text-muted" data-testid="ozet-ogesi" data-onem={o.onem}>
-                  <span aria-hidden className={cx('text-[10px]', TONE[o.onem])}>{o.onem === 'onemli' ? '▲' : '●'}</span>
-                  <span className="min-w-0">{o.baslik}</span>
-                </span>
-              ))}
-            </span>
-          ) : (
-            <span className="mt-0.5 line-clamp-3 block text-small text-app-text-muted">{item.metin}</span>
-          )}
+          <span className="mt-0.5 line-clamp-3 block text-small text-app-text-muted">{item.metin}</span>
           <span className="mt-1 block text-caption text-app-text-dim">
             {item.turAdi}
             {gardenName ? ` · ${gardenName}` : ''} · {timeAgo(item.olusturma) ?? ''}
@@ -61,6 +78,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
           </span>
         </span>
       </button>
+      )}
       <div className="flex flex-wrap gap-2 px-3 pb-3 pl-11" data-testid="notification-actions">
         {item.durum === 'cozuldu' || item.durum === 'ertelendi' ? (
           <button type="button" className={actionBtn} onClick={() => onState(item, 'goruldu')}>{item.durum === 'cozuldu' ? 'Yeniden aç' : 'Ertelemeyi kaldır'}</button>
@@ -88,9 +106,9 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
   const names = new Map((gardens ?? []).map((g) => [g.id, g.ad]))
   const patch = (next: Partial<NotificationFilters>) => setFilters((f) => ({ ...f, sayfa: 1, ...next }))
 
-  function open(item: AppNotification) {
+  function open(item: AppNotification, baglanti?: string) {
     if (!item.okundu) markRead.mutate(item.id)
-    navigate(item.baglanti)
+    navigate(baglanti ?? item.baglanti) // özet maddesi kendi harita bağlantısına gider
     onNavigate?.()
   }
 

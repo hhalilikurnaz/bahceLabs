@@ -11,6 +11,9 @@ from bahcelab_backend.domain.ndvi.schemas import Uyari
 from bahcelab_backend.domain.notifications.types import Candidate
 from bahcelab_backend.domain.weather.schemas import HavaUyarisi
 
+# Gösterge → harita katmanı kimliği (ön yüzdeki `KatmanId`): düşüş bildirimi o göstergenin katmanında, düşüşü gören görüntüde açılır
+INDEX_LAYER = {"ndvi": "canlilik", "ndre": "klorofil", "ndmi": "yaprakSuyu", "lai": "yaprakAlani", "msavi": "tacToprak"}
+
 
 def build_candidates(
     garden_id: uuid.UUID,
@@ -31,7 +34,8 @@ def build_candidates(
     for sat in satellite_alerts:
         out.append(
             Candidate(garden_id, "indeks_dususu", "onemli" if sat.oncelik == "yuksek" else "bilgi", f"{garden_name}: {sat.baslik}", sat.mesaj, "durum",
-                      f"uydu:{garden_id}:{sat.son_tarih}:{','.join(sorted(sat.indeksler))}")
+                      f"uydu:{garden_id}:{sat.son_tarih}:{','.join(sorted(sat.indeksler))}",
+                      harita=f"katman={INDEX_LAYER.get(sorted(sat.indeksler)[0], 'canlilik')}&tarih={sat.son_tarih}")
         )
     if irrigation is not None and irrigation.gerekli:
         iso = today.isocalendar()
