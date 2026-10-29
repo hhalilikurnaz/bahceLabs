@@ -10,7 +10,7 @@ import { useElementWidth } from '../../hooks/useElementWidth'
 import { sayi } from '../../lib/format'
 import { AY_ADI, AY_KISA, ayTarihi, bandAylari, evreAraligi, sezonNoktalari, yilIciKonum } from '../../lib/sezon'
 import { useCalismaStore } from '../calismaStore'
-import { GOSTERGE_KATMAN, KATMANLAR, type KatmanId } from '../katmanlar'
+import { GOSTERGE_KATMAN, KATMAN_KISA_AD, KATMANLAR, type KatmanId } from '../katmanlar'
 
 const SECENEKLER: GostergeId[] = ['ndvi', 'ndre', 'lai', 'ndmi', 'msavi']
 const YUKSEKLIK = 170
@@ -86,10 +86,11 @@ export function SezonEgrisi({ gardenId, gostergeler = SECENEKLER, onAy, baslikSe
         <h3 className="text-[13px] font-semibold">{baslikSezonSayili && yillar ? `Bu sezon, önceki ${yillar.length} sezon içinde` : 'Bu sezon, kendi geçmişine göre'}</h3>
         {yillar && <span className="num text-[11.5px] text-app-text-muted">{yillar.length} yıl · {Math.min(...yillar)}–{Math.max(...yillar)}</span>}
       </div>
-      <div role="tablist" aria-label="Gösterge" className="mt-2 flex flex-wrap gap-1">
+      <div role="tablist" aria-label="Gösterge" className="mt-2 flex flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none]" data-testid="sezon-sekmeleri">
         {gostergeler.map((g) => (
-          <button key={g} role="tab" type="button" aria-selected={gosterge === g} onClick={() => setGosterge(g)} data-testid={`sezon-${g}`} className={`min-h-9 rounded-md px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 ${gosterge === g ? 'bg-app-text text-app-panel' : 'text-app-text-muted hover:bg-app-card-hover'}`}>
-            {KATMANLAR[GOSTERGE_KATMAN[g]].ad}
+          <button key={g} role="tab" type="button" aria-selected={gosterge === g} aria-label={KATMANLAR[GOSTERGE_KATMAN[g]].ad} title={KATMANLAR[GOSTERGE_KATMAN[g]].ad} onClick={() => setGosterge(g)} data-testid={`sezon-${g}`} className={`min-h-9 shrink-0 whitespace-nowrap rounded-md px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 max-[560px]:min-w-11 max-[560px]:px-2 ${gosterge === g ? 'bg-app-text text-app-panel' : 'text-app-text-muted hover:bg-app-card-hover'}`}>
+            <span aria-hidden className="max-[560px]:hidden">{KATMANLAR[GOSTERGE_KATMAN[g]].ad}</span>
+            <span aria-hidden className="min-[561px]:hidden">{KATMAN_KISA_AD[GOSTERGE_KATMAN[g]] ?? KATMANLAR[GOSTERGE_KATMAN[g]].ad}</span>
           </button>
         ))}
       </div>
@@ -180,7 +181,7 @@ export function SezonEgrisi({ gardenId, gostergeler = SECENEKLER, onAy, baslikSe
       {kesintisiz && (
         <div className="mt-1">
           <p className={`text-[11.5px] text-app-text-muted ${dar && !notAcik ? 'line-clamp-2' : ''}`} data-testid="egri-notu">Kesintisiz eğri: Sentinel-2 + HLS gözlemlerinden yumuşatılmıştır (dolu nokta = gerçek gözlem; kesikli çizgi ve soluk bant = tahmin; alt çubuk = bulutlu dönemde «radar izleme» aralığı (ardışık geçişler tek çubukta), dolu üçgen = o aralıkta radarın gördüğü değişim; radar NDVI üretmez). Kademe yalnız gerçek gözleme dayanır.</p>
-          {dar && <button type="button" onClick={() => setNotAcik(!notAcik)} aria-expanded={notAcik} data-testid="egri-notu-ayrinti" className="min-h-11 text-[12px] font-semibold text-app-text underline-offset-2 hover:underline">{notAcik ? 'daha az' : 'ayrıntı'}</button>}
+          {dar && <button type="button" onClick={() => setNotAcik(!notAcik)} aria-expanded={notAcik} data-testid="egri-notu-ayrinti" className="min-h-11 min-w-11 text-[12px] font-semibold text-app-text underline-offset-2 hover:underline">{notAcik ? 'daha az' : 'ayrıntı'}</button>}
         </div>
       )}
       <p className="mt-1 text-[11.5px] text-app-text-dim">Açık bant: p10–p90 · koyu bant: p25–p75 · kesikli: geçmiş yılların ortancası · çizgi: {yil}. Grafiğe ya da aya dokununca harita o aya geçer.</p>

@@ -45,7 +45,8 @@ async def main(garden_id: uuid.UUID, eski_optik: bool, bulutlu: bool) -> None:
             raise SystemExit("Bahçe bulunamadı")
     geometry = json.loads(geojson)
     today = datetime.now(UTC).date()
-    radar = FakeRadarProvider(geometry, [FakeOrbit(167, "inis", 6, 0), FakeOrbit(94, "inis", 6, 2), FakeOrbit(87, "cikis", 6, 4)])
+    # 167 belirgin ÇOK geçişli (5 gün): birincil yörünge takvimdeki güne bağlı olmasın (eşitlikte seçim güne göre değişiyordu)
+    radar = FakeRadarProvider(geometry, [FakeOrbit(167, "inis", 5, 0), FakeOrbit(94, "inis", 6, 2), FakeOrbit(87, "cikis", 6, 4)])
     radar.jitter_db = 0.5
     radar.noise = False  # kumlanmasız: e2e'de olay adayları deterministik (gerçek veride kumlanma eşiği daha sık aşar)
     days = radar._days(radar.orbits[0], today - timedelta(days=80), today)

@@ -16,11 +16,16 @@ def _seasonal_mean(day: date) -> float:
     return 19.0 + 9.0 * math.cos(phase)
 
 
-def _day_values(day: date) -> tuple[float, float, float, float]:
+def warm_offset(today: date, target_mean: float = 22.0) -> float:
+    """Serin mevsimde örnek seriyi ötele: bugünün ortalaması en az `target_mean` olsun (risk testleri mevsime değil kayıtlı etkin sıcaklığa dayansın). Sıcak mevsimde 0."""
+    return max(0.0, target_mean - _seasonal_mean(today))
+
+
+def _day_values(day: date, warm: float = 0.0) -> tuple[float, float, float, float]:
     """(min, max, yağış mm, ET₀ mm) — gün numarasından türeyen deterministik dalgalanma."""
     wiggle = math.sin(day.toordinal() * 1.7) * 2.0
     mean = _seasonal_mean(day) + wiggle
-    tmin, tmax = mean - 5.0, mean + 5.5
+    tmin, tmax = mean - 5.0 + warm, mean + 5.5 + warm
     rain_signal = math.sin(day.toordinal() * 0.9) + math.cos(day.toordinal() * 0.37)
     month_wet = 1.0 if day.month in (10, 11, 12, 1, 2, 3) else 0.15
     rain = round(max(0.0, rain_signal - 1.1) * 9.0 * month_wet, 1)
@@ -28,23 +33,23 @@ def _day_values(day: date) -> tuple[float, float, float, float]:
     return round(tmin, 1), round(tmax, 1), rain, et0
 
 
-def build_sample_history(today: date, days: int) -> list[DailyPoint]:
+def build_sample_history(today: date, days: int, warm: float = 0.0) -> list[DailyPoint]:
     points = []
     for i in range(days, 0, -1):
         day = today - timedelta(days=i)
-        tmin, tmax, rain, et0 = _day_values(day)
+        tmin, tmax, rain, et0 = _day_values(day, warm)
         points.append(DailyPoint(tarih=day, min=tmin, max=tmax, yagis=rain, et0=et0))
     return points
 
 
-def build_sample_forecast(now: datetime) -> Forecast:
+def build_sample_forecast(now: datetime, warm: float = 0.0) -> Forecast:
     """Bugünden itibaren 7 gün saatlik + son 7 gün günlük."""
     today = now.date()
     daily: list[DailyPoint] = []
     hourly: list[HourlyPoint] = []
     for offset in range(-7, 7):
         day = today + timedelta(days=offset)
-        tmin, tmax, rain, et0 = _day_values(day)
+        tmin, tmax, rain, et0 = _day_values(day, warm)
         if offset in RAINY_DAYS:
             rain = max(rain, 7.5)
         rainy = rain >= 1.0

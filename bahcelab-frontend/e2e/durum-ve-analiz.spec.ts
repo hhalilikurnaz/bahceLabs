@@ -77,9 +77,18 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await expect(page.getByTestId('kademe-nedeni')).toContainText('kademeyi ayrıca sınırlıyor')
   })
 
+  // Meyve sineği riski YALNIZ meyvenin duyarlı olduğu evrelerde (katalog: 16 Haz–14 Ara) «orta» olur; bu iki test o evrelerde anlamlıdır.
+  const DUYARLI_DONEM = (() => {
+    const t = new Date()
+    const ag = (t.getMonth() + 1) * 100 + t.getDate()
+    return ag >= 616 && ag <= 1214
+  })()
+
   test('GERÇEK ARKA UÇ (mock yok): kayıtlı hava verisi + örnek uydu serisiyle risk satırı riski adlandırır, kademe İyi olmaz', async ({ page }) => {
+    test.skip(!DUYARLI_DONEM, 'Meyve sineği riski yalnız meyve büyümesi/olgunlaşma evrelerinde (16 Haz–14 Ara) üretilir')
     await newUser(page)
-    const garden = await createGarden(page.request, { ad: 'Gerçek Arka Uç', lng: 27.971, lat: 38.971, sideM: 200 })
+    // Hava hücresi bu teste özel: başka bir testin gerçek hava çağrısı hücreyi doldurmasın (önbellek 1 saat)
+    const garden = await createGarden(page.request, { ad: 'Gerçek Arka Uç', lng: 31.511, lat: 40.511, sideM: 200 })
     seedScenes(garden.id) // gerçek işleme hattından geçen örnek uydu serisi
     seedWeather(garden.id) // gerçek hava servisi + risk motoru, kayıtlı örnek veriyle (ağsız)
     const yanit = page.waitForResponse((r) => r.url().includes('/durum') && r.request().method() === 'GET')
@@ -125,8 +134,10 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
   })
 
   test('GERÇEK ARKA UÇ: görüntüsü olmayan bahçede risk satırı yalnız riskten gelir (kademe riskten, bileşenler «veri yok»)', async ({ page }) => {
+    test.skip(!DUYARLI_DONEM, 'Meyve sineği riski yalnız meyve büyümesi/olgunlaşma evrelerinde (16 Haz–14 Ara) üretilir')
     await newUser(page)
-    const garden = await createGarden(page.request, { ad: 'Yalnız Risk', lng: 27.974, lat: 38.974, sideM: 200 })
+    // Hava hücresi bu teste özel (bkz. yukarıdaki not)
+    const garden = await createGarden(page.request, { ad: 'Yalnız Risk', lng: 31.711, lat: 40.711, sideM: 200 })
     seedWeather(garden.id)
     await page.goto(`/bahceler/${garden.id}`)
     const risk = page.getByTestId('durum-risk-satiri')

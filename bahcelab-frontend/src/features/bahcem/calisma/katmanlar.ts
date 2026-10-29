@@ -45,6 +45,9 @@ export const KATMANLAR: Record<KatmanId, KatmanTanimi> = {
   bolgeler: { id: 'bolgeler', ad: 'Bölgeler', grup: 'Analiz', gosterge: null, ramp: null, gorunum: 'rampa', kaynak: 'Sentinel-2 çok yıllık', cozunurluk: '10 m', anlam: 'Yıllardır güçlü ya da zayıf kalan kesimler.', uclar: ['zayıf', 'güçlü'] },
   degisim: { id: 'degisim', ad: 'Değişim', grup: 'Analiz', gosterge: 'ndvi', ramp: 'degisim', gorunum: 'rampa', kaynak: 'Sentinel-2 L2A', cozunurluk: '10 m', anlam: 'Seçili tarihle bir önceki net görüntü arasındaki canlılık farkı.', uclar: ['düşüş', 'artış'] },
 }
+/** Dar ekran (≤ 560 px) kısa adları: gösterge sekmeleri tek satırda kalsın. Tam ad `aria-label` ve `title`'da durur. */
+export const KATMAN_KISA_AD: Partial<Record<KatmanId, string>> = { yaprakAlani: 'Yaprak', yaprakSuyu: 'Su', tacToprak: 'Taç' }
+
 export const KATMAN_SIRASI: KatmanId[] = ['canlilik', 'klorofil', 'yaprakAlani', 'tacToprak', 'yaprakSuyu', 'radarVh', 'radarDegisim', 'yuzeySicakligi', 'bolgeler', 'degisim']
 export const KATMAN_GRUPLARI = ['Bitki', 'Su', 'Radar · bulut geçirmez', 'Sıcaklık', 'Analiz'] as const
 

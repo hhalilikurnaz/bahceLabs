@@ -86,4 +86,22 @@ test.describe('Geçmiş sayfası', () => {
     await expect(page.getByTestId('yaz-haritalari-bos')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByTestId('yaz-kare')).toHaveCount(0)
   })
+
+  test('390 px: gösterge sekmeleri («Taç ve toprak» dahil beşi) tek satırda kalır, taşmaz; tam ad erişilebilir adda durur', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Sekme Satırı', lng: 27.94, lat: 38.94, sideM: 300 })
+    seedScenes(garden.id)
+    await page.goto(`/bahceler/${garden.id}`)
+    const sekmeler = page.getByTestId('sezon-sekmeleri')
+    await sekmeler.scrollIntoViewIfNeeded()
+    await expect(page.getByTestId('sezon-ndvi')).toBeVisible({ timeout: 30_000 })
+    const kutular = await Promise.all(['ndvi', 'ndre', 'lai', 'ndmi', 'msavi'].map(async (g) => page.getByTestId(`sezon-${g}`).boundingBox()))
+    const kap = await sekmeler.boundingBox()
+    expect(kutular.every((k) => k !== null)).toBe(true)
+    expect(new Set(kutular.map((k) => Math.round(k!.y))).size).toBe(1) // beşi aynı satırda
+    expect(Math.max(...kutular.map((k) => k!.x + k!.width))).toBeLessThanOrEqual(kap!.x + kap!.width + 1) // kaydırmaya gerek kalmadan sığar
+    await expect(page.getByRole('tab', { name: 'Taç ve toprak' })).toBeVisible() // kısa etiket «Taç», erişilebilir ad tam
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true) // sayfa yatay taşmaz
+  })
 })

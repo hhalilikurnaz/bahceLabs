@@ -103,7 +103,8 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
         )}
       </div>
       {open && (
-        <div role="listbox" aria-label="Katmanlar" className="glass absolute left-0 top-[52px] z-30 w-[380px] max-w-[calc(100vw-40px)] p-1.5">
+        <div className="glass absolute left-0 top-[52px] z-30 w-[380px] max-w-[calc(100vw-40px)] p-1.5">
+          <div role="listbox" aria-label="Katmanlar">
           {KATMAN_GRUPLARI.map((grup) => (
             <div key={grup}>
               <div className="px-2 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{grup}</div>
@@ -138,6 +139,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
               })}
             </div>
           ))}
+          </div>
           <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-t border-app-border px-2 pt-2 text-[12.5px] font-medium hover:bg-app-card-hover">
             <input type="checkbox" checked={saha} onChange={(e) => setSaha(e.target.checked)} data-testid="saha-katmani" className="h-4 w-4 accent-[var(--color-app-text)]" />
             <span><b className="block text-[13px]">Saha kayıtları</b><span className="block text-[11.5px] text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>

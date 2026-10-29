@@ -19,7 +19,7 @@ from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.weather.repository import WeatherRepository
 from bahcelab_backend.domain.weather.service import WeatherService
 
-from .weather_sample import build_sample_forecast, build_sample_history
+from .weather_sample import build_sample_forecast, build_sample_history, warm_offset
 
 
 class RecordedProvider:
@@ -27,11 +27,12 @@ class RecordedProvider:
     attribution = "Hava verisi: kayıtlı örnek (test)"
 
     async def forecast(self, lat: float, lng: float, past_days: int = 7):  # noqa: ANN201
-        return build_sample_forecast(datetime.now(ZoneInfo("Europe/Istanbul")))
+        now = datetime.now(ZoneInfo("Europe/Istanbul"))
+        return build_sample_forecast(now, warm_offset(now.date()))
 
     async def history(self, lat: float, lng: float, start: date, end: date):  # noqa: ANN201
         today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
-        return [p for p in build_sample_history(today, 830) if start <= p.tarih <= end]
+        return [p for p in build_sample_history(today, 830, warm_offset(today)) if start <= p.tarih <= end]
 
 
 async def main(garden_id: uuid.UUID) -> None:
