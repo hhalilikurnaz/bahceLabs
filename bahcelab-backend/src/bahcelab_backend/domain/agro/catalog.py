@@ -304,7 +304,8 @@ class SahaKurali(KuralBlok):
     dogruluk_asgari_n: int = Field(default=5, ge=1)  # bir türde bundan az doğrulama varsa «henüz yeterli doğrulama yok»; oran/sayı yorumlanmaz
     stres_yuzdelik: float = Field(default=10.0, gt=0, lt=50)  # stres yaması: son net görüntüde bahçenin KENDİ canlılık dağılımının bu yüzdeliğinin altı
     stres_min_da: float = Field(default=1.0, gt=0)  # en büyük bitişik yama en az bu kadar dekar olmalı (ve alt yüzdelikteki piksellerin çoğunu içermeli: küme, benek değil)
-    tur_hiz_m_dk: float = Field(default=40.0, gt=0)  # saha turu süre tahmini: yürüyüş hızı
+    stres_kume_orani: float = Field(default=0.5, gt=0, le=1)  # yama, alt yüzdeliktekilerin en az bu payını içermeli (dağınık benek yama sayılmaz)
+    tur_hiz_m_dk: float = Field(default=55.0, gt=0)  # saha turu süre tahmini: yürüyüş hızı (bahçe içi, ağaç aralarında)
     tur_nokta_dk: float = Field(default=4.0, ge=0)  # nokta başına kontrol süresi
     tur_azami_nokta: int = Field(default=12, ge=1)  # tura en çok bu kadar nokta alınır (en önemlileri)
 

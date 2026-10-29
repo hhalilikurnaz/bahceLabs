@@ -15,6 +15,16 @@ class FotoYanit(BaseModel):
     boyut_bayt: int
 
 
+class FotoOnerisi(BaseModel):
+    """Fotoğrafın EXIF'inden ÖNERİ (saklanmaz): kullanıcı onaylamadan kayda yazılmaz."""
+
+    tarih: date | None
+    konum: dict[str, Any] | None  # GeoJSON Point; yalnız bahçeye en çok 500 m ise
+    konum_mesafe_m: int | None  # fotoğrafın konumunun bahçeye uzaklığı (varsa)
+    konum_bahceden_uzak: bool  # konum var ama bahçeden uzak: önerilmez
+    aciklama: str
+
+
 class KayitGirdisi(BaseModel):
     tur: KayitTuru
     tarih: date

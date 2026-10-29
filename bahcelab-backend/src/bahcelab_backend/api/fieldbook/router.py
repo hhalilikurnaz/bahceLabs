@@ -12,6 +12,7 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     DogrulamaKarti,
     DogrulamaListesi,
     DogrulukOzeti,
+    FotoOnerisi,
     FotoYanit,
     KayitGirdisi,
     KayitGuncelle,
@@ -73,6 +74,12 @@ async def add_record_photo(garden_id: uuid.UUID, record_id: uuid.UUID, svc: Svc,
     if not await svc.owns_record(garden_id, record_id):
         raise AppError(404, AppErrorCode.NOT_FOUND, "Kayıt bulunamadı.")
     return await svc.add_photo(garden_id, await read_upload(file), record_id=record_id)
+
+
+@router.post("/gardens/{garden_id}/saha-fotograf-oneri", response_model=FotoOnerisi)
+async def photo_suggestion(garden_id: uuid.UUID, svc: Svc, file: Annotated[UploadFile, File()]) -> FotoOnerisi:
+    """Fotoğrafın EXIF tarih/konumundan kayıt için ÖNERİ (dosya saklanmaz; kullanıcı onaylar). Saklanan dosyada EXIF yine silinir."""
+    return await svc.photo_suggestion(garden_id, await read_upload(file))
 
 
 @router.get("/gardens/{garden_id}/saha-fotograflari/{photo_id}")

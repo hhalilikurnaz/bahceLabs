@@ -26,6 +26,7 @@ from bahcelab_backend.domain.acquisitions.store import decode_grids
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events.service import event_name, list_events
 from bahcelab_backend.domain.fieldbook import rules as fr
+from bahcelab_backend.domain.fieldbook.exif import read_exif
 from bahcelab_backend.domain.fieldbook.models import (
     EventVerificationModel,
     FieldPhotoModel,
@@ -37,6 +38,7 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     DogrulamaKarti,
     DogrulamaListesi,
     DogrulukOzeti,
+    FotoOnerisi,
     FotoYanit,
     KayitGirdisi,
     KayitGuncelle,
@@ -50,7 +52,7 @@ from bahcelab_backend.domain.gecmis.schemas import HasatOzeti
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, pixel_center_lnglat
 from bahcelab_backend.domain.multiyear.repository import MultiyearRepository
 from bahcelab_backend.domain.notifications.models import NotificationModel
-from bahcelab_backend.shared.clock import TIMEZONE
+from bahcelab_backend.shared.clock import TIMEZONE, today_istanbul
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -145,6 +147,29 @@ class FieldbookService:
         buffer = io.BytesIO()
         rgb.save(buffer, format="JPEG", quality=85)  # EXIF kaydedilmez
         return buffer.getvalue()
+
+    async def photo_suggestion(self, garden_id: uuid.UUID, data: bytes) -> FotoOnerisi:
+        """Yüklenmeden ÖNCE EXIF okunur: çekim tarihi ve (bahçeye ≤ 500 m ise) konum öneri olarak döner. Dosya doğrulanır ama saklanmaz."""
+        self._reencode(data)  # geçerli fotoğraf mı, boyut sınırı (422)
+        found = read_exif(data, today_istanbul())
+        distance: int | None = None
+        near = False
+        point: dict[str, Any] | None = None
+        if found.lng is not None and found.lat is not None:
+            row = (
+                await self.session.execute(
+                    text("SELECT ST_Distance(g.geom::geography, ST_SetSRID(ST_MakePoint(:x, :y), 4326)::geography) FROM gardens g WHERE g.id = :g"), {"x": found.lng, "y": found.lat, "g": garden_id}
+                )
+            ).scalar_one()
+            distance = round(float(row))
+            near = distance <= MAX_LOCATION_DISTANCE_M
+            point = {"type": "Point", "coordinates": [round(found.lng, 6), round(found.lat, 6)]} if near else None
+        parts = []
+        if found.tarih:
+            parts.append(f"çekim tarihi {found.tarih:%d.%m.%Y}")
+        if distance is not None:
+            parts.append("konum bahçede" if distance == 0 else f"konum bahçeye {distance} m" if near else f"konum bahçeden {distance} m uzakta (önerilmedi)")
+        return FotoOnerisi(tarih=found.tarih, konum=point, konum_mesafe_m=distance, konum_bahceden_uzak=distance is not None and not near, aciklama="Fotoğrafta " + ", ".join(parts) + " bulundu." if parts else "Fotoğrafta tarih ya da konum bilgisi yok.")
 
     async def add_photo(self, garden_id: uuid.UUID, data: bytes, *, record_id: uuid.UUID | None = None, verification_id: uuid.UUID | None = None) -> FotoYanit:
         existing = (
@@ -345,7 +370,7 @@ class FieldbookService:
         if grid is None:
             return None
         values = masking.apply(grid, masking.mask_for(geometry)).astype(np.float32)
-        patch = fr.stress_patch(values, rule.stres_yuzdelik, rule.stres_min_da)
+        patch = fr.stress_patch(values, rule.stres_yuzdelik, rule.stres_min_da, min_share=rule.stres_kume_orani)
         if patch is None:
             return None
         lng, lat = pixel_center_lnglat(canonical_grid(geometry), patch.row, patch.col)

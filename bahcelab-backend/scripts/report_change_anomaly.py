@@ -93,6 +93,19 @@ async def report_for(session, storage, gid, name: str, rule: cat.OlayKurali, tod
                 continue
             p10 = p10_of(others)
             lines.append(f"| {frost.bitis:%d.%m.%Y} | {span} | {tr(bound.delta)} | {len(others)} | {tr(p10)} | {tr(statistics.median(others))} | {'evet' if bound.delta < p10 else 'hayır'} | {verdict} |")
+    # --- yol tanısı: her dona bağlı çiftte iki yolun ölçtükleri ve kalıcılığın hangi ölçüyle bakıldığı
+    frost_signals = [f for f in signals if f.tur == "don"]
+    diags = [d for d in await events.s2_scan(session, storage, gid, rule, frost_signals) if d.dona_bagli and (d.anomali or d.yama_delta is not None)]
+    lines += ["", "**Yol tanısı** (dona bağlı ve en az bir yolda aday olan çiftler; kalıcılık her yolda KENDİ ölçüsüyle):", "",
+              "| Çift | Bahçe ortancası Δ | Diğer yıllar p10 (n) | Sonraki sahne | Δ önceki→sonraki | Düşüşün korunan payı | Yama yolu (alan · Δ · kalıcı) | Anomali yolu (anomali · kalıcı) | Seçilen yol |", "|---|---|---|---|---|---|---|---|---|"]
+    for d in diags:
+        ratio = "—" if d.sonraki_delta is None or not d.bahce_delta else f"%{round(100 * d.sonraki_delta / d.bahce_delta)}"
+        patch = "yok" if d.yama_delta is None else f"{tr(d.yama_alan_da or 0, 1)} da · {tr(d.yama_delta)} · {'evet' if d.yama_kalici else 'hayır' if d.yama_kalici is False else 'sonraki yok'}"
+        anom = "hayır" if not d.anomali else f"evet · {'evet' if d.anomali_kalici else 'hayır' if d.anomali_kalici is False else 'sonraki yok'}"
+        lines.append(
+            f"| {d.onceki:%d.%m.%Y} → {d.tarih:%d.%m.%Y} | {tr(d.bahce_delta) if d.bahce_delta is not None else '—'} | {tr(d.diger_yil_p10) if d.diger_yil_p10 is not None else '—'} ({d.diger_yil_n}) | "
+            f"{d.sonraki:%d.%m.%Y} | {tr(d.sonraki_delta) if d.sonraki_delta is not None else '—'} | {ratio} | {patch} | {anom} | {d.secilen or 'yok (şüphe/olay değil)'} |".replace(f"{d.sonraki:%d.%m.%Y}" if d.sonraki else "None", f"{d.sonraki:%d.%m.%Y}" if d.sonraki else "yok")
+        )
     return [*lines, ""]
 
 

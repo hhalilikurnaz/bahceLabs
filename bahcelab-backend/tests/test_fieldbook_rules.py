@@ -57,3 +57,11 @@ def test_stress_patch_must_be_a_cluster_not_scattered_specks():
     rng = np.random.default_rng(3)
     grid = (0.7 + rng.normal(0, 0.01, (40, 40))).astype(np.float32)  # alt %10 dağınık benekler: bitişik küme yok
     assert fr.stress_patch(grid, percentile=10, min_da=0.3) is None
+
+
+def test_saha_thresholds_live_in_the_catalog_as_provisional_values():
+    from bahcelab_backend.domain.agro import catalog as cat
+
+    rule = cat.load_catalog().saha
+    assert rule.durum == "dogrulanmadi"  # mühendis onayı bekliyor
+    assert (rule.stres_yuzdelik, rule.stres_min_da, rule.stres_kume_orani, rule.tur_hiz_m_dk, rule.tur_nokta_dk) == (10.0, 1.0, 0.5, 55.0, 4.0)

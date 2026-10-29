@@ -18,6 +18,8 @@ from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
 from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
 from bahcelab_backend.domain.acquisitions.store import encode_grids
+from bahcelab_backend.domain.agro import catalog as cat
+from bahcelab_backend.domain.events import rules as er
 from bahcelab_backend.domain.events import service as events
 from bahcelab_backend.domain.events.models import EventModel, EventSourceModel
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
@@ -59,17 +61,17 @@ async def seed(client: AsyncClient, factory) -> uuid.UUID:  # noqa: ANN001
     return gid
 
 
-async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None, *, whole: bool = False) -> uuid.UUID:  # noqa: ANN001
+async def add_s2(factory, gid: uuid.UUID, day, ndvi_patch: float | None, *, whole: bool = False, level: float = 0.7) -> uuid.UUID:  # noqa: ANN001
     async with factory() as session:
         repo = AcquisitionRepository(session)
         geometry = await repo.geometry_geojson(gid)
         grid = canonical_grid(geometry)
         mask = garden_mask(grid, geometry)
-        ndvi = np.where(mask, 0.7, np.nan).astype(np.float32)
+        ndvi = np.where(mask, level, np.nan).astype(np.float32)
         if ndvi_patch is not None:
-            ndvi = np.where(mask, 0.7 - ndvi_patch, np.nan).astype(np.float32) if whole else ndvi
+            ndvi = np.where(mask, level - ndvi_patch, np.nan).astype(np.float32) if whole else ndvi
             if not whole:
-                ndvi[8:20, 8:20] = np.where(mask[8:20, 8:20], 0.7 - ndvi_patch, np.nan)
+                ndvi[8:20, 8:20] = np.where(mask[8:20, 8:20], level - ndvi_patch, np.nan)
         key = f"acq/{gid}/S2_{day}.npz"
         data = encode_grids({"ndvi": ndvi})
         get_storage().save(key, data)
@@ -305,3 +307,38 @@ async def test_change_anomaly_without_a_preceding_frost_is_not_an_event(user_cli
 async def test_change_anomaly_that_recovers_by_the_next_scene_is_a_suspicion_not_an_event(user_client, factory):
     rows = await anomaly_events(user_client, factory, frost=True, next_drop=None)  # sonraki net görüntü yok ve 60 gün eski: teyit edilemedi
     assert not [r for r in rows if r.durum == "olay" and "s2_dusus" in r.turler]
+
+
+async def two_path_scenario(user_client, factory, *, current: float, following: float | None):  # noqa: ANN001, ANN201
+    """Dona bağlı çift: önceki görüntü 0,80; bu görüntü 0,80−`current` (bahçe geneli); sonraki görüntü 0,80−`following`. Diğer yıllar 0,70 ve Δ = 0 (dönem p10 = 0,70; Δ p10 = 0)."""
+    gid = await seed(user_client, factory)
+    d = TODAY - timedelta(days=60)
+    await add_pair_history(factory, gid, d)
+    await add_era5(factory, gid, {d: (-3.0, 10.0)})
+    await add_s2(factory, gid, d - timedelta(days=5), None, level=0.8)
+    await add_s2(factory, gid, d + timedelta(days=3), current, whole=True, level=0.8)
+    if following is not None:
+        await add_s2(factory, gid, d + timedelta(days=10), following, whole=True, level=0.8)
+    async with factory() as session:
+        diags = [x for x in await events.s2_scan(session, get_storage(), gid, cat.load_catalog().olay, [e for e in er.frost_signals(await events.weather_days(session, (await garden_cell(session, gid))[0], TODAY), cat.load_catalog().olay)])]
+    return [x for x in diags if x.tarih == d + timedelta(days=3)][0]
+
+
+async def test_each_path_keeps_its_own_drop_and_its_own_persistence_measure(user_client, factory):  # noqa: F811
+    # 1) piksel yaması kalıcı (sonraki görüntü hâlâ dönem p10'unun altında): yama yolu seçilir, anomali yolunun kalıcılığı kararı DEĞİŞTİRMEZ
+    both = await two_path_scenario(user_client, factory, current=0.11, following=0.11)
+    assert both.secilen == "yama" and both.yama_kalici is True and both.anomali is True and both.sonuc[0].ayrinti.get("yol") is None
+    # 2) yama kalıcı DEĞİL (sonraki görüntü p10 üstünde: 0,71) ama bahçe ortancası düşüşü KENDİ ölçüsüyle sürüyor (0,80→0,71: düşüşün %82'si): anomali yolu, kendi Δ'sı ve kalıcılığıyla
+    only_anomaly = await two_path_scenario(user_client, factory, current=0.11, following=0.09)
+    assert only_anomaly.yama_kalici is False and only_anomaly.anomali_kalici is True and only_anomaly.secilen == "anomali"
+    assert only_anomaly.sonuc[0].ayrinti["delta_ndvi"] == pytest.approx(-0.11, abs=0.005) and only_anomaly.sonuc[0].alan_da is None  # yama alanı/Δ'sı anomali sinyaline TAŞINMAZ
+    assert only_anomaly.sonuc[1] is True and only_anomaly.sonuc[2] == 0.0
+    # 3) ikisi de kalıcı değil (sonraki görüntü 0,80'e döndü): olay yok, yama yolunun sonucu (toparlandı) kalır
+    neither = await two_path_scenario(user_client, factory, current=0.11, following=0.0)
+    assert neither.yama_kalici is False and neither.anomali_kalici is False and neither.secilen == "yama" and neither.sonuc[1] is False
+
+
+async def test_the_scan_reports_the_numbers_behind_each_decision(user_client, factory):  # noqa: F811
+    diag = await two_path_scenario(user_client, factory, current=0.11, following=0.09)
+    assert diag.dona_bagli and diag.bahce_delta == pytest.approx(-0.11, abs=0.005) and diag.sonraki_delta == pytest.approx(-0.09, abs=0.005)
+    assert diag.diger_yil_n >= 5 and diag.diger_yil_p10 == pytest.approx(0.0, abs=1e-6) and diag.yama_delta is not None

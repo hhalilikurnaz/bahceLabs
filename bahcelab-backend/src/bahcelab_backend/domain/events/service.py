@@ -48,10 +48,37 @@ async def weather_days(session: AsyncSession, cell: uuid.UUID, today: date) -> l
     return [er.HourDay(r[0], cast("list[float | None]", r[1] or pad), cast("list[float | None]", r[2] or pad), cast("list[float | None]", r[3] or pad), r[4] == "model" or r[5] == "model", f"{cell}:{r[0].isoformat()}") for r in rows]
 
 
-async def s2_candidates(
+@dataclass
+class PairDiag:
+    """Bir ardışık net S2 çiftinin iki yoldaki tanısı (şeffaflık ve rapor için): hangi yol ne ölçtü, kalıcılık hangi ölçüyle bakıldı."""
+
+    onceki: date
+    tarih: date
+    sonraki: date | None
+    dona_bagli: bool
+    # yama yolu
+    yama_alan_da: float | None = None
+    yama_delta: float | None = None
+    yama_kalici: bool | None = None  # yama piksellerinin sonraki görüntüde dönem p10 altında kalma payı ≥ eşik mi
+    # anomali yolu (yalnız dona bağlı çiftlerde değerlendirilir)
+    bahce_delta: float | None = None  # önceki → bu görüntü, bahçe ortancası
+    sonraki_delta: float | None = None  # önceki → SONRAKİ görüntü, bahçe ortancası (kalıcılık bununla ölçülür)
+    diger_yil_p10: float | None = None
+    diger_yil_n: int = 0
+    anomali: bool = False
+    anomali_kalici: bool | None = None
+    secilen: str | None = None  # 'yama' | 'anomali' | None
+    sonuc: tuple[er.Signal, bool | None, float] | None = None
+
+
+async def s2_scan(
     session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali, frosts: list[er.Signal] | None = None
-) -> list[tuple[er.Signal, bool | None, float]]:
-    """Ardışık net S2 çiftleri (≤ `s2_azami_aralik_gun` arayla) için aday düşüşler: (sinyal, sonraki görüntüde sürdü mü [None: sonraki yok], düşen piksel payı).
+) -> list[PairDiag]:
+    """Ardışık net S2 çiftleri (≤ `s2_azami_aralik_gun` arayla) için tanılar. Her çift iki YOLDAN biriyle aday olabilir; her yol kendi düşüşünü ve KENDİ kalıcılık ölçüsünü taşır, karışmaz:
+
+    · yama: piksel Δ ≤ −0,08 ve dönem p10 altı bitişik yama; kalıcılık = yama pikselleri sonraki görüntüde de p10 altında.
+    · anomali (YALNIZ dona bağlı çiftler): bahçe ortancası Δ'sı diğer yılların aynı penceredeki p10'unun altında; kalıcılık = önceki→sonraki ortanca Δ, düşüşün ≥ yarısı.
+    Yama yolu kalıcıysa yama seçilir; değilse ve anomali yolu kalıcıysa anomali (kendi Δ'sı ve kalıcılığıyla) seçilir; ikisi de kalıcı değilse yama yolunun sonucu (şüphe) kalır.
 
     Mevsimden arındırma: piksel değeri, pikselin DİĞER yılların aynı ±`s2_pencere_gun` penceresindeki kendi p10'u ile kıyaslanır."""
     repo = AcquisitionRepository(session)
@@ -91,7 +118,7 @@ async def s2_candidates(
         if (loaded[i][0].tarih - loaded[i - 1][0].tarih).days <= rule.s2_azami_aralik_gun and (d := garden_delta(i - 1, i)) is not None:
             pair_deltas.append((loaded[i][0].tarih, d))
 
-    out: list[tuple[er.Signal, bool | None, float]] = []
+    out: list[PairDiag] = []
     for i in range(1, len(loaded)):
         (prev, prev_grid), (acq, grid) = loaded[i - 1], loaded[i]
         if (acq.tarih - prev.tarih).days > rule.s2_azami_aralik_gun:
@@ -99,46 +126,59 @@ async def s2_candidates(
         floor = floor_of(i)
         if floor.shape != grid.shape:
             continue
+        following = i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun
+        candidate = er.Signal("s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta")
+        bound = any(er.frost_precedes(f, candidate, rule) for f in frosts or [])
+        diag = PairDiag(onceki=prev.tarih, tarih=acq.tarih, sonraki=loaded[i + 1][0].tarih if following else None, dona_bagli=bound)
+        sources = (er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih))
+        # --- yama yolu
         patch = er.s2_patch(prev_grid, grid, floor, rule)
-        # Piksel yaması yolu (kalıcılık: yama piksellerinin sonraki görüntüde de p10 altında kalması)
         patch_entry: tuple[er.Signal, bool | None, float] | None = None
         if patch is not None:
             area_da, delta, mask_patch, share = patch
             persists: bool | None = None
-            if i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun:
+            if following:
                 nxt_floor = floor_of(i + 1)
                 persists = er.s2_persists(loaded[i + 1][1], nxt_floor, mask_patch, rule) if nxt_floor.shape == grid.shape else None
             rows_idx, cols_idx = np.nonzero(mask_patch)
             lng, lat = pixel_center_lnglat(canonical, float(rows_idx.mean()), float(cols_idx.mean())) if canonical is not None else (None, None)  # saha turu: yamanın ağırlık merkezi
             signal = er.Signal(
-                "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2),
-                kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
+                "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=round(area_da, 2), kaynaklar=sources,
                 ayrinti={"delta_ndvi": round(delta, 3), "merkez_lng": None if lng is None else round(lng, 6), "merkez_lat": None if lat is None else round(lat, 6)},
             )
             patch_entry = (signal, persists, share)
-        # İkinci yol (YALNIZ dona bağlı adaylar): değişim anomalisi — bahçe ortancası Δ'sı diğer yılların aynı penceredeki p10'unun altında VE kalıcı.
-        # Yama yolu «VEYA» anomali yolu; kalıcılık şartı her yolda kendi ölçüsüyle aranır, biri sağlıyorsa aday kalıcıdır.
-        candidate = er.Signal("s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta")
+            diag.yama_alan_da, diag.yama_delta, diag.yama_kalici = round(area_da, 2), delta, persists
+        # --- anomali yolu (yalnız dona bağlı)
         anomaly_entry: tuple[er.Signal, bool | None, float] | None = None
-        if any(er.frost_precedes(f, candidate, rule) for f in frosts or []):
+        if bound:
             delta_g = garden_delta(i - 1, i)
             others = [d for day, d in pair_deltas if day.year != acq.tarih.year and er.circular_doy_gap(day, acq.tarih) <= rule.s2_pencere_gun]
+            diag.bahce_delta, diag.diger_yil_n, diag.diger_yil_p10 = delta_g, len(others), er.anomaly_threshold(others, rule)
+            diag.sonraki_delta = garden_delta(i - 1, i + 1) if following else None
             if delta_g is not None and er.is_change_anomaly(delta_g, others, rule):
-                following = i + 1 < len(loaded) and (loaded[i + 1][0].tarih - acq.tarih).days <= rule.s2_azami_aralik_gun
-                kept = er.anomaly_persists(delta_g, garden_delta(i - 1, i + 1) if following else None, rule)
+                kept = er.anomaly_persists(delta_g, diag.sonraki_delta, rule)
+                diag.anomali, diag.anomali_kalici = True, kept
                 signal = er.Signal(
-                    "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=None,
-                    kaynaklar=(er.SourceRef("acquisitions", str(acq.id), "s2_dusus", acq.tarih), er.SourceRef("acquisitions", str(prev.id), "s2_dusus", prev.tarih)),
-                    ayrinti={"delta_ndvi": round(delta_g, 3), "yol": "degisim_anomalisi", "diger_yil_p10": round(float(er.anomaly_threshold(others, rule) or 0.0), 3)},
+                    "s2_dusus", prev.tarih + timedelta(days=1), acq.tarih, "orta", alan_da=None, kaynaklar=sources,
+                    ayrinti={"delta_ndvi": round(delta_g, 3), "yol": "degisim_anomalisi", "diger_yil_p10": round(float(diag.diger_yil_p10 or 0.0), 3)},
                 )
                 anomaly_entry = (signal, kept, 0.0)
         if patch_entry and anomaly_entry and patch_entry[1] is not True and anomaly_entry[1] is True:
-            out.append(anomaly_entry)  # yama kalıcı değil ama bahçe ortancası düşüşü sürüyor: anomali yoluyla olay
+            diag.secilen, diag.sonuc = "anomali", anomaly_entry  # yama kalıcı değil ama bahçe ortancası düşüşü KENDİ ölçüsüyle sürüyor
         elif patch_entry:
-            out.append(patch_entry)
+            diag.secilen, diag.sonuc = "yama", patch_entry
         elif anomaly_entry:
-            out.append(anomaly_entry)
+            diag.secilen, diag.sonuc = "anomali", anomaly_entry
+        if diag.sonuc is not None or diag.bahce_delta is not None:
+            out.append(diag)
     return out
+
+
+async def s2_candidates(
+    session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, rule: cat.OlayKurali, frosts: list[er.Signal] | None = None
+) -> list[tuple[er.Signal, bool | None, float]]:
+    """Aday düşüşler: (sinyal, sonraki görüntüde sürdü mü [None: sonraki yok], düşen piksel payı). Ayrıntı ve yol seçimi: `s2_scan`."""
+    return [d.sonuc for d in await s2_scan(session, storage, garden_id, rule, frosts) if d.sonuc is not None]
 
 
 async def radar_signals(session: AsyncSession, garden_id: uuid.UUID) -> list[er.Signal]:

@@ -5,6 +5,9 @@ import { mapPoint, createGarden, newUser, seedOlayOzet, seedSaha, seedScenes } f
 // 8×6 piksel geçerli JPEG (sunucu Pillow ile doğrular)
 const JPEG = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAGAAgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwC5RRRXjHGf/9k=', 'base64')
 
+// 8×6 JPEG; EXIF: çekim 2026-10-05 08:12, konum 38,96 K / 27,96 D (aşağıdaki «EXIF önerisi» bahçesinin merkezi)
+const JPEG_EXIF = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/4QC6RXhpZgAATU0AKgAAAAgAAodpAAQAAAABAAAAJoglAAQAAAABAAAATAAAAAAAAZADAAIAAAAUAAAAOAAAAAAyMDI2OjEwOjA1IDA4OjEyOjQwAAAEAAEAAgAAAAJOAAAAAAIABQAAAAMAAACCAAMAAgAAAAJFAAAAAAQABQAAAAMAAACaAAAAAAAAACYAAAABAAAAOQAAAAEAAAAkAAAAAQAAABsAAAABAAAAOQAAAAEAAAAkAAAAAf/bAEMACAYGBwYFCAcHBwkJCAoMFA0MCwsMGRITDxQdGh8eHRocHCAkLicgIiwjHBwoNyksMDE0NDQfJzk9ODI8LjM0Mv/bAEMBCQkJDAsMGA0NGDIhHCEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMv/AABEIAAYACAMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2gAMAwEAAhEDEQA/ALlFFFeMcZ//2Q==', 'base64')
+
 test.describe('Saha Defteri', () => {
   test('açılır: boş tur durumu, olay kartları ve boş kayıt listesi dürüstçe görünür', async ({ page }) => {
     await newUser(page)
@@ -118,5 +121,30 @@ test.describe('Saha Defteri', () => {
     await page.getByTestId('katman-menusu').getByRole('button').first().click()
     await page.getByTestId('saha-katmani').check()
     await expect(page.getByTestId('kayit-isareti')).toHaveCount(1, { timeout: 30_000 })
+  })
+
+  test('fotoğrafın EXIF tarih/konumu öneri olarak sunulur, onayınızla forma yazılır; saklanan dosyada EXIF yoktur', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'EXIF Önerisi', lng: 27.96, lat: 38.96, sideM: 300 })
+    await page.goto(`/bahceler/${garden.id}/defter`)
+    await expect(page.getByTestId('kayit-formu')).toBeVisible({ timeout: 30_000 })
+    await page.getByTestId('kayit-foto').setInputFiles({ name: 'exif.jpg', mimeType: 'image/jpeg', buffer: JPEG_EXIF })
+    const oneri = page.getByTestId('foto-onerisi')
+    await expect(oneri).toContainText('çekim tarihi 05.10.2026', { timeout: 30_000 })
+    await expect(page.getByTestId('kayit-tarih')).not.toHaveValue('2026-10-05') // onaylamadan DOLMAZ
+    await expect(page.getByTestId('konum-ipucu')).toHaveCount(0)
+    await oneri.getByTestId('oneri-tarih').click()
+    await oneri.getByTestId('oneri-konum').click()
+    await expect(page.getByTestId('kayit-tarih')).toHaveValue('2026-10-05')
+    await expect(page.getByTestId('konum-ipucu')).toContainText('Nokta seçildi')
+    await page.getByTestId('kayit-kaydet').click()
+    const satir = page.getByTestId('kayit-satiri').first()
+    await expect(satir).toContainText('noktada', { timeout: 30_000 })
+    await expect(satir).toContainText('5 Eki 2026')
+    await expect(satir.getByTestId('foto-serit').locator('img')).toHaveCount(1)
+    // saklanan dosya: EXIF yok (konum ve zaman sızmaz)
+    const url = await satir.locator('img').first().getAttribute('src')
+    const buf = Buffer.from(await (await page.request.get(url!)).body())
+    expect(buf.includes(Buffer.from('Exif\0\0'))).toBe(false)
   })
 })

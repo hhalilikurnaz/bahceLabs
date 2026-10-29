@@ -210,7 +210,10 @@ async def test_the_tour_lists_pending_drops_and_stress_patches_nearest_first_and
     await add_event(factory, gid, f"s2_dusus:b{day}", "s2_dusus", day, durum="bekliyor", ayrinti={"s2_dusus.merkez_lng": near[0], "s2_dusus.merkez_lat": near[1]})
     tour = (await user_client.get(f"/gardens/{gid}/saha-turu?lng={near[0] - 0.0004}&lat={near[1]}")).json()
     assert [p["tur"] for p in tour["noktalar"]] == ["bekliyor", "bekliyor"] and tour["noktalar"][0]["lng"] == pytest.approx(near[0])  # başlangıca en yakın önce
-    assert tour["toplam_m"] > 0 and tour["sure_dk"] >= 8 and len(tour["rota"]) == 3 and "gerçek yürüyüş yolu değildir" in tour["not_"]
+    from bahcelab_backend.domain.fieldbook import rules as fr  # noqa: PLC0415
+
+    assert tour["sure_dk"] == fr.tour_minutes(tour["toplam_m"], 2, 55, 4)  # yürüyüş hızı 55 m/dk (katalog), nokta başına 4 dk
+    assert tour["toplam_m"] > 0 and len(tour["rota"]) == 3 and "gerçek yürüyüş yolu değildir" in tour["not_"]
     key = tour["noktalar"][0]["anahtar"]
     rid = (await new_record(user_client, gid, konum=point(-0.0008, 0.0))).json()["id"]
     assert (await user_client.put(f"/gardens/{gid}/saha-turu/ziyaret", json={"nokta_anahtar": key, "kayit_id": rid})).status_code == 204

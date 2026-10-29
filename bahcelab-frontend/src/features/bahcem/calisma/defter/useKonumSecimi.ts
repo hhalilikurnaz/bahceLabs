@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { koseleriCokgene } from '../../lib/saha'
 
 export type KonumModu = 'yok' | 'nokta' | 'alan'
@@ -10,7 +10,9 @@ export function useKonumSecimi() {
   const [koseler, setKoseler] = useState<[number, number][]>([])
 
   const modRef = useRef<KonumModu>('yok')
-  modRef.current = mod // dokunma işleyicisi her zaman güncel modu okur (durum güncelleyicisinde yan etki YOK: geliştirmede iki kez çalışırdı)
+  useEffect(() => {
+    modRef.current = mod // dokunma işleyicisi her zaman güncel modu okur (durum güncelleyicisinde yan etki YOK: geliştirmede iki kez çalışırdı)
+  }, [mod])
   const haritaTikla = useCallback((lng: number, lat: number) => {
     if (modRef.current === 'nokta') setNokta([lng, lat])
     else if (modRef.current === 'alan') setKoseler((k) => [...k, [lng, lat]])

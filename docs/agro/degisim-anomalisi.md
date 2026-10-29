@@ -1,6 +1,6 @@
 # Değişim anomalisi — kural olarak eklendi (yalnız dona bağlı adaylar)
 
-Üretim: 19.10.2026. Soru: dona bağlanan S2 aday düşüşü, **diğer yılların aynı takvim penceresindeki** (±15 gün) Δ dağılımının p10'unun altında mı? Δ = ardışık iki net S2 görüntüsü arasında bahçe piksellerinin ortanca ΔNDVI'si. Karşılaştırma örneği: diğer yıllarda son tarihi aynı pencereye düşen çiftler.
+Üretim: 29.10.2026. Soru: dona bağlanan S2 aday düşüşü, **diğer yılların aynı takvim penceresindeki** (±15 gün) Δ dağılımının p10'unun altında mı? Δ = ardışık iki net S2 görüntüsü arasında bahçe piksellerinin ortanca ΔNDVI'si. Karşılaştırma örneği: diğer yıllarda son tarihi aynı pencereye düşen çiftler.
 
 ### jlnnlk
 
@@ -26,6 +26,15 @@ Net S2 çifti: 241; don olayı: 9.
 | 23.02.2025 | 16.02.2025 → 13.03.2025 | -0,103 | 12 | -0,053 | -0,013 | evet | olay (anomali yolu) |
 | 23.02.2025 | 13.03.2025 → 23.03.2025 | 0,026 | 20 | -0,070 | -0,024 | hayır | aday yok |
 
+**Yol tanısı** (dona bağlı ve en az bir yolda aday olan çiftler; kalıcılık her yolda KENDİ ölçüsüyle):
+
+| Çift | Bahçe ortancası Δ | Diğer yıllar p10 (n) | Sonraki sahne | Δ önceki→sonraki | Düşüşün korunan payı | Yama yolu (alan · Δ · kalıcı) | Anomali yolu (anomali · kalıcı) | Seçilen yol |
+|---|---|---|---|---|---|---|---|---|
+| 30.01.2016 → 09.02.2016 | -0,193 | -0,063 (18) | 19.02.2016 | -0,206 | %107 | 12,1 da · -0,220 · evet | evet · evet | yama |
+| 18.02.2020 → 19.03.2020 | -0,121 | -0,065 (22) | 29.03.2020 | -0,184 | %152 | yok | evet · evet | anomali |
+| 14.03.2022 → 13.04.2022 | -0,127 | -0,065 (21) | 23.04.2022 | -0,101 | %79 | yok | evet · evet | anomali |
+| 16.02.2025 → 13.03.2025 | -0,103 | -0,053 (12) | 23.03.2025 | -0,074 | %72 | 12,6 da · -0,105 · hayır | evet · evet | anomali |
+
 ### soğuk hava
 
 Net S2 çifti: 240; don olayı: 9.
@@ -49,6 +58,29 @@ Net S2 çifti: 240; don olayı: 9.
 | 16.03.2022 | 14.03.2022 → 13.04.2022 | -0,262 | 20 | -0,131 | -0,008 | evet | olay (yama yolu) |
 | 23.02.2025 | 16.02.2025 → 13.03.2025 | -0,069 | 12 | -0,077 | -0,026 | hayır | aday yok |
 | 23.02.2025 | 13.03.2025 → 23.03.2025 | 0,031 | 19 | -0,129 | -0,023 | hayır | aday yok |
+
+**Yol tanısı** (dona bağlı ve en az bir yolda aday olan çiftler; kalıcılık her yolda KENDİ ölçüsüyle):
+
+| Çift | Bahçe ortancası Δ | Diğer yıllar p10 (n) | Sonraki sahne | Δ önceki→sonraki | Düşüşün korunan payı | Yama yolu (alan · Δ · kalıcı) | Anomali yolu (anomali · kalıcı) | Seçilen yol |
+|---|---|---|---|---|---|---|---|---|
+| 14.03.2022 → 13.04.2022 | -0,262 | -0,131 (20) | 23.04.2022 | -0,260 | %99 | 5,7 da · -0,306 · evet | evet · evet | yama |
+
+## Yol tanısı ve çapraz eşleşme denetimi
+
+Her dona bağlı çift için **iki yol ayrı ölçülür ve ayrı kalıcılık ölçüsüyle sınanır** (`events.service.s2_scan`; yukarıdaki «Yol tanısı» tabloları bunun çıktısıdır):
+
+- **Yama yolu:** düşüş = piksel yaması (alan, Δ); kalıcılık = yama piksellerinin sonraki görüntüde de dönem p10'u altında kalması.
+- **Anomali yolu:** düşüş = bahçe ortancası Δ'sı; kalıcılık = önceki→SONRAKİ ortanca Δ, düşüşün en az yarısı.
+- Seçilen yolun sinyali yalnız KENDİ düşüşünü ve KENDİ kalıcılığını taşır: anomali yolu seçildiğinde yamanın alanı/Δ'sı sinyale taşınmaz (`alan_da` boş), yama yolu seçildiğinde anomali bayrakları taşınmaz. Yama kalıcıysa anomali yolunun kalıcılığına bakılmaz; ikisi de kalıcı değilse yama yolunun sonucu (şüphe: toparlandı) kalır. Üç durum da testlidir (`test_each_path_keeps_its_own_drop_and_its_own_persistence_measure`).
+
+### Şub 2025 ve Şub 2020 (jlnnlk) — sayılar
+
+| Çift | Bahçe Δ | Diğer yıllar p10 (n) | Sonraki sahne | Δ önceki→sonraki | Korunan pay | Yama yolu | Anomali yolu | Karar |
+|---|---|---|---|---|---|---|---|---|
+| 16.02 → 13.03.2025 | −0,103 | −0,053 (12) | 23.03.2025 | −0,074 | %72 | 12,6 da · Δ −0,105 · **kalıcı değil** (piksel yaması toparlanmış) | anomali · **kalıcı** | anomali yolu |
+| 18.02 → 19.03.2020 | −0,121 | −0,065 (22) | 29.03.2020 | −0,184 | %152 | yama yok | anomali · **kalıcı** | anomali yolu |
+
+Şub 2025'te geçen turdaki «toparlandı» kararı yama yolunun pikselli ölçüsünden geliyordu; bahçe ortancası ise 10 gün sonra hâlâ düşüşün %72'sini koruyor. Bu fark gerçek: yama toparlanırken bahçenin geneli düşük kalmış. **Şub 2020 çifti 29 günlük** (azami 30): uzun aralıkta mevsimsel gelişim ile hasar ayrışmayabilir; olayın güveni bu yüzden «orta» ve Saha Defteri doğrulaması özellikle bu iki olay için istenmeli.
 
 ## Kural (katalog `olay`, ön değer · mühendis onayı bekliyor)
 

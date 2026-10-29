@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { KAYIT_TURLERI, KAYIT_TUR_AD, KAYIT_TUR_ISARET, useKayitOlustur, useKayitSil, useSahaKayitlari, type KayitTuru } from '../../api/sahaApi'
+import type { FotoOnerisi } from '../../api/sahaApi'
+import { KAYIT_TURLERI, KAYIT_TUR_AD, KAYIT_TUR_ISARET, fotoOner, useKayitOlustur, useKayitSil, useSahaKayitlari, type KayitTuru } from '../../api/sahaApi'
 import { gunAy } from '../../lib/format'
 import { bugunIstanbul, turSuz } from '../../lib/saha'
 import { FotoSerit } from './FotoSerit'
@@ -12,12 +13,13 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
   const [tarih, setTarih] = useState(bugunIstanbul())
   const [not, setNot] = useState('')
   const [fotolar, setFotolar] = useState<File[]>([])
+  const [oneri, setOneri] = useState<FotoOnerisi | null>(null)
   const eksikAlan = konum.mod === 'alan' && !konum.konum
   const eksikNokta = konum.mod === 'nokta' && !konum.konum
   const kaydet = () =>
     olustur.mutate(
       { girdi: { tur, tarih, konum: konum.konum, aciklama: not.trim() || null }, fotolar },
-      { onSuccess: () => (setNot(''), setFotolar([]), konum.temizle()) },
+      { onSuccess: () => (setNot(''), setFotolar([]), setOneri(null), konum.temizle()) },
     )
   return (
     <form onSubmit={(e) => (e.preventDefault(), kaydet())} className="grid gap-2" aria-label="Yeni saha kaydı" data-testid="kayit-formu">
@@ -50,10 +52,26 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
         Not
         <textarea value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} data-testid="kayit-notu" placeholder="Ne gördünüz ya da yaptınız?" className="mt-0.5 w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px] font-normal text-[var(--ink)]" />
       </label>
+      {oneri && (oneri.tarih || oneri.konum || oneri.konum_bahceden_uzak) && (
+        <div role="status" className="border border-[var(--rule-2)] bg-[var(--paper-2)] p-2 text-[12.5px]" data-testid="foto-onerisi">
+          <p>{oneri.aciklama}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {oneri.tarih && <button type="button" onClick={() => oneri.tarih && setTarih(oneri.tarih)} data-testid="oneri-tarih" className="btn quiet max-[560px]:!h-11">Tarihi kullan ({oneri.tarih})</button>}
+            {oneri.konum && <button type="button" onClick={() => { konum.setMod('nokta'); konum.setNokta(oneri.konum!.coordinates as [number, number]) }} data-testid="oneri-konum" className="btn quiet max-[560px]:!h-11">Konumu kullan</button>}
+            <button type="button" onClick={() => setOneri(null)} className="btn quiet max-[560px]:!h-11">Kullanma</button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex min-h-9 cursor-pointer items-center border border-[var(--rule-2)] px-2.5 text-[12px] font-semibold hover:border-[var(--ink)] max-[560px]:min-h-11">
           {fotolar.length ? `${fotolar.length} fotoğraf seçildi` : 'Fotoğraf ekle'}
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" data-testid="kayit-foto" onChange={(e) => setFotolar(Array.from(e.target.files ?? []).slice(0, 5))} />
+          <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" data-testid="kayit-foto" onChange={(e) => {
+            const secilen = Array.from(e.target.files ?? []).slice(0, 5)
+            setFotolar(secilen)
+            setOneri(null)
+            // Fotoğrafın EXIF tarih/konumu ÖNERİ olarak sorulur (sunucu okur; kayda ancak onayınızla yazılır)
+            if (secilen[0]) void fotoOner(gardenId, secilen[0]).then(setOneri).catch(() => setOneri(null))
+          }} />
         </label>
         <button type="submit" disabled={olustur.isPending || eksikAlan || eksikNokta} data-testid="kayit-kaydet" className="btn primary max-[560px]:!h-11">Kaydı ekle</button>
       </div>

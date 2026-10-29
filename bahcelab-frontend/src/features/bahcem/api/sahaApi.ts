@@ -32,6 +32,14 @@ export interface KayitGirdisi {
   konum: GeoJSON.Point | GeoJSON.Polygon | null
   aciklama: string | null
 }
+/** Fotoğrafın EXIF'inden öneri (sunucuda okunur, saklanmaz): kullanıcı onaylamadan kayda yazılmaz. */
+export interface FotoOnerisi {
+  tarih: string | null
+  konum: GeoJSON.Point | null
+  konum_mesafe_m: number | null
+  konum_bahceden_uzak: boolean
+  aciklama: string
+}
 export interface DogrulamaKarti {
   hedef_tur: 'olay' | 'uyari'
   hedef_anahtar: string
@@ -161,6 +169,12 @@ export function useZiyaret(gardenId: string) {
     mutationFn: (g: { nokta_anahtar: string; kayit_id?: string | null; ziyaret_edildi: boolean }) => apiRequest(`${base(gardenId)}/saha-turu/ziyaret`, { method: 'PUT', body: JSON.stringify(g) }),
     onSuccess: yenile,
   })
+}
+
+export function fotoOner(gardenId: string, dosya: File): Promise<FotoOnerisi> {
+  const form = new FormData()
+  form.append('file', dosya)
+  return apiRequest<FotoOnerisi>(`${base(gardenId)}/saha-fotograf-oneri`, { method: 'POST', body: form })
 }
 
 async function fotoYukle(yol: string, dosya: File): Promise<void> {
