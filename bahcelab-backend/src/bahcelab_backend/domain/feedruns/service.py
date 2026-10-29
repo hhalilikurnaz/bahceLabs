@@ -176,6 +176,9 @@ async def resume_feeds(factory: SessionFactory, *, startup: bool = False, start:
             out["kesilen"] += 1
             resume.add(run.garden_id)
             continue
+        if run.durum == "atlandi" and run.kaynak in ("imerg", "smap") and settings.earthdata_token:
+            resume.add(run.garden_id)  # belirteç sonradan tanımlandı (ya da bu süreç belirteçle başladı): atlanan doğrulama çekimi şimdi yapılabilir
+            continue
         action = next_action(run.durum, run.deneme, run.bitis, now, retry_max=settings.feed_retry_max, backoff_minutes=settings.feed_retry_backoff_minutes)
         if action == "devam":
             resume.add(run.garden_id)

@@ -1,6 +1,8 @@
 # Kök .env (portlar, konteyner adları): cp .env.example .env
 -include .env
 export
+# DİKKAT: kök .env'deki BOŞ `EARTHDATA_TOKEN=` satırı export edilince bahcelab-backend/.env.local'daki gerçek belirteci EZER (ortam değişkeni dosyadan önceliklidir).
+# Bu yüzden sunucu/işçi hedefleri `env -u EARTHDATA_TOKEN` ile başlar: belirteç yalnız .env.local'dan okunur. (Bu hata yüzünden SMAP/IMERG çekimi sessizce atlanıyordu.)
 
 .PHONY: e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test backend-test-fast frontend-install frontend-dev
 
@@ -37,10 +39,10 @@ db-revision:
 	cd bahcelab-backend && PYTHONPATH=src .venv/bin/alembic revision --autogenerate -m "$(msg)"
 
 backend-dev:
-	cd bahcelab-backend && PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port $(API_PORT)
+	cd bahcelab-backend && env -u EARTHDATA_TOKEN PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port $(API_PORT)
 
 worker:
-	cd bahcelab-backend && PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
+	cd bahcelab-backend && env -u EARTHDATA_TOKEN PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
 
 backend-test:  ## TAM paket (yavaş testler dahil), işçi başına ayrı test veritabanı, paralel
 	cd bahcelab-backend && PYTHONPATH=src:. .venv/bin/pytest -q -n 8

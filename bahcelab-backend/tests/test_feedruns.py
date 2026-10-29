@@ -167,3 +167,13 @@ async def test_a_failure_after_the_garden_was_deleted_is_not_an_alarm(user_clien
     async with factory() as session:
         assert (await session.execute(select(FeedRunModel).where(FeedRunModel.garden_id == gid))).first() is None  # kayıt bahçeyle gitti
         assert (await session.execute(select(NotificationModel).where(NotificationModel.tur == "besleme"))).first() is None  # alarm yok
+
+
+async def test_a_run_skipped_for_a_missing_token_resumes_once_the_token_exists(user_client, factory, monkeypatch):  # noqa: F811
+    gid = await seed(user_client, factory)
+    monkeypatch.setattr(get_settings(), "earthdata_token", "")
+    await water_feed.feed_validation(factory, gid)  # belirteç yok → atlandi
+    started: list[uuid.UUID] = []
+    assert (await fr.resume_feeds(factory, start=started.append))["devam"] == 0  # hâlâ belirteç yok: boşuna denenmez
+    monkeypatch.setattr(get_settings(), "earthdata_token", "x")
+    assert (await fr.resume_feeds(factory, start=started.append))["devam"] == 1 and started == [gid]
