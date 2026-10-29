@@ -43,6 +43,7 @@ export const backendEnv = (): NodeJS.ProcessEnv => ({
   EARTHDATA_TOKEN: '', // e2e Earthdata'ya çıkmaz (.env.local'daki gerçek belirteç bu süreçlere geçmez)
   HLS_CLIENT: 'tests.support.fake_hls:FakeHlsProvider', // ağsız HLS: kesintisiz canlılık eğrisi e2e'de gerçek hattan geçer
   ERA5_CLIENT: 'tests.support.fake_era5:FakeEra5Client', // ağsız ERA5: bahçe eklenince besleme işi gerçek hattan geçer
+  WEATHER_TIMEOUT_SECONDS: '1.5', // e2e gerçek hava servisine güvenmez: erişilemezse hızla düşer (CI'da ağ yavaş/kapalı olabilir; Bugün kartı 30 sn'yi aşan bekleyişe girmesin)
   SOILGRIDS_ENABLED: 'false', // e2e dış servise çıkmaz; toprak profili test aracıyla yazılır
   REGISTRATION_ENABLED: 'true',
   CORS_ORIGINS: E2E.webUrl,
