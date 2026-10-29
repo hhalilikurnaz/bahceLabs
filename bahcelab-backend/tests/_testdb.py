@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+import threading
 from pathlib import Path
 
 import asyncpg
@@ -46,6 +47,30 @@ async def _ensure_database(admin_dsn: str, name: str, test_dsn: str) -> None:
         await conn.close()
 
 
+_LOCK_CONNECTIONS: list[asyncpg.Connection] = []  # referans tutulmazsa bağlantı toplanır ve kilit düşer
+_LOCK_LOOP: asyncio.AbstractEventLoop | None = None  # kilit bağlantısını yaşatan arka plan döngüsü (süreç bitince bağlantı kapanır → kilit kendiliğinden düşer)
+
+
+def _hold_database_lock(test_dsn: str, name: str) -> None:
+    """Bu işçi veritabanını SAHİPLEN: aynı veritabanını kullanan ikinci bir pytest oturumu (ya da öldürülmüş koşudan artakalan işçi) testleri sessizce bozar —
+    biri kullanıcıları siler, öbürü beklenmedik 401 alır. Bu yüzden kilit alınamazsa net bir hata ile DURULUR."""
+    global _LOCK_LOOP
+    loop = asyncio.new_event_loop()
+    threading.Thread(target=loop.run_forever, daemon=True, name="testdb-kilidi").start()
+
+    async def take() -> bool:
+        conn = await asyncpg.connect(test_dsn)  # bağlantı bilerek kapatılmaz: kilit oturum ömrü boyunca tutulur
+        _LOCK_CONNECTIONS.append(conn)
+        return bool(await conn.fetchval("SELECT pg_try_advisory_lock(hashtext($1))", f"bahcelab-testdb:{name}"))
+
+    if not asyncio.run_coroutine_threadsafe(take(), loop).result(timeout=30):
+        raise RuntimeError(
+            f"Test veritabanı «{name}» başka bir pytest oturumu tarafından kullanılıyor. Aynı anda iki koşu (ya da öldürülmüş bir koşudan artakalan işçi) testleri bozar: "
+            "`ps aux | grep pytest` ile artakalan süreçleri bulup sonlandırın, sonra yeniden koşun."
+        )
+    _LOCK_LOOP = loop
+
+
 def prepare() -> str:
     """İşçi veritabanını hazırlar; DATABASE_URL'i ona yönlendirir. Dönüş: kullanılan veritabanı adı."""
     dev = _dev_url()
@@ -56,6 +81,7 @@ def prepare() -> str:
     test_url = f"{match['head']}{name}{match['tail'] or ''}"
     plain = lambda u: u.replace("postgresql+asyncpg://", "postgresql://")  # noqa: E731
     asyncio.run(_ensure_database(plain(dev), name, plain(test_url)))
+    _hold_database_lock(plain(test_url), name)
     os.environ["DATABASE_URL"] = test_url
     cfg = Config(str(ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(ROOT / "migrations"))

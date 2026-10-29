@@ -78,3 +78,5 @@ docs: update B4 progress in progress.md
 - Component: step navigation, empty states
 - E2E: full planning flow
 - Mock fixture'lar `tests/fixtures/` altında, production'dan ayrı
+- **Backend testleri sabit saatte koşar** (Europe/Istanbul 2026-10-10 12:00'den ilerleyen `time-machine`; `tests/conftest.py`). Sistem saatine bağlı test yazılmaz; «bugün» için `shared/clock.today_istanbul()` ya da testte `datetime.now(ZoneInfo("Europe/Istanbul"))` kullanılır. DB saati (`now()`) uygulama saatiyle aynı değildir: yaş/süre testlerinde zamanı parametre olarak geçirin.
+- **Her pytest işçisinin kendi test veritabanı vardır ve tek oturum sahiplenir** (`tests/_testdb.py`, advisory lock). Aynı anda ikinci bir `pytest` (ya da öldürülmüş koşudan artakalan işçi) kilidi alamaz ve net hata verir. Bunun nedeni gerçek bir arıza biçimidir: iki oturum aynı veritabanında birbirinin kullanıcılarını silince rastgele 401'ler ve «anahtar yok» hataları çıkar (iki eşzamanlı koşuda 31 test düştü). Takılan koşuyu öldürdükten sonra `ps aux | grep pytest` ile artakalanları da sonlandırın.
