@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     # Dosya depolama (NDVI PNG'leri). Yerelde diskte; ileride S3/R2 uygulaması aynı arayüze takılır.
     storage_dir: str = "uploads"
+    db_pool_size: int = 10  # API sürecinin kalıcı veritabanı bağlantı sayısı (eşzamanlı istek + arka plan işleri)
+    db_max_overflow: int = 20  # yoğunlukta ek geçici bağlantı
     field_photo_max_bytes: int = 6_000_000  # Saha Defteri fotoğrafı: yükleme sınırı (yeniden kodlanır, EXIF/konum silinir)
     field_photo_max_per_owner: int = 5  # bir kayıt ya da doğrulama başına en çok fotoğraf
 

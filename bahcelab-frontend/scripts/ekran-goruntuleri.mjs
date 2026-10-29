@@ -94,6 +94,45 @@ async function durumCekimleri(page, ad, width) {
   await page.screenshot({ path: join(CIKTI, `bildirim-paneli-onem-rozetleri-${ad}.png`) })
   await page.keyboard.press('Escape')
 }
+/** 9G: Geçmiş sayfası, Saha Defteri ve harita bağlantıları (olay kartı, yıl görünümü) — gerçek bahçe, yalnız okuma. */
+async function gecmisDefterCekimleri(page, ad, width) {
+  const dar = width < 700
+  await page.goto(`${WEB}/bahceler/${BAHCE}/gecmis`)
+  await page.getByTestId('gecmis-sayfasi').waitFor({ timeout: 60000 })
+  await page.getByTestId('yil-tablosu').waitFor({ timeout: 60000 })
+  await page.getByTestId('olay-satiri').first().waitFor({ timeout: 60000 })
+  await page.waitForTimeout(6000) // küçük haritalar yüklensin
+  await page.screenshot({ path: join(CIKTI, `gecmis-ust-${ad}.png`) })
+  for (const [id, dosya] of [['sezon-egrisi', 'sezon-bandi'], ['yaz-haritalari', 'yaz-haritalari'], ['olay-cizelgesi', 'olay-cizelgesi'], ['yil-tablosu', 'yil-ozeti'], ['gecmis-fenoloji', 'fenoloji']]) {
+    await cekim(page, page.getByTestId(id), join(CIKTI, `gecmis-${dosya}-${ad}.png`), dar)
+  }
+  await page.getByTestId('tur-don').click()
+  await page.getByTestId('olay-satiri').first().getByRole('button').first().click()
+  await cekim(page, page.getByTestId('olay-cizelgesi'), join(CIKTI, `gecmis-olay-suzgec-ve-ayrinti-${ad}.png`), dar)
+  await page.goto(`${WEB}/bahceler/${BAHCE}/defter`)
+  await page.getByTestId('defter-sayfasi').waitFor({ timeout: 60000 })
+  await page.getByTestId('dogrulama-karti').first().waitFor({ timeout: 60000 })
+  await page.waitForTimeout(4000)
+  await page.screenshot({ path: join(CIKTI, `defter-ust-${ad}.png`) })
+  for (const [id, dosya] of [['tur-bolumu', 'tur'], ['dogrulama-bolumu', 'dogrulama-kartlari'], ['dogruluk-bolumu', 'dogruluk-ozeti'], ['kayit-formu', 'kayit-formu']]) {
+    await cekim(page, page.getByTestId(id), join(CIKTI, `defter-${dosya}-${ad}.png`), dar)
+  }
+  // Harita bağlantıları: olay kartı ve yıl görünümü
+  const olaylar = await (await page.request.get(`${WEB}/api/gardens/${BAHCE}/olaylar`)).json()
+  const olay = olaylar.olaylar.find((o) => o.turler.includes('s2_dusus')) ?? olaylar.olaylar[0]
+  await page.goto(`${WEB}/bahceler/${BAHCE}?olay=${olay.id}`)
+  await page.getByTestId('olay-karti').waitFor({ timeout: 60000 })
+  await page.waitForTimeout(4000)
+  await page.screenshot({ path: join(CIKTI, `harita-olay-karti-${ad}.png`) })
+  await page.goto(`${WEB}/bahceler/${BAHCE}?yil=2021`)
+  await page.getByTestId('tarih-kutusu').waitFor({ timeout: 60000 })
+  await page.waitForTimeout(4000)
+  await page.screenshot({ path: join(CIKTI, `harita-yaz-gorunumu-2021-${ad}.png`) })
+  await page.goto(`${WEB}/bahceler/${BAHCE}`)
+  await page.getByTestId('sezon-sekmeleri').waitFor({ timeout: 60000 })
+  await page.getByTestId('sezon-sekmeleri').scrollIntoViewIfNeeded()
+  await cekim(page, page.getByTestId('sezon-egrisi'), join(CIKTI, `durum-sezon-sekmeleri-${ad}.png`), dar)
+}
 const browser = await chromium.launch({ executablePath: PW_CHROME_PATH, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
 for (const [ad, width, height] of [['1440', 1440, 900], ['1024', 1024, 768], ['390', 390, 844]]) {
@@ -107,6 +146,11 @@ for (const [ad, width, height] of [['1440', 1440, 900], ['1024', 1024, 768], ['3
   await page.goto(`${WEB}/bahceler/${BAHCE}`)
   await page.getByTestId('harita-paneli').waitFor({ timeout: 60000 })
   await page.waitForTimeout(5000)
+  if (KUME === '9g') {
+    await gecmisDefterCekimleri(page, ad, width)
+    await context.close()
+    continue
+  }
   if (KUME === '9f') {
     await durumCekimleri(page, ad, width)
     await context.close()

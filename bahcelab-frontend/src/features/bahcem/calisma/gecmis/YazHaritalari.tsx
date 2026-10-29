@@ -27,7 +27,7 @@ function Kare({ grid, alan, halka, uyumsuz }: { grid: YilGrid; alan: [number, nu
 export function YazHaritalari({ garden }: { garden: Garden }) {
   const multi = useMultiyear(garden.id).data
   const yillar = useMemo(() => (multi?.yillar ?? []).filter((y) => y.yil_net_sahne > 0 || y.sahne_sayisi > 0).map((y) => y.yil).sort((a, b) => a - b), [multi])
-  const sorgular = useQueries({ queries: yillar.map((y) => yilGridOptions(garden.id, y)) })
+  const sorgular = useQueries({ queries: yillar.map((y) => yilGridOptions(garden.id, y)) }) // istekler `yilGridOptions` içinde en çok 3 eşzamanlıya sınırlanır
   const gridler = sorgular.map((s) => s.data ?? null)
   const hazir = gridler.filter((g): g is YilGrid => g !== null)
   const alan = useMemo<[number, number]>(() => (hazir.length ? percentileDomain(hazir) : [0, 1]), [hazir.length]) // eslint-disable-line react-hooks/exhaustive-deps

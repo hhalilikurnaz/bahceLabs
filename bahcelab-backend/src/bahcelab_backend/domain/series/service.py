@@ -100,7 +100,7 @@ async def curve_for(session: AsyncSession, garden_id: uuid.UUID, start: date, en
     rule = cat.load_catalog().egri
     end = end or datetime.now(UTC).date()
     observations, radar_days = await observations_for(session, garden_id, rule)
-    points, sigma = cv.build_curve(observations, start, end, rule)
+    points, sigma = await asyncio.to_thread(cv.build_curve, observations, start, end, rule)  # Whittaker çözümü CPU işidir: olay döngüsünü (ve açık oturumları) bloke etmesin
     change_days = {r[0] for r in (await session.execute(select(ChangeEventModel.tarih).where(ChangeEventModel.garden_id == garden_id, ChangeEventModel.source_id == RADAR_SOURCE, ChangeEventModel.durum == "aday", ChangeEventModel.guven != "dusuk"))).all()}
     optical_days = [o.tarih for o in observations]
     marks = cv.radar_marks([d for d in radar_days if start <= d <= end], change_days, optical_days, end, rule)

@@ -22,6 +22,7 @@ from bahcelab_backend.shared.concurrency import advisory_lock, retry_on_deadlock
 logger = logging.getLogger(__name__)
 _TASKS: set[asyncio.Task[None]] = set()
 _BY_GARDEN: dict[uuid.UUID, asyncio.Task[Any]] = {}
+_RUNNING: set[uuid.UUID] = set()  # gövdesi çalışmaya BAŞLAMIŞ besleme işleri: veritabanı işlemi sırasında iptal edilmez (aşağıya bakın)
 _ARQ_POOL: Any | None = None
 
 
@@ -54,6 +55,14 @@ async def _stage(garden_id: uuid.UUID, name: str, fn: Callable[[], Awaitable[Any
 async def run_garden_feed(garden_id: uuid.UUID) -> dict[str, Any]:
     """ERA5 → toprak profili → HLS → doğrulama. Bahçe başına SERİ (advisory lock); bahçe silinirse iş sessizce biter."""
     out: dict[str, Any] = {}
+    _RUNNING.add(garden_id)
+    try:
+        return await _run_garden_feed(garden_id, out)
+    finally:
+        _RUNNING.discard(garden_id)
+
+
+async def _run_garden_feed(garden_id: uuid.UUID, out: dict[str, Any]) -> dict[str, Any]:
     async with advisory_lock(engine, f"feed:{garden_id}"):
         out["era5"] = await _stage(
             garden_id, "ERA5", lambda: feed.feed_garden(async_session_factory, garden_id)
@@ -120,9 +129,11 @@ def start_garden_feed(garden_id: uuid.UUID) -> None:
 
 
 def cancel_garden_feed(garden_id: uuid.UUID) -> bool:
-    """Bahçe silinirken süreç içindeki besleme işini iptal eder (arq kuyruğundaki iş başlarken bahçe yok ise sessizce biter)."""
+    """Bahçe silinirken henüz başlamamış besleme işini iptal eder (arq kuyruğundaki iş başlarken bahçe yok ise sessizce biter)."""
     task = _BY_GARDEN.pop(garden_id, None)
-    if task is not None and not task.done():
-        task.cancel()
+    if task is not None and not task.done() and garden_id not in _RUNNING:
+        task.cancel()  # henüz BAŞLAMAMIŞ iş: güvenle iptal edilir
         return True
+    # Başlamış iş veritabanı işlemi ortasında iptal EDİLMEZ (yarıda kesilen asyncpg işlemi havuz bağlantısını sızdırabilir): bir sonraki aşamada
+    # `garden_exists` bahçenin silindiğini görür ve iş sessizce biter.
     return False

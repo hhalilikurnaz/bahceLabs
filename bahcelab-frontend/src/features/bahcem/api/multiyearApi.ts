@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/apiClient'
+import { eszamanliSinir } from '../lib/eszamanli'
 
 export interface MultiyearYear {
   yil: number
@@ -93,12 +94,14 @@ export interface YilGrid {
   cols: number
   corners: [number, number][]
 }
+const izgaraSiniri = eszamanliSinir(3)
+
 export const yilGridOptions = (gardenId: string | null, yil: number | null) => ({
   queryKey: ['yil-grid', gardenId, yil] as const,
-  queryFn: async (): Promise<YilGrid> => {
+  queryFn: (): Promise<YilGrid> => izgaraSiniri(async () => {
     const d = await apiRequest<{ yil: number; satir: number; sutun: number; koordinatlar: number[][]; degerler: (number | null)[] }>(`/gardens/${gardenId}/bolgeler/cok-yillik/yillar/${yil}/degerler`)
     return { yil: d.yil, rows: d.satir, cols: d.sutun, corners: d.koordinatlar as [number, number][], values: Float32Array.from(d.degerler, (v) => (v === null ? Number.NaN : v)) }
-  },
+  }),
   enabled: gardenId !== null && yil !== null,
   staleTime: Infinity,
   gcTime: 30 * 60_000,

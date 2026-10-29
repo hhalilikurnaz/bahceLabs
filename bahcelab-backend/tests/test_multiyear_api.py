@@ -457,7 +457,7 @@ async def test_completion_notification_is_published_once(user_client: AsyncClien
     garden = await new_garden(user_client)
     await user_client.post(url(garden["id"]))
     notes = await cok_yillik(factory, garden["id"])
-    assert len(notes) == 1 and notes[0].baglanti == f"/bahceler/{garden['id']}/analiz"
+    assert len(notes) == 1 and notes[0].baglanti == f"/bahceler/{garden['id']}/analiz?katman=bolgeler"  # bölgeler katmanı haritada açılır
     assert "çok yıllık analiz hazır" in notes[0].baslik and notes[0].oncelik == "bilgi" and notes[0].teslim == "ozet"  # bilgi: günlük özette
     assert (await user_client.get("/notifications", params={"tur": "cok_yillik"})).json()["toplam"] == 0  # özet gelene kadar listede görünmez
     await user_client.post(url(garden["id"]))  # tekrar başlatma: yeni bildirim üretmez
