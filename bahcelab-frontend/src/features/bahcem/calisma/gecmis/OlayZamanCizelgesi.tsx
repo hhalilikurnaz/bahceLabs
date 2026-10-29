@@ -83,7 +83,7 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
   return (
     <section aria-label="Olay zaman çizelgesi" className="rounded-md border border-app-border bg-app-card p-3.5" data-testid="olay-cizelgesi">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-[13px] font-semibold">Olaylar · {ilk}–{son}</h3>
+        <h3 className="text-[13px] font-semibold">Olaylar · {ilk === son ? ilk : `${ilk}–${son}`}</h3>
         <span className="num text-[11.5px] text-app-text-muted" data-testid="olay-sayisi">{liste.length} olay{sorgu.data && sorgu.data.supheler.length > 0 ? ` · ${sorgu.data.supheler.length} atmosfer şüphesi olay sayılmadı` : ''}</span>
       </div>
       <p className="mt-1 text-[12.5px] text-app-text-muted">Don, aşırı yağış, rüzgâr ve uydudan görülen ani değişimler. Birleşen olaylar (örn. don + optik hasar izi) tek iz olarak gösterilir. Eşikler ön değerdir.</p>

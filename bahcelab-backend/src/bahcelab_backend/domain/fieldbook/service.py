@@ -376,7 +376,7 @@ class FieldbookService:
         lng, lat = pixel_center_lnglat(canonical_grid(geometry), patch.row, patch.col)
         return {
             "anahtar": f"yama:{acq.tarih}", "tur": "stres_yamasi", "baslik": "Stres yaması",
-            "neden": f"{acq.tarih:%d.%m.%Y} görüntüsünde bahçenin kendi en zayıf %{rule.stres_yuzdelik:g}'ünün altında, yaklaşık {patch.area_da:.1f} da bitişik yama".replace(".", ","),
+            "neden": f"{acq.tarih:%d.%m.%Y} görüntüsünde bahçenin kendi en zayıf %{rule.stres_yuzdelik:g}'ünün altında, yaklaşık {f'{patch.area_da:.1f}'.replace('.', ',')} da bitişik yama",
             "lng": lng, "lat": lat, "onem": 2,
         }
 

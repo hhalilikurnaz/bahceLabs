@@ -104,4 +104,25 @@ test.describe('Geçmiş sayfası', () => {
     await expect(page.getByRole('tab', { name: 'Taç ve toprak' })).toBeVisible() // kısa etiket «Taç», erişilebilir ad tam
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true) // sayfa yatay taşmaz
   })
+
+  test('390 px: yıl özeti tablosu yatay kaydırma istemez; tarih kutusu ve olay kartı ekrana sığar (taşma yok)', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Dar Yerleşim', lng: 27.95, lat: 38.95, sideM: 300 })
+    seedScenes(garden.id)
+    seedOlayOzet(garden.id)
+    await page.goto(`/bahceler/${garden.id}/gecmis`)
+    const kap = page.getByTestId('yil-tablosu-kap')
+    await expect(kap).toBeVisible({ timeout: 30_000 })
+    expect(await kap.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    const olay = await (await page.request.get(`/api/gardens/${garden.id}/olaylar`)).json()
+    await page.goto(`/bahceler/${garden.id}?olay=${olay.olaylar[0].id}`)
+    await expect(page.getByTestId('olay-karti')).toBeVisible({ timeout: 30_000 })
+    const tarih = await page.getByTestId('tarih-kutusu').boundingBox()
+    expect(tarih!.x + tarih!.width).toBeLessThanOrEqual(390 + 0.5)
+    const kart = await page.getByTestId('olay-karti').boundingBox()
+    expect(kart!.x).toBeGreaterThanOrEqual(0)
+    expect(kart!.x + kart!.width).toBeLessThanOrEqual(390 + 0.5)
+  })
 })

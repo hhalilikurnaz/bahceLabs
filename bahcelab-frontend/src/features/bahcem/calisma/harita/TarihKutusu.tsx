@@ -30,20 +30,20 @@ export function TarihKutusu({ gardenId, view }: { gardenId: string; view: Harita
   }
   const s = view.sahne
   return (
-    <div className="glass flex items-center gap-1 p-1" data-testid="tarih-kutusu">
+    <div className="glass flex max-w-[calc(100vw-28px)] items-center gap-1 p-1" data-testid="tarih-kutusu">
       <button type="button" aria-label="Önceki görüntü" disabled={i <= 0} onClick={() => go(-1)} className="grid h-9 w-9 max-[560px]:h-11 max-[560px]:w-11 place-items-center rounded-md hover:bg-app-card-hover disabled:opacity-30">
         <ChevronLeft className="h-4 w-4" aria-hidden />
       </button>
-      <div className="min-w-[132px] px-1.5 leading-tight">
+      <div className="min-w-0 flex-1 px-1.5 leading-tight min-[561px]:min-w-[132px]">
         <b className="num block text-[13px]" data-testid="secili-tarih">{s ? gunAy(s.tarih, 'always') : '—'}</b>
-        <span className="num block text-[10.5px] text-app-text-muted" data-testid={s?.yorunge != null ? 'radar-yorunge' : undefined}>
+        <span className="num block line-clamp-2 text-[10.5px] text-app-text-muted" data-testid={s?.yorunge != null ? 'radar-yorunge' : undefined}>
           {s ? kaynakSatiri([view.tanim.id === 'degisim' && view.onceki ? `${gunAy(view.onceki.tarih)} ile fark` : null, s.yorunge != null ? `yörünge ${s.yorunge} · ${yonAdi(s.yon ?? '')}` : null, s.platform ? `Landsat ${s.platform.replace('L', '')}` : null, s.bulutOrani != null ? `bulut ${yuzde(s.bulutOrani)}` : null, view.tanim.cozunurluk]) : 'görüntü yok'}
         </span>
       </div>
       <button type="button" aria-label="Sonraki görüntü" disabled={i < 0 || i >= list.length - 1} onClick={() => go(1)} className="grid h-9 w-9 max-[560px]:h-11 max-[560px]:w-11 place-items-center rounded-md hover:bg-app-card-hover disabled:opacity-30">
         <ChevronRight className="h-4 w-4" aria-hidden />
       </button>
-      <Link to={gardenPagePath(gardenId, 'gecmis')} className="ml-1 flex h-9 max-[560px]:h-11 items-center rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text">
+      <Link to={gardenPagePath(gardenId, 'gecmis')} className="ml-1 flex h-9 max-[560px]:h-11 shrink-0 items-center whitespace-nowrap rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text">
         Geçmiş ↗
       </Link>
     </div>
