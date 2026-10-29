@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dogrulanacakMi, type DogrulamaKarti, type Kayit } from '@/features/bahcem/api/sahaApi'
+import { dogrulanacakMi, ON_YARGI_SIRA, type DogrulamaKarti, type Kayit } from '@/features/bahcem/api/sahaApi'
 import { bugunIstanbul, haversine, koseleriCokgene, mesafe, temsilNoktasi, turSuz } from '@/features/bahcem/lib/saha'
 
 describe('saha yardımcıları', () => {
@@ -35,5 +35,10 @@ describe('dış ön yargı süzgeci', () => {
     expect(dogrulanacakMi(kart({ on_yargi: { sonuc: 'destekleniyor', kanitlar: [], neden: '' } }))).toBe(false)
     expect(dogrulanacakMi(kart({ sonuc: 'gerceklesti' }))).toBe(false) // yanıtlanmış
     expect(dogrulanacakMi(kart({ hedef_tur: 'uyari', on_yargi: null }))).toBe(false)
+    expect(dogrulanacakMi(kart({ on_yargi: { sonuc: 'belirsiz', kanitlar: [], neden: '' } }))).toBe(true) // belirsiz de bakılacak olaydır
+  })
+  it('liste sırası çelişen, belirsiz, kanıt yok', () => {
+    const sirali = (['kanit_yok', 'belirsiz', 'celisiyor'] as const).map((sonuc) => kart({ on_yargi: { sonuc, kanitlar: [], neden: '' } })).sort((a, b) => ON_YARGI_SIRA[a.on_yargi!.sonuc] - ON_YARGI_SIRA[b.on_yargi!.sonuc]).map((k) => k.on_yargi!.sonuc)
+    expect(sirali).toEqual(['celisiyor', 'belirsiz', 'kanit_yok'])
   })
 })

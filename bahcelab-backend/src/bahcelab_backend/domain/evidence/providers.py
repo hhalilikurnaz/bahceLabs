@@ -49,8 +49,16 @@ def _num(raw: str) -> float | None:
         return None
 
 
+#: Değer kaynağı bir YERİNDE ÖLÇÜM ise gözlemdir (GHCN-Daily / ISD / SYNOP / METAR). Tahmin ve model kaynakları (ör. `metno_forecast`) ve bilinmeyen her kaynak GÖZLEM SAYILMAZ.
+OBSERVED_SOURCES = frozenset({"ghcnd", "isd", "isd_lite", "synop", "metar"})
+DATA_HOST = "https://data.meteostat.net/daily"  # bakımı süren Meteostat veri sunucusu; `bulk.meteostat.net/v2` Mart 2026'dan beri güncellenmiyor (ADR 0021 notu)
+
+
 class MeteostatProvider:
-    """Meteostat toplu veri (bulk.meteostat.net v2): istasyon listesi (lite) + istasyon günlük CSV. Anahtar gerekmez."""
+    """Meteostat: istasyon listesi `bulk.meteostat.net/v2/stations/lite.json.gz` (yalnız konum/ad), günlük veri `data.meteostat.net/daily/<yıl>/<id>.csv.gz`.
+
+    Yeni dosyada HER değerin kaynağı yazılıdır (`tmin_source`, `prcp_source`): yalnız yerinde ölçüm kaynakları (`OBSERVED_SOURCES`) gözlem sayılır; tahmin/model değeri `None` yapılır.
+    Anahtar gerekmez."""
 
     name = "meteostat"
 
@@ -59,9 +67,11 @@ class MeteostatProvider:
         self._stations: list[dict] | None = None
         self._loaded: datetime | None = None
 
-    async def _get(self, path: str) -> bytes:
-        async def run(client: httpx.AsyncClient) -> bytes:
-            r = await client.get(f"{BULK}/{path}", timeout=60)
+    async def _get(self, url: str, *, missing_ok: bool = False) -> bytes | None:
+        async def run(client: httpx.AsyncClient) -> bytes | None:
+            r = await client.get(url, timeout=60)
+            if missing_ok and r.status_code == 404:
+                return None
             r.raise_for_status()
             return r.content
 
@@ -72,7 +82,8 @@ class MeteostatProvider:
 
     async def _catalog(self) -> list[dict]:
         if self._stations is None or self._loaded is None or datetime.now(UTC) - self._loaded > timedelta(days=1):
-            self._stations = json.loads(gzip.decompress(await self._get("stations/lite.json.gz")))
+            content = await self._get(f"{BULK}/stations/lite.json.gz")
+            self._stations = json.loads(gzip.decompress(content or b"[]"))
             self._loaded = datetime.now(UTC)
         return self._stations
 
@@ -81,24 +92,26 @@ class MeteostatProvider:
         for s in await self._catalog():
             inv = (s.get("inventory") or {}).get("daily") or {}
             loc = s.get("location") or {}
-            if not inv.get("start") or not inv.get("end") or loc.get("latitude") is None:
-                continue  # günlük gözlemi olmayan istasyon kanıt vermez
+            if not inv.get("start") or loc.get("latitude") is None:
+                continue  # hiç günlük gözlemi olmayan istasyon kanıt vermez
             km = haversine_km(lat, lng, float(loc["latitude"]), float(loc["longitude"]))
-            if km <= max_km:
-                found.append(Station(str(s["id"]), (s.get("name") or {}).get("en") or str(s["id"]), float(loc["latitude"]), float(loc["longitude"]), loc.get("elevation"), _day(inv["start"]), _day(inv["end"]), round(km, 1), self.name))
+            if km <= max_km:  # gözlem aralığı burada BİLİNMEZ (listedeki envanter eskimiş olabilir): eşitleme gerçek günlerden doldurur
+                found.append(Station(str(s["id"]), (s.get("name") or {}).get("en") or str(s["id"]), float(loc["latitude"]), float(loc["longitude"]), loc.get("elevation"), None, None, round(km, 1), self.name))
         return sorted(found, key=lambda x: x.mesafe_km)[:limit]
 
     async def daily(self, station: Station, start: date, end: date) -> list[StationDay]:
-        text = gzip.decompress(await self._get(f"daily/{station.id}.csv.gz")).decode()
         out: list[StationDay] = []
-        for row in csv.reader(io.StringIO(text)):  # tarih, tavg, tmin, tmax, prcp, snow, wdir, wspd, wpgt, pres, tsun
-            if len(row) < 5:
+        for year in range(start.year, end.year + 1):
+            content = await self._get(f"{DATA_HOST}/{year}/{station.id}.csv.gz", missing_ok=True)
+            if content is None:
                 continue
-            day = date.fromisoformat(row[0])
-            if not start <= day <= end:
-                continue
-            observed = station.gozlem_baslangic is not None and station.gozlem_bitis is not None and station.gozlem_baslangic <= day <= station.gozlem_bitis
-            out.append(StationDay(station.id, day, _num(row[2]), _num(row[4]), "gozlem" if observed else "model"))
+            for row in csv.DictReader(io.StringIO(gzip.decompress(content).decode())):
+                day = date(int(row["year"]), int(row["month"]), int(row["day"]))
+                if not start <= day <= end:
+                    continue
+                tmin = _num(row.get("tmin", "")) if row.get("tmin_source") in OBSERVED_SOURCES else None
+                prcp = _num(row.get("prcp", "")) if row.get("prcp_source") in OBSERVED_SOURCES else None
+                out.append(StationDay(station.id, day, tmin, prcp, "gozlem" if tmin is not None or prcp is not None else "model"))
         return out
 
 

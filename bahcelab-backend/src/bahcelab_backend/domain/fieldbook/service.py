@@ -310,7 +310,7 @@ class FieldbookService:
         for e in await list_events(self.session, garden_id):
             grup = fr.tur_grubu(e.tur, e.turler)
             prior = prior_of(ctx, grup, e.baslangic, e.bitis)
-            card("olay", e.anahtar, event_name(e), grup, e.baslangic, e.bitis, e.guven, e.durum, e.id, OnYargiYanit(sonuc=prior.sonuc, kanitlar=[KanitYanit(kaynak=k.kaynak, yon=k.yon, metin=k.metin, baglanti=k.baglanti) for k in prior.kanitlar], neden=prior.neden))
+            card("olay", e.anahtar, event_name(e), grup, e.baslangic, e.bitis, e.guven, e.durum, e.id, OnYargiYanit(sonuc=prior.sonuc, kanitlar=[KanitYanit(kaynak=k.kaynak, yon=k.yon, metin=k.metin, baglanti=k.baglanti, il_duzeyi=k.il_duzeyi) for k in prior.kanitlar], neden=prior.neden))
         warnings = (await self.session.execute(select(NotificationModel).where(NotificationModel.garden_id == garden_id, ~NotificationModel.dedupe_key.like("%olay:%"), NotificationModel.oncelik.in_(("kritik", "uyari"))).order_by(NotificationModel.created_at.desc()))).scalars().all()
         for n in warnings:
             day = n.created_at.astimezone(TIMEZONE).date()

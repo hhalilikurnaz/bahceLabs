@@ -45,14 +45,17 @@ export interface Kanit {
   yon: 'destek' | 'celisme' | 'sinirda'
   metin: string
   baglanti: string | null
+  il_duzeyi: boolean
 }
-export type OnYargiSonuc = 'destekleniyor' | 'celisiyor' | 'kanit_yok'
+export type OnYargiSonuc = 'destekleniyor' | 'celisiyor' | 'belirsiz' | 'kanit_yok'
 export interface OnYargi {
   sonuc: OnYargiSonuc
   kanitlar: Kanit[]
   neden: string
 }
-export const ON_YARGI_AD: Record<OnYargiSonuc, string> = { destekleniyor: 'Dış kaynak destekliyor', celisiyor: 'Dış kaynak çelişiyor', kanit_yok: 'Dış kanıt yok' }
+export const ON_YARGI_AD: Record<OnYargiSonuc, string> = { destekleniyor: 'Dış kaynak destekliyor', celisiyor: 'Dış kaynak çelişiyor', belirsiz: 'Dış kaynak belirsiz', kanit_yok: 'Dış kanıt yok' }
+/** «Doğrulamanız gereken» listesinin sırası: çelişen, belirsiz, kanıt yok. */
+export const ON_YARGI_SIRA: Record<OnYargiSonuc, number> = { celisiyor: 0, belirsiz: 1, kanit_yok: 2, destekleniyor: 3 }
 export interface DogrulamaKarti {
   hedef_tur: 'olay' | 'uyari'
   hedef_anahtar: string
@@ -91,6 +94,7 @@ export interface TurOzeti {
   metin: string
   dis_destekleniyor: number
   dis_celisiyor: number
+  dis_belirsiz: number
   dis_kanit_yok: number
   dis_metin: string
 }

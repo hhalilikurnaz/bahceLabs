@@ -44,7 +44,7 @@ class FakeStations:
 
     def __init__(self, rows: dict[date, tuple[float | None, float | None, str]]) -> None:
         self.rows = rows
-        self.station = Station("T1", "Test istasyonu", LAT + 0.1, LNG + 0.1, 5.0, min(rows), max(rows), 12.0, "meteostat")
+        self.station = Station("T1", "Test istasyonu", LAT + 0.1, LNG + 0.1, 5.0, None, None, 12.0, "meteostat")
 
     async def nearest(self, lat, lng, *, max_km, limit):  # noqa: ANN001, ANN201
         return [self.station]
@@ -102,6 +102,40 @@ async def test_accuracy_reports_producer_verification_and_external_support_as_tw
     don = next(t for t in (await user_client.get(f"/gardens/{gid}/dogruluk-ozeti")).json()["turler"] if t["tur"] == "don")
     assert don["dogrulanan"] == 1 and don["gerceklesmedi"] == 1  # üretici sayısı
     assert (don["dis_destekleniyor"], don["dis_celisiyor"], don["dis_kanit_yok"]) == (1, 1, 2) and don["dis_metin"].startswith("dış kaynak:")  # ikinci, ayrı sayı
+
+
+async def test_resync_removes_days_that_the_source_no_longer_reports_as_observed(user_client, factory):  # noqa: F811
+    await seed(user_client, factory)
+    d = TODAY - timedelta(days=40)
+    await sync_stations(factory, FakeStations({d: (1.0, 0.0, "gozlem"), d + timedelta(days=1): (-8.0, 0.0, "gozlem")}), TODAY)
+    await sync_stations(factory, FakeStations({d: (1.0, 0.0, "gozlem"), d + timedelta(days=1): (-8.0, 0.0, "model")}), TODAY)  # kaynak ikinci günü model olarak düzeltti
+    async with factory() as session:
+        left = (await session.execute(select(StationDailyModel.tarih).where(StationDailyModel.istasyon_id == "T1"))).scalars().all()
+    assert left == [d]
+
+
+async def test_uncertain_and_no_evidence_are_listed_apart_and_the_review_list_orders_contradicting_first(user_client, factory):  # noqa: F811
+    gid = await seed(user_client, factory)
+    days = [TODAY - timedelta(days=10 * i) for i in range(2, 6)]
+    await sync_stations(factory, FakeStations({days[0]: (2.5, 0.0, "gozlem"), days[1]: (-4.0, 0.0, "gozlem"), days[2]: (15.0, 0.0, "gozlem")}), TODAY)
+    for d in days:  # [belirsiz, destek, çelişki, veri yok]
+        await add_event(factory, gid, f"don:{d}", "don", d)
+    body = await cards_of(user_client, gid)
+    by = {c["baslangic"]: c["on_yargi"] for c in body["kartlar"]}
+    assert [by[str(d)]["sonuc"] for d in days] == ["belirsiz", "destekleniyor", "celisiyor", "kanit_yok"]
+    assert "2,5 °C" in by[str(days[0])]["kanitlar"][0]["metin"] and "rakım" in by[str(days[0])]["kanitlar"][0]["metin"]
+    assert body["dogrulanacak"] == 3
+    don = next(t for t in (await user_client.get(f"/gardens/{gid}/dogruluk-ozeti")).json()["turler"] if t["tur"] == "don")
+    assert (don["dis_destekleniyor"], don["dis_celisiyor"], don["dis_belirsiz"], don["dis_kanit_yok"]) == (1, 1, 1, 1)
+
+
+async def test_station_observation_range_is_derived_from_the_observed_days_not_from_a_stale_inventory(user_client, factory):  # noqa: F811
+    await seed(user_client, factory)
+    d = TODAY - timedelta(days=50)
+    await sync_stations(factory, FakeStations({d: (1.0, 0.0, "gozlem"), d + timedelta(days=9): (2.0, 0.0, "gozlem"), d + timedelta(days=20): (9.0, 0.0, "model")}), TODAY)
+    async with factory() as session:
+        st = (await session.execute(select(StationModel).where(StationModel.id == "T1"))).scalar_one()
+    assert (st.gozlem_baslangic, st.gozlem_bitis) == (d, d + timedelta(days=9))
 
 
 async def test_garden_without_station_data_gets_no_evidence_for_every_event(user_client, factory):  # noqa: F811

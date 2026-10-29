@@ -120,6 +120,6 @@ def external_support(rows: Sequence[tuple[str, str | None]]) -> dict[str, dict[s
         mine = [s for t, s in rows if t == tur and s is not None]
         if not mine:
             continue
-        d, c, k = (sum(1 for s in mine if s == key) for key in ("destekleniyor", "celisiyor", "kanit_yok"))
-        out[tur] = {"dis_destekleniyor": d, "dis_celisiyor": c, "dis_kanit_yok": k, "dis_metin": f"dış kaynak: {d} destekleniyor, {c} çelişiyor, {k} kanıt yok"}
+        d, c, b, k = (sum(1 for s in mine if s == key) for key in ("destekleniyor", "celisiyor", "belirsiz", "kanit_yok"))
+        out[tur] = {"dis_destekleniyor": d, "dis_celisiyor": c, "dis_belirsiz": b, "dis_kanit_yok": k, "dis_metin": f"dış kaynak: {d} destekleniyor, {c} çelişiyor, {b} belirsiz, {k} kanıt yok"}
     return out

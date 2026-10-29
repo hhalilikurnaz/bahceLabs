@@ -292,6 +292,7 @@ dis_kanit:
   yagis_destek_mm: 20
   yagis_celisme_mm: 5
   katalog_pencere_gun: 2
+  kiyi_rakim_azami_m: 50
 
 urunler:
   limon:

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from shapely.geometry import shape
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -47,10 +47,13 @@ async def sync_stations(factory: async_sessionmaker[AsyncSession], provider: Sta
     written = failed = 0
     for st in stations.values():
         try:
-            days = [d for d in await provider.daily(st, max(st.gozlem_baslangic or HISTORY_START, HISTORY_START), min(st.gozlem_bitis or today, today)) if d.kaynak == "gozlem" and (d.tmin is not None or d.prcp is not None)]
+            days = [d for d in await provider.daily(st, HISTORY_START, today) if d.kaynak == "gozlem" and (d.tmin is not None or d.prcp is not None)]
+            first, last = (min(d.tarih for d in days), max(d.tarih for d in days)) if days else (None, None)  # gözlem aralığı GERÇEK gözlem günlerinden türetilir (envanter eskiyebilir)
             async with factory() as session:
-                stmt = insert(StationModel).values(id=st.id, saglayici=provider.name, ad=st.ad, lat=st.lat, lng=st.lng, yukseklik=st.yukseklik, gozlem_baslangic=st.gozlem_baslangic, gozlem_bitis=st.gozlem_bitis)
+                stmt = insert(StationModel).values(id=st.id, saglayici=provider.name, ad=st.ad, lat=st.lat, lng=st.lng, yukseklik=st.yukseklik, gozlem_baslangic=first, gozlem_bitis=last)
                 await session.execute(stmt.on_conflict_do_update(index_elements=["id"], set_={k: getattr(stmt.excluded, k) for k in ("ad", "lat", "lng", "yukseklik", "gozlem_baslangic", "gozlem_bitis")}))
+                if days:  # kaynak değer kaynağını düzeltmiş/eskimiş olabilir: bu istasyonun artık gözlem olmayan günleri (ör. eski toplu dosyadan gelen model satırı) silinir
+                    await session.execute(delete(StationDailyModel).where(StationDailyModel.istasyon_id == st.id, StationDailyModel.tarih.notin_([d.tarih for d in days])))
                 for i in range(0, len(days), 1000):
                     chunk = [{"istasyon_id": d.istasyon_id, "tarih": d.tarih, "tmin": d.tmin, "prcp": d.prcp} for d in days[i : i + 1000]]
                     ins = insert(StationDailyModel).values(chunk)

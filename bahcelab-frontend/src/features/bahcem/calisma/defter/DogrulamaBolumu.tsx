@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { dogrulanacakMi, ON_YARGI_AD, useDogrula, useDogrulamaKartlari, SONUC_AD, type DogrulamaKarti, type Sonuc } from '../../api/sahaApi'
+import { dogrulanacakMi, ON_YARGI_AD, ON_YARGI_SIRA, useDogrula, useDogrulamaKartlari, SONUC_AD, type DogrulamaKarti, type Sonuc } from '../../api/sahaApi'
 import { gunAy } from '../../lib/format'
 import { FotoSerit } from './FotoSerit'
 
 const SONUCLAR: Sonuc[] = ['gerceklesti', 'gerceklesmedi', 'bilinmiyor']
 const GUVEN: Record<string, string> = { yuksek: 'güven yüksek', orta: 'güven orta', dusuk: 'güven düşük' }
 
-const ON_YARGI_SINIF = { destekleniyor: 'text-[var(--st-iyi)]', celisiyor: 'text-[var(--st-dikkat)]', kanit_yok: 'text-[var(--ink-3)]' } as const
+const ON_YARGI_SINIF = { destekleniyor: 'text-[var(--st-iyi)]', celisiyor: 'text-[var(--st-dikkat)]', belirsiz: 'text-[var(--st-izle)]', kanit_yok: 'text-[var(--ink-3)]' } as const
 
 /** Bağımsız kaynakların ön yargısı: çiftçi yargısından AYRI rozet (yerine geçmez); kanıt kaynağı ve bağlantısı açılır. */
 function OnYargiRozeti({ kart }: { kart: DogrulamaKarti }) {
@@ -19,6 +19,7 @@ function OnYargiRozeti({ kart }: { kart: DogrulamaKarti }) {
         {y.kanitlar.map((k) => (
           <li key={k.metin}>
             {k.metin}
+            {k.il_duzeyi && <span className="ml-1 font-semibold" data-testid="il-duzeyi">(il düzeyi kayıt)</span>}
             {k.baglanti && <> · <a href={k.baglanti} target="_blank" rel="noreferrer" className="underline">kaynak</a></>}
           </li>
         ))}
@@ -87,13 +88,13 @@ export function DogrulamaBolumu({ gardenId }: { gardenId: string }) {
   const sorgu = useDogrulamaKartlari(gardenId)
   const [suzgec, setSuzgec] = useState<Suzgec>('gereken')
   const kartlar = useMemo(() => sorgu.data?.kartlar ?? [], [sorgu.data])
-  const gosterilen = useMemo(() => (suzgec === 'hepsi' ? kartlar : suzgec === 'bekleyen' ? kartlar.filter((k) => k.sonuc === null) : kartlar.filter(dogrulanacakMi)), [kartlar, suzgec])
+  const gosterilen = useMemo(() => (suzgec === 'hepsi' ? kartlar : suzgec === 'bekleyen' ? kartlar.filter((k) => k.sonuc === null) : kartlar.filter(dogrulanacakMi).sort((a, b) => ON_YARGI_SIRA[a.on_yargi!.sonuc] - ON_YARGI_SIRA[b.on_yargi!.sonuc])), [kartlar, suzgec])
   return (
     <section aria-label="Uydu haklı mıydı?" data-testid="dogrulama-bolumu">
       <span className="eyebrow">UYDU HAKLI MIYDI?</span>
       <h2 className="serif mt-1 text-[22px] leading-tight">Uydunun gördüğünü siz doğrulayın.</h2>
       <p className="mt-1 text-[13px] text-[var(--ink-2)]">Her olay ve uyarı için sahada ne gördüğünüzü işaretleyin. Yanıtlarınız uydunun hangi türde ne kadar doğru çıktığını ölçer; ceza ya da puan üretmez.</p>
-      <p className="mt-1 text-[12.5px] text-[var(--ink-2)]" data-testid="on-yargi-aciklama">Bağımsız kaynaklar (istasyon gözlemi, kamu kayıtları) bir ön yargı verir. Dış kaynağın desteklediği olaylar varsayılan listede çıkmaz; yalnız <b>çelişen</b> ve <b>kanıtı olmayan</b> olaylara bakmanız yeter. Ön yargı sizin yargınızın yerine geçmez.</p>
+      <p className="mt-1 text-[12.5px] text-[var(--ink-2)]" data-testid="on-yargi-aciklama">Bağımsız kaynaklar (istasyon gözlemi, kamu kayıtları) bir ön yargı verir. Dış kaynağın desteklediği olaylar varsayılan listede çıkmaz; yalnız <b>çelişen</b>, <b>belirsiz</b> (veri var ama eşikler arasında) ve <b>kanıtı olmayan</b> (hiç bağımsız veri yok) olaylara bakmanız yeter, bu sırayla. Ön yargı sizin yargınızın yerine geçmez.</p>
       <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Kart süzgeci">
         {([['gereken', `Doğrulamanız gereken (${sorgu.data?.dogrulanacak ?? 0})`], ['bekleyen', `Yanıt bekleyen (${sorgu.data?.bekleyen ?? 0})`], ['hepsi', `Hepsi (${kartlar.length})`]] as const).map(([k, ad]) => (
           <button key={k} type="button" aria-pressed={suzgec === k} onClick={() => setSuzgec(k)} data-testid={`kartlar-${k}`} className={`min-h-9 border px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 ${suzgec === k ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)]'}`}>{ad}</button>

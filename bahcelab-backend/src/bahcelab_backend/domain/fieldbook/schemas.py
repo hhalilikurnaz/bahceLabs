@@ -75,12 +75,13 @@ class KanitYanit(BaseModel):
     yon: Literal["destek", "celisme", "sinirda"]
     metin: str
     baglanti: str | None
+    il_duzeyi: bool = False
 
 
 class OnYargiYanit(BaseModel):
     """Bağımsız kaynaklardan ön yargı (çiftçi yargısının YERİNE GEÇMEZ). Olay motorunun kendi girdileri (ERA5, S2, HLS, radar) kanıt sayılmaz."""
 
-    sonuc: Literal["destekleniyor", "celisiyor", "kanit_yok"]
+    sonuc: Literal["destekleniyor", "celisiyor", "belirsiz", "kanit_yok"]
     kanitlar: list[KanitYanit]
     neden: str
 
@@ -108,7 +109,7 @@ class DogrulamaKarti(BaseModel):
 class DogrulamaListesi(BaseModel):
     kartlar: list[DogrulamaKarti]
     bekleyen: int  # yanıtsız kart sayısı
-    dogrulanacak: int  # yanıtsız VE ön yargısı «çelişiyor» ya da «kanıt yok» olan olay sayısı (üretici yalnız bunlara bakar)
+    dogrulanacak: int  # yanıtsız VE ön yargısı «çelişiyor», «belirsiz» ya da «kanıt yok» olan olay sayısı (üretici yalnız bunlara bakar)
     not_: str
 
 
@@ -124,6 +125,7 @@ class TurOzetiYanit(BaseModel):
     metin: str
     dis_destekleniyor: int = 0  # ikinci, AYRI sayı: bağımsız kaynakların ön yargısı
     dis_celisiyor: int = 0
+    dis_belirsiz: int = 0
     dis_kanit_yok: int = 0
     dis_metin: str = ""
 

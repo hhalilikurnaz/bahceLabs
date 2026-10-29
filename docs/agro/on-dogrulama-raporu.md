@@ -1,18 +1,25 @@
-# Olay ön doğrulaması — dağılım raporu (2026-10-29)
+# Olay ön doğrulaması — dağılım raporu (2026-10-29, düzeltilmiş)
 
-Kaynak: Meteostat istasyon **17340 Mersin** (bahçelere ~26 km, günlük gözlem; 2015-01-01 → 2026-02-28 arası 4061 gerçek gözlem günü yazıldı, model/dolgu satırı yok). Kamu kayıtları kataloğu **boş** (doğrulanabilir kaynaklı kayıt bulunamadı). Eşikler: ön değer · mühendis onayı bekliyor (`katalog.yaml › dis_kanit`).
+Kaynak: Meteostat istasyon **17340 Mersin** (bahçelere ~26 km, 3 m rakım, kıyı). Bu rapor ilk sürümün (bkz. ADR 0021 «Düzeltme») yerine geçer: ilk sürüm eski toplu dosyayı (`bulk.meteostat.net/v2`, Mart 2026'da donmuş) kullanıyor ve değer-bazında kaynak bilgisi olmadığından model dolgu değerlerini gözlem sayıyordu. Şimdi `data.meteostat.net` kullanılır: her değerin kaynağı (`ghcnd` = yerinde ölçüm, `metno_forecast` = tahmin) yazılıdır, yalnız ölçümler sayılır. İstasyon gözlemi **2015-01-09 → 2026-10-20**, 3755 gün (tmin %87, yağış %81). Kamu kayıtları kataloğu: 2 satır, ikisi de **il düzeyi**.
 
-| Bahçe | Olay | Destekleniyor | Çelişiyor | Kanıt yok |
-|---|---:|---:|---:|---:|
-| jlnnlk | 31 | 9 | 0 | 22 |
-| soğuk hava | 28 | 9 | 0 | 19 |
+Dört sonuç: **destekleniyor** · **çelişiyor** · **belirsiz** (veri var, eşikler arasında) · **kanıt yok** (pencerede hiç bağımsız veri yok).
 
-Tür kırılımı (iki bahçede aynı örüntü):
+| Bahçe | Olay | Destekleniyor | Çelişiyor | Belirsiz | Kanıt yok |
+|---|---:|---:|---:|---:|---:|
+| jlnnlk | 31 | 8 | 1 | 6 | 16 |
+| soğuk hava | 28 | 9 | 1 | 6 | 12 |
 
-| Tür | Destekleniyor | Çelişiyor | Kanıt yok | Not |
-|---|---:|---:|---:|---|
-| Aşırı yağış | 7 / 7 | 0 | 0 | günlük 40–107 mm gözlendi |
-| Don | 2 / 8 | 0 | 6 | 6 olayda istasyon min 0,7–2,8 °C (kıyı istasyonu, ~26 km): ne destek (≤ 0 °C) ne çelişki (≥ 5 °C) → «kanıt yok» |
-| Rüzgâr, optik, radar | 0 | 0 | 10 + 2–4 + 1–2 | istasyon ölçümü yok; kamu kaydı da yok |
+Tür kırılımı (jlnnlk; soğuk hava aynı, tek fark aşağıda):
 
-Yorum: sonuç «çelişiyor» çıkmadı; don olaylarının çoğu sınırda kaldığı için üreticiye yönlendirilir (**doğrulanacak**: jlnnlk 22, soğuk hava 19). Uzun pencereli olaylarda (`bitis` uzadığında) pencere içindeki en düşük değer alınır; bu destek tarafında cömert, çelişki tarafında muhafazakârdır (tüm istasyonlar tüm pencerede ≥ 5 °C olmalı). Kıyıdaki tek istasyon yüksek rakımlı bahçe donunu temsil etmez: eşik ve istasyon sayısı mühendis onayına bağlıdır.
+| Tür | Destekleniyor | Çelişiyor | Belirsiz | Kanıt yok | Not |
+|---|---:|---:|---:|---:|---|
+| Don | 3 | 0 | 5 | 0 | destek: 2015-01, 2016-01-25, 2025-02 (son ikisinde istasyon min 0,0 / 0,7 °C; 2025'te il düzeyi kamu kaydıyla); belirsiz: istasyon min 0,8–2,8 °C |
+| Aşırı yağış | 5 | 1 | 1 | 0 | çelişen: 29–30.12.2016, istasyon en çok 1,3 mm; belirsiz: 15–16.01.2019, 9,4 mm; 07.01.2020 olayı istasyon (88,6 mm) + il düzeyi kamu kaydıyla destekleniyor |
+| Rüzgâr | 0 | 0 | 0 | 10 | istasyon ölçümü ve kamu kaydı yok |
+| Optik, radar | 0 | 0 | 0 | 2 + 4 | soğuk hava'da bir optik olay (28.01–01.02.2025) il düzeyi don kaydıyla desteklenir |
+
+Yorumlar:
+- **Yağış çelişkisi gerçek bir sinyaldir** ama tek, kıyıdaki istasyondan gelir (26 km): yerel sağanak istasyona uğramamış olabilir. Üretici listesinde ilk sırada çıkar.
+- Don olaylarının çoğu «belirsiz»: kıyı istasyonunda 0–5 °C, bahçede (yüksek) don olması mümkün; eşik (≥ 5 °C = çelişki) bu yüzden muhafazakâr.
+- Uzun pencereli olaylarda (`bitis` uzamış) pencere içindeki en düşük/en yüksek değer alınır: destek tarafında cömert, çelişki tarafında muhafazakâr (tüm istasyonlar tüm pencerede ≥ 5 °C / ≤ 5 mm olmalı).
+- Eşikler ön değer · mühendis onayı bekliyor.

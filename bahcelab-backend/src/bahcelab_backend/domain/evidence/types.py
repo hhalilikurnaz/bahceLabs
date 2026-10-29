@@ -9,7 +9,7 @@ from typing import Literal
 #: Kanıt kaynakları: yalnız bunlar. Olay motorunun kendi girdisi (ERA5, Sentinel-2, HLS, Sentinel-1, Open-Meteo) burada YOKTUR ve kanıt sayılmaz.
 KANIT_KAYNAKLARI = ("istasyon", "dis_kayit")
 
-OnYargiSonucu = Literal["destekleniyor", "celisiyor", "kanit_yok"]
+OnYargiSonucu = Literal["destekleniyor", "celisiyor", "belirsiz", "kanit_yok"]  # belirsiz = veri var ama eşikler arasında · kanıt yok = pencerede hiç bağımsız veri yok
 KanitYonu = Literal["destek", "celisme", "sinirda"]
 
 
@@ -48,6 +48,8 @@ class PublicRecord:
     kaynak: str  # yayıncı (İl Tarım Müdürlüğü, TARSİM, haber sitesi)
     url: str
     not_: str = ""
+    tarih_bitis: date | None = None  # kayıt bir gün aralığı ise (ör. «Şubat 2025»); yoksa tek gün
+    yer_duzeyi: Literal["il", "ilce"] = "ilce"  # «il»: kayıt yalnız il adı veriyor (bahçenin ilçesi yazılı değil)
 
 
 @dataclass(frozen=True)
@@ -56,6 +58,7 @@ class Kanit:
     yon: KanitYonu
     metin: str
     baglanti: str | None
+    il_duzeyi: bool = False  # kamu kaydı yalnız il düzeyinde (ilçe belirtilmemiş)
 
 
 @dataclass

@@ -1,5 +1,26 @@
 {
   "surum": 1,
-  "aciklama": "Elle derlenmiş kamu kayıtları. Her satır doğrulanabilir bir kaynak URL'si taşır; kaynağı olmayan satır EKLENMEZ.",
-  "kayitlar": []
+  "aciklama": "Elle derlenmiş kamu kayıtları. Her satır doğrulanabilir bir kaynak URL'si taşır; kaynağı olmayan satır EKLENMEZ. yer_duzeyi=il: kayıt yalnız il adı veriyor (ilçe yazılı değil).",
+  "kayitlar": [
+    {
+      "tarih": "2025-02-01",
+      "tarih_bitis": "2025-02-28",
+      "olay_turu": "don",
+      "yer": "Mersin",
+      "yer_duzeyi": "il",
+      "kaynak": "Haberler.com (04.06.2025): «Mersin'deki Don Afeti Narenciye Üretimini Tehdit Ediyor»",
+      "url": "https://www.haberler.com/ekonomi/mersin-deki-don-afeti-narenciye-uretimini-tehdit-ediyor-18709175-haberi/",
+      "not": "Haber Şubat ve Nisan 2025'teki zirai donu anıyor (gün belirtilmemiş; Şubat ayı olarak girildi); limon dâhil narenciye etkilendi; yer olarak Mersin ve Toroslar ilçesi geçiyor, Erdemli adı yok."
+    },
+    {
+      "tarih": "2020-01-06",
+      "tarih_bitis": "2020-01-07",
+      "olay_turu": "yagis",
+      "yer": "Mersin",
+      "yer_duzeyi": "il",
+      "kaynak": "TRT Haber (07.01.2020): «Mersin'de sağanak nedeniyle tarım arazileri sular altında kaldı»",
+      "url": "https://www.trthaber.com/haber/guncel/mersinde-saganak-nedeniyle-tarim-arazileri-sular-altinda-kaldi-452354.html",
+      "not": "Tarım arazileri ve seralar su altında kaldı; haber ilçe belirtmiyor (Tarsus'ta tahliye), Erdemli adı yok. 6 Ocak tarihi «dün başlayan sağanak» ifadesinden çıkarıldı (yayın 07.01.2020)."
+    }
+  ]
 }

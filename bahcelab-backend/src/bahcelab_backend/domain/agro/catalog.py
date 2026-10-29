@@ -321,7 +321,8 @@ class DisKanitKurali(KuralBlok):
     don_celisme_c: float = 5.0  # pencerede TÜM gözlenen istasyon min değerleri ≥ bu değer → don ile çelişiyor (vadi/yamaç soğuk havası için geniş pay)
     yagis_destek_mm: float = 20.0  # pencerede istasyon günlük yağışı ≥ bu değer → aşırı yağış destekleniyor
     yagis_celisme_mm: float = 5.0  # pencerede TÜM gözlenen istasyon yağışları ≤ bu değer → çelişiyor (yağış mekânsal değişkendir: dar)
-    katalog_pencere_gun: int = Field(default=2, ge=0)  # kamu kaydı tarihi olay aralığının ± bu kadar günü içinde olmalı
+    katalog_pencere_gun: int = Field(default=2, ge=0)
+    kiyi_rakim_azami_m: float = Field(default=50.0, ge=0)  # istasyon rakımı bunun altındaysa «kıyı», üstündeyse «iç kesim» denir (kıyı çizgisi verisi yok; rakıma dayalı yaklaşık etiket)  # kamu kaydı tarihi olay aralığının ± bu kadar günü içinde olmalı
 
 
 class Katalog(BaseModel):
