@@ -63,8 +63,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                 await resume_incomplete(async_session_factory, BackfillRunner(async_session_factory, get_imagery_provider(), get_storage(), radar_provider=get_radar_provider(), landsat_provider=get_landsat_provider()))
         except Exception:  # noqa: BLE001
             logging.getLogger(__name__).warning("Yarım kalan yıl görevleri temizlenemedi", exc_info=True)
-    scheduler = None
     settings = get_settings()
+    if settings.jobs_enabled and settings.job_backend == "inline":
+        try:
+            from bahcelab_backend.database import async_session_factory
+            from bahcelab_backend.domain.feedruns.service import resume_feeds
+
+            await resume_feeds(async_session_factory, startup=True)  # önceki süreçten kalan besleme işleri: görünür kıl + devam ettir
+        except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).warning("Besleme devam ettirme açılışta yapılamadı", exc_info=True)
+    scheduler = None
     if settings.jobs_enabled and settings.job_backend == "inline":
         from bahcelab_backend.database import async_session_factory
         from bahcelab_backend.domain.weather.provider import get_provider

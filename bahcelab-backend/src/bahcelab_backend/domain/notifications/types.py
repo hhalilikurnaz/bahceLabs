@@ -16,6 +16,7 @@ TYPES: dict[str, dict[str, str]] = {
     "sulama": {"ad": "Sulama", "aciklama": "Önümüzdeki günlerde belirgin su ihtiyacı görünüyorsa."},
     "olay": {"ad": "Olay", "aciklama": "Don, aşırı yağış, kuvvetli rüzgâr ya da uydu ile doğrulanan ani değişim olayı."},
     "kademe_dususu": {"ad": "Durum kademesi düşüşü", "aciklama": "Bahçe durumu kademesi (İyi · İzle · Dikkat · Sorun) kötüleşirse."},
+    "besleme": {"ad": "Veri akışı", "aciklama": "Arka plandaki veri çekimi (hava, yağış, toprak nemi, uydu) kesilir ya da tekrar tekrar başarısız olursa."},
     "ozet": {"ad": "Günlük özet", "aciklama": "Önemli ve bilgi bildirimlerinin sabah tek özeti."},
 }
 

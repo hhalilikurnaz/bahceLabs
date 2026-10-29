@@ -7,6 +7,7 @@ Bu klasör, **Planning & Simulation** modülünün tek kaynak dokümantasyonudur
 | Dosya | Amaç |
 |-------|------|
 | **[reference-design.md](./reference-design.md)** | **Ana referans görsel + kullanım kuralları** |
+| **[roadmap.md](./roadmap.md)** | **Yol haritası: kalan Faz 1 adımları, sıra ve kapsam (her oturumda oku)** |
 | [plan.md](./plan.md) | Ana implementasyon planı — aşamalar, sıra, çıkış kriterleri |
 | [progress.md](./progress.md) | Günlük backlog, yapılanlar, kalanlar |
 | [architecture/phase-1-b-planning-simulation.md](./architecture/phase-1-b-planning-simulation.md) | Mimari genel bakış |

@@ -18,6 +18,11 @@ class Settings(BaseSettings):
 
     # Dosya depolama (NDVI PNG'leri). Yerelde diskte; ileride S3/R2 uygulaması aynı arayüze takılır.
     storage_dir: str = "uploads"
+    job_feed_watch_interval_minutes: int = 15  # besleme bekçisi (kesilen işleri bulur, devam ettirir)
+    feed_heartbeat_seconds: int = 30  # çalışan besleme işi bu aralıkla «yaşıyorum» der
+    feed_stale_minutes: int = 3  # bu süredir kalp atışı yoksa iş KESİLDİ sayılır (süreç/Docker düşmüş)
+    feed_retry_max: int = 4  # art arda başarısızlıkta bu kadar kez kendiliğinden yeniden denenir; sonra yalnız görünür kalır
+    feed_retry_backoff_minutes: int = 15  # yeniden denemeler arası bekleme
     db_pool_size: int = 10  # API sürecinin kalıcı veritabanı bağlantı sayısı (eşzamanlı istek + arka plan işleri)
     db_max_overflow: int = 20  # yoğunlukta ek geçici bağlantı
     field_photo_max_bytes: int = 6_000_000  # Saha Defteri fotoğrafı: yükleme sınırı (yeniden kodlanır, EXIF/konum silinir)

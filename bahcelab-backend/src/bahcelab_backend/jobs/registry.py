@@ -33,6 +33,7 @@ def job_specs(settings: Settings) -> list[JobSpec]:
         JobSpec("refresh_acquisitions", tasks.refresh_acquisitions, settings.job_acquisitions_interval_minutes, hour=settings.job_acquisitions_hour),
         JobSpec("send_digest", tasks.send_digest, settings.job_digest_interval_minutes),  # her saat; özet vakti/sessiz saat/bugün üretildi denetimi içeride
         JobSpec("refresh_validation", tasks.refresh_validation, settings.job_validation_interval_minutes, hour=settings.job_validation_hour),
+        JobSpec("resume_feeds", tasks.resume_feeds, settings.job_feed_watch_interval_minutes),  # düşen/başarısız besleme işlerini görünür kılar ve devam ettirir
     ]
 
 

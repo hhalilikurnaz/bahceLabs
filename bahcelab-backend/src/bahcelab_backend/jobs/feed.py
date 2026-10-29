@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory, engine
+from bahcelab_backend.domain.feedruns.service import tracked
 from bahcelab_backend.domain.water import feed
 from bahcelab_backend.shared.concurrency import advisory_lock, retry_on_deadlock
 
@@ -33,12 +34,15 @@ async def garden_exists(garden_id: uuid.UUID) -> bool:
         ).first() is not None
 
 
-async def _stage(garden_id: uuid.UUID, name: str, fn: Callable[[], Awaitable[Any]]) -> Any:
+async def _stage(garden_id: uuid.UUID, name: str, fn: Callable[[], Awaitable[Any]], kaynak: str | None = None) -> Any:
     """Bir besleme aşaması: bahçe yoksa SESSİZCE biter; kilitlenmede 3 deneme; diğer hatalar günlüğe yazılır (günlük iş yeniden dener)."""
     if not await garden_exists(garden_id):
         return "bahce_yok"
     try:
-        return await retry_on_deadlock(fn)
+        if kaynak is None:
+            return await retry_on_deadlock(fn)
+        async with tracked(async_session_factory, garden_id, kaynak):  # durum + kalp atışı + düşerse log/bildirim (domain/feedruns)
+            return await retry_on_deadlock(fn)
     except asyncio.CancelledError:
         raise
     except Exception:  # noqa: BLE001
@@ -65,7 +69,7 @@ async def run_garden_feed(garden_id: uuid.UUID) -> dict[str, Any]:
 async def _run_garden_feed(garden_id: uuid.UUID, out: dict[str, Any]) -> dict[str, Any]:
     async with advisory_lock(engine, f"feed:{garden_id}"):
         out["era5"] = await _stage(
-            garden_id, "ERA5", lambda: feed.feed_garden(async_session_factory, garden_id)
+            garden_id, "ERA5", lambda: feed.feed_garden(async_session_factory, garden_id), "era5"
         )
         if out["era5"] == "bahce_yok":
             return out
@@ -95,7 +99,7 @@ async def _feed_hls_unlocked(garden_id: uuid.UUID, days: int | None = None) -> A
         async with async_session_factory() as session:
             return await sync_hls(session, garden_id, start, today, get_hls_provider())
 
-    return await _stage(garden_id, "HLS", run)
+    return await _stage(garden_id, "HLS", run, "hls")
 
 
 async def feed_hls(garden_id: uuid.UUID, days: int | None = None) -> dict[str, Any] | str:
@@ -118,6 +122,9 @@ def start_garden_feed(garden_id: uuid.UUID) -> None:
     settings = get_settings()
     if not settings.era5_auto_feed:
         return
+    running = _BY_GARDEN.get(garden_id)
+    if running is not None and not running.done():
+        return  # bu süreçte zaten çalışıyor (devam ettirme kontrolü ikinci kopya başlatmasın)
     coro = _enqueue_arq(garden_id) if settings.job_backend == "arq" else run_garden_feed(garden_id)
     task: asyncio.Task[Any] = asyncio.get_running_loop().create_task(coro)
     _TASKS.add(task)

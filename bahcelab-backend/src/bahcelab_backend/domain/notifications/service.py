@@ -120,6 +120,18 @@ class NotificationService:
                 await self.repo.resolve_auto(existing)
         return created
 
+    async def publish_operational(self, candidates: list[Candidate]) -> list[NotificationModel]:
+        """İşletme bildirimi (veri akışı kesildi/başarısız): günlük özeti BEKLEMEZ, listede ANINDA görünür (tercihi kapalıysa atlanır). Aynı anahtar için tek bildirim."""
+        prefs = await self.repo.preferences()
+        created: list[NotificationModel] = []
+        for candidate in candidates:
+            if not prefs.get(candidate.tur, True):
+                continue
+            row = await self.repo.insert_if_new(candidate, teslim="anlik")
+            if row is not None:
+                created.append(row)
+        return created
+
     async def publish(self, candidates: list[Candidate]) -> list[NotificationModel]:
         """Karar katmanı: tercihi kapalı türler atlanır; kritik ANINDA (kanallara iletilir), önemli ve bilgi günlük özete bırakılır.
         Aynı olay (dedupe) için yalnızca ilk çağrı kayıt üretir."""

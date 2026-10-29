@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 SessionFactory = async_sessionmaker[AsyncSession]
 REFRESH_OVERLAP_DAYS = 10  # artımlı çekim son ERA5-Land gününden bu kadar geriye bakar (gecikmeli düzeltmeler ve model → ERA5 geçişi)
 SMAP_STEP = 3  # SMAP 3 günde bir (ADR 0017)
+SESSIZ_BOS_ESIK = 7  # bu kadar günden FAZLA eksik arandı ve hiçbiri yazılamadıysa iş başarısız sayılır (kaynak gecikmesi ≤ bir hafta kabul)
 
 
 def get_era5_client() -> Era5Source:
@@ -91,19 +92,28 @@ async def feed_all(factory: SessionFactory, client: Era5Source | None = None) ->
 
 
 async def feed_validation(factory: SessionFactory, garden_id: uuid.UUID, today: date | None = None) -> dict[str, dict[str, int] | str]:
-    """SMAP (3 günde bir) ve IMERG (günlük) doğrulama gözlemlerini 2022'den dünden itibaren tamamlar. Belirteç yoksa atlanır (açıkça söylenir)."""
+    """SMAP (3 günde bir) ve IMERG (günlük) doğrulama gözlemlerini `validation_start`'tan dünden itibaren tamamlar (idempotent: var olan günler atlanır, parça parça kaydedilir).
+    Her kaynak AYRI izlenir (`feed_runs`): belirteç yoksa «atlandi» (açıkça), hata/kesinti log + bildirimle görünür, işçi düşerse kaldığı yerden devam eder."""
+    from bahcelab_backend.domain.feedruns.service import mark_skipped, tracked
+
     settings = get_settings()
     if not settings.earthdata_token:
+        for kaynak in ("imerg", "smap"):
+            await mark_skipped(factory, garden_id, kaynak, "EARTHDATA_TOKEN tanımlı değil (bahcelab-backend/.env.local)")
         return {"durum": "atlandi: EARTHDATA_TOKEN tanımlı değil"}
     end = (today or datetime.now(UTC).date()) - timedelta(days=1)
     start = date.fromisoformat(settings.validation_start)
     out: dict[str, dict[str, int] | str] = {}
-    for source, step in ((IMERG, 1), (SMAP, SMAP_STEP)):
+    for source, kaynak, step in ((IMERG, "imerg", 1), (SMAP, "smap", SMAP_STEP)):
         try:
-            async with factory() as session:
-                out[source] = await sync_validation(session, garden_id, source, start, end, step=step)
-        except Exception as exc:  # noqa: BLE001 - biri düşse diğeri sürer (ör. EULA/ağ)
-            logger.exception("Doğrulama doldurması başarısız (%s, bahçe %s)", source, garden_id)
+            async with tracked(factory, garden_id, kaynak) as run:
+                async with factory() as session:
+                    result = await sync_validation(session, garden_id, source, start, end, step=step, on_progress=run.ilerle)
+                await run.ilerle(**result)
+                if result["aranan_gun"] > SESSIZ_BOS_ESIK and result["yazilan"] == 0:  # ağ/erişim sessizce boş döndüyse «tamam» denmez (son günler kaynakta gecikmeli olabilir: küçük eksik hata değil)
+                    raise RuntimeError(f"{result['aranan_gun']} gün arandı, hiç gözlem yazılamadı (erişim/ağ ya da kaynak boş)")
+                out[source] = result
+        except Exception as exc:  # noqa: BLE001 - biri düşse diğeri sürer (ör. EULA/ağ); hata `tracked` içinde loglandı ve bildirildi
             out[source] = f"hata: {type(exc).__name__}"
     return out
 

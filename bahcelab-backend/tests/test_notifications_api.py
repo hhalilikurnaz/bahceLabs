@@ -216,10 +216,10 @@ async def test_extra_channels_receive_only_new_notifications(user_client: AsyncC
 def test_job_registry_runs_weather_before_notifications_and_arq_cron_matches():
     settings = Settings(job_weather_interval_minutes=30, job_notifications_interval_minutes=60)
     specs = job_registry.job_specs(settings)
-    assert [s.name for s in specs] == ["refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation"]
+    assert [s.name for s in specs] == ["refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation", "resume_feeds"]
     assert arq_worker.minute_slots(30) == {0, 30} and arq_worker.minute_slots(60) == {0} and arq_worker.minute_slots(15) == {0, 15, 30, 45}
     built = arq_worker.build_settings(settings)
-    assert len(built["cron_jobs"]) == 8 and {f.__name__ for f in built["functions"]} == {"refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation"}
+    assert len(built["cron_jobs"]) == 9 and {f.__name__ for f in built["functions"]} == {"refresh_weather", "refresh_era5", "refresh_hls", "refresh_events", "generate_notifications", "refresh_acquisitions", "send_digest", "refresh_validation", "resume_feeds"}
 
 
 async def test_inline_queue_runs_jobs_synchronously_and_arq_queue_enqueues_with_a_stable_id(user_client: AsyncClient, factory, provider):

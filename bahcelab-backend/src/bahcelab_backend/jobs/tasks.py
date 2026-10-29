@@ -88,6 +88,20 @@ async def refresh_hls(factory: SessionFactory, provider: WeatherProvider) -> Job
     return result
 
 
+async def resume_feeds(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001
+    """Bekçi (15 dk): kalp atışı kesilen besleme işlerini «kesildi» yapar (log + bildirim) ve kaldığı yerden devam ettirir; başarısızları geri çekilmeyle yeniden dener."""
+    from bahcelab_backend.domain.feedruns.service import resume_feeds as resume
+
+    result = JobResult()
+    try:
+        counts = await resume(factory)
+        result.isler, result.hata = counts["devam"], counts["kesilen"]
+    except Exception:  # noqa: BLE001
+        logger.exception("Besleme bekçisi başarısız")
+        result.hata += 1
+    return result
+
+
 async def refresh_validation(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001
     """Günlük SMAP/IMERG doğrulama tamamlaması (eksik günler; belirteç yoksa atlanır)."""
     from bahcelab_backend.domain.water.feed import validation_all

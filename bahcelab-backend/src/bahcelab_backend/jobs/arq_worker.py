@@ -64,7 +64,20 @@ async def feed_garden_water(ctx: dict[str, Any], garden_id: str) -> str:
     return repr(await run_garden_feed(uuid.UUID(garden_id)))
 
 
+async def on_startup(ctx: dict[str, Any]) -> None:
+    """İşçi açılırken: önceki işçinin yarıda bıraktığı besleme işleri «kesildi» olarak görünür kılınır ve devam ettirilir."""
+    from bahcelab_backend.domain.feedruns.service import resume_feeds
+
+    try:
+        await resume_feeds(async_session_factory, startup=True)
+    except Exception:  # noqa: BLE001 - veritabanı hazır değilse işçi yine açılır; 15 dk'lık bekçi tekrar dener
+        import logging
+
+        logging.getLogger(__name__).warning("Besleme devam ettirme açılışta yapılamadı", exc_info=True)
+
+
 class WorkerSettings:
+    on_startup = on_startup
     _built = build_settings(get_settings())
     functions = [*_built["functions"], process_garden_month, feed_garden_water]
     cron_jobs = _built["cron_jobs"]

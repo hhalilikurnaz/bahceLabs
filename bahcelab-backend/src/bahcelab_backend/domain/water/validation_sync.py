@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from typing import Any
@@ -133,7 +133,9 @@ def fetch_imerg(lat: float, lng: float, days: list[date]) -> dict[date, list[Obs
 FETCHERS: dict[str, Callable[[float, float, list[date]], dict[date, list[Observation]]]] = {SMAP: fetch_smap, CHIRPS: fetch_chirps, IMERG: fetch_imerg}
 
 
-async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 30, step: int = 1) -> dict[str, int]:
+async def sync_validation(
+    session: AsyncSession, garden_id: uuid.UUID, source_id: str, start: date, end: date, *, chunk_days: int = 30, step: int = 1, on_progress: Callable[..., Awaitable[None]] | None = None
+) -> dict[str, int]:
     """[start, end] eksik günleri parça parça çeker ve yazar. Dönüş: aranan gün, yazılan gözlem."""
     import asyncio
 
@@ -146,5 +148,7 @@ async def sync_validation(session: AsyncSession, garden_id: uuid.UUID, source_id
     for chunk in reversed(chunks):  # en yeni parça önce: süre dolarsa en güncel dönem hazır olur (ağ hızı SMAP için sınırlayıcı)
         results = await asyncio.to_thread(FETCHERS[source_id], lat, lng, chunk)
         written += await store(session, garden_id, source_id, results)
-        await session.commit()
+        await session.commit()  # parça parça kalıcı: iş düşerse tamamlanan parçalar kalır, devam eden iş yalnız eksik günleri çeker
+        if on_progress is not None:
+            await on_progress(parca_tamam=1 + (len(chunks) - 1 - chunks.index(chunk)), parca_toplam=len(chunks), yazilan_simdiye=written)
     return {"aranan_gun": len(todo), "yazilan": written}
