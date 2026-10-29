@@ -116,6 +116,36 @@ async def refresh_validation(factory: SessionFactory, provider: WeatherProvider)
     return result
 
 
+async def refresh_imerg_history(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001
+    """IMERG geçmişini 2015'e uzatır (düşük öncelik: güncel IMERG/SMAP bitmeden başlamaz; bir çağrıda tek bahçe; kaldığı yerden sürer)."""
+    from bahcelab_backend.domain.water.feed import imerg_history_next
+
+    result = JobResult()
+    try:
+        out = await imerg_history_next(factory)
+        result.isler = 1 if "bahce" in out else 0
+        result.hata += 1 if str(out.get("sonuc", "")).startswith("hata") else 0
+    except Exception:  # noqa: BLE001
+        logger.exception("IMERG geçmişi uzatma başarısız")
+        result.hata += 1
+    return result
+
+
+async def refresh_stations(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001
+    """Günlük istasyon gözlemi eşitleme (bağımsız dış kanıt; model satırları yazılmaz, idempotent)."""
+    from bahcelab_backend.domain.evidence.service import sync_stations
+
+    result = JobResult()
+    try:
+        counts = await sync_stations(factory)
+        result.isler = counts["istasyon"]
+        result.hata += counts["hata"]
+    except Exception:  # noqa: BLE001
+        logger.exception("İstasyon gözlemi eşitleme başarısız")
+        result.hata += 1
+    return result
+
+
 async def event_and_tier_candidates(session: AsyncSession, agro: AgroService, garden_id: uuid.UUID, name: str) -> list[Candidate]:
     """Taze olaylar ve Durum v2 kademe DÜŞÜŞÜ → bildirim adayları (karar katmanı kritik/önemli ayrımını yapar). Kademe anlık görüntüsü güncellenir."""
     from bahcelab_backend.domain.agro.catalog import load_catalog

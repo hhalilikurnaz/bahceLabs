@@ -40,6 +40,19 @@ export interface FotoOnerisi {
   konum_bahceden_uzak: boolean
   aciklama: string
 }
+export interface Kanit {
+  kaynak: 'istasyon' | 'dis_kayit'
+  yon: 'destek' | 'celisme' | 'sinirda'
+  metin: string
+  baglanti: string | null
+}
+export type OnYargiSonuc = 'destekleniyor' | 'celisiyor' | 'kanit_yok'
+export interface OnYargi {
+  sonuc: OnYargiSonuc
+  kanitlar: Kanit[]
+  neden: string
+}
+export const ON_YARGI_AD: Record<OnYargiSonuc, string> = { destekleniyor: 'Dış kaynak destekliyor', celisiyor: 'Dış kaynak çelişiyor', kanit_yok: 'Dış kanıt yok' }
 export interface DogrulamaKarti {
   hedef_tur: 'olay' | 'uyari'
   hedef_anahtar: string
@@ -55,10 +68,15 @@ export interface DogrulamaKarti {
   dogrulama_id: string | null
   fotograflar: Foto[]
   dogrulandi: string | null
+  on_yargi: OnYargi | null
 }
+/** Üreticinin bakması gereken olay: yanıtsız ve ön yargı «çelişiyor» ya da «kanıt yok» (sunucudaki `dogrulanacak` ile aynı kural). */
+export const dogrulanacakMi = (k: DogrulamaKarti) => k.hedef_tur === 'olay' && k.sonuc === null && k.on_yargi !== null && k.on_yargi.sonuc !== 'destekleniyor'
+
 export interface DogrulamaListesi {
   kartlar: DogrulamaKarti[]
   bekleyen: number
+  dogrulanacak: number
   not_: string
 }
 export interface TurOzeti {
@@ -71,6 +89,10 @@ export interface TurOzeti {
   dogrulanan: number
   yeterli: boolean
   metin: string
+  dis_destekleniyor: number
+  dis_celisiyor: number
+  dis_kanit_yok: number
+  dis_metin: string
 }
 export interface DogrulukOzeti {
   turler: TurOzeti[]

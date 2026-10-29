@@ -177,3 +177,34 @@ async def test_a_run_skipped_for_a_missing_token_resumes_once_the_token_exists(u
     assert (await fr.resume_feeds(factory, start=started.append))["devam"] == 0  # hâlâ belirteç yok: boşuna denenmez
     monkeypatch.setattr(get_settings(), "earthdata_token", "x")
     assert (await fr.resume_feeds(factory, start=started.append))["devam"] == 1 and started == [gid]
+
+
+# ----------------------------------------------------------------------------- IMERG geçmişi (2015→), düşük öncelik
+async def test_imerg_history_waits_until_current_imerg_and_smap_are_done_then_runs_one_garden_and_resumes(user_client, factory, monkeypatch):  # noqa: F811
+    gid = await seed(user_client, factory)
+    monkeypatch.setattr(get_settings(), "earthdata_token", "x")
+    calls = []
+
+    async def fake_sync(session, garden_id, source, start, end, **kw):  # noqa: ANN001, ANN202
+        calls.append((start.isoformat(), end.isoformat(), kw["step"]))
+        return {"aranan_gun": 10, "yazilan": 10}
+
+    monkeypatch.setattr(water_feed, "sync_validation", fake_sync)
+    await put_run(factory, gid, "imerg", "calisiyor")
+    await put_run(factory, gid, "smap", "tamam")
+    assert (await water_feed.imerg_history_next(factory)) == {"durum": "kapi_kapali"} and not calls  # güncel çekim sürerken başlamaz
+    await put_run(factory, gid, "imerg", "tamam")
+    out = await water_feed.imerg_history_next(factory)
+    assert out["bahce"] == str(gid) and calls == [("2015-01-01", "2021-12-31", 1)]  # 2015 → validation_start öncesi, günlük
+    assert (await runs_of(factory, gid))["imerg_gecmis"].durum == "tamam"
+    assert (await water_feed.imerg_history_next(factory)) == {"durum": "yapilacak_yok"}  # tamam olan tekrar çalışmaz
+    await put_run(factory, gid, "imerg_gecmis", "kesildi")
+    assert (await water_feed.imerg_history_next(factory))["bahce"] == str(gid) and len(calls) == 2  # kesilen kaldığı yerden sürer (sync idempotent)
+
+
+async def test_resume_feeds_leaves_imerg_history_to_its_own_job_but_still_flags_a_dead_run(user_client, factory):  # noqa: F811
+    gid = await seed(user_client, factory)
+    await put_run(factory, gid, "imerg_gecmis", "calisiyor", heartbeat_min=30)
+    started = []
+    out = await fr.resume_feeds(factory, start=started.append)
+    assert out["kesilen"] == 1 and started == [] and (await runs_of(factory, gid))["imerg_gecmis"].durum == "kesildi"  # görünür (bildirim), ama tam besleme tetiklenmez

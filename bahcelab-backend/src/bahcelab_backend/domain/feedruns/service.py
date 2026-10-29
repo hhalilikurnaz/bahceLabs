@@ -174,11 +174,14 @@ async def resume_feeds(factory: SessionFactory, *, startup: bool = False, start:
             logger.warning("Besleme KESİLDİ (%s, bahçe %s): kalp atışı %s'den beri yok; devam ettirilecek", run.kaynak, run.garden_id, run.kalp_atisi)
             await notify(factory, run.garden_id, run.kaynak, "kesildi", "", attempts)
             out["kesilen"] += 1
-            resume.add(run.garden_id)
+            if run.kaynak != "imerg_gecmis":  # geçmiş uzatmasını kendi işi sürdürür (tam besleme başlatılmaz)
+                resume.add(run.garden_id)
             continue
         if run.durum == "atlandi" and run.kaynak in ("imerg", "smap") and settings.earthdata_token:
             resume.add(run.garden_id)  # belirteç sonradan tanımlandı (ya da bu süreç belirteçle başladı): atlanan doğrulama çekimi şimdi yapılabilir
             continue
+        if run.kaynak == "imerg_gecmis":
+            continue  # geçmiş uzatması kendi işiyle (refresh_imerg_history) kaldığı yerden sürer; tam besleme başlatılmaz
         action = next_action(run.durum, run.deneme, run.bitis, now, retry_max=settings.feed_retry_max, backoff_minutes=settings.feed_retry_backoff_minutes)
         if action == "devam":
             resume.add(run.garden_id)

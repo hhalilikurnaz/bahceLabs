@@ -277,6 +277,22 @@ saha:
   tur_nokta_dk: 4
   tur_azami_nokta: 12
 
+# Olay doğrulamasında bağımsız dış kanıt (9G-E) — ön değer
+dis_kanit:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor: kanıt YALNIZ olay motorundan bağımsız kaynaklardan gelir — Meteostat istasyon gözlemi (model/dolgu satırları hariç; bahçeye ≤ 80 km, en çok 3 istasyon)
+    ve elle derlenmiş, URL'li kamu kayıtları (İl Tarım Müdürlüğü, TARSİM, yerel haber). ±1 gün pencerede: don için istasyon min ≤ 0 °C destekler, tüm gözlenenler ≥ 5 °C çelişir;
+    aşırı yağış için günlük yağış ≥ 20 mm destekler, tüm gözlenenler ≤ 5 mm çelişir; arası ve veri yokluğu «kanıt yok». Rüzgâr, optik düşüş ve radar için istasyon kanıtı yoktur (yalnız kamu kaydı).
+  pencere_gun: 1
+  istasyon_azami_km: 80
+  istasyon_sayisi: 3
+  don_destek_c: 0.0
+  don_celisme_c: 5.0
+  yagis_destek_mm: 20
+  yagis_celisme_mm: 5
+  katalog_pencere_gun: 2
+
 urunler:
   limon:
     ad: Limon

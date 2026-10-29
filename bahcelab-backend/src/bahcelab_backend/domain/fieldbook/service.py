@@ -25,6 +25,7 @@ from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID as S2_SOURC
 from bahcelab_backend.domain.acquisitions.store import decode_grids
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events.service import event_name, list_events
+from bahcelab_backend.domain.evidence.service import load_context, prior_of
 from bahcelab_backend.domain.fieldbook import rules as fr
 from bahcelab_backend.domain.fieldbook.exif import read_exif
 from bahcelab_backend.domain.fieldbook.models import (
@@ -40,10 +41,12 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     DogrulukOzeti,
     FotoOnerisi,
     FotoYanit,
+    KanitYanit,
     KayitGirdisi,
     KayitGuncelle,
     KayitYanit,
     NoktaKonumu,
+    OnYargiYanit,
     SahaTuru,
     TurNoktasi,
     TurOzetiYanit,
@@ -61,6 +64,11 @@ MAX_AREA_M2 = 5_000_000
 PHOTO_MAX_SIDE = 1600
 NOTE = "Doğrulamalar çiftçi beyanıdır; uydu bulgusunun doğru çıkıp çıkmadığını ölçmek için kullanılır, ceza ya da puan üretmez."
 TOUR_NOTE = "Sıra, noktalar arası düz çizgi mesafesine göre en yakın komşudur; gerçek yürüyüş yolu değildir. Başlangıç noktanızı verirseniz sıra oradan kurulur."
+
+
+def needs_review(card: DogrulamaKarti) -> bool:
+    """Üreticinin bakması gereken olay: yanıtsız ve ön yargı «çelişiyor» ya da «kanıt yok». Bağımsız kaynakça desteklenen olay listede çıkmaz."""
+    return card.hedef_tur == "olay" and card.sonuc is None and card.on_yargi is not None and card.on_yargi.sonuc != "destekleniyor"
 
 
 def _bad(message: str) -> AppError:
@@ -288,18 +296,21 @@ class FieldbookService:
         cards: list[DogrulamaKarti] = []
         seen: set[tuple[str, str]] = set()
 
-        def card(hedef_tur: str, anahtar: str, baslik: str, grup: str, start: date, end: date, guven: str | None, durum: str, olay_id: uuid.UUID | None) -> None:
+        def card(hedef_tur: str, anahtar: str, baslik: str, grup: str, start: date, end: date, guven: str | None, durum: str, olay_id: uuid.UUID | None, on_yargi: OnYargiYanit | None = None) -> None:
             v = verifications.get((hedef_tur, anahtar))
             seen.add((hedef_tur, anahtar))
             cards.append(
                 DogrulamaKarti(
                     hedef_tur=hedef_tur, hedef_anahtar=anahtar, baslik=baslik, tur_grubu=grup, baslangic=start, bitis=end, guven=guven, durum=durum, olay_id=olay_id,  # type: ignore[arg-type]
-                    sonuc=v.sonuc if v else None, aciklama=v.aciklama if v else None, dogrulama_id=v.id if v else None, fotograflar=photos.get(v.id, []) if v else [], dogrulandi=v.updated_at if v else None,  # type: ignore[arg-type]
+                    sonuc=v.sonuc if v else None, aciklama=v.aciklama if v else None, dogrulama_id=v.id if v else None, fotograflar=photos.get(v.id, []) if v else [], dogrulandi=v.updated_at if v else None, on_yargi=on_yargi,  # type: ignore[arg-type]
                 )
             )
 
+        ctx = await load_context(self.session, garden_id)
         for e in await list_events(self.session, garden_id):
-            card("olay", e.anahtar, event_name(e), fr.tur_grubu(e.tur, e.turler), e.baslangic, e.bitis, e.guven, e.durum, e.id)
+            grup = fr.tur_grubu(e.tur, e.turler)
+            prior = prior_of(ctx, grup, e.baslangic, e.bitis)
+            card("olay", e.anahtar, event_name(e), grup, e.baslangic, e.bitis, e.guven, e.durum, e.id, OnYargiYanit(sonuc=prior.sonuc, kanitlar=[KanitYanit(kaynak=k.kaynak, yon=k.yon, metin=k.metin, baglanti=k.baglanti) for k in prior.kanitlar], neden=prior.neden))
         warnings = (await self.session.execute(select(NotificationModel).where(NotificationModel.garden_id == garden_id, ~NotificationModel.dedupe_key.like("%olay:%"), NotificationModel.oncelik.in_(("kritik", "uyari"))).order_by(NotificationModel.created_at.desc()))).scalars().all()
         for n in warnings:
             day = n.created_at.astimezone(TIMEZONE).date()
@@ -313,7 +324,7 @@ class FieldbookService:
 
     async def card_list(self, garden_id: uuid.UUID) -> DogrulamaListesi:
         cards = await self.cards(garden_id)
-        return DogrulamaListesi(kartlar=cards, bekleyen=sum(1 for c in cards if c.sonuc is None), not_=NOTE)
+        return DogrulamaListesi(kartlar=cards, bekleyen=sum(1 for c in cards if c.sonuc is None), dogrulanacak=sum(1 for c in cards if needs_review(c)), not_=NOTE)
 
     async def verify(self, garden_id: uuid.UUID, body: DogrulamaGirdisi) -> DogrulamaKarti:
         match = next((c for c in await self.cards(garden_id) if c.hedef_tur == body.hedef_tur and c.hedef_anahtar == body.hedef_anahtar), None)
@@ -351,8 +362,9 @@ class FieldbookService:
         rule = cat.load_catalog().saha
         cards = await self.cards(garden_id)
         summary = fr.accuracy([(c.tur_grubu, c.sonuc) for c in cards if c.durum != "suphe"], rule.dogruluk_asgari_n)
+        external = fr.external_support([(c.tur_grubu, c.on_yargi.sonuc if c.on_yargi else None) for c in cards if c.durum != "suphe" and c.hedef_tur == "olay"])
         return DogrulukOzeti(
-            turler=[TurOzetiYanit(**s.__dict__) for s in summary], asgari_dogrulama=rule.dogruluk_asgari_n,
+            turler=[TurOzetiYanit(**s.__dict__, **external.get(s.tur, {})) for s in summary], asgari_dogrulama=rule.dogruluk_asgari_n,
             esik_durumu=f"ön değer · {'mühendis onayı bekliyor' if rule.durum == 'dogrulanmadi' else 'mühendis onaylı'}", not_=NOTE,
         )
 

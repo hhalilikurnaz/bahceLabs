@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Kayit } from '@/features/bahcem/api/sahaApi'
+import { dogrulanacakMi, type DogrulamaKarti, type Kayit } from '@/features/bahcem/api/sahaApi'
 import { bugunIstanbul, haversine, koseleriCokgene, mesafe, temsilNoktasi, turSuz } from '@/features/bahcem/lib/saha'
 
 describe('saha yardımcıları', () => {
@@ -24,5 +24,16 @@ describe('saha yardımcıları', () => {
     const k = (tur: Kayit['tur']) => ({ tur }) as Kayit
     expect(turSuz([k('hasat'), k('gozlem')], new Set())).toHaveLength(2)
     expect(turSuz([k('hasat'), k('gozlem')], new Set(['hasat']))).toHaveLength(1)
+  })
+})
+
+describe('dış ön yargı süzgeci', () => {
+  const kart = (over: Partial<DogrulamaKarti>): DogrulamaKarti => ({ hedef_tur: 'olay', hedef_anahtar: 'k', baslik: 'b', tur_grubu: 'don', baslangic: '2026-01-01', bitis: '2026-01-01', guven: null, durum: 'olay', olay_id: null, sonuc: null, aciklama: null, dogrulama_id: null, fotograflar: [], dogrulandi: null, on_yargi: { sonuc: 'kanit_yok', kanitlar: [], neden: '' }, ...over })
+  it('yalnız yanıtsız ve (çelişen ya da kanıtsız) olaylar «doğrulanması gereken»dir', () => {
+    expect(dogrulanacakMi(kart({}))).toBe(true)
+    expect(dogrulanacakMi(kart({ on_yargi: { sonuc: 'celisiyor', kanitlar: [], neden: '' } }))).toBe(true)
+    expect(dogrulanacakMi(kart({ on_yargi: { sonuc: 'destekleniyor', kanitlar: [], neden: '' } }))).toBe(false)
+    expect(dogrulanacakMi(kart({ sonuc: 'gerceklesti' }))).toBe(false) // yanıtlanmış
+    expect(dogrulanacakMi(kart({ hedef_tur: 'uyari', on_yargi: null }))).toBe(false)
   })
 })

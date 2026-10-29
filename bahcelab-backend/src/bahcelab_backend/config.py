@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Dosya depolama (NDVI PNG'leri). Yerelde diskte; ileride S3/R2 uygulaması aynı arayüze takılır.
     storage_dir: str = "uploads"
     job_feed_watch_interval_minutes: int = 15  # besleme bekçisi (kesilen işleri bulur, devam ettirir)
+    station_provider: str = "meteostat"  # meteostat | csv (elle temin edilen MGM vb. gözlem CSV'leri; aynı arayüz)
+    station_csv_dir: str = ""  # station_provider=csv iken: klasör (istasyonlar.json + <istasyon>.csv)
+    station_client: str = Field(default="", repr=False)  # modül:ad — test için sahte sağlayıcı; yalnız API_DEBUG=true
+    job_stations_hour: int = 5  # günlük istasyon gözlemi çekimi (yerel saat)
+    job_stations_interval_minutes: int = 1440
+    imerg_start: str = "2015-01-01"  # IMERG geçmişi bu tarihe uzatılır (düşük öncelikli arka plan işi; SMAP validation_start'ta kalır)
     feed_heartbeat_seconds: int = 30  # çalışan besleme işi bu aralıkla «yaşıyorum» der
     feed_stale_minutes: int = 3  # bu süredir kalp atışı yoksa iş KESİLDİ sayılır (süreç/Docker düşmüş)
     feed_retry_max: int = 4  # art arda başarısızlıkta bu kadar kez kendiliğinden yeniden denenir; sonra yalnız görünür kalır

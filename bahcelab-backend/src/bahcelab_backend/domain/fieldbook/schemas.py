@@ -70,6 +70,21 @@ class DogrulamaGirdisi(BaseModel):
     aciklama: str | None = Field(default=None, max_length=1000)
 
 
+class KanitYanit(BaseModel):
+    kaynak: Literal["istasyon", "dis_kayit"]
+    yon: Literal["destek", "celisme", "sinirda"]
+    metin: str
+    baglanti: str | None
+
+
+class OnYargiYanit(BaseModel):
+    """Bağımsız kaynaklardan ön yargı (çiftçi yargısının YERİNE GEÇMEZ). Olay motorunun kendi girdileri (ERA5, S2, HLS, radar) kanıt sayılmaz."""
+
+    sonuc: Literal["destekleniyor", "celisiyor", "kanit_yok"]
+    kanitlar: list[KanitYanit]
+    neden: str
+
+
 class DogrulamaKarti(BaseModel):
     """«Uydu haklı mıydı?» kartı: olay, uyarı ya da «doğrulama bekliyor» kaydı + (varsa) çiftçi yanıtı."""
 
@@ -87,11 +102,13 @@ class DogrulamaKarti(BaseModel):
     dogrulama_id: uuid.UUID | None
     fotograflar: list[FotoYanit]
     dogrulandi: datetime | None
+    on_yargi: OnYargiYanit | None = None  # yalnız olay kartlarında
 
 
 class DogrulamaListesi(BaseModel):
     kartlar: list[DogrulamaKarti]
     bekleyen: int  # yanıtsız kart sayısı
+    dogrulanacak: int  # yanıtsız VE ön yargısı «çelişiyor» ya da «kanıt yok» olan olay sayısı (üretici yalnız bunlara bakar)
     not_: str
 
 
@@ -105,6 +122,10 @@ class TurOzetiYanit(BaseModel):
     dogrulanan: int
     yeterli: bool
     metin: str
+    dis_destekleniyor: int = 0  # ikinci, AYRI sayı: bağımsız kaynakların ön yargısı
+    dis_celisiyor: int = 0
+    dis_kanit_yok: int = 0
+    dis_metin: str = ""
 
 
 class DogrulukOzeti(BaseModel):

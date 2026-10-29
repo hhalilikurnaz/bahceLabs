@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { mapPoint, createGarden, newUser, seedOlayOzet, seedSaha, seedScenes } from './yardimcilar'
+import { mapPoint, createGarden, newUser, seedIstasyon, seedOlayOzet, seedSaha, seedScenes } from './yardimcilar'
 
 /** Saha Defteri (9G-B): konumlu kayıtlar + fotoğraf, «Uydu haklı mıydı?» doğrulaması, doğruluk özeti, otomatik saha turu, harita katmanı. */
 // 8×6 piksel geçerli JPEG (sunucu Pillow ile doğrular)
@@ -85,6 +85,25 @@ test.describe('Saha Defteri', () => {
     await expect(page.getByTestId('dogruluk-tablosu')).toContainText('(1/5)') // 1 doğrulama: yeterli değil
     await page.goto(`/bahceler/${garden.id}/gecmis`)
     await expect(page.getByTestId('olay-dogrulama-rozeti').first()).toContainText('gerçekleşti', { timeout: 30_000 })
+  })
+
+  test('dış ön yargı: destekli olay varsayılan listeden çıkar, kanıtsız olay kalır; rozet kaynak bağlantısını gösterir ve doğruluk özeti iki ayrı sayı verir', async ({ page }) => {
+    await newUser(page)
+    const garden = await createGarden(page.request, { ad: 'Ön yargı', lng: 27.95, lat: 38.95, sideM: 300 })
+    seedOlayOzet(garden.id) // dün: don (-3,2 °C model) + aşırı yağış
+    seedIstasyon(garden.id, -2.0) // bağımsız istasyon dün ≤ 0 °C gözlemledi; yağış verisi yok
+    await page.goto(`/bahceler/${garden.id}/defter`)
+    await expect(page.getByTestId('kartlar-gereken')).toContainText('(1)', { timeout: 30_000 })
+    const liste = page.getByTestId('dogrulama-listesi')
+    await expect(liste.getByTestId('dogrulama-karti')).toHaveCount(1) // yalnız kanıtı olmayan aşırı yağış
+    await expect(liste.getByTestId('on-yargi-rozeti')).toHaveText('Dış kanıt yok')
+    await page.getByTestId('kartlar-hepsi').click()
+    const don = page.locator('[data-testid="on-yargi"][data-sonuc="destekleniyor"]')
+    await expect(don).toHaveCount(1)
+    await don.getByTestId('on-yargi-rozeti').click()
+    await expect(don).toContainText('E2E test istasyonu') // kanıt kaynağı adıyla gösterilir (test sağlayıcısının herkese açık sayfası yok: bağlantı yok)
+    await expect(page.getByTestId('dogruluk-tablosu')).toContainText('1 destekleniyor')
+    await expect(page.getByTestId('dogruluk-tablosu')).toContainText('1 kanıt yok')
   })
 
   test('saha turu: uyarı noktaları en yakın sırayla listelenir, not + fotoğrafla ziyaret edilir ve geri alınır', async ({ page }) => {

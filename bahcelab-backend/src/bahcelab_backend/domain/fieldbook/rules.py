@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from scipy.ndimage import label
@@ -111,3 +111,15 @@ def stress_patch(values: np.ndarray, percentile: float, min_da: float, pixel_m2:
         return None
     rows, cols = np.nonzero(labels == best)
     return Patch(float(rows.mean()), float(cols.mean()), area_da)
+
+
+def external_support(rows: Sequence[tuple[str, str | None]]) -> dict[str, dict[str, Any]]:
+    """`rows` = (tür grubu, ön yargı sonucu). Çiftçi doğrulamasından AYRI ikinci sayı: bağımsız kaynakların desteği. Kanıtsız olay «destekleniyor» sayılmaz."""
+    out: dict[str, dict[str, Any]] = {}
+    for tur in TUR_GRUPLARI:
+        mine = [s for t, s in rows if t == tur and s is not None]
+        if not mine:
+            continue
+        d, c, k = (sum(1 for s in mine if s == key) for key in ("destekleniyor", "celisiyor", "kanit_yok"))
+        out[tur] = {"dis_destekleniyor": d, "dis_celisiyor": c, "dis_kanit_yok": k, "dis_metin": f"dış kaynak: {d} destekleniyor, {c} çelişiyor, {k} kanıt yok"}
+    return out

@@ -310,6 +310,20 @@ class SahaKurali(KuralBlok):
     tur_azami_nokta: int = Field(default=12, ge=1)  # tura en çok bu kadar nokta alınır (en önemlileri)
 
 
+class DisKanitKurali(KuralBlok):
+    """Olay doğrulamasında BAĞIMSIZ dış kanıt (9G-E): istasyon gözlemi (yalnız gerçek gözlem satırları) ve elle derlenmiş kamu kayıtları. Olay motorunun girdisi (ERA5, S2…) KANIT SAYILMAZ.
+    Hepsi ön değer · mühendis onayı bekliyor. Sonuç yalnız «destekleniyor / çelişiyor / kanıt yok»; veri yoksa «kanıt yok»."""
+
+    pencere_gun: int = Field(default=1, ge=0)  # olay tarih aralığı ± bu kadar gün içindeki gözlemler
+    istasyon_azami_km: float = Field(default=80.0, gt=0)  # bahçeye en çok bu kadar uzaktaki istasyonlar
+    istasyon_sayisi: int = Field(default=3, ge=1)
+    don_destek_c: float = 0.0  # pencerede istasyon günlük min sıcaklığı ≤ bu değer → don destekleniyor
+    don_celisme_c: float = 5.0  # pencerede TÜM gözlenen istasyon min değerleri ≥ bu değer → don ile çelişiyor (vadi/yamaç soğuk havası için geniş pay)
+    yagis_destek_mm: float = 20.0  # pencerede istasyon günlük yağışı ≥ bu değer → aşırı yağış destekleniyor
+    yagis_celisme_mm: float = 5.0  # pencerede TÜM gözlenen istasyon yağışları ≤ bu değer → çelişiyor (yağış mekânsal değişkendir: dar)
+    katalog_pencere_gun: int = Field(default=2, ge=0)  # kamu kaydı tarihi olay aralığının ± bu kadar günü içinde olmalı
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -322,6 +336,7 @@ class Katalog(BaseModel):
     egri: EgriKurali
     gecmis: GecmisKurali
     saha: SahaKurali
+    dis_kanit: DisKanitKurali
     urunler: dict[str, Urun]
 
     @model_validator(mode="after")

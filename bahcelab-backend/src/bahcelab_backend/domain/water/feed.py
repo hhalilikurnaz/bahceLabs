@@ -126,3 +126,63 @@ async def validation_all(factory: SessionFactory) -> dict[str, int]:
         result = await feed_validation(factory, garden_id)
         out["atlanan" if "durum" in result else "bahce"] += 1
     return out
+
+
+async def imerg_history_ready(factory: SessionFactory) -> bool:
+    """Düşük öncelik kapısı: TÜM bahçelerde güncel IMERG ve SMAP çekimi `tamam` olmadan (ya da çalışırken) geçmiş uzatması başlamaz."""
+    async with factory() as session:
+        rows = (await session.execute(text("SELECT g.id, f.kaynak, f.durum FROM gardens g LEFT JOIN feed_runs f ON f.garden_id = g.id AND f.kaynak IN ('imerg','smap','imerg_gecmis')"))).all()
+    state: dict[uuid.UUID, dict[str, str]] = {}
+    for garden_id, kaynak, durum in rows:
+        state.setdefault(garden_id, {})
+        if kaynak:
+            state[garden_id][kaynak] = durum
+    if any(s.get("imerg_gecmis") == "calisiyor" for s in state.values()):
+        return False  # aynı anda tek bahçe
+    return all(s.get("imerg") == "tamam" and s.get("smap") == "tamam" for s in state.values())
+
+
+async def feed_imerg_history(factory: SessionFactory, garden_id: uuid.UUID, today: date | None = None) -> dict[str, int] | str:
+    """IMERG günlük yağışını `imerg_start`'tan (2015) `validation_start`'ın öncesine kadar tamamlar. İzlenir (`imerg_gecmis`), idempotent (var olan günler atlanır), kaldığı yerden sürer."""
+    from bahcelab_backend.domain.feedruns.service import mark_skipped, tracked
+
+    settings = get_settings()
+    if not settings.earthdata_token:
+        await mark_skipped(factory, garden_id, "imerg_gecmis", "EARTHDATA_TOKEN tanımlı değil (bahcelab-backend/.env.local)")
+        return "atlandi"
+    start, end = date.fromisoformat(settings.imerg_start), date.fromisoformat(settings.validation_start) - timedelta(days=1)
+    if start > end:
+        return "gerek_yok"
+    async with tracked(factory, garden_id, "imerg_gecmis") as run:
+        async with factory() as session:
+            result = await sync_validation(session, garden_id, IMERG, start, end, step=1, on_progress=run.ilerle)
+        await run.ilerle(**result)
+        if result["aranan_gun"] > SESSIZ_BOS_ESIK and result["yazilan"] == 0:
+            raise RuntimeError(f"{result['aranan_gun']} gün arandı, hiç gözlem yazılamadı (erişim/ağ ya da kaynak boş)")
+        return result
+
+
+async def imerg_history_next(factory: SessionFactory, today: date | None = None) -> dict[str, int | str]:
+    """Kapı açıksa, geçmişi henüz `tamam` olmayan ve (kesildi ya da bekleme süresi dolmuş hata) durumundaki İLK bahçeyi çalıştırır. Bir çağrıda tek bahçe."""
+    from bahcelab_backend.domain.feedruns.rules import next_action
+
+    settings = get_settings()
+    if not await imerg_history_ready(factory):
+        return {"durum": "kapi_kapali"}
+    async with factory() as session:
+        gardens = [r[0] for r in (await session.execute(text("SELECT id FROM gardens ORDER BY created_at"))).all()]
+        runs = {r[0]: r for r in (await session.execute(text("SELECT garden_id, durum, deneme, bitis FROM feed_runs WHERE kaynak = 'imerg_gecmis'"))).all()}
+    now = datetime.now(UTC)
+    for garden_id in gardens:
+        run = runs.get(garden_id)
+        if run is not None and run[1] in ("tamam", "calisiyor"):
+            continue
+        if run is not None and run[1] == "atlandi" and not settings.earthdata_token:
+            continue
+        if run is not None and run[1] != "atlandi" and next_action(run[1], run[2], run[3], now, retry_max=settings.feed_retry_max, backoff_minutes=settings.feed_retry_backoff_minutes) != "devam":
+            continue
+        try:
+            return {"bahce": str(garden_id), "sonuc": str(await feed_imerg_history(factory, garden_id, today))}
+        except Exception as exc:  # noqa: BLE001 - `tracked` logladı ve bildirdi
+            return {"bahce": str(garden_id), "sonuc": f"hata: {type(exc).__name__}"}
+    return {"durum": "yapilacak_yok"}

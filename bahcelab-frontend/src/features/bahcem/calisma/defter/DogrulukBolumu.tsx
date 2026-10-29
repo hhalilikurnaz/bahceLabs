@@ -17,7 +17,8 @@ export function DogrulukBolumu({ gardenId }: { gardenId: string }) {
           <thead>
             <tr className="border-b border-[var(--rule-2)] text-[11.5px] text-[var(--ink-3)]">
               <th scope="col" className="py-1 pr-2 font-semibold">Tür</th>
-              <th scope="col" className="py-1 pr-2 font-semibold">Özet</th>
+              <th scope="col" className="py-1 pr-2 font-semibold">Üretici doğrulaması</th>
+              <th scope="col" className="py-1 pr-2 font-semibold">Dış kaynak desteği</th>
               <th scope="col" className="py-1 font-semibold">Bekleyen</th>
             </tr>
           </thead>
@@ -26,13 +27,14 @@ export function DogrulukBolumu({ gardenId }: { gardenId: string }) {
               <tr key={t.tur} className="border-b border-[var(--rule)]" data-testid="dogruluk-satiri" data-tur={t.tur} data-yeterli={String(t.yeterli)}>
                 <th scope="row" className="py-1.5 pr-2 font-semibold">{t.ad}</th>
                 <td className="py-1.5 pr-2">{t.metin}{t.bilinmiyor > 0 ? <span className="text-[var(--ink-3)]"> · {t.bilinmiyor} bilinmiyor</span> : null}</td>
+                <td className="py-1.5 pr-2" data-testid="dogruluk-dis">{t.dis_metin || <span className="text-[var(--ink-3)]">olay kaydı yok</span>}</td>
                 <td className="num py-1.5">{t.bekleyen}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {o && <p className="mt-1.5 text-[11.5px] text-[var(--ink-3)]">En az {o.asgari_dogrulama} doğrulama olmadan oran verilmez · {o.esik_durumu}. {o.not_}</p>}
+      {o && <p className="mt-1.5 text-[11.5px] text-[var(--ink-3)]">İki sayı ayrıdır: «üretici doğrulaması» sizin sahada gördüğünüzdür; «dış kaynak desteği» istasyon gözlemi ve kamu kayıtlarının ön yargısıdır (uydunun kendi girdileri sayılmaz, kanıtı olmayan olay «destekleniyor» sayılmaz). En az {o.asgari_dogrulama} doğrulama olmadan oran verilmez · {o.esik_durumu}. {o.not_}</p>}
     </section>
   )
 }

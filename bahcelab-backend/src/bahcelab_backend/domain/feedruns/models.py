@@ -17,7 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from bahcelab_backend.database import Base
 
 KAYNAKLAR = ("era5", "hls", "imerg", "smap")
-KAYNAK_ADI = {"era5": "ERA5 hava", "hls": "HLS canlılık", "imerg": "IMERG yağış", "smap": "SMAP toprak nemi"}
+KAYNAK_ADI = {"era5": "ERA5 hava", "hls": "HLS canlılık", "imerg": "IMERG yağış", "smap": "SMAP toprak nemi", "imerg_gecmis": "IMERG geçmişi (2015→)"}
 
 
 def _now() -> datetime:
@@ -30,7 +30,7 @@ class FeedRunModel(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), nullable=False, index=True)
-    kaynak: Mapped[str] = mapped_column(String(8), nullable=False)  # era5 | hls | imerg | smap
+    kaynak: Mapped[str] = mapped_column(String(12), nullable=False)  # era5 | hls | imerg | smap | imerg_gecmis
     durum: Mapped[str] = mapped_column(String(10), nullable=False)  # calisiyor | tamam | hata | kesildi | atlandi
     deneme: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # art arda başarısız/kesilen çalışma sayısı (başarıda sıfırlanır)
     baslangic: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=_now, nullable=False)

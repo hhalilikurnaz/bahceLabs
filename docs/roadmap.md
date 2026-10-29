@@ -1,7 +1,7 @@
 # BahçeLab — Yol haritası (Faz 1'in kalanı)
 
 > **Her yeni oturumda bu belgeyi oku.** Belge yalnız **sıra ve kapsamı** tutar; her adımın ayrıntılı tasarımı o adımın kendi isteminde gelir. Bu belgede yazan bir adımın kodu, istemi gelmeden yazılmaz.
-> Son güncelleme: 2026-10-29 (9G kapanışı).
+> Son güncelleme: 2026-10-29 (E kapanışı).
 
 ## Değişmeyen ilkeler (her adımda)
 - **Sahte veri yok**: veri yoksa boş durum (neden + ne zaman gelir); test verisi yalnız `tests/support` ve API_DEBUG kapısı arkasında.
@@ -12,10 +12,10 @@
 - Rastgele hata kabul edilmez: aralıklı düşen test düzeltilir (kök neden bulunur).
 
 ## Tamamlananlar (özet)
-9A veri temeli · 9B kabuk + çalışma alanı · 9C Sentinel-2 dilimi (NDRE, NDMI, MSAVI, LAI) · 9D radar (Sentinel-1) · 9E su ve sıcaklık (ERA5, Landsat, SMAP/IMERG doğrulama) · 9F Durum v2 + olay motoru + bildirim karar katmanı + kesintisiz canlılık eğrisi · 9G Geçmiş sayfası + Saha Defteri (doğrulama) + dona bağlı değişim anomalisi (ADR 0019).
+9A veri temeli · 9B kabuk + çalışma alanı · 9C Sentinel-2 dilimi (NDRE, NDMI, MSAVI, LAI) · 9D radar (Sentinel-1) · 9E su ve sıcaklık (ERA5, Landsat, SMAP/IMERG doğrulama) · 9F Durum v2 + olay motoru + bildirim karar katmanı + kesintisiz canlılık eğrisi · 9G Geçmiş sayfası + Saha Defteri (doğrulama) + dona bağlı değişim anomalisi (ADR 0019) · E olay doğrulamasında otomatik ön doğrulama (ADR 0021): istasyon gözlemi (Meteostat, gerçek gözlem satırları) + kamu kayıtları kataloğu (boş şema) → «destekleniyor / çelişiyor / kanıt yok» rozeti, «Doğrulamanız gereken» listesi, iki ayrı doğruluk sayısı; IMERG geçmişi 2015'e uzatma işi (`imerg_gecmis`).
 
 ## Sıradaki
-- **E · Olay doğrulamasında otomatik ön doğrulama** — kapsam kendi isteminde gelir (bu belgede ayrıntı yok).
+Sıradaki adım **9H**; ayrıntı kendi isteminde gelir.
 
 ## Kalan adımlar (bu sırayla)
 
