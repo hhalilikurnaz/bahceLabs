@@ -12,14 +12,21 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
   const [tur, setTur] = useState<KayitTuru>('gozlem')
   const [tarih, setTarih] = useState(bugunIstanbul())
   const [not, setNot] = useState('')
+  const [sure, setSure] = useState('')
+  const [m3, setM3] = useState('')
   const [fotolar, setFotolar] = useState<File[]>([])
   const [oneri, setOneri] = useState<FotoOnerisi | null>(null)
   const eksikAlan = konum.mod === 'alan' && !konum.konum
   const eksikNokta = konum.mod === 'nokta' && !konum.konum
+  const sayiAl = (t: string): number | undefined => {
+    const n = Number(t.trim().replace(',', '.'))
+    return t.trim() !== '' && Number.isFinite(n) && n > 0 ? n : undefined
+  }
+  const ayrinti = tur === 'sulama' && (sayiAl(sure) !== undefined || sayiAl(m3) !== undefined) ? { sure_dk: sayiAl(sure), m3: sayiAl(m3) } : undefined
   const kaydet = () =>
     olustur.mutate(
-      { girdi: { tur, tarih, konum: konum.konum, aciklama: not.trim() || null }, fotolar },
-      { onSuccess: () => (setNot(''), setFotolar([]), setOneri(null), konum.temizle()) },
+      { girdi: { tur, tarih, konum: konum.konum, aciklama: not.trim() || null, ayrinti }, fotolar },
+      { onSuccess: () => (setNot(''), setSure(''), setM3(''), setFotolar([]), setOneri(null), konum.temizle()) },
     )
   return (
     <form onSubmit={(e) => (e.preventDefault(), kaydet())} className="grid gap-2" aria-label="Yeni saha kaydı" data-testid="kayit-formu">
@@ -47,6 +54,13 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
           {konum.koseler.length < 3 ? `Alanın köşelerine dokunun (en az 3; şu an ${konum.koseler.length}).` : `${konum.koseler.length} köşe seçildi.`}{' '}
           {konum.koseler.length > 0 && <button type="button" onClick={konum.geriAl} className="font-semibold underline underline-offset-2">Son köşeyi geri al</button>}
         </p>
+      )}
+      {tur === 'sulama' && (
+        <div className="flex flex-wrap items-end gap-3" data-testid="sulama-miktar">
+          <label className="grid text-caption font-semibold text-[var(--ink-3)]">Süre (dakika)<input inputMode="decimal" value={sure} onChange={(e) => setSure(e.target.value)} data-testid="sulama-sure" className="mt-0.5 h-9 w-28 border border-[var(--rule-2)] bg-transparent px-2 text-[13px] max-[560px]:h-11" /></label>
+          <label className="grid text-caption font-semibold text-[var(--ink-3)]">ya da miktar (m³)<input inputMode="decimal" value={m3} onChange={(e) => setM3(e.target.value)} data-testid="sulama-m3" className="mt-0.5 h-9 w-28 border border-[var(--rule-2)] bg-transparent px-2 text-[13px] max-[560px]:h-11" /></label>
+          <p className="basis-full text-caption text-[var(--ink-3)]">Süre ya da miktar girilirse sulama planının toprak kovasına eklenir; girilmezse yalnız not olarak kalır.</p>
+        </div>
       )}
       <label className="grid text-caption font-semibold text-[var(--ink-3)]">
         Not

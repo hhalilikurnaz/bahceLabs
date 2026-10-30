@@ -8,6 +8,7 @@ import { BahceCubugu } from './BahceCubugu'
 import { CalismaAlani } from './CalismaAlani'
 import { GecmisSayfasi } from './GecmisSayfasi'
 import { DefterSayfasi } from './DefterSayfasi'
+import { SulamaPlaniSayfasi } from './sulama/SulamaPlaniSayfasi'
 
 /** `/bahceler/:id[/:sekme|gecmis|defter]` */
 export function BahceSayfasi() {
@@ -31,9 +32,9 @@ export function BahceSayfasi() {
   const tab = isGardenTab(sekme) ? sekme : 'durum'
   return (
     <>
-      <h1 className="sr-only">{garden.ad} · {page === 'gecmis' ? 'Geçmiş' : page === 'defter' ? 'Saha Defteri' : GARDEN_TAB_LABELS[tab]}</h1>
+      <h1 className="sr-only">{garden.ad} · {page === 'gecmis' ? 'Geçmiş' : page === 'defter' ? 'Saha Defteri' : page === 'sulama-plani' ? 'Sulama planı' : GARDEN_TAB_LABELS[tab]}</h1>
       <BahceCubugu garden={garden} gardens={gardens} tab={page ? null : tab} />
-      {page === 'gecmis' ? <GecmisSayfasi garden={garden} /> : page === 'defter' ? <DefterSayfasi garden={garden} /> : <CalismaAlani garden={garden} gardens={gardens} tab={tab} />}
+      {page === 'gecmis' ? <GecmisSayfasi garden={garden} /> : page === 'defter' ? <DefterSayfasi garden={garden} /> : page === 'sulama-plani' ? <SulamaPlaniSayfasi garden={garden} /> : <CalismaAlani garden={garden} gardens={gardens} tab={tab} />}
     </>
   )
 }

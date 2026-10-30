@@ -13,6 +13,8 @@ const TYPES = [
   { value: 'zararli_riski', label: 'Zararlı / hastalık riski' },
   { value: 'indeks_dususu', label: 'Uydu uyarısı' },
   { value: 'sulama', label: 'Sulama' },
+  { value: 'sulama_plani', label: 'Sulama günü yaklaştı' },
+  { value: 'sulama_sapma', label: 'Plandan ciddi sapma' },
   { value: 'cok_yillik', label: 'Çok yıllık analiz' },
   { value: 'olay', label: 'Olay' },
   { value: 'kademe_dususu', label: 'Durum kademesi düşüşü' },

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ErrorState, Skeleton, cx } from '@/components/ui'
 import { useToday, type TodayItem } from '../../api/agroApi'
 import { gardenPath } from '../../lib/routes'
+import { SulamaSatiri } from './SulamaSatiri'
 
 const ICON = { kritik: CircleAlert, onemli: TriangleAlert, bilgi: Info } as const
 const TONE = { kritik: 'text-app-danger', onemli: 'text-app-warn', bilgi: 'text-app-accent' } as const
@@ -57,6 +58,7 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
           )
         })}
       </ul>
+      <SulamaSatiri gardenId={gardenId} />
     </section>
   )
 }

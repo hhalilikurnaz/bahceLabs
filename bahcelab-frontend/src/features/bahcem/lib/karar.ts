@@ -107,3 +107,42 @@ export function listeKarar(kademeler: (string | undefined)[]): string | null {
   const en = sira.find((k) => v.includes(k))!
   return `${sayi(v.filter((k) => k === en).length)} bahçe ${KADEME_FIILI[en]}.`
 }
+
+// ----------------------------------------------------------------------------- sulama planı (9H)
+const HAFTA_GUNU = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+const gunFarki = (a: string, b: string): number => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000)
+const gunAdi = (iso: string): string => HAFTA_GUNU[new Date(`${iso}T12:00:00Z`).getUTCDay()]
+
+/** Damlatıcı süresi: «2 sa 25 dk» (kısa, çizelge/satır) ya da «2 saat 25 dakika» (cümle). */
+export function sureMetni(dk: number, uzun = false): string {
+  const s = Math.floor(dk / 60)
+  const d = Math.round(dk % 60)
+  const sa = uzun ? 'saat' : 'sa'
+  const dak = uzun ? 'dakika' : 'dk'
+  return [s > 0 ? `${s} ${sa}` : '', d > 0 || s === 0 ? `${d} ${dak}` : ''].filter(Boolean).join(' ')
+}
+
+export interface SulamaKararGirdisi {
+  durum: 'hazir' | 'profil_yok' | 'veri_yok'
+  bugun: string
+  sonraki: { tarih: string; emitor_dakika: number | null; m3_bahce: number } | null
+}
+
+/** Sulama planı başlığı: «Perşembe sabah 2 saat 25 dakika sulayın.» / «Bu hafta sulama gerekmiyor.» Süre yoksa (damlatıcı bilgisi eksik) m³ söylenir, sayı uydurulmaz. */
+export function sulamaKarar(p: SulamaKararGirdisi): string {
+  if (p.durum === 'profil_yok') return 'Sulama planı için bahçenizin sulama bilgisi gerekiyor.'
+  if (p.durum === 'veri_yok' || !p.sonraki) return p.durum === 'veri_yok' ? 'Sulama planı için veri yetersiz.' : 'Bu hafta sulama gerekmiyor.'
+  const fark = gunFarki(p.bugun, p.sonraki.tarih)
+  if (fark > 6) return 'Bu hafta sulama gerekmiyor.'
+  const zaman = fark === 0 ? 'Bugün' : fark === 1 ? 'Yarın' : gunAdi(p.sonraki.tarih)
+  return p.sonraki.emitor_dakika ? `${zaman} sabah ${sureMetni(p.sonraki.emitor_dakika, true)} sulayın.` : `${zaman} yaklaşık ${Math.round(p.sonraki.m3_bahce)} metreküp sulayın.`
+}
+
+/** Durum/Bugün kartındaki tek satır: «Sulama: Perşembe, 2 sa 25 dk». Plan yoksa null (satır hiç çizilmez). */
+export function sulamaSatiri(p: SulamaKararGirdisi): string | null {
+  if (p.durum !== 'hazir') return null
+  if (!p.sonraki || gunFarki(p.bugun, p.sonraki.tarih) > 6) return 'Sulama: bu hafta gerekmiyor'
+  const fark = gunFarki(p.bugun, p.sonraki.tarih)
+  const gun = fark === 0 ? 'bugün' : fark === 1 ? 'yarın' : gunAdi(p.sonraki.tarih)
+  return `Sulama: ${gun}, ${p.sonraki.emitor_dakika ? sureMetni(p.sonraki.emitor_dakika) : `≈ ${Math.round(p.sonraki.m3_bahce)} m³`}`
+}

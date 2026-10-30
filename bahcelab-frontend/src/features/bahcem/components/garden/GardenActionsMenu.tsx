@@ -1,4 +1,4 @@
-import { ClipboardList, MoreHorizontal, Pencil, Spline, Trash2 } from 'lucide-react'
+import { ClipboardList, Droplets, MoreHorizontal, Pencil, Spline, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { IconButton, cx } from '@/components/ui'
 import type { Garden } from '../../api/types'
@@ -8,6 +8,8 @@ interface GardenActionsMenuProps {
   onRename: () => void
   /** Çeşit, dikim yılı, ağaç sayısı, sulama sistemi */
   onEditInfo?: () => void
+  /** Sulama profili sihirbazı (yalnız Sulama planı sayfası ve bu menüden açılır) */
+  onEditIrrigation?: () => void
   onEditBoundary: () => void
   onDelete: () => void
   className?: string
@@ -17,7 +19,7 @@ const ITEM =
   'flex min-h-11 w-full items-center gap-2.5 rounded-sm px-3 text-left text-body transition-colors hover:bg-app-card-hover focus-visible:bg-app-card-hover'
 
 /** Bahçe işlemleri menüsü (liste kartı ve bahçe sayfası başlığı ortak kullanır). */
-export function GardenActionsMenu({ garden, onRename, onEditInfo, onEditBoundary, onDelete, className }: GardenActionsMenuProps) {
+export function GardenActionsMenu({ garden, onRename, onEditInfo, onEditIrrigation, onEditBoundary, onDelete, className }: GardenActionsMenuProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -52,6 +54,11 @@ export function GardenActionsMenu({ garden, onRename, onEditInfo, onEditBoundary
           {onEditInfo && (
             <button type="button" role="menuitem" className={cx(ITEM, 'text-app-text')} onClick={run(onEditInfo)}>
               <ClipboardList className="h-4 w-4 text-app-text-muted" aria-hidden /> Bilgileri düzenle
+            </button>
+          )}
+          {onEditIrrigation && (
+            <button type="button" role="menuitem" className={cx(ITEM, 'text-app-text')} onClick={run(onEditIrrigation)} data-testid="menu-sulama-bilgileri">
+              <Droplets className="h-4 w-4 text-app-text-muted" aria-hidden /> Sulama bilgileri
             </button>
           )}
           <button type="button" role="menuitem" className={cx(ITEM, 'text-app-text')} onClick={run(onEditBoundary)}>

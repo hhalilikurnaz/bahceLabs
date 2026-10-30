@@ -31,6 +31,8 @@ export interface KayitGirdisi {
   tarih: string
   konum: GeoJSON.Point | GeoJSON.Polygon | null
   aciklama: string | null
+  /** Sulama kaydı: `sure_dk` (damlatıcı açık kalma süresi) ya da `m3`; sulama planının kovasına girer (ADR 0023) */
+  ayrinti?: { sure_dk?: number; m3?: number } | null
 }
 /** Fotoğrafın EXIF'inden öneri (sunucuda okunur, saklanmaz): kullanıcı onaylamadan kayda yazılmaz. */
 export interface FotoOnerisi {

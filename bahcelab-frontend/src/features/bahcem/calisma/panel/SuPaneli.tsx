@@ -7,13 +7,14 @@ import { suKarar } from '../../lib/karar'
 import { BulutAltindaGorus } from './BulutAltindaGorus'
 import { Akordeon, Akordeonlar, IkincilKart, KararBlogu, PanelKabuk } from './parcalar'
 import { KaynakCipi } from './su/KaynakCipi'
+import { SulamaKarti } from './su/SulamaKarti'
 import { NemProfili } from './su/NemProfili'
 import { SuDengesi } from './su/SuDengesi'
 import { YuzeyHava } from './su/YuzeyHava'
 
 const gunOnce = (iso: string): number => Math.max(0, Math.round((Date.now() - Date.parse(`${iso}T12:00:00Z`)) / 86_400_000))
 
-/** Su sekmesi (Yön C): karar cümlesi → kök bölgesi doluluğu (%) → iki panelli su dengesi → ikincil kartlar (nem profili, yüzey–hava) → Sulama planı «yakında» → ayrıntı. Katsayılar ön değerdir. */
+/** Su sekmesi (Yön C): karar cümlesi → kök bölgesi doluluğu (%) → iki panelli su dengesi → ikincil kartlar (nem profili, yüzey–hava) → Sulama planı kartı → ayrıntı. Katsayılar ön değerdir. */
 export function SuPaneli({ garden }: { garden: Garden }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useSu(garden.id)
   const karar = data ? suKarar(data.karar_detay.durum, data.profil.kok_bolgesi_sinif) : null
@@ -45,7 +46,7 @@ export function SuPaneli({ garden }: { garden: Garden }) {
             <YuzeyHava sicaklik={data.sicaklik} />
             <KaynakCipi cip={data.kaynaklar.sicaklik} testId="kaynak-sicaklik" />
           </IkincilKart>
-          <p className="flex items-center gap-2 rounded-md border border-app-border bg-app-card px-4 py-3 text-body" data-testid="bos-su"><b>Sulama planı</b>{' '}<span className="rounded-[4px] border border-app-border px-1.5 py-px text-caption font-medium text-app-text-dim">yakında</span></p>
+          <SulamaKarti gardenId={garden.id} />
           <Akordeonlar>
             <Akordeon baslik="Bulut altında görüş" ozet="optik ve radar geçişleri, son 90 gün"><BulutAltindaGorus gardenId={garden.id} /></Akordeon>
             <Akordeon baslik="Nasıl hesaplandı?" ozet="ön değer · mühendis onayı bekliyor" testId="su-nasil">

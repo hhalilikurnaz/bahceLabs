@@ -1,4 +1,4 @@
-/** Rotalar (Adım 9B, hibrit kabuk): `/bahceler/:id[/sekme]`, tam sayfa `/bahceler/:id/gecmis|defter`; eski `/bahcem/...` yönlenir. */
+/** Rotalar (Adım 9B, hibrit kabuk): `/bahceler/:id[/sekme]`, tam sayfa `/bahceler/:id/gecmis|defter|sulama-plani`; eski `/bahcem/...` yönlenir. */
 export const GARDEN_TABS = ['durum', 'analiz', 'su', 'hava', 'gunluk', 'rapor'] as const
 export type GardenTab = (typeof GARDEN_TABS)[number]
 
@@ -12,7 +12,7 @@ export const GARDEN_TAB_LABELS: Record<GardenTab, string> = {
 }
 
 /** Bahçeye bağlı tam sayfalar (çalışma alanı dışında) */
-export const GARDEN_PAGES = ['gecmis', 'defter'] as const
+export const GARDEN_PAGES = ['gecmis', 'defter', 'sulama-plani'] as const
 export type GardenPage = (typeof GARDEN_PAGES)[number]
 
 /** Üst gezinme */

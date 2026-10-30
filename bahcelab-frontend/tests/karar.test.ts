@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, suKarar } from '@/features/bahcem/lib/karar'
+import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, sulamaKarar, sulamaSatiri, sureMetni, suKarar } from '@/features/bahcem/lib/karar'
 
 const BAND = { p25: 0.643, p50: 0.676, p75: 0.717, ceyrek_yeterli: true }
 
@@ -65,5 +65,37 @@ describe('odakPayi (mobil alt sayfa dolgusu)', () => {
       const p = odakPayi(sayfa, H)
       expect(H - p.top - p.bottom, `H=${H} sayfa=${sayfa}`).toBeGreaterThanOrEqual(ODAK_EN_AZ_ALAN)
     }
+  })
+})
+
+describe('sulama planı cümleleri (9H)', () => {
+  const g = (tarih: string, dk: number | null) => ({ durum: 'hazir' as const, bugun: '2026-10-27', sonraki: { tarih, emitor_dakika: dk, m3_bahce: 118.4 } }) // 27 Ekim 2026 Salı
+  it('süre biçimi', () => {
+    expect(sureMetni(145)).toBe('2 sa 25 dk')
+    expect(sureMetni(145, true)).toBe('2 saat 25 dakika')
+    expect(sureMetni(180)).toBe('3 sa')
+    expect(sureMetni(45)).toBe('45 dk')
+  })
+  it('karar cümlesi: gün + süre; tek cümle, noktalı virgül yok', () => {
+    expect(sulamaKarar(g('2026-10-29', 145))).toBe('Perşembe sabah 2 saat 25 dakika sulayın.')
+    expect(sulamaKarar(g('2026-10-28', 60))).toBe('Yarın sabah 1 saat sulayın.')
+    expect(sulamaKarar(g('2026-10-27', 30))).toBe('Bugün sabah 30 dakika sulayın.')
+    for (const c of [sulamaKarar(g('2026-10-29', 145)), sulamaKarar({ durum: 'profil_yok', bugun: '2026-10-27', sonraki: null })]) {
+      expect(c).not.toContain(';')
+      expect(c.match(/\./g)).toHaveLength(1)
+    }
+  })
+  it('süre yoksa m³ söylenir, süre uydurulmaz', () => {
+    expect(sulamaKarar(g('2026-10-29', null))).toBe('Perşembe yaklaşık 118 metreküp sulayın.')
+  })
+  it('sulama yok ya da uzak', () => {
+    expect(sulamaKarar({ durum: 'hazir', bugun: '2026-10-27', sonraki: null })).toBe('Bu hafta sulama gerekmiyor.')
+    expect(sulamaKarar(g('2026-11-05', 100))).toBe('Bu hafta sulama gerekmiyor.')
+    expect(sulamaKarar({ durum: 'veri_yok', bugun: '2026-10-27', sonraki: null })).toBe('Sulama planı için veri yetersiz.')
+  })
+  it('tek satır: plan yoksa satır yok', () => {
+    expect(sulamaSatiri(g('2026-10-29', 145))).toBe('Sulama: Perşembe, 2 sa 25 dk')
+    expect(sulamaSatiri({ durum: 'hazir', bugun: '2026-10-27', sonraki: null })).toBe('Sulama: bu hafta gerekmiyor')
+    expect(sulamaSatiri({ durum: 'profil_yok', bugun: '2026-10-27', sonraki: null })).toBeNull()
   })
 })

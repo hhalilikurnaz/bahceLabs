@@ -5,6 +5,7 @@ import { TextField } from '@/components/ui'
 import type { Garden } from '../api/types'
 import { GardenActionsMenu } from '../components/garden/GardenActionsMenu'
 import { GardenInfoDialog } from '../components/garden/GardenInfoDialog'
+import { SulamaSihirbazi } from './sulama/SulamaSihirbazi'
 import { useGardenActions } from '../components/garden/useGardenActions'
 import { PRODUCTS } from '../api/types'
 import { dekar } from '../lib/format'
@@ -21,6 +22,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
   const actions = useGardenActions()
   const [renaming, setRenaming] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [sulamaOpen, setSulamaOpen] = useState(false)
   const [name, setName] = useState(garden.ad)
   const commit = async () => {
     const next = name.trim()
@@ -86,9 +88,10 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
         ))}
       </nav>
       <span className="flex-1 max-[560px]:hidden" />
-      <GardenActionsMenu garden={garden} onRename={() => (setName(garden.ad), setRenaming(true))} onEditInfo={() => setInfoOpen(true)} onEditBoundary={() => { navigate(gardenPath(garden.id)); actions.editBoundary(garden) }} onDelete={() => actions.requestDelete(garden)} />
+      <GardenActionsMenu garden={garden} onRename={() => (setName(garden.ad), setRenaming(true))} onEditInfo={() => setInfoOpen(true)} onEditIrrigation={() => setSulamaOpen(true)} onEditBoundary={() => { navigate(gardenPath(garden.id)); actions.editBoundary(garden) }} onDelete={() => actions.requestDelete(garden)} />
       {actions.dialog}
       {infoOpen && <GardenInfoDialog garden={garden} onClose={() => setInfoOpen(false)} />}
+      {sulamaOpen && <SulamaSihirbazi garden={garden} onClose={() => setSulamaOpen(false)} />}
       <Link to={gardenPagePath(garden.id, 'defter')} className="flex h-8 max-[560px]:h-11 shrink-0 items-center rounded-md border border-app-border px-3 text-small font-semibold hover:border-app-text max-[560px]:ml-auto">
         Saha Defteri ↗
       </Link>
