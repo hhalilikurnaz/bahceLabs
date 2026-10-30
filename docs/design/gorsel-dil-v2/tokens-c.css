@@ -1,0 +1,63 @@
+/*
+ * YÖN C · «Saha» (nötr yüzey, ciddi tarım aracı)  —  tokens.css TASLAĞI (uygulama değil)
+ * Referans ruhu: John Deere Operations Center, Climate FieldView, OneSoil (sahada kullanılan araçlar).
+ * Kurallar: yüzey nötr beyaz/çok açık gri; sıcaklık yalnız marka renginden ve veriden. Tek yazı ailesi (Source Sans 3, self-host).
+ * Köşe 6 px, gölge yalnız yüzen öğede ve çok hafif; kartlar ince çizgiyle ayrılır. Gradyan yalnız veri rampasında; cam efekti, parıltı, emoji yok.
+ */
+@import url('yazi/source-sans.css');
+
+:root {
+  /* ── Yüzeyler (nötr) ─────────────────────────────── */
+  --yuzey-0: #f1f2f2;   /* sayfa */
+  --yuzey-1: #ffffff;   /* panel / kart */
+  --yuzey-2: #f6f7f7;   /* gömülü alan */
+  --yuzey-harita: #1c231f;
+  --cizgi: #dcdfde;     /* kart kenarı, ayraç */
+  --cizgi-guclu: #84908b; /* kontrol kenarı ≥ 3:1 */
+  --metin: #1b201e;     /* 16,6:1 */
+  --metin-2: #404745;   /* 9,5:1 */
+  --metin-3: #59615f;   /* 6,3:1 */
+  --vurgu: #1e4b35;     /* marka yeşili: birincil eylem, seçili sekme çizgisi (10,2:1 beyazın üstünde yazı) */
+  --vurgu-metin: #ffffff;
+  --marka-limon: #e5bc2f; /* yalnız logo noktası */
+
+  /* ── Veri renkleri: anlamı sabit (ilke 5) ───────────── */
+  --bitki-1: #eef3e4; --bitki-2: #cfe3b9; --bitki-3: #93c08a; --bitki-4: #4e8f5c; --bitki-5: #1e5235;
+  --su: #1f6fa8;  --su-soluk: #9fc4e0; --su-zemin: #e2eef7;
+  --sicak-1: #fdf3c4; --sicak-2: #f9d27a; --sicak-3: #f0a04b; --sicak-4: #d6602a; --sicak-5: #8f2d14;
+  --radar: #506678;
+  --iyi: #1f7048;    --iyi-zemin: #e1f0e7;
+  --uyari: #8f5b00;  --uyari-zemin: #fbecc8;  /* amber + ▲ */
+  --sorun: #b3261e;  --sorun-zemin: #fbe0dc;  /* kırmızı + ■ */
+  --notr: #5d6865;
+  --bant-koyu: rgb(78 143 92 / .28);
+  --bant-acik: rgb(78 143 92 / .11);
+  --bant-ortanca: #3f6e4c;
+  --tahmin-cizgi: #1b201e;
+
+  /* ── Tipografi: tek aile ─────────────────────────── */
+  --f-karar: 'Source Sans 3', system-ui, sans-serif;
+  --f-ui: 'Source Sans 3', system-ui, sans-serif;
+  --f-sayi: 'Source Sans 3', system-ui, sans-serif;  /* tabular-nums + lining */
+  --f-etiket: 'Source Sans 3', system-ui, sans-serif; /* büyük harf + harf aralığı yok */
+  --t-sayi: 64px/60px;   --t-sayi-kucuk: 32px/34px;
+  --t-karar: 28px/34px;  --t-baslik: 18px/24px;
+  --t-kart: 16px/22px;   --t-govde: 15px/21px;
+  --t-yardimci: 13px/18px; --t-etiket: 12px/16px;
+  --w-karar: 600; --w-ui: 500; --w-vurgu: 600;
+  --izin-etiket: 0;
+
+  /* ── Boşluk (4 pt) · köşe · gölge · çizgi ───────────── */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+  --r-kontrol: 6px; --r-kart: 6px; --r-rozet: 4px;
+  --g-1: none;                                   /* kart: gölge yok, 1 px çizgi */
+  --g-2: 0 1px 3px rgb(0 0 0 / .14);             /* yalnız yüzen öğe (ray, lejant, açılır menü) */
+  --cizgi-ince: 1px; --cizgi-seri: 2px; --cizgi-cift: 1px solid var(--cizgi-guclu);
+  --hareket: 120ms ease-out;
+}
+[data-tema='koyu'] {
+  --yuzey-0: #0e1311; --yuzey-1: #161d1a; --yuzey-2: #1c2521; --cizgi: #2a3430; --cizgi-guclu: #70807a;
+  --metin: #e9eeec; --metin-2: #bcc7c2; --metin-3: #93a29c; --vurgu: #8cc3a2; --vurgu-metin: #0e1311;
+  --uyari: #f0b54a; --uyari-zemin: #35290d; --sorun: #ff8c7e; --sorun-zemin: #3a1b17; --iyi: #6fd19b; --iyi-zemin: #14301f;
+  --su: #6cb4ee; --bant-koyu: rgb(111 209 155 / .22); --bant-acik: rgb(111 209 155 / .09); --tahmin-cizgi: #e9eeec;
+}

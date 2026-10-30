@@ -1,0 +1,61 @@
+/*
+ * YÖN A · «Defter» (kartografik + editoryal, sıcak kâğıt)  —  tokens.css TASLAĞI (uygulama değil)
+ * Tek dosya, tek kaynak: uygulamada @theme + .app-shell + .notebook + planning-* yerine geçer.
+ * Kural: bileşenlerde ham hex yok; veri rampaları `paletler.ts` ile birebir aynı sıralı skalalar.
+ */
+@import url('yazi/yazi.css');
+
+:root {
+  /* ── Yüzeyler (sıcak kâğıt) ─────────────────────────── */
+  --yuzey-0: #f3ecdc;   /* sayfa */
+  --yuzey-1: #faf6eb;   /* panel / kart */
+  --yuzey-2: #ebe3cf;   /* gömülü alan, hover */
+  --yuzey-harita: #1d2619;
+  --cizgi: #d6cbb0;     /* kart kenarı, ayraç (dekoratif) */
+  --cizgi-guclu: #8c8368; /* kontrol kenarı ≥ 3:1 */
+  --metin: #20271d;     /* 14,6:1 */
+  --metin-2: #4b4a3b;   /* 7,8:1 */
+  --metin-3: #655f4b;   /* 5,5:1 */
+  --vurgu: #e5bc2f;     /* birincil eylem ve seçili tarih; başka yerde yok */
+  --vurgu-metin: #20271d;
+
+  /* ── Veri renkleri: anlamı sabit (ilke 5). Hiçbir renk iki anlam taşımaz ── */
+  --bitki-1: #eef3e4; --bitki-2: #cfe3b9; --bitki-3: #93c08a; --bitki-4: #4e8f5c; --bitki-5: #1e5235;
+  --su: #2a6a96;  --su-soluk: #a9c6dc; --su-zemin: #e3edf4;
+  --sicak-1: #fdf3c4; --sicak-2: #f9d27a; --sicak-3: #f0a04b; --sicak-4: #d6602a; --sicak-5: #8f2d14;
+  --radar: #5c6f7f;
+  --iyi: #2d6a4a;    --iyi-zemin: #e1ecdf;
+  --uyari: #9a6a00;  --uyari-zemin: #f4e7bf;  /* amber + ▲ simge */
+  --sorun: #a8322a;  --sorun-zemin: #f3d9d3;  /* kırmızı + ■ simge */
+  --notr: #6c6a5a;
+  --bant-koyu: rgb(78 143 92 / .30);   /* normal bant p25–p75 */
+  --bant-acik: rgb(78 143 92 / .13);   /* p10–p90 */
+  --bant-ortanca: #4e6b4f;
+  --tahmin-cizgi: #20271d;             /* tahmin: kesikli + tarama */
+
+  /* ── Tipografi: serif karar cümlesi + sayı, Plex arayüz (12 px taban, yarım piksel yok) ── */
+  --f-karar: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --f-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --f-sayi: 'Newsreader', Georgia, serif;           /* büyük sayı */
+  --f-etiket: 'IBM Plex Sans', system-ui, sans-serif;
+  --t-sayi: 64px/60px;   --t-sayi-kucuk: 36px/36px;
+  --t-karar: 30px/34px;  --t-baslik: 20px/26px;
+  --t-kart: 15px/22px;   --t-govde: 14px/20px;
+  --t-yardimci: 13px/18px; --t-etiket: 12px/16px;
+  --w-karar: 500; --w-ui: 500; --w-vurgu: 600;
+  --izin-etiket: .07em; /* küçük büyük harf etiket */
+
+  /* ── Boşluk (4 pt) · köşe · gölge · çizgi ───────────── */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+  --r-kontrol: 2px; --r-kart: 3px; --r-rozet: 2px;   /* keskin, baskı hissi */
+  --g-1: none; --g-2: 0 1px 0 rgb(32 39 29 / .08);
+  --cizgi-ince: 1px; --cizgi-seri: 1.75px; --cizgi-cift: 3px double var(--cizgi-guclu);
+  --hareket: 120ms cubic-bezier(.2,.8,.2,1);
+}
+/* Koyu tema (A): yüzeyler zeytin-siyah, kâğıt hissi korunur; veri rampaları aynı, yalnız uyarı/sorun açılır */
+[data-tema='koyu'] {
+  --yuzey-0: #161a12; --yuzey-1: #1d2218; --yuzey-2: #272d20; --cizgi: #38402e; --cizgi-guclu: #7f8768;
+  --metin: #efe9d6; --metin-2: #c9c3ad; --metin-3: #a39d86;
+  --uyari: #e3b34a; --uyari-zemin: #3a2f10; --sorun: #f08a7a; --sorun-zemin: #3b1f1a; --iyi: #7fcb6b; --iyi-zemin: #1f3220;
+  --su: #7fb5dd; --bant-koyu: rgb(127 203 107 / .24); --bant-acik: rgb(127 203 107 / .10); --tahmin-cizgi: #efe9d6;
+}

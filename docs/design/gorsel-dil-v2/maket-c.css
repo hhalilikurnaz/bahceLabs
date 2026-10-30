@@ -1,0 +1,77 @@
+/* YÖN C: maket.css üstüne. B'nin iskeleti (düzen, yoğunluk, kart yapısı, mobil alt sayfa); kabuk dili ciddi/nötr. */
+.yon-c{--karar-px:28px;--karar-lh:34px;--karar-ls:0;--sayi-px:60px;--sayi-lh:58px;--sayi-ls:-.01em;font-variant-numeric:tabular-nums}
+.yon-c .marka-nokta{background:var(--marka-limon);box-shadow:none;width:10px;height:10px;border-radius:2px}
+.yon-c .marka{font-size:17px;font-weight:700}
+.yon-c .ust{border-bottom:1px solid var(--cizgi);box-shadow:none}
+.yon-c .ust nav a.aktif::after,.yon-c .sekmeler a.aktif::after{background:var(--vurgu);height:3px}
+.yon-c .ust nav a.yakinda::after{border-radius:var(--r-rozet);font-size:12px}
+.yon-c .ara{background:var(--yuzey-0);border-radius:var(--r-kontrol)}
+.yon-c .ara kbd{font:12px var(--f-ui);border-radius:3px}
+.yon-c .avatar{border-radius:var(--r-kontrol)}
+.yon-c .bahce-adi{font:700 20px/24px var(--f-ui)}
+.yon-c .btn{border-radius:var(--r-kontrol)}
+.yon-c .btn-birincil{background:var(--vurgu);color:var(--vurgu-metin)}
+.yon-c .txt-btn{height:36px;padding:0 var(--s-2);font-size:13px;color:var(--metin-2);font-weight:600}
+/* panel: nötr gri zemin, çizgili beyaz kartlar */
+.yon-c .panel{background:var(--yuzey-0);border-left:1px solid var(--cizgi);padding:var(--s-3);gap:var(--s-3)}
+.yon-c .karar-kart,.yon-c .kanit,.yon-c .p-bas,.yon-c .akordeonlar,.yon-c .satir,.yon-c .genis-kart{background:var(--yuzey-1);border:1px solid var(--cizgi);border-radius:var(--r-kart);box-shadow:none}
+.yon-c .karar-kart{padding:var(--s-5)}
+.yon-c .kanit{padding:var(--s-4) var(--s-5);border-top:1px solid var(--cizgi)}
+.yon-c .akordeonlar{margin:0;overflow:hidden}
+.yon-c .akordeon{padding:0 var(--s-5)}
+.yon-c .akordeon:last-child{border-bottom:0}
+.yon-c .p-bas{padding:var(--s-5);margin-bottom:0}
+.yon-c .liste{margin:0;overflow:visible;gap:var(--s-3)}
+.yon-c .satir{margin:0;padding:var(--s-4) var(--s-5)}
+.yon-c .p-alt{padding:var(--s-1) 0}
+.yon-c .karar{font:600 var(--karar-px)/var(--karar-lh) var(--f-karar);margin-top:0;text-wrap:balance}
+.yon-c .karar-alt{font-size:15px;color:var(--metin-2);margin-top:var(--s-2)}
+.yon-c .sayi{font-weight:600}
+.yon-c .sayi-blok{margin-top:var(--s-4);align-items:flex-end}
+.yon-c .sayi-yan b{font:600 15px/20px var(--f-ui);text-transform:none;letter-spacing:0;color:var(--metin)}
+.yon-c .sayi-yan span{font-size:14px}
+.yon-c .s-baslik b{font:700 19px/24px var(--f-ui)}
+.yon-c .sayi-k{font:600 30px/34px var(--f-sayi)}
+.yon-c .g-baslik{font:600 16px/22px var(--f-ui)}
+.yon-c .panel-baslik{font-size:14px}
+/* durum çipleri: yuvarlak değil, kare */
+.yon-c .durum{border-radius:var(--r-rozet);font-size:13px}
+.yon-c .kademe .kb{height:6px;border-radius:2px}
+.yon-c .yas{font:500 13px/18px var(--f-ui)}
+.yon-c .bayat{font-weight:600}
+/* harita üstü: tek ray (yüzen, hafif gölge), düz renkli örnek kutusu, gradyan/cam yok */
+.yon-c .ray{border-radius:var(--r-kontrol);background:var(--yuzey-1);border:1px solid var(--cizgi);box-shadow:var(--g-2);backdrop-filter:none}
+.yon-c .ray-sw{width:12px;height:12px;border-radius:2px;border:0;background:var(--bitki-4)}
+.yon-c .ray-sw.sw-su{background:var(--su)}
+.yon-c .lejant{border-radius:var(--r-kontrol);background:var(--yuzey-1);border:1px solid var(--cizgi);box-shadow:var(--g-2)}
+.yon-c .olcek{border-radius:4px;box-shadow:none;background:var(--yuzey-1)}
+.yon-c .atif{border-radius:3px}
+.yon-c .lj-bar{border-radius:2px}
+/* kartografik not: sade — küçük harf, ince çizgi, gölgesiz */
+.yon-c .kn{background:rgb(255 255 255 / .94);border:1px solid var(--cizgi);border-radius:4px;box-shadow:none;padding:5px 8px;font:500 13px/17px var(--f-ui);color:var(--metin);text-transform:none}
+.yon-c .kn b{display:inline;font:600 13px/17px var(--f-ui);text-transform:none;letter-spacing:0;margin:0}
+.yon-c .kn b::after{content:' · '}
+.yon-c .kn-cizgi{stroke:#fff;stroke-width:1.25}
+.yon-c .kn-nokta{fill:#fff;stroke:var(--metin);stroke-width:1.5}
+.yon-c .yaz-resim{border-radius:4px;border:1px solid var(--cizgi);background:var(--yuzey-2)}
+.yon-c .sayfa-tam{padding-top:var(--s-4)}
+.yon-c .sayfa-tam .kanit,.yon-c .genis-kart{padding:var(--s-5)}
+.yon-c .genis-kart{display:grid}
+.yon-c .guven{font-size:14px}
+.yon-c .guven b{color:var(--uyari)}
+.yon-c .eksen,.yon-c .etiket,.yon-c .etiket-s,.yon-c .etiket-b{font-variant-numeric:tabular-nums}
+/* 390: alt sayfa */
+.yon-c.dar .panel{padding:var(--s-2);border-top-left-radius:12px;border-top-right-radius:12px;margin-top:-12px;position:relative;z-index:4;border-top:1px solid var(--cizgi)}
+.yon-c.dar .panel::before{content:'';width:32px;height:4px;border-radius:2px;background:var(--cizgi-guclu);align-self:center;flex:none}
+.yon-c.dar .karar-kart{padding:var(--s-4)}
+.yon-c.dar .kanit{padding:var(--s-3) var(--s-4)}
+.yon-c.dar .akordeon{padding:0 var(--s-4)}
+.yon-c.dar .karar{--karar-px:23px;--karar-lh:28px}
+.yon-c.dar .sayi{--sayi-px:48px;--sayi-lh:48px}
+.yon-c.dar .ray{border-radius:var(--r-kontrol)}
+.yon-c.dar .harita{height:300px}
+.yon-c.dar .p-bas{padding:var(--s-4)}
+
+.yon-c .genis-kart{display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:var(--s-6)}
+.yon-c.dar .genis-kart{flex-direction:column;align-items:flex-start}
+.yon-c .genis-kart .sayi-blok{margin-top:0}

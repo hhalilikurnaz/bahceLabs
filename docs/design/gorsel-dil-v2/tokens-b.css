@@ -1,0 +1,62 @@
+/*
+ * YÖN B · «İstasyon» (soğuk, yoğun ölçüm paneli)  —  tokens.css TASLAĞI (uygulama değil)
+ * Tek dosya, tek kaynak: uygulamada @theme + .app-shell + .notebook + planning-* yerine geçer.
+ * Kural: bileşenlerde ham hex yok; veri rampaları `paletler.ts` ile birebir aynı sıralı skalalar.
+ */
+@import url('yazi/yazi.css');
+
+:root {
+  /* ── Yüzeyler (soğuk gri-yeşil, beyaz kartlar) ───────── */
+  --yuzey-0: #e8edeb;
+  --yuzey-1: #ffffff;
+  --yuzey-2: #f1f4f3;
+  --yuzey-harita: #101a15;
+  --cizgi: #d5ddda;
+  --cizgi-guclu: #7d8c86;
+  --metin: #0e1b17;     /* 17,3:1 */
+  --metin-2: #3f514b;   /* 8,3:1 */
+  --metin-3: #566760;   /* 5,9:1 */
+  --vurgu: #0e1b17;     /* birincil eylem: koyu; limon yalnız logo noktası */
+  --vurgu-metin: #ffffff;
+
+  /* ── Veri renkleri: anlamı sabit (ilke 5) ───────────── */
+  --bitki-1: #eef3e4; --bitki-2: #cfe3b9; --bitki-3: #93c08a; --bitki-4: #4e8f5c; --bitki-5: #1e5235;
+  --su: #1f6fa8;  --su-soluk: #9fc4e0; --su-zemin: #e2eef7;
+  --sicak-1: #fdf3c4; --sicak-2: #f9d27a; --sicak-3: #f0a04b; --sicak-4: #d6602a; --sicak-5: #8f2d14;
+  --radar: #506678;
+  --iyi: #17724a;    --iyi-zemin: #dcf0e5;
+  --uyari: #9a6100;  --uyari-zemin: #fbebc4;
+  --sorun: #b3261e;  --sorun-zemin: #fbdcd8;
+  --notr: #5d6e68;
+  --bant-koyu: rgb(31 143 99 / .22);
+  --bant-acik: rgb(31 143 99 / .09);
+  --bant-ortanca: #176b4a;
+  --tahmin-cizgi: #0e1b17;
+
+  /* ── Tipografi: sans karar cümlesi (sıkı), Inter Tight arayüz, JetBrains Mono etiket ── */
+  --f-karar: 'Inter Tight', system-ui, sans-serif;
+  --f-ui: 'Inter Tight', system-ui, sans-serif;
+  --f-sayi: 'Inter Tight', system-ui, sans-serif;
+  --f-etiket: 'JetBrains Mono', ui-monospace, monospace;
+  --t-sayi: 72px/64px;   --t-sayi-kucuk: 40px/40px;
+  --t-karar: 26px/30px;  --t-baslik: 18px/24px;
+  --t-kart: 15px/22px;   --t-govde: 14px/20px;
+  --t-yardimci: 13px/18px; --t-etiket: 12px/16px;
+  --w-karar: 600; --w-ui: 500; --w-vurgu: 600;
+  --izin-etiket: .02em;
+
+  /* ── Boşluk (4 pt) · köşe · gölge · çizgi ───────────── */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+  --r-kontrol: 8px; --r-kart: 14px; --r-rozet: 999px;  /* yumuşak, cihaz hissi */
+  --g-1: 0 1px 2px rgb(14 27 23 / .06), 0 4px 14px -6px rgb(14 27 23 / .14);
+  --g-2: 0 2px 4px rgb(14 27 23 / .08), 0 14px 32px -12px rgb(14 27 23 / .28);
+  --cizgi-ince: 1px; --cizgi-seri: 2.25px; --cizgi-cift: 1px solid var(--cizgi-guclu);
+  --hareket: 140ms cubic-bezier(.2,.8,.2,1);
+}
+/* Koyu tema (B): serin antrasit, veri rampaları aynı */
+[data-tema='koyu'] {
+  --yuzey-0: #0b1210; --yuzey-1: #131c19; --yuzey-2: #1a2521; --cizgi: #27342f; --cizgi-guclu: #6c7f77;
+  --metin: #eaf1ee; --metin-2: #bccac4; --metin-3: #93a59d; --vurgu: #eaf1ee; --vurgu-metin: #0e1b17;
+  --uyari: #f0b54a; --uyari-zemin: #35290d; --sorun: #ff8c7e; --sorun-zemin: #3a1b17; --iyi: #6fd19b; --iyi-zemin: #14301f;
+  --su: #6cb4ee; --bant-koyu: rgb(111 209 155 / .22); --bant-acik: rgb(111 209 155 / .09); --tahmin-cizgi: #eaf1ee;
+}

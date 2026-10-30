@@ -8,14 +8,14 @@
 - **Eşikler ve kurallar katalogda**, sürümlü, «ön değer · mühendis onayı bekliyor» durumuyla; domain kuralları önce testle (TDD).
 - **Gizli anahtarlar** (Mapbox, MapTiler, EARTHDATA_TOKEN) yalnız `.env.local`; koda, loga, ekran görüntüsüne, commit'e girmez.
 - Veriyi değiştiren betikler: varsayılan dry-run, zorunlu kapsam, pg_dump yedeği, onay. Arka plan işleri idempotent; düşen iş **görünür** (log + bildirim) ve **kaldığı yerden devam eder** (`feed_runs`, ADR 0019/0020 notu).
-- Her adımda: test piramidi (birim + sözleşme + entegrasyon + Playwright + axe), 1440/1024/390 kusursuz, görselleştirme ilkeleri 1–11 kontrol listesi, ADR, küçük conventional commit; push yalnız `feature/faz1`.
+- Her adımda: test piramidi (birim + sözleşme + entegrasyon + Playwright + axe), 1440/1024/390 kusursuz, [görselleştirme ilkeleri 1–11](design/gorsellestirme-ilkeleri.md) kontrol listesi, ADR, küçük conventional commit; push yalnız `feature/faz1`.
 - Rastgele hata kabul edilmez: aralıklı düşen test düzeltilir (kök neden bulunur).
 
 ## Tamamlananlar (özet)
 9A veri temeli · 9B kabuk + çalışma alanı · 9C Sentinel-2 dilimi (NDRE, NDMI, MSAVI, LAI) · 9D radar (Sentinel-1) · 9E su ve sıcaklık (ERA5, Landsat, SMAP/IMERG doğrulama) · 9F Durum v2 + olay motoru + bildirim karar katmanı + kesintisiz canlılık eğrisi · 9G Geçmiş sayfası + Saha Defteri (doğrulama) + dona bağlı değişim anomalisi (ADR 0019) · E olay doğrulamasında otomatik ön doğrulama (ADR 0021): istasyon gözlemi (Meteostat, gerçek gözlem satırları) + kamu kayıtları kataloğu (boş şema) → «destekleniyor / çelişiyor / kanıt yok» rozeti, «Doğrulamanız gereken» listesi, iki ayrı doğruluk sayısı; IMERG geçmişi 2015'e uzatma işi (`imerg_gecmis`).
 
 ## Sıradaki
-Sıradaki adım **9H**; ayrıntı kendi isteminde gelir.
+**9H** (yeni görsel dilin üstüne). U1 (P0 ve hata dürüstlüğü) ve U4 (görsel dil v2 · Yön C: tek token dosyası, grafik bileşen seti, cam, hareket, sağ panel; ADR 0022; `docs/design/u4-ekranlar.pdf`, `docs/design/u4-hareket/`) tamamlandı.
 
 ## Kalan adımlar (bu sırayla)
 
