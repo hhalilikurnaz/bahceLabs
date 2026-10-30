@@ -23,7 +23,7 @@ def plan(**kw) -> PlanYaniti:
 
 def test_yaklasan_sulama_gunu_ve_dedupe():
     c = plan_candidates(G, "Jlnnlk", plan(sonraki=sul(1)), RULE, TODAY)
-    assert [x.tur for x in c] == ["sulama_plani"] and c[0].metin == "Sulama: Çarşamba, 2 sa 25 dk." and c[0].sekme == "sulama-plani"
+    assert [x.tur for x in c] == ["sulama_plani"] and c[0].metin == "Sulama: Çarşamba, 2 sa 25 dk." and c[0].sekme == "su/sulama" and c[0].link().endswith("/su/sulama")
     assert c[0].dedupe_key == plan_candidates(G, "Jlnnlk", plan(sonraki=sul(1)), RULE, TODAY)[0].dedupe_key
 
 

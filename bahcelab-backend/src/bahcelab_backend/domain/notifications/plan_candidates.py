@@ -25,7 +25,7 @@ def plan_candidates(garden_id: uuid.UUID, name: str, plan: PlanYaniti, rule: Sul
     if nxt is not None and 0 <= (nxt.tarih - today).days <= rule.yaklasma_gun:
         detail = f", {_sure(nxt.emitor_dakika)}" if nxt.emitor_dakika else f", ≈ {nxt.m3_bahce:.0f} m³"
         out.append(
-            Candidate(garden_id, "sulama_plani", "bilgi", f"{name}: sulama günü yaklaştı", f"Sulama: {GUN[nxt.tarih.weekday()]}{detail}.", "sulama-plani", f"sulamaplani:{garden_id}:{nxt.tarih}")
+            Candidate(garden_id, "sulama_plani", "bilgi", f"{name}: sulama günü yaklaştı", f"Sulama: {GUN[nxt.tarih.weekday()]}{detail}.", "su/sulama", f"sulamaplani:{garden_id}:{nxt.tarih}")
         )
     if plan.sapma_ciddi and plan.sapma_mm is not None:
         iso = today.isocalendar()
@@ -33,7 +33,7 @@ def plan_candidates(garden_id: uuid.UUID, name: str, plan: PlanYaniti, rule: Sul
         out.append(
             Candidate(
                 garden_id, "sulama_sapma", "onemli", f"{name}: sulama plandan ciddi sapıyor",
-                f"Son 14 günde uyguladığınız sulama plandan ≈ {abs(plan.sapma_mm):.0f} mm {way}.", "sulama-plani", f"sulamasapma:{garden_id}:{iso.year}-W{iso.week:02d}",
+                f"Son 14 günde uyguladığınız sulama plandan ≈ {abs(plan.sapma_mm):.0f} mm {way}.", "su/sulama", f"sulamasapma:{garden_id}:{iso.year}-W{iso.week:02d}",
             )
         )
     return out

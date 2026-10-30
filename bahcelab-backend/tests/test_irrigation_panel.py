@@ -189,3 +189,11 @@ async def test_panel_profilsiz_ve_verisiz(user_client, factory):
     await user_client.put(f"/gardens/{gid}/sulama-profili", json=PROFIL)
     assert (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["durum"] == "veri_yok"  # NDVI yok
     assert (await user_client.get(f"/gardens/{gid}/sulama-simulasyon")).json()["durum"] == "veri_yok"
+
+
+async def test_vardiya_24_saati_asarsa_uyarir(user_client, factory):
+    """Düşük pompa debisi: vardiya toplamı 24 saati aşar; çizelge çizilir ama neden açıkça yazılır."""
+    gid = await kur(user_client, factory, profil={**PROFIL, "pompa_debi_m3h": 3.0})
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
+    v = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["vardiya"]
+    assert v is not None and "24 saati aşıyor" in (v["zaman_notu"] or "")

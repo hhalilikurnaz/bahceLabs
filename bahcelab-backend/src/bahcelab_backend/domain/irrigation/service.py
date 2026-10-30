@@ -654,6 +654,9 @@ class IrrigationService:
             t_min = e_
             kalemler.append(sc.VardiyaKalemi(sektor=x.ad, baslangic=f"{(b // 60) % 24:02d}:{b % 60:02d}", bitis=f"{(e_ // 60) % 24:02d}:{e_ % 60:02d}", sure_dk=sure, m3=m3, brut_mm=brut, litre_agac=None if t is None else t.litre_agac, emitor_dakika=None if t is None else t.emitor_dakika))
         onay = (await self.session.execute(text("SELECT 1 FROM irrigation_approvals WHERE garden_id = :g AND tarih = :d"), {"g": garden_id, "d": gun})).first() if onay_ara else None
+        if kalemler and kalemler[-1].bitis is not None and (t_min - (hh * 60 + mm)) > 24 * 60:
+            toplam_sa = (t_min - (hh * 60 + mm)) / 60.0
+            neden = f"Vardiya toplamı {toplam_sa:.0f} saat: 24 saati aşıyor. Pompa/vana debisi bu alan için yetersiz; vanaları birlikte açmak ya da daha yüksek debi gerekir."
         return sc.Vardiya(tarih=gun, baslangic=p.vardiya_baslangic or c.rule.vardiya_baslangic, kalemler=kalemler, toplam_m3=sum(k.m3 for k in kalemler), onayli=onay is not None, zaman_notu=neden)
 
     # ------------------------------------------------------------------ [Programı onayla] ve [Saha Defteri'ne işle]
