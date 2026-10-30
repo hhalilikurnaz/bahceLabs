@@ -24,8 +24,9 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
   const [infoOpen, setInfoOpen] = useState(false)
   const [sulamaOpen, setSulamaOpen] = useState(false)
   const [name, setName] = useState(garden.ad)
-  const commit = async () => {
-    const next = name.trim()
+  // Değer olay hedefinden okunur: hızlı «yaz + Enter»te state henüz yeniden çizilmemiş olabilir (eski kapanım yeni adı kaçırır; CI'da görülen düşme)
+  const commit = async (value: string) => {
+    const next = value.trim()
     if (next && next !== garden.ad) {
       try {
         await actions.rename(garden, next)
@@ -51,7 +52,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
     <div className="flex h-[52px] shrink-0 items-center gap-[18px] overflow-x-auto border-b border-app-border bg-app-panel px-5 [scrollbar-width:none] max-[560px]:h-auto max-[560px]:flex-wrap max-[560px]:gap-x-3 max-[560px]:gap-y-1 max-[560px]:px-3 max-[560px]:pt-2.5">
       <div ref={box} className="relative shrink-0">
         {renaming ? (
-          <TextField label="Bahçe adı" hideLabel autoFocus value={name} maxLength={120} onChange={(e) => setName(e.target.value)} onBlur={() => void commit()} onKeyDown={(e) => { if (e.key === 'Enter') void commit(); if (e.key === 'Escape') { setName(garden.ad); setRenaming(false) } }} />
+          <TextField label="Bahçe adı" hideLabel autoFocus value={name} maxLength={120} onChange={(e) => setName(e.target.value)} onBlur={(e) => void commit(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void commit(e.currentTarget.value); if (e.key === 'Escape') { setName(garden.ad); setRenaming(false) } }} />
         ) : (
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox" data-testid="bahce-secici" className="flex items-center gap-2.5 whitespace-nowrap text-left max-[560px]:min-h-11">
           <b className="text-[19px] font-bold leading-none tracking-tight">{garden.ad}</b>
