@@ -12,7 +12,7 @@ export function OlayKarti({ gardenId }: { gardenId: string }) {
   const ayni = olay.baslangic === olay.bitis
   return (
     <div role="status" className="glass absolute left-1/2 top-[116px] z-10 flex w-[min(380px,calc(100%-28px))] -translate-x-1/2 items-start gap-2 px-3 py-2 max-[1279px]:top-[124px]" data-testid="olay-karti" data-olay={olay.id}>
-      <div className="min-w-0 flex-1 text-[12.5px] leading-snug">
+      <div className="min-w-0 flex-1 text-small leading-snug">
         <b className="block">{olay.ad}</b>
         <span className="num text-app-text-muted">{ayni ? gunAy(olay.baslangic, 'always') : `${gunAy(olay.baslangic, 'always')} – ${gunAy(olay.bitis, 'always')}`} · harita olayın görüldüğü ilk net görüntüde</span>
         <Link to={gardenPath(gardenId, 'hava')} className="mt-0.5 block font-semibold text-app-accent underline-offset-2 hover:underline">Hava sekmesinde ayrıntı</Link>

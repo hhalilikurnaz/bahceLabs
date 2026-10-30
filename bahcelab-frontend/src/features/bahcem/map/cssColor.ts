@@ -12,7 +12,7 @@ function darkSurface(): HTMLElement {
 }
 
 /** Tema token'ını (Tailwind @theme değişkeni) harita boyası için gerçek renk değerine çevirir. */
-export function cssColor(variable: string, fallback = '#7fcb6b'): string {
+export function cssColor(variable: string, fallback = 'rgb(127,203,107)'): string {
   const value = getComputedStyle(darkSurface()).getPropertyValue(variable).trim()
   return value || fallback
 }

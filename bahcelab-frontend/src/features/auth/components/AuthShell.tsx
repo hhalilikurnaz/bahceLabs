@@ -23,15 +23,15 @@ const panelCopy: Record<
   { eyebrow: string; headline: string; lead: string; bullets: string[] }
 > = {
   login: {
-    eyebrow: 'Planlama alanı',
-    headline: 'Bahçenizi tek ekranda planlayın',
+    eyebrow: 'Bahçe durumu',
+    headline: 'Bahçenizin durumunu tek ekranda izleyin',
     lead: 'Doğru Veriyle, Doğru Üretime İlerleyin!',
     bullets: [],
   },
   register: {
     eyebrow: 'Erken erişim',
     headline: 'Kayıt süreci hazırlanıyor',
-    lead: 'Planlama ve gözlem deneyimi açıldığında bu kanaldan duyuracağız. Blogda sürdürülebilir üretim ve veri okuryazarlığı üzerine yazılar yayınlıyoruz.',
+    lead: 'Gözlem deneyimi açıldığında bu kanaldan duyuracağız. Blogda sürdürülebilir üretim ve veri okuryazarlığı üzerine yazılar yayınlıyoruz.',
     bullets: [
       'Yeni kayıt şimdilik kapalı',
       'Mevcut hesaplarla giriş yapılabilir',

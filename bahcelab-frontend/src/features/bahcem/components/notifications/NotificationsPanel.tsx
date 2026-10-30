@@ -1,3 +1,4 @@
+import { bildirimKarar } from '../../lib/karar'
 import { Bell, CircleAlert, Info, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -39,7 +40,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
           <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
           <div className="min-w-0 flex-1">
             <button type="button" onClick={() => onOpen(item)} data-testid="notification-open" className="flex w-full flex-wrap items-center gap-x-2 text-left">
-              <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>Özet</span>
+              <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-caption font-semibold', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>Özet</span>
               <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
               {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
             </button>
@@ -48,7 +49,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
               {item.ogeler.map((o, i) => (
                 <li key={`${o.baglanti}-${i}`}>
                   <button type="button" onClick={() => onOpen(item, o.baglanti)} data-testid="ozet-ogesi" data-onem={o.onem} data-baglanti={o.baglanti} className="flex min-h-9 w-full items-baseline gap-2 rounded-md text-left text-small text-app-text-muted hover:bg-app-card-hover hover:text-app-text max-[560px]:min-h-11">
-                    <span aria-hidden className={cx('text-[10px]', TONE[o.onem])}>{o.onem === 'onemli' ? '▲' : '●'}</span>
+                    <span aria-hidden className={cx('text-caption', TONE[o.onem])}>{o.onem === 'onemli' ? '▲' : '●'}</span>
                     <span className="min-w-0 underline-offset-2 group-hover:underline">{o.baslik}</span>
                     <span aria-hidden className="ml-auto shrink-0 text-app-text-dim">↗</span>
                   </button>
@@ -66,7 +67,7 @@ function Item({ item, gardenName, onOpen, onState }: { item: AppNotification; ga
         <Icon className={cx('mt-0.5 h-5 w-5 shrink-0', TONE[item.oncelik])} aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2">
-            <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>{item.tur === 'ozet' ? 'Özet' : ONEM[item.oncelik]}</span>
+            <span className={cx('rounded-[3px] border border-app-border px-1.5 py-px text-caption font-semibold', TONE[item.oncelik])} data-testid="notification-onem" data-onem={item.oncelik}>{item.tur === 'ozet' ? 'Özet' : ONEM[item.oncelik]}</span>
             <span className={cx('text-body text-app-text', !item.okundu && 'font-semibold')}>{item.baslik}</span>
             {item.durum === 'olustu' && <span className="rounded-full bg-app-accent px-2 py-0.5 text-caption font-semibold text-white">Yeni</span>}
           </span>
@@ -99,7 +100,7 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
   const navigate = useNavigate()
   const { data: gardens } = useGardens()
   const [filters, setFilters] = useState<NotificationFilters>({ tur: '', bahce: '', yalnizOkunmamis: false, sayfa: 1, gorunum: 'aktif' })
-  const { data, isLoading, isError, refetch, isFetching } = useNotifications(filters)
+  const { data, isLoading, isError, error, refetch, isFetching } = useNotifications(filters)
   const markRead = useMarkRead()
   const markAll = useMarkAllRead()
   const setState = useSetNotificationState()
@@ -117,9 +118,10 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
       <header className="space-y-3 border-b border-app-border p-4">
         <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-2">
           <div className="min-w-0">
-            <h2 className="font-display text-h1 text-app-text">Bildirimler</h2>
+            <h2 className="text-h1 font-semibold text-app-text" data-testid="bildirim-baslik">{bildirimKarar(data ? data.okunmamisUrun : null, data?.okunmamisSistem ?? 0)}</h2>
             <p className="text-small text-app-text-muted" data-testid="unread-summary">
-              {data ? (data.okunmamis > 0 ? `${data.okunmamis} okunmamış` : 'Hepsi okundu') : ' '}
+              {data ? (data.okunmamisUrun > 0 ? `${data.okunmamisUrun} okunmamış` : 'Hepsi okundu') : ' '}
+              {data && data.okunmamisSistem > 0 ? ` · ${data.okunmamisSistem} sistem uyarısı` : ''}
             </p>
           </div>
           <Button className="shrink-0" onClick={() => markAll.mutate({ tur: filters.tur, bahce: filters.bahce })} disabled={!data || data.okunmamis === 0} loading={markAll.isPending}>
@@ -160,7 +162,7 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
             ))}
           </div>
         ) : isError || !data ? (
-          <ErrorState title="Bildirimler alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
+          <ErrorState title="Bildirimler alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} />
         ) : data.ogeler.length === 0 ? (
           <EmptyState
             icon={<Bell className="h-6 w-6" aria-hidden />}
@@ -169,11 +171,28 @@ export function NotificationsPanel({ onNavigate }: { onNavigate?: () => void } =
           />
         ) : (
           <>
-            <ul className="space-y-2" data-testid="notification-list">
-              {data.ogeler.map((item) => (
+            {(() => {
+              const urun = data.ogeler.filter((i) => !i.sistem)
+              const sistem = data.ogeler.filter((i) => i.sistem)
+              const satir = (item: AppNotification) => (
                 <Item key={item.id} item={item} gardenName={item.bahceId ? (names.get(item.bahceId) ?? null) : null} onOpen={open} onState={(it, durum, erteleme_gun) => setState.mutate({ id: it.id, durum, erteleme_gun })} />
-              ))}
-            </ul>
+              )
+              return (
+                <>
+                  {urun.length > 0 && <ul className="space-y-2" data-testid="notification-list">{urun.map(satir)}</ul>}
+                  {urun.length === 0 && sistem.length > 0 && <p className="mb-2 px-1 text-small text-app-text-muted" data-testid="urun-bildirimi-yok">Bahçenizle ilgili uyarı yok.</p>}
+                  {sistem.length > 0 && (
+                    <details className="mt-3 rounded-md border border-app-border" open={urun.length === 0} data-testid="sistem-bildirimleri">
+                      <summary className="flex min-h-11 cursor-pointer items-center justify-between px-3 text-small font-semibold">
+                        <span>Sistem ve veri akışı ({sistem.length})</span>
+                        <span className="font-normal text-app-text-muted">bahçe uyarısı değil</span>
+                      </summary>
+                      <ul className="space-y-2 p-2" data-testid="sistem-listesi">{sistem.map(satir)}</ul>
+                    </details>
+                  )}
+                </>
+              )
+            })()}
             {data.sayfaSayisi > 1 && (
               <div className="mt-3 flex items-center justify-between gap-2">
                 <Button disabled={filters.sayfa <= 1} onClick={() => setFilters((f) => ({ ...f, sayfa: f.sayfa - 1 }))}>

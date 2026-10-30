@@ -139,7 +139,7 @@ export function GardenForm() {
         <div className="flex items-center gap-3 rounded-md border border-app-border bg-app-card p-3">
           <Preview geometry={ready ? geometry : liveGeometry} />
           <div className="min-w-0" aria-live="polite">
-            <p className="text-caption font-semibold uppercase tracking-wide text-app-text-dim">Alan</p>
+            <p className="text-caption font-semibold text-app-text-dim">Alan</p>
             <p className="tabular font-display text-h1 text-app-text" data-testid="form-area">
               {dekar !== null ? formatDecare(dekar) : ready && measure.status === 'loading' ? <Loader2 className="inline h-5 w-5 animate-spin" aria-hidden /> : '—'}
             </p>

@@ -64,15 +64,15 @@ export function BulutAltindaGorus({ gardenId }: { gardenId: string }) {
         </p>
       ) : (
         <>
-          <p className="mt-1 text-[13.5px] leading-snug" data-testid="radar-bulgu">{bulguCumlesi(serit)}</p>
+          <p className="mt-1 text-small leading-snug" data-testid="radar-bulgu">{bulguCumlesi(serit)}</p>
           <div ref={ref} className="mt-2">
             <svg width={w} height={YUKSEKLIK} viewBox={`0 0 ${w} ${YUKSEKLIK}`} role="img" aria-label="Son 90 gün: optik uydu ve radar geçişleri, bahçe RVI çizgisi" className="block overflow-visible">
               {serit.bantlar.map((b, i) => (
                 <rect key={i} x={X(b.bas)} y={6} width={Math.max(2, X(b.bit) - X(b.bas))} height={YUKSEKLIK - 30} fill="var(--color-app-border-strong)" opacity={0.28} data-testid="bulutlu-bant" />
               ))}
-              <text x={0} y={SATIR.optik + 4} fontSize={11} fontWeight={600} fill="var(--color-app-text)">Optik</text>
-              <text x={0} y={SATIR.radar + 4} fontSize={11} fontWeight={600} fill="var(--color-app-text)">Radar</text>
-              <text x={0} y={SATIR.rviUst - 8} fontSize={11} fontWeight={600} fill="var(--color-app-text)">RVI</text>
+              <text x={0} y={SATIR.optik + 4} fontSize={12} fontWeight={600} fill="var(--color-app-text)">Optik</text>
+              <text x={0} y={SATIR.radar + 4} fontSize={12} fontWeight={600} fill="var(--color-app-text)">Radar</text>
+              <text x={0} y={SATIR.rviUst - 8} fontSize={12} fontWeight={600} fill="var(--color-app-text)">RVI</text>
               <line x1={KENAR.sol} x2={w - KENAR.sag} y1={SATIR.optik} y2={SATIR.optik} stroke="var(--color-app-border)" />
               <line x1={KENAR.sol} x2={w - KENAR.sag} y1={SATIR.radar} y2={SATIR.radar} stroke="var(--color-app-border)" />
               {serit.optik.map((o) =>
@@ -96,15 +96,15 @@ export function BulutAltindaGorus({ gardenId }: { gardenId: string }) {
               })}
               {cizgi && <path d={cizgi} fill="none" stroke="var(--color-app-text)" strokeWidth={1.6} strokeLinejoin="round" data-testid="rvi-cizgi" />}
               {rviler.map((r) => <circle key={r.tarih} cx={X(r.gun)} cy={Y(r.deger)} r={1.8} fill="var(--color-app-text)" />)}
-              {sonRvi && <text x={Math.min(X(sonRvi.gun) + 4, w - 36)} y={Y(sonRvi.deger) - 7} fontSize={11} fontWeight={700} fill="var(--color-app-text)" className="num" data-testid="rvi-son">{sayi(sonRvi.deger, 2)}</text>}
-              {rviler.length > 0 && <text x={KENAR.sol - 6} y={SATIR.rviAlt + 3} textAnchor="end" fontSize={10} fill="var(--color-app-text-muted)" className="num">{sayi(lo, 2)}</text>}
-              {rviler.length > 0 && <text x={KENAR.sol - 6} y={SATIR.rviUst + 12} textAnchor="end" fontSize={10} fill="var(--color-app-text-muted)" className="num">{sayi(hi, 2)}</text>}
+              {sonRvi && <text x={Math.min(X(sonRvi.gun) + 4, w - 36)} y={Y(sonRvi.deger) - 7} fontSize={12} fontWeight={700} fill="var(--color-app-text)" className="num" data-testid="rvi-son">{sayi(sonRvi.deger, 2)}</text>}
+              {rviler.length > 0 && <text x={KENAR.sol - 6} y={SATIR.rviAlt + 3} textAnchor="end" fontSize={12} fill="var(--color-app-text-muted)" className="num">{sayi(lo, 2)}</text>}
+              {rviler.length > 0 && <text x={KENAR.sol - 6} y={SATIR.rviUst + 12} textAnchor="end" fontSize={12} fill="var(--color-app-text-muted)" className="num">{sayi(hi, 2)}</text>}
               <line x1={KENAR.sol} x2={w - KENAR.sag} y1={SATIR.rviAlt + 6} y2={SATIR.rviAlt + 6} stroke="var(--color-app-border)" />
-              {aylar.map((a) => <text key={a.gun} x={X(a.gun)} y={YUKSEKLIK - 6} fontSize={10} fill="var(--color-app-text-muted)" textAnchor="middle">{a.ad}</text>)}
+              {aylar.map((a) => <text key={a.gun} x={X(a.gun)} y={YUKSEKLIK - 6} fontSize={12} fill="var(--color-app-text-muted)" textAnchor="middle">{a.ad}</text>)}
             </svg>
           </div>
-          <p className="mt-1 text-[11.5px] leading-snug text-app-text-muted">● net optik · ○ bulutlu (alınamadı) · ■ radar geçişi (yörünge başına ayrı satır; birincil yörünge koyu) · çerçeveli ■ radar olay adayı (kesikli çerçeve: düşük güven, ıslaklık olabilir) · gri bant bulutlu dönem. RVI: birincil yörünge, bahçe ortalaması. Eşikler ön değer · mühendis onayı bekliyor.</p>
-          <button type="button" className="mt-1.5 flex min-h-9 items-center text-[12.5px] font-semibold underline underline-offset-2 max-[560px]:min-h-11" onClick={() => (setKatman('radarVh'), setTarih(null))} data-testid="radar-haritada">Radar (VH) katmanını haritada aç</button>
+          <p className="mt-1 text-caption leading-snug text-app-text-muted">● net optik · ○ bulutlu (alınamadı) · ■ radar geçişi (yörünge başına ayrı satır; birincil yörünge koyu) · çerçeveli ■ radar olay adayı (kesikli çerçeve: düşük güven, ıslaklık olabilir) · gri bant bulutlu dönem. RVI: birincil yörünge, bahçe ortalaması. Eşikler ön değer · mühendis onayı bekliyor.</p>
+          <button type="button" className="mt-1.5 flex min-h-9 items-center text-small font-semibold underline underline-offset-2 max-[560px]:min-h-11" onClick={() => (setKatman('radarVh'), setTarih(null))} data-testid="radar-haritada">Radar (VH) katmanını haritada aç</button>
         </>
       )}
     </section>

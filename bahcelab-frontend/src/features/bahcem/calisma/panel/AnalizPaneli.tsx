@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
-import { ErrorState, Skeleton } from '@/components/ui'
+import { ErrorState } from '@/components/ui'
 import type { Garden } from '../../api/types'
-import { useMultiyear, useStartMultiyear, type MultiyearYear } from '../../api/multiyearApi'
+import { useMultiyear, useStartMultiyear, type MultiyearYear, type MultiyearZone } from '../../api/multiyearApi'
+import { ZONE_SHADES } from '../../lib/paletler'
 import { BosDurum } from '../../kabuk/BosDurum'
 import { gardenPagePath } from '../../lib/routes'
-import { useCalismaStore } from '../calismaStore'
+import { analizBuyukSayi, analizKarar } from '../../lib/karar'
 import { BolgeTablosu } from './BolgeTablosu'
+import { Akordeon, Akordeonlar, IkincilKart, KararBlogu, PanelKabuk, Yapilacaklar } from './parcalar'
 import { YilSorusu } from './YilSorusu'
 
 function yilDurumu(y: MultiyearYear): string {
@@ -17,14 +19,10 @@ function yilDurumu(y: MultiyearYear): string {
 /** Yıl yıl veri: net sahne, dönem kapsamı ve durum. «Yetersiz veri» analize girmez ve soru sorulmaz. */
 function YilTablosu({ yillar }: { yillar: MultiyearYear[] }) {
   return (
-    <details className="rounded-md border border-app-border bg-app-card" data-testid="yil-tablosu">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[13px] font-semibold">
-        Yıl yıl veri ({yillar.length} yıl)
-        <span aria-hidden className="text-app-text-muted">⌄</span>
-      </summary>
+    <div data-testid="yil-tablosu">
       <div className="@container border-t border-app-border">
-        <table className="w-full table-fixed text-left text-[12.5px]">
-          <thead className="text-[11px] uppercase tracking-[.06em] text-app-text-dim">
+        <table className="w-full table-fixed text-left text-small">
+          <thead className="text-caption text-app-text-dim">
             <tr><th className="px-3 py-1.5 font-semibold">Yıl</th><th className="px-2 py-1.5 text-right font-semibold">Net sahne</th><th className="px-2 py-1.5 text-right font-semibold @max-[400px]:hidden">Haz–Eyl ay kapsamı</th><th className="px-3 py-1.5 font-semibold">Durum</th></tr>
           </thead>
           <tbody>
@@ -39,60 +37,73 @@ function YilTablosu({ yillar }: { yillar: MultiyearYear[] }) {
           </tbody>
         </table>
       </div>
-    </details>
+    </div>
   )
 }
 
-/** Analiz sekmesi (v1): bulgu cümlesi · uyumsuz yıl soruları · bölge tablosu · yıl yıl veri · «tüm yıllar» kartı. */
+/** Bölge alan payı: tek çubuk (güçlü / orta / zayıf, zayıf taralı); doğrudan etiketli. */
+function PayCubugu({ ozet }: { ozet: MultiyearZone[] }) {
+  const sirali = [...ozet].sort((a, b) => b.sinif - a.sinif)
+  return (
+    <div data-testid="bolge-pay-cubugu" role="img" aria-label={`Alan payı: ${sirali.map((z) => `${z.ad} %${Math.round(z.pay * 100)}`).join(', ')}`}>
+      <div className="flex h-5 overflow-hidden rounded-sm border border-app-border">
+        {sirali.map((z) => <span key={z.sinif} style={{ width: `${z.pay * 100}%`, background: z.sinif === 1 ? `repeating-linear-gradient(45deg, rgb(23 32 27 / .55) 0 1.5px, transparent 1.5px 5px), ${ZONE_SHADES[1]}` : ZONE_SHADES[z.sinif] }} />)}
+      </div>
+      <div className="mt-1 flex text-small text-app-text-muted">
+        {sirali.map((z) => <span key={z.sinif} style={{ width: `${z.pay * 100}%` }} className="min-w-0 truncate tabular-nums"><b className="text-app-text">{z.ad}</b> %{Math.round(z.pay * 100)}</span>)}
+      </div>
+    </div>
+  )
+}
+
+/** Analiz sekmesi (Yön C): karar cümlesi → «3,6 da sürekli zayıf alan» → bölge payı çubuğu + tablo → Yapılacaklar (karar bekleyen yıl) → ayrıntı. Harita: Bölgeler katmanı. */
 export function AnalizPaneli({ garden }: { garden: Garden }) {
-  const { data, isLoading, isError, refetch, isFetching } = useMultiyear(garden.id)
+  const { data, isLoading, isError, error, refetch, isFetching } = useMultiyear(garden.id)
   const baslat = useStartMultiyear(garden.id)
-  const setKatman = useCalismaStore((s) => s.setKatman)
-  if (isLoading) return <div className="p-5"><Skeleton className="h-48" aria-label="Analiz yükleniyor" /></div>
-  if (isError || !data) return <div className="p-5"><ErrorState title="Analiz alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} /></div>
+  if (isLoading) return <PanelKabuk karar={null} testId="analiz-yukleniyor"><div className="m-skeleton space-y-3 rounded-md border border-app-border bg-app-card p-5" role="status" aria-label="Analiz yükleniyor"><div className="h-8 w-4/5 rounded bg-app-card-hover" /><div className="h-14 w-2/5 rounded bg-app-card-hover" /><div className="h-32 rounded bg-app-card-hover" /></div></PanelKabuk>
+  if (isError || !data) return <PanelKabuk karar={null} testId="analiz-hata"><ErrorState title="Analiz alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} /></PanelKabuk>
   if (data.durum === 'yok') {
     return (
-      <BosDurum gravur="yaprak" baslik="Çok yıllık analiz henüz yok" fayda="Bahçenin yıllar içindeki güçlü ve zayıf kesimlerini bulmak için uydu arşivi yıl yıl işlenir; birkaç dakika sürer." testId="analiz-yok">
-        <button type="button" onClick={() => baslat.mutate()} disabled={baslat.isPending} className="h-11 rounded-md bg-app-primary px-4 text-[14px] font-semibold text-app-on-primary disabled:opacity-60">Analizi başlat</button>
-      </BosDurum>
+      <PanelKabuk karar={null} testId="analiz-bos">
+        <BosDurum gravur="yaprak" baslik="Çok yıllık analiz henüz yok" fayda="Bahçenin yıllar içindeki güçlü ve zayıf kesimlerini bulmak için uydu arşivi yıl yıl işlenir; birkaç dakika sürer." testId="analiz-yok">
+          <button type="button" onClick={() => baslat.mutate()} disabled={baslat.isPending} className="h-11 rounded-md bg-app-primary px-4 text-body font-semibold text-app-on-primary disabled:opacity-60">Analizi başlat</button>
+        </BosDurum>
+      </PanelKabuk>
     )
   }
   const sorular = data.yillar.filter((y) => y.uyumsuz && !y.yetersiz_veri)
-  const yorumlar = data.yorumlar
-  const bulgu = data.durum === 'hazir' ? (yorumlar[0] ?? 'Bölgeler hesaplandı.') : data.durum === 'islem_suruyor' ? 'Analiz sürüyor.' : 'Bölgeleme için yeterli veri yok.'
+  const hazir = data.durum === 'hazir'
+  const zayif = data.ozet.find((z) => z.sinif === 1)
+  const bulgu = analizKarar({ hazir, sureniyor: data.durum === 'islem_suruyor', homojen: data.homojen, zayifPay: zayif?.pay ?? null })
+  const sayi = hazir ? analizBuyukSayi(zayif?.alan_dekar ?? null) : null
   return (
-    <div className="grid gap-4 p-5" data-testid="analiz-paneli">
-      <section aria-label="Bulgu">
-        <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">Analiz{data.yil_araligi ? ` · ${data.yil_araligi}` : ''}</div>
-        <h2 className="mt-0.5 text-[20px] font-bold leading-snug" data-testid="analiz-bulgu">{bulgu}</h2>
-        {data.durum === 'hazir' && yorumlar.slice(1).map((y) => <p key={y} className="mt-1 text-[14px] text-app-text-muted">{y}</p>)}
-        {data.durum !== 'hazir' && data.mesaj && <p className="mt-1 text-[14px] text-app-text-muted">{data.mesaj}</p>}
-      </section>
-
+    <PanelKabuk karar={bulgu} testId="analiz-paneli">
+      <KararBlogu testId="analiz-karar" karar={bulgu} sayi={sayi?.buyuk ?? null} etiket={sayi?.etiket}
+        kucuk={zayif ? `bahçenin %${Math.round(zayif.pay * 100)}’i${zayif.fark_yuzde !== null ? ` · yıllardır normalin %${Math.abs(zayif.fark_yuzde).toFixed(1).replace('.', ',')} ${zayif.fark_yuzde < 0 ? 'altında' : 'üstünde'}` : ''}` : undefined}>
+        <span hidden data-testid="analiz-bulgu">{bulgu}</span>
+        {data.durum !== 'hazir' && data.mesaj && <p className="mt-2 text-body text-app-text-muted">{data.mesaj}</p>}
+        {hazir && data.yorumlar.map((y) => <p key={y} className="mt-2 text-body text-app-text-muted">{y}</p>)}
+      </KararBlogu>
+      {hazir && (
+        <section aria-label="Bölgeler" className="rounded-md border border-app-border bg-app-card p-4" data-testid="bolgeler-karti">
+          <h3 className="text-lead font-semibold">Bahçenin güçlü ve zayıf kesimleri</h3>
+          <div className="mt-3"><PayCubugu ozet={data.ozet} /></div>
+          <div className="mt-3"><BolgeTablosu ozet={data.ozet} /></div>
+          <p className="mt-2 text-caption text-app-text-dim">Ön değer · mühendis onayı bekliyor. {data.not_}</p>
+        </section>
+      )}
       {sorular.length > 0 && (
-        <section aria-label="Uyumsuz yıllar" className="grid gap-2">
-          <h3 className="text-[13px] font-semibold">Uyumsuz yıllar</h3>
-          <ul className="grid gap-2">{sorular.map((y) => <YilSorusu key={y.yil} gardenId={garden.id} yil={y} />)}</ul>
-        </section>
+        <Yapilacaklar testId="analiz-yapilacaklar">
+          <p className="mt-0.5 text-small text-app-text-dim">Uyumsuz görünen yıllar için karar bekleniyor.</p>
+          <ul className="mt-2 grid gap-2">{sorular.map((y) => <YilSorusu key={y.yil} gardenId={garden.id} yil={y} />)}</ul>
+        </Yapilacaklar>
       )}
-
-      {data.durum === 'hazir' && (
-        <section aria-label="Bölgeler" className="grid gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[13px] font-semibold">Ağaç gücü bölgeleri</h3>
-            <button type="button" onClick={() => setKatman('bolgeler')} className="h-11 rounded-md px-3 text-[13px] font-semibold text-app-accent underline-offset-2 hover:underline">Haritada göster</button>
-          </div>
-          <BolgeTablosu ozet={data.ozet} />
-          <p className="text-[12px] text-app-text-dim">Ön değer · mühendis onayı bekliyor. {data.not_}</p>
-        </section>
-      )}
-
-      <YilTablosu yillar={data.yillar} />
-
-      <Link to={gardenPagePath(garden.id, 'gecmis')} data-testid="tum-yillar" className="flex min-h-11 items-center justify-between rounded-md border border-app-border bg-app-card px-3.5 py-3 text-[14px] font-semibold hover:border-app-text">
-        <span>{data.yillar.length} yılın tamamı</span>
-        <span aria-hidden>↗</span>
-      </Link>
-    </div>
+      <IkincilKart baslik="Tüm yıllar" testId="tum-yillar-karti">
+        <Link to={gardenPagePath(garden.id, 'gecmis')} data-testid="tum-yillar" className="flex min-h-11 items-center justify-between rounded-md border border-app-border px-3 text-body font-semibold hover:border-app-border-strong"><span>{data.yillar.length} yılın tamamı</span><span aria-hidden>↗</span></Link>
+      </IkincilKart>
+      <Akordeonlar>
+        <Akordeon baslik="Yıl yıl veri" ozet={`${data.yillar.length} yıl`}><YilTablosu yillar={data.yillar} /></Akordeon>
+      </Akordeonlar>
+    </PanelKabuk>
   )
 }

@@ -1,3 +1,4 @@
+import { ErrorState } from '@/components/ui'
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -25,7 +26,8 @@ function Kare({ grid, alan, halka, uyumsuz }: { grid: YilGrid; alan: [number, nu
  * Çok yıllı analizin uyumsuz saydığı yıl kesikli çerçevelidir (analiz yoksa çerçeve yok). Bir yıla dokununca çalışma alanı haritası o yaza açılır.
  */
 export function YazHaritalari({ garden }: { garden: Garden }) {
-  const multi = useMultiyear(garden.id).data
+  const multiSorgu = useMultiyear(garden.id)
+  const multi = multiSorgu.data
   const yillar = useMemo(() => (multi?.yillar ?? []).filter((y) => y.yil_net_sahne > 0 || y.sahne_sayisi > 0).map((y) => y.yil).sort((a, b) => a - b), [multi])
   const sorgular = useQueries({ queries: yillar.map((y) => yilGridOptions(garden.id, y)) }) // istekler `yilGridOptions` içinde en çok 3 eşzamanlıya sınırlanır
   const gridler = sorgular.map((s) => s.data ?? null)
@@ -37,8 +39,10 @@ export function YazHaritalari({ garden }: { garden: Garden }) {
   return (
     <section aria-label="Aynı bahçe, yaz yaz" className="rounded-md border border-app-border bg-app-card p-3.5" data-testid="yaz-haritalari">
       <h3 className="text-[13px] font-semibold">Aynı bahçe, {hazir.length || yillar.length || ''} yaz</h3>
-      <p className="mt-1 text-[12.5px] text-app-text-muted">Her kare, o yılın Haziran–Eylül ortanca canlılığı; hepsi aynı renk skalasında. Kesikli çerçeve: çok yıllı analizin diğer yıllara benzemeyen saydığı yıl. Bir yıla dokunun, harita o yaza açılır.</p>
-      {multi && multi.durum === 'yok' ? (
+      <p className="mt-1 text-small text-app-text-muted">Her kare, o yılın Haziran–Eylül ortanca canlılığı; hepsi aynı renk skalasında. Kesikli çerçeve: çok yıllı analizin diğer yıllara benzemeyen saydığı yıl. Bir yıla dokunun, harita o yaza açılır.</p>
+      {multiSorgu.isError && !multi ? (
+        <ErrorState title="Yaz haritaları alınamadı" error={multiSorgu.error} retrying={multiSorgu.isFetching} onRetry={() => void multiSorgu.refetch()} className="py-4" />
+      ) : multi && multi.durum === 'yok' ? (
         <p className="mt-3 text-[13px] text-app-text-muted" data-testid="yaz-haritalari-bos">Çok yıllı analiz henüz yapılmadı; yıllık kareler analiz sonrası burada görünür.</p>
       ) : yukleniyor && !hazir.length ? (
         <div role="status" aria-label="Yaz haritaları yükleniyor" className="mt-3 h-24 animate-pulse rounded bg-app-card-hover" />

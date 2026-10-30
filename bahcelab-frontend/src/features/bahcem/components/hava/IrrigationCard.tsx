@@ -14,7 +14,7 @@ const mm = (v: number) => v.toLocaleString('tr-TR', { maximumFractionDigits: 1 }
 
 /** Sulama önerisi: tek cümle karar + anlamlı sayılar + «Sulama sistemi seçin». 9H'de Su sekmesine taşınacak. Reçete değil, yaklaşık öneri. */
 export function IrrigationCard({ garden }: { garden: Garden }) {
-  const { data, isLoading, isError, refetch, isFetching } = useIrrigation(garden.id)
+  const { data, isLoading, isError, error, refetch, isFetching } = useIrrigation(garden.id)
   const update = useUpdateGarden()
   const toast = useToast()
 
@@ -46,7 +46,7 @@ export function IrrigationCard({ garden }: { garden: Garden }) {
       {isLoading ? (
         <Skeleton className="h-32" />
       ) : isError || !data ? (
-        <ErrorState title="Sulama önerisi alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
+        <ErrorState title="Sulama önerisi alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} />
       ) : !data.veriYeterli ? (
         <p className="text-body text-app-text-muted" data-testid="irrigation-insufficient">
           Veri yetersiz: {data.veriYetersizNedeni}

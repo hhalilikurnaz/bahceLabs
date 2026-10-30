@@ -14,7 +14,7 @@ export function CurrentCard({ weather }: { weather: Weather }) {
     <Card aria-label="Şu anki hava durumu" data-testid="current-weather">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-caption font-semibold uppercase tracking-wide text-app-text-dim">Şu an</p>
+          <p className="text-caption font-semibold text-app-text-dim">Şu an</p>
           <p className="tabular font-display text-metric text-app-text" data-testid="current-temp">
             {formatTemp(simdi.sicaklik)}
             <span className="ml-0.5 text-lead font-medium text-app-text-muted">C</span>

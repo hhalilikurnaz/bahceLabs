@@ -16,7 +16,7 @@
 }
 .bahcem-popup .ndvi-popup-hint {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-app-text-dim);
 }
 .bahcem-popup .maplibregl-popup-close-button {

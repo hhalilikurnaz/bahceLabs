@@ -1,6 +1,6 @@
 import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Card, ErrorState, Skeleton, cx } from '@/components/ui'
+import { ErrorState, Skeleton, cx } from '@/components/ui'
 import { useToday, type TodayItem } from '../../api/agroApi'
 import { gardenPath } from '../../lib/routes'
 
@@ -12,18 +12,18 @@ const ACTION_LABEL: Record<TodayItem['sekme'], string> = { durum: 'Durum', anali
 
 /** «Bugün»: ÖNEM sırasıyla (kritik → önemli → bilgi) en fazla 3 madde — olaylar ve riskler dahil; satır = ikon · başlık · kısa açıklama · sağda tek eylem. */
 export function TodayCard({ gardenId }: { gardenId: string }) {
-  const { data, isLoading, isError, refetch, isFetching } = useToday(gardenId)
-  if (isLoading) return <Skeleton className="h-44" aria-label="Bugün yükleniyor" />
+  const { data, isLoading, isError, error, refetch, isFetching } = useToday(gardenId)
+  if (isLoading) return <Skeleton className="m-skeleton h-44" aria-label="Yapılacaklar yükleniyor" />
   if (isError || !data) {
     return (
-      <Card>
-        <ErrorState title="Bugün listesi alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
-      </Card>
+      <section className="rounded-md border border-app-border bg-app-card p-4">
+        <ErrorState title="Yapılacaklar alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} className="py-4" />
+      </section>
     )
   }
   return (
-    <Card aria-label="Bugün" data-testid="today-card" className="p-4">
-      <h3 className="font-display text-h2 text-app-text">Bugün</h3>
+    <section aria-label="Yapılacaklar" data-testid="today-card" className="rounded-md border border-app-border bg-app-card p-4">
+      <h3 className="text-lead font-semibold text-app-text">Yapılacaklar</h3>
       <ul className="mt-2 divide-y divide-app-border">
         {data.map((item) => {
           const done = item.tur === 'her_sey_yolunda'
@@ -33,7 +33,7 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
               <Icon className={cx('h-5 w-5 shrink-0', done ? 'text-app-success' : TONE[item.oncelik])} aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="text-body font-semibold leading-snug text-app-text">
-                  <span className={cx('mr-1.5 rounded-[3px] border border-app-border px-1.5 py-px align-middle text-[10.5px] font-semibold uppercase tracking-[.05em]', TONE[item.oncelik])} data-testid="today-onem" data-onem={item.oncelik}>{ONEM_AD[item.oncelik]}</span>
+                  <span className={cx('mr-1.5 rounded-[4px] border border-app-border px-1.5 py-px align-middle text-caption font-semibold', TONE[item.oncelik])} data-testid="today-onem" data-onem={item.oncelik}>{ONEM_AD[item.oncelik]}</span>
                   {item.baslik}
                 </p>
                 <p className="text-small text-app-text-muted">{item.metin}</p>
@@ -57,6 +57,6 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
           )
         })}
       </ul>
-    </Card>
+    </section>
   )
 }

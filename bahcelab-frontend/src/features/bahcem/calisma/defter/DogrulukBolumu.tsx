@@ -13,9 +13,9 @@ export function DogrulukBolumu({ gardenId }: { gardenId: string }) {
       ) : !o || o.turler.length === 0 ? (
         <p className="mt-2 text-[13px] text-[var(--ink-3)]" data-testid="dogruluk-bos">Henüz olay ya da uyarı kaydı yok.</p>
       ) : (
-        <table className="mt-2 w-full border-collapse text-left text-[12.5px]" data-testid="dogruluk-tablosu">
+        <table className="mt-2 w-full border-collapse text-left text-small" data-testid="dogruluk-tablosu">
           <thead>
-            <tr className="border-b border-[var(--rule-2)] text-[11.5px] text-[var(--ink-3)]">
+            <tr className="border-b border-[var(--rule-2)] text-caption text-[var(--ink-3)]">
               <th scope="col" className="py-1 pr-2 font-semibold">Tür</th>
               <th scope="col" className="py-1 pr-2 font-semibold">Üretici doğrulaması</th>
               <th scope="col" className="py-1 pr-2 font-semibold">Dış kaynak desteği</th>
@@ -34,7 +34,7 @@ export function DogrulukBolumu({ gardenId }: { gardenId: string }) {
           </tbody>
         </table>
       )}
-      {o && <p className="mt-1.5 text-[11.5px] text-[var(--ink-3)]">İki sayı ayrıdır: «üretici doğrulaması» sizin sahada gördüğünüzdür; «dış kaynak desteği» istasyon gözlemi ve kamu kayıtlarının ön yargısıdır (uydunun kendi girdileri sayılmaz, kanıtı olmayan olay «destekleniyor» sayılmaz). En az {o.asgari_dogrulama} doğrulama olmadan oran verilmez · {o.esik_durumu}. {o.not_}</p>}
+      {o && <p className="mt-1.5 text-caption text-[var(--ink-3)]">İki sayı ayrıdır: «üretici doğrulaması» sizin sahada gördüğünüzdür; «dış kaynak desteği» istasyon gözlemi ve kamu kayıtlarının ön yargısıdır (uydunun kendi girdileri sayılmaz, kanıtı olmayan olay «destekleniyor» sayılmaz). En az {o.asgari_dogrulama} doğrulama olmadan oran verilmez · {o.esik_durumu}. {o.not_}</p>}
     </section>
   )
 }

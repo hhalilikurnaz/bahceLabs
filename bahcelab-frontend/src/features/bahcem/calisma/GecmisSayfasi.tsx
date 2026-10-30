@@ -1,54 +1,61 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Akordeon, Akordeonlar, BuyukSayi } from './panel/parcalar'
 import { usePhenology } from '../api/agroApi'
 import { useGecmisOzeti } from '../api/gecmisOzetiApi'
 import type { Garden } from '../api/types'
 import { useElementWidth } from '../hooks/useElementWidth'
 import { dekar } from '../lib/format'
+import { gecmisKarar } from '../lib/karar'
 import { gardenPath } from '../lib/routes'
 import { OlayZamanCizelgesi } from './gecmis/OlayZamanCizelgesi'
 import { YazHaritalari } from './gecmis/YazHaritalari'
 import { YilTablosu } from './gecmis/YilTablosu'
-import { Fenoloji, SezonEgrisi } from './panel/SezonEgrisi'
+import { Fenoloji } from './panel/Fenoloji'
+import { SezonEgrisi } from './panel/SezonEgrisi'
+import { useSezonDagilimi } from './useKonum'
 
 /**
- * Geçmiş (9G): bahçenin yıllar içindeki seyri — bu sezon / önceki sezonlar, yaz yaz küçük haritalar, olay zaman çizelgesi, yıl özeti ve fenoloji.
- * Çalışma alanından ayrı bir sayfadır; her etkileşim (ay, yıl, olay) çalışma alanı haritasını ilgili ana açar.
+ * Geçmiş: tek soru «bu sezon geçmişe göre nasıl?». Karar cümlesi + tek sayı → sadeleşmiş sezon çizgisi → 12 yaz (ortak skala) → ayrıntı akordeonları (olaylar, yıl özeti, fenoloji).
+ * Çalışma alanından ayrı sayfadır; her etkileşim (ay, yıl, olay) çalışma alanı haritasını ilgili ana açar.
  */
 export function GecmisSayfasi({ garden }: { garden: Garden }) {
   const navigate = useNavigate()
   const ozet = useGecmisOzeti(garden.id).data
   const fenoloji = usePhenology(garden.id).data
+  const dagilim = useSezonDagilimi(garden.id)
   const [yil, setYil] = useState<number | null>(null)
   const [ref, genislik] = useElementWidth<HTMLDivElement>()
   const simdi = new Date().getFullYear()
+  const karar = gecmisKarar(dagilim.ic, dagilim.alt, dagilim.ust)
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-app-bg" data-testid="gecmis-sayfasi">
-      <div className="mx-auto max-w-[1180px] px-5 py-5 max-[560px]:px-3">
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-          <Link to={gardenPath(garden.id)} data-testid="calisma-alanina-don" className="inline-flex min-h-11 items-center rounded-md border border-app-border px-3 text-[13px] font-semibold hover:border-app-text">← Çalışma alanı</Link>
+    <div className="min-h-0 flex-1 overflow-y-auto bg-app-canvas" data-testid="gecmis-sayfasi">
+      <div className="mx-auto grid max-w-[1180px] grid-cols-[minmax(0,1fr)] gap-3 px-5 py-4 max-[560px]:px-3">
+        <Link to={gardenPath(garden.id)} data-testid="calisma-alanina-don" className="inline-flex min-h-11 w-fit items-center text-small font-semibold text-app-text-muted hover:text-app-text">← Çalışma alanı</Link>
+        <section className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md border border-app-border bg-app-card p-5" data-testid="gecmis-karar">
           <div>
-            <div className="text-[11.5px] text-app-text-muted">{garden.ad} · {dekar(garden.alanDekar)}</div>
-            <h2 className="text-[22px] font-bold leading-tight" data-testid="gecmis-baslik">Geçmiş · {ozet?.ilk_yil ?? '…'}–{simdi}</h2>
+            <h1 className="text-h1 font-semibold text-app-text" data-testid="gecmis-baslik">{dagilim.yukleniyor ? 'Geçmiş yükleniyor' : karar}</h1>
+            <p className="mt-1 text-small text-app-text-dim">{garden.ad} · {dekar(garden.alanDekar)} · {ozet?.ilk_yil ?? '…'}–{simdi}</p>
           </div>
-        </div>
-        <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
-          <SezonEgrisi gardenId={garden.id} gostergeler={['ndvi', 'ndre', 'ndmi']} baslikSezonSayili onAy={(katman, tarih) => navigate(`${gardenPath(garden.id)}?katman=${katman}${tarih ? `&tarih=${tarih}` : ''}`)} />
-          <YazHaritalari garden={garden} />
-          <OlayZamanCizelgesi gardenId={garden.id} yil={yil} yilTemizle={() => setYil(null)} />
-          <YilTablosu gardenId={garden.id} yilSec={setYil} secili={yil} />
-          <section aria-label="Fenoloji" className="rounded-md border border-app-border bg-app-card p-3.5" data-testid="gecmis-fenoloji">
-            <h3 className="text-[13px] font-semibold">Ortalama limon yılı</h3>
-            <p className="mt-1 text-[12.5px] text-app-text-muted">Evre tarihleri katalogdan gelir · ön değer · mühendis onayı bekliyor.</p>
-            <div ref={ref} className="mt-2">{fenoloji?.evreler?.length ? <Fenoloji evreler={fenoloji.evreler} yil={simdi} genislik={Math.max(300, genislik)} /> : <p className="text-[13px] text-app-text-muted">Bu ürün için fenoloji kuralı yok.</p>}</div>
+          {dagilim.n > 0 && (
+            <div className="flex items-end gap-3">
+              <span className="text-metric font-semibold leading-none"><BuyukSayi metin={String(dagilim.ic + dagilim.ust)} className="text-metric" /><small className="text-h2 font-medium text-app-text-dim">/{dagilim.n}</small></span>
+              <div className="pb-1"><b className="block text-body">görüntü normal ya da üstünde</b><span className="text-small text-app-text-muted">{simdi} uydu görüntüleri · {dagilim.alt} tanesi normalin altında</span></div>
+            </div>
+          )}
+        </section>
+        <SezonEgrisi gardenId={garden.id} gostergeler={['ndvi', 'ndre', 'ndmi']} ayrintili yukseklik={250} onAy={(katman, tarih) => navigate(`${gardenPath(garden.id)}?katman=${katman}${tarih ? `&tarih=${tarih}` : ''}`)} />
+        <YazHaritalari garden={garden} />
+        <Akordeonlar>
+          <Akordeon baslik="Olaylar" ozet="don, aşırı yağış, rüzgâr ve uydudan görülen ani değişimler" acik><OlayZamanCizelgesi gardenId={garden.id} yil={yil} yilTemizle={() => setYil(null)} /></Akordeon>
+          <Akordeon baslik="Yıl yıl özet" ozet="yaz canlılığı, olay sayısı, hasat kaydı"><YilTablosu gardenId={garden.id} yilSec={setYil} secili={yil} /></Akordeon>
+          <Akordeon baslik="Ortalama limon yılı" ozet="evre tarihleri · ön değer" testId="gecmis-fenoloji">
+            <div ref={ref}>{fenoloji?.evreler?.length ? <Fenoloji evreler={fenoloji.evreler} yil={simdi} genislik={Math.max(300, genislik)} /> : <p className="text-small text-app-text-muted">Bu ürün için fenoloji kuralı yok.</p>}</div>
             {ozet && ozet.yesillenme.length > 0 && (
-              <p className="mt-2 text-[12.5px]" data-testid="yesillenme-listesi">
-                <b>Yeşerme başlangıcı (ön değer, yalnız eğrinin güvenilir olduğu yıllar):</b>{' '}
-                {ozet.yesillenme.map((y) => `${y.yil} · ${new Date(`${y.tarih}T00:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}`).join(' · ')}
-              </p>
+              <p className="mt-2 text-small" data-testid="yesillenme-listesi"><b>Yeşerme başlangıcı (ön değer, yalnız eğrinin güvenilir olduğu yıllar):</b> {ozet.yesillenme.map((y) => `${y.yil} · ${new Date(`${y.tarih}T00:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}`).join(' · ')}</p>
             )}
-          </section>
-        </div>
+          </Akordeon>
+        </Akordeonlar>
       </div>
     </div>
   )

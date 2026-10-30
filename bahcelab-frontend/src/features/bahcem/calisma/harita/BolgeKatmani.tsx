@@ -3,6 +3,7 @@ import { useMultiyear } from '../../api/multiyearApi'
 import { ZONE_SHADES } from '../../lib/paletler'
 import { useMap } from '../../map/useMap'
 import { sinirlarUste } from './haritaYardim'
+import { HARITA } from '../../map/haritaRenkleri'
 
 const KATMANLAR = ['kb-zon-fill', 'kb-zon-hatch', 'kb-zon-line'] as const
 
@@ -34,9 +35,9 @@ export function BolgeKatmani({ gardenId, visible }: { gardenId: string; visible:
       map.addImage('kb-tarama', x.getImageData(0, 0, 8, 8))
     }
     map.addSource('kb-zon', { type: 'geojson', data: fc as GeoJSON.FeatureCollection })
-    map.addLayer({ id: 'kb-zon-fill', type: 'fill', source: 'kb-zon', paint: { 'fill-color': ['match', ['get', 'sinif'], 1, ZONE_SHADES[1], 2, ZONE_SHADES[2], 3, ZONE_SHADES[3], '#cccccc'], 'fill-opacity': 0.82 } })
+    map.addLayer({ id: 'kb-zon-fill', type: 'fill', source: 'kb-zon', paint: { 'fill-color': ['match', ['get', 'sinif'], 1, ZONE_SHADES[1], 2, ZONE_SHADES[2], 3, ZONE_SHADES[3], HARITA.rcccccc], 'fill-opacity': 0.82 } })
     map.addLayer({ id: 'kb-zon-hatch', type: 'fill', source: 'kb-zon', filter: ['==', ['get', 'sinif'], 1], paint: { 'fill-pattern': 'kb-tarama' } })
-    map.addLayer({ id: 'kb-zon-line', type: 'line', source: 'kb-zon', paint: { 'line-color': '#ffffff', 'line-width': 1.2 } })
+    map.addLayer({ id: 'kb-zon-line', type: 'line', source: 'kb-zon', paint: { 'line-color': HARITA.rffffff, 'line-width': 1.2 } })
     sinirlarUste(map)
   }, [map, styleVersion, visible, fc])
 

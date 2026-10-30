@@ -1,3 +1,4 @@
+import { camSusun } from '@/lib/cam'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { Map as MapLibreMap } from 'maplibre-gl'
@@ -73,6 +74,7 @@ export function MapProvider({ userId, children, mount }: MapProviderProps) {
         pitchWithRotate: false,
       })
       created.touchZoomRotate.disableRotation()
+      if (import.meta.env.DEV) (window as unknown as { __bahcelabHarita?: unknown }).__bahcelabHarita = created // yalnız geliştirme/e2e: harita testleri izdüşümü doğrular
 
       const persist = () => {
         window.clearTimeout(saveTimer)
@@ -87,6 +89,9 @@ export function MapProvider({ userId, children, mount }: MapProviderProps) {
         }, 400)
       }
       created.on('moveend', persist)
+      // Hareket sırasında cam bulanıklığı kapalı (performans; lib/cam.ts)
+      for (const olay of ['movestart', 'move', 'zoom', 'dragstart'] as const) created.on(olay, () => camSusun(250))
+      created.on('moveend', () => camSusun(120))
       // Mapbox token'ı geçersiz/yetkisizse (401/403) oturum boyunca MapTiler'a düşülür; tercih kaydı değişmez
       created.on('error', (event) => {
         const status = (event.error as { status?: number } | undefined)?.status

@@ -1,21 +1,21 @@
 import type { Garden } from '../../api/types'
 import { WeatherTab } from '../../components/hava/WeatherTab'
-import { BosDurum } from '../../kabuk/BosDurum'
 import type { GardenTab } from '../../lib/routes'
 import { AnalizPaneli } from './AnalizPaneli'
 import { DurumPaneli } from './DurumPaneli'
+import { PanelKabuk, YakindaSatiri } from './parcalar'
 import { SuPaneli } from './SuPaneli'
 
-/** Sağ sabit panel: sekme içeriği. */
+/** Sağ panel: sekme içeriği. Sekme değişince içerik hafif çapraz geçiş + 8 px kayma ile gelir (250 ms; reduced-motion'da anında). */
 export function SagPanel({ garden, tab }: { garden: Garden; tab: GardenTab }) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto" data-testid={`panel-${tab}`}>
+    <div key={tab} className="m-panel-in flex min-h-0 flex-1 flex-col" data-testid={`panel-${tab}`}>
       {tab === 'durum' && <DurumPaneli garden={garden} />}
       {tab === 'analiz' && <AnalizPaneli garden={garden} />}
       {tab === 'su' && <SuPaneli garden={garden} />}
       {tab === 'hava' && <WeatherTab garden={garden} />}
-      {tab === 'gunluk' && <BosDurum gravur="dal" baslik="Günlük" fayda="Gözlem, hasat ve iş kayıtları konumlu fotoğraflarla burada tutulacak." adim="Adım 11" />}
-      {tab === 'rapor' && <BosDurum gravur="kesit" baslik="Rapor" fayda="Sezonun uydu, hava ve kayıt özeti PDF ve paylaşım bağlantısı olarak." adim="Adım 16" />}
+      {tab === 'gunluk' && <PanelKabuk karar={null} testId="gunluk-paneli"><YakindaSatiri ad="Günlük" ne="Gözlem, hasat ve iş kayıtları konumlu fotoğraflarla burada tutulacak." /></PanelKabuk>}
+      {tab === 'rapor' && <PanelKabuk karar={null} testId="rapor-paneli"><YakindaSatiri ad="Rapor" ne="Sezonun uydu, hava ve kayıt özeti PDF olarak burada olacak." /></PanelKabuk>}
     </div>
   )
 }

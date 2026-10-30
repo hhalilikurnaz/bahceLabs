@@ -1,3 +1,4 @@
+import { ErrorState } from '@/components/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GUVEN_AD, useOlaylar, type Olay } from '../../api/olayApi'
@@ -24,7 +25,7 @@ function Serit({ olaylar, ilk, son, secili, sec }: { olaylar: Olay[]; ilk: numbe
     <div className="relative mt-3" data-testid="olay-serit" role="group" aria-label="Olayların zaman şeridi">
       {TUR_SUZGECLERI.map((t) => (
         <div key={t.id} className="relative flex h-7 items-center border-b border-app-border/60">
-          <span className="w-[78px] shrink-0 truncate text-[11px] text-app-text-muted max-[560px]:w-[58px]" title={t.ad}>{t.ad}</span>
+          <span className="w-[78px] shrink-0 truncate text-caption text-app-text-muted max-[560px]:w-[58px]" title={t.ad}>{t.ad}</span>
           <div className="relative h-full flex-1">
             {olaylar.filter((o) => turAnahtarlari(o).includes(t.id)).map((o) => (
               <button
@@ -33,7 +34,7 @@ function Serit({ olaylar, ilk, son, secili, sec }: { olaylar: Olay[]; ilk: numbe
                 onClick={() => sec(o.id)}
                 aria-label={`${o.tur_adi}, ${sade(o.baslangic)}`}
                 data-testid="olay-isaret"
-                className={`absolute top-1/2 grid h-4 min-w-4 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-sm text-[10px] leading-none ${secili === o.id ? 'bg-app-text text-app-panel' : 'text-app-text hover:bg-app-card-hover'}`}
+                className={`absolute top-1/2 grid h-4 min-w-4 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-sm text-caption leading-none ${secili === o.id ? 'bg-app-text text-app-panel' : 'text-app-text hover:bg-app-card-hover'}`}
                 style={{ left: `${zamanOrani(o.baslangic, ilk, son) * 100}%` }}
               >
                 {t.isaret}
@@ -44,7 +45,7 @@ function Serit({ olaylar, ilk, son, secili, sec }: { olaylar: Olay[]; ilk: numbe
       ))}
       <div className="relative ml-[78px] h-4 max-[560px]:ml-[58px]">
         {yillar.filter((_, i) => i % (yillar.length > 8 ? 2 : 1) === 0).map((y) => (
-          <span key={y} className="num absolute -translate-x-1/2 text-[10px] text-app-text-dim" style={{ left: `${zamanOrani(`${y}-07-01`, ilk, son) * 100}%` }}>{y}</span>
+          <span key={y} className="num absolute -translate-x-1/2 text-caption text-app-text-dim" style={{ left: `${zamanOrani(`${y}-07-01`, ilk, son) * 100}%` }}>{y}</span>
         ))}
       </div>
     </div>
@@ -84,9 +85,9 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
     <section aria-label="Olay zaman çizelgesi" className="rounded-md border border-app-border bg-app-card p-3.5" data-testid="olay-cizelgesi">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-[13px] font-semibold">Olaylar · {ilk === son ? ilk : `${ilk}–${son}`}</h3>
-        <span className="num text-[11.5px] text-app-text-muted" data-testid="olay-sayisi">{liste.length} olay{sorgu.data && sorgu.data.supheler.length > 0 ? ` · ${sorgu.data.supheler.length} atmosfer şüphesi olay sayılmadı` : ''}</span>
+        <span className="num text-caption text-app-text-muted" data-testid="olay-sayisi">{liste.length} olay{sorgu.data && sorgu.data.supheler.length > 0 ? ` · ${sorgu.data.supheler.length} atmosfer şüphesi olay sayılmadı` : ''}</span>
       </div>
-      <p className="mt-1 text-[12.5px] text-app-text-muted">Don, aşırı yağış, rüzgâr ve uydudan görülen ani değişimler. Birleşen olaylar (örn. don + optik hasar izi) tek iz olarak gösterilir. Eşikler ön değerdir.</p>
+      <p className="mt-1 text-small text-app-text-muted">Don, aşırı yağış, rüzgâr ve uydudan görülen ani değişimler. Birleşen olaylar (örn. don + optik hasar izi) tek iz olarak gösterilir. Eşikler ön değerdir.</p>
       <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Tür süzgeci">
         {TUR_SUZGECLERI.map((t) => <Cip key={t.id} testId={`tur-${t.id}`} aktif={turler.has(t.id) && !kayitlarAcik} onClick={() => (setKayitlarAcik(false), degistir(turler, t.id, setTurler))}>{t.isaret} {t.ad}</Cip>)}
         <Cip testId="tur-kayit" aktif={kayitlarAcik} onClick={() => (setTurler(new Set()), setGuvenler(new Set()), setKayitlarAcik(!kayitlarAcik))}>✎ Saha kayıtları</Cip>
@@ -97,6 +98,8 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
       </div>
       {sorgu.isLoading ? (
         <div role="status" aria-label="Olaylar yükleniyor" className="mt-3 h-24 animate-pulse rounded bg-app-card-hover" />
+      ) : sorgu.isError && !sorgu.data ? (
+        <ErrorState title="Olaylar alınamadı" error={sorgu.error} retrying={sorgu.isFetching} onRetry={() => void sorgu.refetch()} className="py-4" />
       ) : liste.length === 0 && kayitlar.length === 0 ? (
         <p className="mt-3 text-[13px] text-app-text-muted" data-testid="olay-bos">{tum.length === 0 && (kayitSorgu.data ?? []).length === 0 ? 'Bu bahçe için kayıtlı olay yok.' : 'Bu süzgeçle eşleşen olay ya da kayıt yok.'}</p>
       ) : (
@@ -120,7 +123,7 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
                           <div className="flex min-h-11 items-baseline gap-2 py-1.5">
                             <span className="num w-[128px] shrink-0 text-[12px] text-app-text-muted max-[560px]:w-[92px]">{sade(r.k.tarih)}</span>
                             <span className="min-w-0 flex-1 text-[13px]"><span aria-hidden>{KAYIT_TUR_ISARET[r.k.tur]}</span> <b className="font-medium">Saha kaydı · {KAYIT_TUR_AD[r.k.tur]}</b>{r.k.aciklama ? <span className="text-app-text-muted"> — {r.k.aciklama}</span> : null}</span>
-                            <span className="shrink-0 text-[11.5px] text-app-text-muted">çiftçi kaydı</span>
+                            <span className="shrink-0 text-caption text-app-text-muted">çiftçi kaydı</span>
                           </div>
                         </li>
                       ) : (
@@ -128,16 +131,16 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
                           <button type="button" onClick={() => ac(r.o.id)} aria-expanded={secili === r.o.id} className="flex min-h-11 w-full items-baseline gap-2 py-1.5 text-left hover:bg-app-card-hover">
                             <span className="num w-[128px] shrink-0 text-[12px] text-app-text-muted max-[560px]:w-[92px]">{r.o.baslangic === r.o.bitis ? sade(r.o.baslangic) : `${gunAy(r.o.baslangic, 'never')}–${gunAy(r.o.bitis, 'never')}`}</span>
                             <span className="min-w-0 flex-1 text-[13px] font-medium">{r.o.tur_adi}</span>
-                            {r.o.dogrulama && <span className="shrink-0 text-[11.5px] font-semibold" data-testid="olay-dogrulama-rozeti">çiftçi: {SONUC_AD[r.o.dogrulama].toLowerCase()}</span>}
-                            <span className="shrink-0 text-[11.5px] text-app-text-muted">{GUVEN_AD[r.o.guven]}</span>
+                            {r.o.dogrulama && <span className="shrink-0 text-caption font-semibold" data-testid="olay-dogrulama-rozeti">çiftçi: {SONUC_AD[r.o.dogrulama].toLowerCase()}</span>}
+                            <span className="shrink-0 text-caption text-app-text-muted">{GUVEN_AD[r.o.guven]}</span>
                           </button>
                           {secili === r.o.id && (
-                            <div className="mb-2 rounded border border-app-border bg-app-panel px-3 py-2 text-[12.5px] leading-snug" data-testid="olay-ayrinti">
+                            <div className="mb-2 rounded border border-app-border bg-app-panel px-3 py-2 text-small leading-snug" data-testid="olay-ayrinti">
                               <p>{r.o.baslangic === r.o.bitis ? sade(r.o.baslangic) : `${sade(r.o.baslangic)} – ${sade(r.o.bitis)}`} · {r.o.kaynak_sayisi} kaynak kaydı{r.o.alan_da ? ` · yaklaşık ${r.o.alan_da.toFixed(1).replace('.', ',')} da` : ''}{r.o.siddet ? ` · ${r.o.siddet}` : ''}</p>
                               {r.o.durum === 'bekliyor' && <p className="mt-1 text-app-text-muted">Sonraki net görüntü doğrulayacak (doğrulama bekliyor).</p>}
                               <div className="mt-1.5 flex flex-wrap gap-2">
-                                <Link to={`${gardenPath(gardenId)}?olay=${r.o.id}`} data-testid="olay-haritada" className="inline-flex min-h-11 items-center rounded-md border border-app-text px-3 text-[12.5px] font-semibold hover:bg-app-card-hover">Haritada göster ↗</Link>
-                                <Link to={`${gardenPagePath(gardenId, 'defter')}`} data-testid="olay-defterde" className="inline-flex min-h-11 items-center rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:bg-app-card-hover">{r.o.dogrulama ? 'Yanıtı defterde gör' : 'Uydu haklı mıydı? · Defterde yanıtla'}</Link>
+                                <Link to={`${gardenPath(gardenId)}?olay=${r.o.id}`} data-testid="olay-haritada" className="inline-flex min-h-11 items-center rounded-md border border-app-text px-3 text-small font-semibold hover:bg-app-card-hover">Haritada göster ↗</Link>
+                                <Link to={`${gardenPagePath(gardenId, 'defter')}`} data-testid="olay-defterde" className="inline-flex min-h-11 items-center rounded-md border border-app-border px-3 text-small font-semibold hover:bg-app-card-hover">{r.o.dogrulama ? 'Yanıtı defterde gör' : 'Uydu haklı mıydı? · Defterde yanıtla'}</Link>
                               </div>
                             </div>
                           )}

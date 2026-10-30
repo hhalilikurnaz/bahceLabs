@@ -15,7 +15,7 @@ export function YilSorusu({ gardenId, yil }: { gardenId: string; yil: MultiyearY
   const change = { yil: yil.yil, dahil: !yil.dahil }
   return (
     <li className="rounded-md border border-app-border bg-app-card px-3.5 py-3" data-testid="yil-sorusu" data-yil={yil.yil} data-bekliyor={yil.karar_bekliyor}>
-      <p className="text-[13.5px]">
+      <p className="text-small">
         <b>{yil.yil}</b> yılı diğer yıllarla uyuşmuyor ve şu an <b data-testid="yil-durumu">{durum}</b>.
         {decided && yil.karar_zamani && <span className="num text-app-text-muted"> Kararınız {gunAy(yil.karar_zamani.slice(0, 10), 'always')} tarihinde kaydedildi.</span>}
       </p>
@@ -42,7 +42,7 @@ export function YilSorusu({ gardenId, yil }: { gardenId: string; yil: MultiyearY
           <button type="submit" disabled={karar.isPending} className="h-11 rounded-md bg-app-text px-3.5 text-[13px] font-semibold text-app-panel disabled:opacity-50">Kaydet</button>
         </form>
       )}
-      {karar.isError && <p role="alert" className="mt-2 text-[12.5px] text-app-danger">Karar kaydedilemedi; tekrar deneyin.</p>}
+      {karar.isError && <p role="alert" className="mt-2 text-small text-app-danger">Karar kaydedilemedi; tekrar deneyin.</p>}
     </li>
   )
 }

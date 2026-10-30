@@ -30,6 +30,7 @@ import { useBahcemStore, type DrawShape } from '../../stores/bahcemStore'
 import { useToast } from '../layout/toastContext'
 import { TOP_AREA_CLASS } from '../layout/topArea'
 import { EdgeLabels } from './EdgeLabels'
+import { HARITA } from '../../map/haritaRenkleri'
 
 /** Bu yakınlaştırma düzeyinin altında çizim başlatılamaz. */
 export const MIN_DRAW_ZOOM = DRAW.minZoom
@@ -50,7 +51,7 @@ function polygonStyles(accent: HexColor) {
     fillOpacity: 0.25,
     outlineColor: accent,
     outlineWidth: 3,
-    closingPointColor: '#ffffff' as HexColor,
+    closingPointColor: HARITA.rffffff as HexColor,
     closingPointWidth: handle(),
     closingPointOutlineColor: accent,
     closingPointOutlineWidth: 3,
@@ -64,12 +65,12 @@ function selectStyles(accent: HexColor) {
     selectedPolygonFillOpacity: 0.25,
     selectedPolygonOutlineColor: accent,
     selectedPolygonOutlineWidth: 3,
-    selectionPointColor: '#ffffff' as HexColor,
+    selectionPointColor: HARITA.rffffff as HexColor,
     selectionPointWidth: size,
     selectionPointOutlineColor: accent,
     selectionPointOutlineWidth: 3,
     midPointColor: accent,
-    midPointOutlineColor: '#ffffff' as HexColor,
+    midPointOutlineColor: HARITA.rffffff as HexColor,
     midPointWidth: Math.round(size * 0.7),
     midPointOutlineWidth: 2,
   }
@@ -363,7 +364,7 @@ function DrawSession() {
               <p className="mt-1 text-small text-app-text-muted">{help}</p>
             </div>
             <div aria-live="polite" className="shrink-0 rounded-md bg-app-card px-3 py-1.5 text-right" title="Anlık, yaklaşık alan" data-testid="live-area">
-              <span className="block text-caption uppercase tracking-wide text-app-text-dim">Alan</span>
+              <span className="block text-caption text-app-text-dim">Alan</span>
               <span className="text-body font-semibold text-app-accent">{liveArea ? formatDecare(liveArea) : '—'}</span>
               {radiusM !== null && <span className="block text-caption text-app-text-muted">yarıçap {formatLength(radiusM)}</span>}
             </div>

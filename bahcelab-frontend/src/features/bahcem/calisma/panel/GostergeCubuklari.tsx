@@ -1,3 +1,4 @@
+import { ErrorState, Skeleton } from '@/components/ui'
 import { useEdinimler, type GostergeId } from '../../api/edinimApi'
 import { bandKonumu, useNormalBantlar } from '../../api/normalBantApi'
 import { sayi } from '../../lib/format'
@@ -15,7 +16,11 @@ export function GostergeCubuklari({ gardenId }: { gardenId: string }) {
   const setTarih = useCalismaStore((s) => s.setTarih)
   const liste = edinim.data?.edinimler ?? []
   const son = liste[liste.length - 1]
-  if (!son) return null
+  if (!son) {
+    if (edinim.isLoading) return <Skeleton className="h-40" aria-label="Göstergeler yükleniyor" />
+    if (edinim.isError) return <section aria-label="Göstergeler" className="rounded-md border border-app-border bg-app-card p-3.5"><ErrorState title="Göstergeler alınamadı" error={edinim.error} retrying={edinim.isFetching} onRetry={() => void edinim.refetch()} className="py-4" /></section>
+    return null
+  }
   const ay = Number(son.tarih.slice(5, 7))
   return (
     <section aria-label="Göstergeler" className="rounded-md border border-app-border bg-app-card p-3.5" data-testid="gosterge-cubuklari">
@@ -27,7 +32,7 @@ export function GostergeCubuklari({ gardenId }: { gardenId: string }) {
           const katman = KATMANLAR[GOSTERGE_KATMAN[g]]
           if (!istatistik) {
             return (
-              <li key={g} className="flex min-h-11 items-center justify-between text-[12.5px] text-app-text-muted" data-testid="gosterge-satiri" data-gosterge={g}>
+              <li key={g} className="flex min-h-11 items-center justify-between text-small text-app-text-muted" data-testid="gosterge-satiri" data-gosterge={g}>
                 <span>{katman.ad}</span><span>bu görüntüde hesaplanamadı</span>
               </li>
             )
@@ -46,9 +51,9 @@ export function GostergeCubuklari({ gardenId }: { gardenId: string }) {
                 data-konum={konum ?? 'yetersiz'}
                 className="grid min-h-11 w-full grid-cols-[88px_1fr_auto] items-center gap-2.5 rounded-md px-1.5 text-left hover:bg-app-card-hover max-[420px]:grid-cols-[72px_1fr]"
               >
-                <span className="text-[12.5px] font-semibold leading-tight">
+                <span className="text-small font-semibold leading-tight">
                   {katman.ad}
-                  {katman.deneysel && <span className="ml-1 rounded-[2px] border border-app-border px-1 text-[9px] font-medium text-app-text-dim">deneysel</span>}
+                  {katman.deneysel && <span className="ml-1 rounded-[2px] border border-app-border px-1 text-caption font-medium text-app-text-dim">deneysel</span>}
                 </span>
                 <span className="relative block h-5" aria-hidden>
                   <span className="absolute inset-x-0 top-1/2 h-px bg-app-border" />

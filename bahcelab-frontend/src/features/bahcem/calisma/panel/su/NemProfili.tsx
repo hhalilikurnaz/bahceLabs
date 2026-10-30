@@ -28,12 +28,12 @@ export function NemProfili({ profil }: { profil: Profil }) {
         {ticks.map((t) => (
           <g key={t}>
             <line x1={X(t)} x2={X(t)} y1={KENAR.ust} y2={yukseklik - KENAR.alt} stroke="var(--color-app-border)" strokeWidth={0.6} />
-            <text x={X(t)} y={yukseklik - 8} textAnchor="middle" fontSize={10} fill="var(--color-app-text-muted)" className="num">{sayi(t, 2)}</text>
+            <text x={X(t)} y={yukseklik - 8} textAnchor="middle" fontSize={12} fill="var(--color-app-text-muted)" className="num">{sayi(t, 2)}</text>
           </g>
         ))}
         {k.map((l, i) => (
           <g key={l.derinlik}>
-            <text x={0} y={Y(i) + 4} fontSize={11} fontWeight={600} fill="var(--color-app-text)">{l.derinlik}</text>
+            <text x={0} y={Y(i) + 4} fontSize={12} fontWeight={600} fill="var(--color-app-text)">{l.derinlik}</text>
             <rect x={X(l.normal_alt)} y={Y(i) - 11} width={Math.max(2, X(l.normal_ust) - X(l.normal_alt))} height={22} rx={3} fill={SU_RENK.band} stroke="var(--color-app-border-strong)" strokeWidth={0.8} data-testid="normal-aralik">
               <title>{`Bu bahçenin normal aralığı (p10–p90): ${sayi(l.normal_alt, 2)}–${sayi(l.normal_ust, 2)} m³/m³`}</title>
             </rect>
@@ -50,7 +50,7 @@ export function NemProfili({ profil }: { profil: Profil }) {
           ),
         )}
       </svg>
-      <p className="mt-0.5 text-[11.5px] leading-snug text-app-text-muted">
+      <p className="mt-0.5 text-caption leading-snug text-app-text-muted">
         <span style={{ color: SU_RENK.su }}>●</span> bugün{profil.katmanlar.some((l) => l.bugun_kaynak === 'model') ? ' (içi boş: model tahmini)' : ''} · <svg width={22} height={8} className="inline-block align-middle" aria-hidden><line x1={1} x2={21} y1={4} y2={4} stroke={SU_RENK.suSoluk} strokeWidth={1.8} strokeDasharray="4 3" /></svg> 30 gün önce · gri bant: {profil.donem ?? 'dönem'} normal aralığı (yılın aynı ±{profil.donem_pencere_gun} günü, p10–p90, 2015–2025). m³/m³; 100–255 cm modelde yoktur.
       </p>
     </div>

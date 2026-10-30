@@ -62,7 +62,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
             {gardens.map((g) => (
               <button key={g.id} role="option" aria-selected={g.id === garden.id} type="button" onClick={() => (setOpen(false), navigate(gardenPath(g.id, tab ?? 'durum')))} className={`block w-full rounded-md px-3 py-2 text-left hover:bg-app-card-hover ${g.id === garden.id ? 'bg-app-card-hover' : ''}`}>
                 <b className="block text-[14px]">{g.ad}</b>
-                <span className="text-[11.5px] text-app-text-muted">{meta(g)}</span>
+                <span className="text-caption text-app-text-muted">{meta(g)}</span>
               </button>
             ))}
             <Link to={NEW_GARDEN_PATH} onClick={() => setOpen(false)} className="mt-1 flex items-center gap-2 rounded-md border-t border-app-border px-3 py-2.5 text-[13px] font-semibold hover:bg-app-card-hover">
@@ -89,7 +89,7 @@ export function BahceCubugu({ garden, gardens, tab }: { garden: Garden; gardens:
       <GardenActionsMenu garden={garden} onRename={() => (setName(garden.ad), setRenaming(true))} onEditInfo={() => setInfoOpen(true)} onEditBoundary={() => { navigate(gardenPath(garden.id)); actions.editBoundary(garden) }} onDelete={() => actions.requestDelete(garden)} />
       {actions.dialog}
       {infoOpen && <GardenInfoDialog garden={garden} onClose={() => setInfoOpen(false)} />}
-      <Link to={gardenPagePath(garden.id, 'defter')} className="flex h-8 max-[560px]:h-11 shrink-0 items-center rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text max-[560px]:ml-auto">
+      <Link to={gardenPagePath(garden.id, 'defter')} className="flex h-8 max-[560px]:h-11 shrink-0 items-center rounded-md border border-app-border px-3 text-small font-semibold hover:border-app-text max-[560px]:ml-auto">
         Saha Defteri ↗
       </Link>
     </div>

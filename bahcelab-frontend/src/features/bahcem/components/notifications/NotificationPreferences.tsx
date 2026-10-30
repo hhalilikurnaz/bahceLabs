@@ -7,7 +7,7 @@ export function NotificationPreferences() {
   const set = useSetPreference()
   return (
     <Card aria-label="Bildirim tercihleri" className="space-y-2 p-4" data-testid="notification-preferences">
-      <p className="text-caption font-semibold uppercase tracking-wide text-app-text-dim">Bildirim tercihleri</p>
+      <p className="text-caption font-semibold text-app-text-dim">Bildirim tercihleri</p>
       {isLoading ? (
         <Skeleton className="h-32" />
       ) : isError || !data ? (

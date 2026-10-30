@@ -43,7 +43,7 @@ function MiniSeri({ seri }: { seri: { tarih: string; vh_db: number | null }[] })
         <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="var(--color-app-text)" strokeWidth={1.4} />
         {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 3 : 2} fill="var(--color-app-text)" />)}
       </svg>
-      <figcaption className="num flex justify-between text-[10.5px] text-app-text-muted"><span>{gunAy(seri[0].tarih)}</span><span>son {seri.length} sahne</span><span>{gunAy(seri[seri.length - 1].tarih)}</span></figcaption>
+      <figcaption className="num flex justify-between text-caption text-app-text-muted"><span>{gunAy(seri[0].tarih)}</span><span>son {seri.length} sahne</span><span>{gunAy(seri[seri.length - 1].tarih)}</span></figcaption>
     </figure>
   )
 }
@@ -96,16 +96,16 @@ export function NoktaInceleme({ gardenId, view }: { gardenId: string; view: Hari
       <div role="dialog" aria-label="Nokta incelemesi" data-testid="nokta-inceleme" className="glass absolute z-20 w-[248px] px-3.5 pb-3 pt-3" style={{ left: Math.max(8, pos.x + 14), top: Math.max(8, pos.y - 40) }}>
         <button type="button" aria-label="Kapat" onClick={() => setInceleme(null)} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-md hover:bg-app-card-hover"><X className="h-4 w-4" aria-hidden /></button>
         {disarida ? (
-          <p className="pr-6 text-[12.5px] text-app-text-muted">Bu nokta bahçe sınırının dışında.</p>
+          <p className="pr-6 text-small text-app-text-muted">Bu nokta bahçe sınırının dışında.</p>
         ) : (
           <>
-            <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{radarKatmani ? <>{view.tanim.ad} · <span className="normal-case">dB</span></> : view.tanim.landsat ? <>{view.tanim.ad}</> : `${view.tanim.ad}${degisimKatmani ? ' farkı' : ''}`}</div>
+            <div className="text-caption font-semibold text-app-text-dim">{radarKatmani ? <>{view.tanim.ad} · <span className="normal-case">dB</span></> : view.tanim.landsat ? <>{view.tanim.ad}</> : `${view.tanim.ad}${degisimKatmani ? ' farkı' : ''}`}</div>
             <div className="num mt-1 text-[28px] font-semibold leading-none">{info.v == null ? '—' : radarKatmani ? `${view.tanim.fark && info.v > 0 ? '+' : ''}${sayi(info.v, 1)}` : view.tanim.landsat ? `${sayi(info.v, 1)} °C` : degisimKatmani ? degisim(info.v * 100, 0).replace('%', '') : sayi(info.v)}</div>
             {radarKatmani && nokta && <MiniSeri seri={nokta.seri} />}
-            {view.tanim.landsat && <p className="mt-1.5 text-[11.5px] leading-snug text-app-text-muted" data-testid="nokta-landsat-not">Landsat 100 m fiziksel çözünürlükte ölçer; bu pikselin değeri komşu 3×3 kareyle aynı yüzeyin ortalamasıdır.</p>}
-            {info.p != null && !degisimKatmani && !radarKatmani && <p className="mt-1.5 text-[12.5px]">Bahçenin {yuzde(info.p)}’i bundan zayıf.</p>}
-            {info.zone != null && !radarKatmani && <p className="mt-1 text-[12.5px]">Çok yıllık bölge: <b>{ZONE_LABEL[info.zone]}</b></p>}
-            <p className="num mt-2 border-t border-app-border pt-2 text-[10.5px] text-app-text-muted">
+            {view.tanim.landsat && <p className="mt-1.5 text-caption leading-snug text-app-text-muted" data-testid="nokta-landsat-not">Landsat 100 m fiziksel çözünürlükte ölçer; bu pikselin değeri komşu 3×3 kareyle aynı yüzeyin ortalamasıdır.</p>}
+            {info.p != null && !degisimKatmani && !radarKatmani && <p className="mt-1.5 text-small">Bahçenin {yuzde(info.p)}’i bundan zayıf.</p>}
+            {info.zone != null && !radarKatmani && <p className="mt-1 text-small">Çok yıllık bölge: <b>{ZONE_LABEL[info.zone]}</b></p>}
+            <p className="num mt-2 border-t border-app-border pt-2 text-caption text-app-text-muted">
               {kaynakSatiri([view.sahne ? gunAy(view.sahne.tarih) : null, view.sahne?.yorunge != null ? `yörünge ${view.sahne.yorunge} · ${yonAdi(view.sahne.yon ?? '')}` : null, view.tanim.kaynak, '10 m piksel', `${inceleme.lat.toFixed(5)}° K ${inceleme.lng.toFixed(5)}° D`])}
             </p>
           </>

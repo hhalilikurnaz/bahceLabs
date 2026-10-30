@@ -22,9 +22,9 @@ export function BolgeTablosu({ ozet }: { ozet: MultiyearZone[] }) {
   const rows = [...ozet].sort((a, b) => b.sinif - a.sinif)
   return (
     <div className="@container rounded-md border border-app-border bg-app-card" data-testid="bolge-tablosu">
-      <table className="w-full table-fixed text-left text-[13px]">
+      <table className="w-full table-fixed text-left text-small">
         <caption className="sr-only">Çok yıllık ağaç gücü bölgeleri</caption>
-        <thead className="text-[11px] uppercase tracking-[.06em] text-app-text-dim">
+        <thead className="text-caption text-app-text-dim">
           <tr>
             <th scope="col" className="w-[38%] px-3 py-2 font-semibold @max-[400px]:w-[44%]">Bölge</th>
             <th scope="col" className="px-2 py-2 text-right font-semibold">Alan</th>
@@ -38,7 +38,7 @@ export function BolgeTablosu({ ozet }: { ozet: MultiyearZone[] }) {
             <tr key={z.sinif} className="border-t border-app-border" data-testid="bolge-satiri" data-sinif={z.sinif}>
               <th scope="row" className="px-3 py-2.5 font-semibold">
                 <span className="flex items-center gap-2.5"><Ornek sinif={z.sinif} />{z.ad}</span>
-                {z.kontrol_onerisi && <span className="mt-1 block text-[11.5px] font-medium text-app-warn">yerinde kontrol edin</span>}
+                {z.kontrol_onerisi && <span className="mt-1 block text-caption font-medium text-app-warn">yerinde kontrol edin</span>}
               </th>
               <td className="num px-2 py-2.5 text-right">{dekar(z.alan_dekar)}</td>
               <td className="num px-2 py-2.5 text-right @max-[400px]:hidden">%{Math.round(z.pay * 100)}</td>

@@ -14,13 +14,13 @@ export const journeyMessages = {
     titleLine1: 'Üretim verimini yükseltmek,',
     titleLine2: 'bitkiyi anlamaktan geçer.',
     subtitle:
-      'BahçeLab, drone ve uydu görüntülerini yapay zekâyla işler; her ağacın sağlığını, rekoltesini ve su ihtiyacını tek bir haritada gösterir.',
+      'BahçeLab, uydu görüntülerini ve hava verisini işler; bahçenizin canlılığını, su durumunu ve risklerini kendi geçmişine göre tek bir haritada gösterir.',
     cta: 'Kayıtlar çok yakında',
     secondary: 'Misyonumuz',
     scroll: 'Kaydırın',
     transition: [
-      'Drone bahçenin üzerinden geçer.',
-      'Her ağaç tek tek tespit edilir.',
+      'Uydu bahçenizin üzerinden geçer.',
+      'Bahçenizin her bölgesi ölçülür.',
       'Bahçeniz dijital haritaya dönüşür.',
     ],
   },
@@ -29,92 +29,89 @@ export const journeyMessages = {
     steps: [
       {
         tag: 'Dijital Bahçe',
-        title: 'Her ağacın kalıcı bir kimliği var',
+        title: 'Bahçenizin kendi haritası',
         body:
-          'Bahçeniz parsel, blok ve ağaç düzeyinde haritalanır. Gözlem, ilaçlama, gübreleme ve sulama kayıtları ilgili ağaca ve konuma bağlanır.',
+          'Bahçenizin sınırını çizersiniz; uydu görüntüleri 10 metrelik piksellerle işlenir. Sahada gördüklerinizi Saha Defteri’ne konumuyla yazarsınız.',
       },
       {
-        tag: 'Ağaç tespiti',
-        title: 'Drone görüntüsünden ağaç envanteri',
+        tag: 'Bölge haritası',
+        title: 'Yıllardır güçlü ve zayıf kalan kesimler',
         body:
-          'Multispektral drone görüntülerinden her ağacın konumu, taç büyüklüğü ve yüksekliği çıkarılır. Sonraki uçuşlarda aynı ağaç yeniden tanınır, değişim izlenir.',
+          'Yılların uydu görüntüsünden bahçenizin güçlü, orta ve zayıf bölgeleri çıkarılır. Değişimler bahçenin kendi geçmişiyle karşılaştırılır.',
       },
       {
-        tag: 'Belirti tespiti',
-        title: 'Sorunu bahçeye yayılmadan görün',
+        tag: 'Erken uyarı',
+        title: 'Değişimi erken görün',
         body:
-          'Yapay zekâ sararma, dal kuruması ve kuruma belirtisi gösteren ağaçları işaretler. Sahada kontrol edilmesi gereken ağaçlar konumlarıyla listelenir.',
+          'Bulutlu günlerde radar, açık günlerde optik uydu bahçedeki ani değişimi izler. Sahada bakılması gereken yerler haritada işaretlenir; son söz sizindir.',
       },
       {
-        tag: 'Rekolte tahmini',
-        title: 'Hasattan önce blok bazında tahmin',
+        tag: 'Geçmişe göre',
+        title: 'Bu sezon normal mi?',
         body:
-          'Ağaç sayısı, taç ölçüleri ve bitki indeksleriyle her blok için rekolte tahmin edilir. Hasat ve satış planı erkenden yapılır.',
+          'Bu yılın canlılık eğrisi, bahçenizin geçmiş yıllardaki normal bandıyla yan yana gösterilir. Gözlem ile tahmin ayrı çizilir.',
       },
       {
-        tag: 'Akıllı sulama',
-        title: 'Su, ihtiyacı olan bloğa',
+        tag: 'Su ve hava',
+        title: 'Toprak nemi, su dengesi ve ilaçlama zamanı',
         body:
-          'Toprak nemi sensörleri ve blok bazlı vanalarla sulama sabit takvim yerine ölçülen ihtiyaca göre yapılır. Karar her zaman üreticinin onayıyla uygulanır.',
+          'Uydu ve hava verisinden kök bölgesi nemi, günlük su dengesi, don ve ilaçlama penceresi hesaplanır. Değerler ön değerdir; karar her zaman üreticinindir.',
       },
       {
-        tag: 'AI Copilot',
+        tag: 'Asistan (yakında)',
         title: 'Bahçenize kendi dilinizde soru sorun',
         body:
-          '“Hangi blokta su stresi var?” gibi sorulara bahçenizin kendi verisine dayanan ve kaynağını gösteren yanıtlar alın.',
-        question: 'Bu hafta hangi bloklara öncelik vermeliyim?',
-        answer: "B3'te 6 ağaçta sararma belirtisi var ve toprak nemi düşük. Önce B3'ü kontrol edin.",
+          '“Bahçemin hangi kesimi zayıf?” gibi sorulara bahçenizin kendi verisine dayanan ve kaynağını gösteren yanıtlar. Şimdilik ⌘K ile komutlar çalışır.',
+        question: 'Bahçemin hangi kesimi yıllardır zayıf?',
+        answer: 'Güneydoğu kesim yıllardır güçlü, kuzey kesim zayıf. Sahada kuzeyi kontrol edin.',
       },
     ] satisfies JourneyStep[],
   },
   canvas: {
     moisture: 'Nem',
     legend: {
-      trees: 'Tespit edilen ağaç',
+      trees: 'Ölçülen bölge',
       healthy: 'Sağlıklı',
-      stress: 'Sararma belirtisi',
+      stress: 'Zayıf bölge',
       wet: 'Yeterli nem',
       low: 'Düşük nem',
-      yield: 'Blok rekolte tahmini',
+      yield: 'Bölge payı',
     },
   },
   journey: {
-    detected: 'ağaç tespit edildi',
+    detected: 'bölge ölçüldü',
     cards: {
       twin: {
-        title: 'Ağaç B3-S2-A05',
+        title: 'Bahçe bölgesi',
         rows: [
-          ['Blok / Sıra', 'B3 / 2'],
-          ['Tür', 'Limon'],
-          ['Yaş', '15'],
-          ['Son ilaçlama', '12 gün önce'],
-          ['Son sulama', '2 gün önce'],
+          ['Bölge', 'Güçlü'],
+          ['Alan', '5,0 da'],
+          ['Pay', '%33'],
+          ['Kaynak', 'Sentinel-2'],
         ],
       },
       detect: {
-        title: 'Ağaç tespit edildi',
+        title: 'Bölgeler ölçüldü',
         rows: [
-          ['Taç çapı', '4,8 m'],
-          ['Yükseklik', '3,6 m'],
-          ['Taç hacmi', '31 m³'],
-          ['Güven', '%97'],
+          ['Çözünürlük', '10 m'],
+          ['Yıl sayısı', '12'],
+          ['Sınıf', 'Zayıf · Orta · Güçlü'],
         ],
       },
       health: {
-        title: 'Sararma belirtisi',
+        title: 'Zayıf kesim',
         rows: [
-          ['Etkilenen taç', '%38'],
-          ['NDVI', '0,41 (blok ort. 0,72)'],
+          ['Bahçeye göre', 'normalin altı'],
           ['İlk görülme', '6 gün önce'],
           ['Öneri', 'Sahada kontrol'],
         ],
       },
       yield: {
-        title: 'Rekolte tahmini',
+        title: 'Geçmişe göre',
         rows: [
-          ['Meyve sayısı', '~520'],
-          ['Tahmini verim', '~110 kg'],
-          ['B3 blok toplamı', '18,4 t'],
+          ['Bu sezon', 'normal bantta'],
+          ['Karşılaştırma', 'önceki 10 sezon'],
+          ['Kaynak', 'uydu + hava'],
         ],
       },
     } satisfies Record<string, JourneyCard>,

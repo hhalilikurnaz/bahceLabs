@@ -9,7 +9,7 @@ export function BolgeLejanti({ gardenId }: { gardenId: string }) {
   if (!data || data.durum !== 'hazir') return null
   return (
     <div className="glass w-[286px] max-w-full px-3.5 pb-2.5 pt-3" data-testid="bolge-lejanti">
-      <div className="text-[12.5px] font-bold leading-tight">Bölgeler{data.yil_araligi ? ` · ${data.yil_araligi}` : ''}</div>
+      <div className="text-small font-bold leading-tight">Bölgeler{data.yil_araligi ? ` · ${data.yil_araligi}` : ''}</div>
       <ul className="mt-2 flex gap-4 text-[12px]">
         {[1, 2, 3].map((k) => (
           <li key={k} className="flex items-center gap-1.5">
@@ -18,7 +18,7 @@ export function BolgeLejanti({ gardenId }: { gardenId: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-1.5 text-[11px] leading-snug text-app-text-muted">Yıllardır güçlü ya da zayıf kalan kesimler · ön değer · mühendis onayı bekliyor</p>
+      <p className="mt-1.5 text-caption leading-snug text-app-text-muted">Yıllardır güçlü ya da zayıf kalan kesimler · ön değer · mühendis onayı bekliyor</p>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useDarEkran } from '../../hooks/useDarEkran'
 import { sayi } from '../../lib/format'
+import { aralikMetni } from '../../lib/skala'
 import { histogram } from '../../lib/izgara'
 import { rampCss } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
@@ -40,7 +41,7 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   const [dusuk, yuksek] = view.tanim.uclar
   if (!acik) {
     return (
-      <button type="button" onClick={() => setElle(true)} aria-expanded={false} data-testid="lejant-cip" className="glass flex min-h-11 items-center gap-2 px-3.5 text-[12.5px] font-semibold">
+      <button type="button" onClick={() => setElle(true)} aria-expanded={false} data-testid="lejant-cip" className="glass flex min-h-11 items-center gap-2 px-3.5 text-small font-semibold">
         {baslik}
         {view.ortanca !== null && <span className="num font-normal text-app-text-muted">· ortanca {sayi(view.ortanca)}</span>}
         <span aria-hidden>▴</span>
@@ -50,11 +51,11 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
   return (
     <div className="glass w-[286px] max-w-full px-3.5 pb-2.5 pt-3" data-testid="histogram-lejant">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[12.5px] font-bold leading-tight">{baslik}</span>
+        <span className="text-small font-bold leading-tight">{baslik}</span>
         {dar && <button type="button" onClick={() => setElle(false)} aria-expanded aria-label="Lejantı küçült" className="grid h-11 w-11 place-items-center text-app-text-muted">▾</button>}
       </div>
-      <div className="mt-1 flex gap-3 text-[11px]" role="group" aria-label="Renk skalası">
-        {(['kendi', 'genel'] as const).map((k) => (
+      <div className="mt-1 flex gap-3 text-caption" role="group" aria-label="Renk skalası">
+        {(['genel', 'kendi'] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -62,10 +63,22 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
             onClick={() => setSkala(k)}
             className={`border-b py-0.5 max-[560px]:min-h-11 max-[560px]:py-3 ${skala === k ? 'border-app-text font-semibold text-app-text' : 'border-transparent text-app-text-muted hover:text-app-text'}`}
           >
-            {k === 'kendi' ? 'Bahçenin kendi farkları' : 'Genel skala'}
+            {k === 'kendi' ? 'Bahçenin kendi farkları' : 'Mutlak skala'}
           </button>
         ))}
       </div>
+      {view.skala.gerilmis && view.skala.aralik !== null && (
+        <p className="num mt-1 inline-block rounded-[3px] border border-app-border px-1.5 py-0.5 text-[12px] font-semibold" data-testid="skala-rozet">
+          gerilmiş skala · {aralikMetni(view.skala.aralik, view.tanim.birim, sayi)} aralık
+        </p>
+      )}
+      {view.skala.kapali && (
+        <p className="mt-1 text-[12px] leading-snug text-app-text-muted" data-testid="skala-kapali">
+          Gerilmiş skala kapalı: {view.skala.aralik !== null && view.skala.esik !== null
+            ? `bahçe içi aralık ${aralikMetni(view.skala.aralik, view.tanim.birim, sayi)}, gürültü eşiği ${aralikMetni(view.skala.esik, view.tanim.birim, sayi)} (ön değer) altında · anlamlı fark yok.`
+            : 'eşik henüz yüklenmedi, mutlak skala gösteriliyor.'}
+        </p>
+      )}
       <svg width={W} height={H + (bandVisible ? 8 : 0)} className="mt-2 block" role="img" aria-label="Piksel dağılımı" onMouseLeave={() => (setHover(null), setVurgu(null))}>
         {bins.map((b, i) => {
           const h = Math.max(1, (b.share / max) * (H - 4))
@@ -90,17 +103,17 @@ export function HistogramLejant({ view }: { view: HaritaGorunumu }) {
         )}
         {bandVisible && band && <rect data-testid="lejant-tipik-bant" x={x(band.alt)} y={H + 2} width={Math.max(2, x(band.ust) - x(band.alt))} height={4} rx={1} fill="var(--color-app-text)" opacity={0.55}><title>{`${TIPIK_ETIKETI}: ${sayi(band.alt)}–${sayi(band.ust)}`}</title></rect>}
       </svg>
-      <div className="num mt-1 flex justify-between text-[11px] text-app-text-muted max-[560px]:mt-2">
+      <div className="num mt-1 flex justify-between text-caption text-app-text-muted max-[560px]:mt-2">
         <span>{sayi(lo)}</span>
         <span>{hb ? `${sayi(hb.from)}–${sayi(hb.to)} · alanın %${Math.round(hb.share * 100)}’i` : `${dusuk} → ${yuksek}`}</span>
         <span>{sayi(hi)}</span>
       </div>
-      <div className="num mt-0.5 text-[11px] text-app-text-muted" data-testid="lejant-ozet">
+      <div className="num mt-0.5 text-caption text-app-text-muted" data-testid="lejant-ozet">
         {view.ortanca !== null && <span>ortanca <b className="font-semibold text-app-text">{degisim && view.ortanca > 0 ? '+' : ''}{sayi(view.ortanca)}</b></span>}
         {bandVisible && band && <span> · {TIPIK_ETIKETI} {sayi(band.alt)}–{sayi(band.ust)}{band.onDeger ? ' · mühendis onayı bekliyor' : ''}</span>}
       </div>
-      {view.tanim.not && <p className="mt-1 text-[11px] leading-snug text-app-text-muted" data-testid="lejant-not">{view.tanim.not}</p>}
-      {view.tanim.gorunum === 'daireler' && <p className="mt-1 text-[11px] leading-snug text-app-text-muted" data-testid="lejant-not">Daire = 10 m piksel, ağaç konumu değil.</p>}
+      {view.tanim.not && <p className="mt-1 text-caption leading-snug text-app-text-muted" data-testid="lejant-not">{view.tanim.not}</p>}
+      {view.tanim.gorunum === 'daireler' && <p className="mt-1 text-caption leading-snug text-app-text-muted" data-testid="lejant-not">Daire = 10 m piksel, ağaç konumu değil.</p>}
     </div>
   )
 }

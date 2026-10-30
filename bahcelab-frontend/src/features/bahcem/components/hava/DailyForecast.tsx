@@ -10,7 +10,7 @@ function dayLabel(iso: string, today: string): string {
   return iso === shiftDays(today, 1) ? 'Yarın' : weekdayName(iso)
 }
 
-const TH = 'px-1 py-1.5 @sm:px-2 text-left text-caption font-semibold uppercase tracking-wide text-app-text-dim'
+const TH = 'px-1 py-1.5 @sm:px-2 text-left text-caption font-semibold text-app-text-dim'
 const TD = 'tabular whitespace-nowrap px-1 py-2 align-middle @sm:px-2'
 
 /**

@@ -65,8 +65,8 @@ export function HaritaIsaretleri({ isaretler, onSec }: { isaretler: Isaret[]; on
             title={i.baslik}
             data-testid={tur ? 'tur-isareti' : 'kayit-isareti'}
             data-id={i.id}
-            className={`absolute z-[6] grid h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 place-items-center border-2 px-1 text-[12px] font-bold leading-none shadow ${tur ? 'rounded-full' : 'rounded-[3px]'} ${i.secili ? 'ring-2 ring-[#16181a] ring-offset-1' : ''} max-[560px]:h-11 max-[560px]:min-w-11`}
-            style={{ left: y.x, top: y.y, background: bitti ? '#e7e4d6' : tur ? '#f2c94c' : '#fbfaf6', borderColor: '#16181a', color: '#16181a', opacity: bitti ? 0.75 : 1 }}
+            className={`absolute z-[6] grid h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 place-items-center border-2 px-1 text-[12px] font-bold leading-none shadow ${tur ? 'rounded-full' : 'rounded-[3px]'} ${i.secili ? 'ring-2 ring-map-ink ring-offset-1' : ''} max-[560px]:h-11 max-[560px]:min-w-11`}
+            style={{ left: y.x, top: y.y, background: bitti ? 'var(--color-app-card-hover)' : tur ? 'var(--color-brand-lemon)' : 'var(--color-app-card)', borderColor: 'var(--color-map-ink)', color: 'var(--color-map-ink)', opacity: bitti ? 0.75 : 1 }}
           >
             {bitti ? '✓' : i.etiket}
           </button>

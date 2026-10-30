@@ -16,7 +16,7 @@ export function GecmisCekiliyor({ gardenId }: { gardenId: string }) {
           {calisiyor ? `Geçmiş çekiliyor · %${data.yuzde}` : data.durum === 'hata' ? `Geçmiş çekimi yarım kaldı · %${data.yuzde}` : 'Geçmiş henüz çekilmedi'}
         </span>
         {!calisiyor && (
-          <button type="button" disabled={baslat.isPending} onClick={() => baslat.mutate()} className="h-11 rounded-md border border-app-border px-3 text-[12.5px] font-semibold hover:border-app-text disabled:opacity-50">
+          <button type="button" disabled={baslat.isPending} onClick={() => baslat.mutate()} className="h-11 rounded-md border border-app-border px-3 text-small font-semibold hover:border-app-text disabled:opacity-50">
             {data.durum === 'hata' ? 'Devam et' : 'Geçmişi çek'}
           </button>
         )}
@@ -26,7 +26,7 @@ export function GecmisCekiliyor({ gardenId }: { gardenId: string }) {
           <div className="h-full bg-app-accent transition-[width]" style={{ width: `${data.yuzde}%` }} />
         </div>
       )}
-      <p className="num mt-1.5 text-[11.5px] text-app-text-muted">
+      <p className="num mt-1.5 text-caption text-app-text-muted">
         {data.tamamlanan_ay}/{data.toplam_ay} ay · {data.net_sahne} net sahne
       </p>
     </div>

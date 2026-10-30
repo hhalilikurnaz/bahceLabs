@@ -31,7 +31,7 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
         ))}
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        <label className="grid text-[11.5px] font-semibold text-[var(--ink-3)]">
+        <label className="grid text-caption font-semibold text-[var(--ink-3)]">
           Tarih
           <input type="date" value={tarih} max={bugunIstanbul()} onChange={(e) => setTarih(e.target.value)} data-testid="kayit-tarih" className="mt-0.5 h-9 border border-[var(--rule-2)] bg-transparent px-2 text-[13px] font-normal text-[var(--ink)] max-[560px]:h-11" />
         </label>
@@ -41,19 +41,19 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
           <button type="button" aria-pressed={konum.mod === 'alan'} onClick={() => konum.setMod('alan')} data-testid="konum-alan" className={`min-h-9 border px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 ${konum.mod === 'alan' ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)]'}`}>Haritada alan</button>
         </div>
       </div>
-      {konum.mod === 'nokta' && <p className="text-[12.5px] text-[var(--ink-2)]" data-testid="konum-ipucu">{konum.nokta ? 'Nokta seçildi; yerini değiştirmek için haritaya yeniden dokunun.' : 'Haritaya dokunarak noktayı işaretleyin.'}</p>}
+      {konum.mod === 'nokta' && <p className="text-small text-[var(--ink-2)]" data-testid="konum-ipucu">{konum.nokta ? 'Nokta seçildi; yerini değiştirmek için haritaya yeniden dokunun.' : 'Haritaya dokunarak noktayı işaretleyin.'}</p>}
       {konum.mod === 'alan' && (
-        <p className="text-[12.5px] text-[var(--ink-2)]" data-testid="konum-ipucu">
+        <p className="text-small text-[var(--ink-2)]" data-testid="konum-ipucu">
           {konum.koseler.length < 3 ? `Alanın köşelerine dokunun (en az 3; şu an ${konum.koseler.length}).` : `${konum.koseler.length} köşe seçildi.`}{' '}
           {konum.koseler.length > 0 && <button type="button" onClick={konum.geriAl} className="font-semibold underline underline-offset-2">Son köşeyi geri al</button>}
         </p>
       )}
-      <label className="grid text-[11.5px] font-semibold text-[var(--ink-3)]">
+      <label className="grid text-caption font-semibold text-[var(--ink-3)]">
         Not
         <textarea value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} data-testid="kayit-notu" placeholder="Ne gördünüz ya da yaptınız?" className="mt-0.5 w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px] font-normal text-[var(--ink)]" />
       </label>
       {oneri && (oneri.tarih || oneri.konum || oneri.konum_bahceden_uzak) && (
-        <div role="status" className="border border-[var(--rule-2)] bg-[var(--paper-2)] p-2 text-[12.5px]" data-testid="foto-onerisi">
+        <div role="status" className="border border-[var(--rule-2)] bg-[var(--paper-2)] p-2 text-small" data-testid="foto-onerisi">
           <p>{oneri.aciklama}</p>
           <div className="mt-1 flex flex-wrap gap-2">
             {oneri.tarih && <button type="button" onClick={() => oneri.tarih && setTarih(oneri.tarih)} data-testid="oneri-tarih" className="btn quiet max-[560px]:!h-11">Tarihi kullan ({oneri.tarih})</button>}
@@ -75,7 +75,7 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
         </label>
         <button type="submit" disabled={olustur.isPending || eksikAlan || eksikNokta} data-testid="kayit-kaydet" className="btn primary max-[560px]:!h-11">Kaydı ekle</button>
       </div>
-      {olustur.isError && <p role="alert" className="text-[12.5px] text-[var(--st-dikkat)]">Kaydedilemedi: {(olustur.error as Error).message}</p>}
+      {olustur.isError && <p role="alert" className="text-small text-[var(--st-dikkat)]">Kaydedilemedi: {(olustur.error as Error).message}</p>}
     </form>
   )
 }
@@ -91,7 +91,7 @@ export function KayitListesi({ gardenId, secili, sec }: { gardenId: string; seci
     <section aria-label="Saha kayıtları" data-testid="kayit-listesi">
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kayıt türü süzgeci">
         {KAYIT_TURLERI.map((t) => (
-          <button key={t} type="button" aria-pressed={turler.has(t)} onClick={() => degistir(t)} data-testid={`kayit-suz-${t}`} className={`min-h-9 border px-2 text-[11.5px] font-semibold max-[560px]:min-h-11 ${turler.has(t) ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)] text-[var(--ink-2)]'}`}>{KAYIT_TUR_AD[t]}</button>
+          <button key={t} type="button" aria-pressed={turler.has(t)} onClick={() => degistir(t)} data-testid={`kayit-suz-${t}`} className={`min-h-9 border px-2 text-caption font-semibold max-[560px]:min-h-11 ${turler.has(t) ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)] text-[var(--ink-2)]'}`}>{KAYIT_TUR_AD[t]}</button>
         ))}
       </div>
       {sorgu.isLoading ? (
@@ -105,8 +105,8 @@ export function KayitListesi({ gardenId, secili, sec }: { gardenId: string; seci
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <span aria-hidden>{KAYIT_TUR_ISARET[k.tur]}</span>
                 <b className="text-[13px]">{KAYIT_TUR_AD[k.tur]}</b>
-                <span className="mono text-[11.5px] text-[var(--ink-3)]">{gunAy(k.tarih, 'always')}</span>
-                <span className="text-[11.5px] text-[var(--ink-3)]">{k.konum_tur === 'nokta' ? 'noktada' : k.konum_tur === 'alan' ? 'alan' : 'konumsuz'}</span>
+                <span className="mono text-caption text-[var(--ink-3)]">{gunAy(k.tarih, 'always')}</span>
+                <span className="text-caption text-[var(--ink-3)]">{k.konum_tur === 'nokta' ? 'noktada' : k.konum_tur === 'alan' ? 'alan' : 'konumsuz'}</span>
               </div>
               {k.aciklama && <p className="mt-0.5 text-[13px]">{k.aciklama}</p>}
               <FotoSerit fotolar={k.fotograflar} />

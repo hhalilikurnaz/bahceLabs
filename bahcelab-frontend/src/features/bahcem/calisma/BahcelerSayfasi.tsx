@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { Skeleton } from '@/components/ui'
+import { ErrorState, Skeleton } from '@/components/ui'
 import { useGardens } from '../api/useGardens'
 import { useToast } from '../components/layout/toastContext'
 import { GARDEN_TAB_LABELS, gardenPath, isGardenPage, isGardenTab, type GardenPage } from '../lib/routes'
@@ -12,7 +12,7 @@ import { DefterSayfasi } from './DefterSayfasi'
 /** `/bahceler/:id[/:sekme|gecmis|defter]` */
 export function BahceSayfasi() {
   const { id, sekme } = useParams()
-  const { data: gardens, isSuccess, isFetching } = useGardens()
+  const { data: gardens, isSuccess, isFetching, isError, error, refetch } = useGardens()
   const navigate = useNavigate()
   const toast = useToast()
   const garden = gardens?.find((g) => g.id === id)
@@ -24,6 +24,7 @@ export function BahceSayfasi() {
     navigate('/bahceler', { replace: true })
   }, [missing, navigate, toast])
 
+  if (isError && !gardens) return <ErrorState title="Bahçe alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} className="py-16" />
   if (!garden || !gardens) return <Skeleton className="m-6 h-40" aria-label="Bahçe yükleniyor" />
   if (sekme !== undefined && !isGardenTab(sekme) && !isGardenPage(sekme)) return <Navigate to={gardenPath(garden.id)} replace />
   const page: GardenPage | null = isGardenPage(sekme) ? sekme : null

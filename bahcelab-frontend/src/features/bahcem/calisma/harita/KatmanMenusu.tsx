@@ -1,4 +1,4 @@
-import { ChevronDown, Layers } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useMultiyear } from '../../api/multiyearApi'
 import { useEdinimler } from '../../api/edinimApi'
@@ -9,6 +9,7 @@ import { gunAy, kaynakSatiri } from '../../lib/format'
 import { RAMPS, ZEMIN, ZONE_SHADES, rampGradient } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
 import { KATMANLAR, KATMAN_GRUPLARI, KATMAN_SIRASI, type KatmanId } from '../katmanlar'
+import { HARITA } from '../../map/haritaRenkleri'
 
 /** Katman örneği: sürekli renk şeridi; LAI için orantılı kareler; MSAVI için toprak zemin üzerinde tepe daireleri. */
 function Ornek({ id }: { id: KatmanId }) {
@@ -16,14 +17,14 @@ function Ornek({ id }: { id: KatmanId }) {
   if (t.gorunum === 'kareler') {
     return (
       <svg aria-hidden width="32" height="14" viewBox="0 0 32 14" className="shrink-0 rounded-[3px] border border-black/10" style={{ background: ZEMIN.notr }}>
-        {[3, 5, 7, 9].map((w, i) => <rect key={w} x={2 + i * 7.5} y={7 - w / 2} width={w} height={w} fill="#4e8750" />)}
+        {[3, 5, 7, 9].map((w, i) => <rect key={w} x={2 + i * 7.5} y={7 - w / 2} width={w} height={w} fill={HARITA.r4e8750} />)}
       </svg>
     )
   }
   if (t.gorunum === 'daireler') {
     return (
       <svg aria-hidden width="32" height="14" viewBox="0 0 32 14" className="shrink-0 rounded-[3px] border border-black/10" style={{ background: ZEMIN.toprak }}>
-        {[2, 3, 4.2, 5.4].map((r, i) => <circle key={r} cx={5 + i * 7.5} cy={7} r={r} fill="#357a43" />)}
+        {[2, 3, 4.2, 5.4].map((r, i) => <circle key={r} cx={5 + i * 7.5} cy={7} r={r} fill={HARITA.r357a43} />)}
       </svg>
     )
   }
@@ -35,10 +36,15 @@ function Ornek({ id }: { id: KatmanId }) {
 export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
-  const { katman, setKatman, kontur, setKontur, opaklik, setOpaklik, saha, setSaha } = useCalismaStore()
-  const { data } = useEdinimler(gardenId)
-  const radar = useRadarEdinimler(gardenId).data
-  const landsatListe = useLandsatEdinimler(gardenId).data
+  const { katman, setKatman, saha, setSaha } = useCalismaStore()
+  const edinimSorgu = useEdinimler(gardenId)
+  const data = edinimSorgu.data
+  const radarSorgu = useRadarEdinimler(gardenId)
+  const radar = radarSorgu.data
+  const landsatSorgu = useLandsatEdinimler(gardenId)
+  const landsatListe = landsatSorgu.data
+  /** «yok», «yükleniyor» ve «alınamadı» ayrı şeylerdir (ilke 8) */
+  const yokNotu = (sorgu: { isLoading: boolean; isError: boolean }, yok: string): string => (sorgu.isLoading ? 'yükleniyor…' : sorgu.isError ? 'alınamadı' : yok)
   const gecmis = useGecmisDoldurma(gardenId).data
   const multi = useMultiyear(gardenId).data
   const aktif = KATMANLAR[katman]
@@ -64,50 +70,37 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
     if (t.landsat) {
       const liste = landsatListe?.edinimler ?? []
       const son = liste[liste.length - 1]
-      return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : 'Landsat verisi yok' }
+      return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : yokNotu(landsatSorgu, 'Landsat verisi yok') }
     }
     if (t.radar) {
       const liste = (radar?.edinimler ?? []).filter((e) => e.birincil && e.izgara)
       const son = liste[liste.length - 1]
       const hazir = t.radar === 'degisim' ? liste.length > 3 : liste.length > 0
-      return { tarih: son?.tarih ?? null, hazir, not: hazir && son ? `son ${gunAy(son.tarih)}` : 'radar verisi yok' }
+      return { tarih: son?.tarih ?? null, hazir, not: hazir && son ? `son ${gunAy(son.tarih)}` : yokNotu(radarSorgu, 'radar verisi yok') }
     }
     const usable = (data?.edinimler ?? []).filter((e) => t.gosterge !== null && e.gostergeler[t.gosterge])
     const son = usable[usable.length - 1]
-    return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : gecmis?.durum === 'isleniyor' ? 'veri çekiliyor' : 'görüntü yok' }
+    return { tarih: son?.tarih ?? null, hazir: Boolean(son), not: son ? `son ${gunAy(son.tarih)}` : gecmis?.durum === 'isleniyor' ? 'veri çekiliyor' : yokNotu(edinimSorgu, 'görüntü yok') }
   }
 
   return (
     <div ref={box} className="relative" data-testid="katman-menusu">
-      <div className="glass flex items-center gap-1 p-1">
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox" className="flex h-10 max-[560px]:h-11 items-center gap-2.5 rounded-md px-2.5 text-left hover:bg-app-card-hover">
-          <Layers className="h-4 w-4 text-app-text-muted" aria-hidden />
+      <div className="flex items-center">
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox" aria-label={`Harita katmanı: ${aktif.ad}`} data-testid="katman-dugmesi" className="flex h-11 items-center gap-2.5 rounded-md px-2.5 text-left hover:bg-app-card-hover">
           <Ornek id={katman} />
           <span className="leading-tight">
-            <b className="block text-[13px] font-bold">{aktif.ad}{aktif.deneysel ? ' · deneysel' : ''}</b>
-            <span className="num block text-[10.5px] text-app-text-muted">{kaynakSatiri([aktif.kaynak, aktif.cozunurluk])}</span>
+            <b className="block text-small font-semibold">{aktif.ad}{aktif.deneysel ? ' · deneysel' : ''}</b>
+            <span className="num block text-caption text-app-text-muted max-[560px]:hidden">{kaynakSatiri([aktif.kaynak, aktif.cozunurluk])}</span>
           </span>
           <ChevronDown className={`h-4 w-4 text-app-text-muted transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </button>
-        {katman !== 'bolgeler' && (
-          <>
-            <label className="flex h-10 cursor-pointer items-center max-[560px]:hidden gap-2 rounded-md px-2.5 text-[12.5px] font-medium hover:bg-app-card-hover">
-              <input type="checkbox" checked={kontur} onChange={(e) => setKontur(e.target.checked)} className="h-4 w-4 accent-[var(--color-app-text)]" disabled={aktif.fark === true} />
-              Eş değer çizgisi
-            </label>
-            <label className="flex h-10 items-center gap-2 px-2.5 text-[12.5px] font-medium max-[560px]:hidden">
-              Opaklık
-              <input type="range" min={0.3} max={1} step={0.05} value={opaklik} onChange={(e) => setOpaklik(Number(e.target.value))} className="w-20 max-[560px]:h-11 accent-[var(--color-app-text)]" aria-label="Katman opaklığı" />
-            </label>
-          </>
-        )}
       </div>
       {open && (
-        <div className="glass absolute left-0 top-[52px] z-30 w-[380px] max-w-[calc(100vw-40px)] p-1.5">
+        <div className="glass absolute left-0 top-[52px] z-30 w-[380px] max-w-[calc(100vw-40px)] p-1.5 m-fade-in">
           <div role="listbox" aria-label="Katmanlar">
           {KATMAN_GRUPLARI.map((grup) => (
             <div key={grup}>
-              <div className="px-2 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[.08em] text-app-text-dim">{grup}</div>
+              <div className="px-2 pb-1 pt-2.5 text-caption font-semibold text-app-text-muted">{grup}</div>
               {KATMAN_SIRASI.filter((id) => KATMANLAR[id].grup === grup).map((id) => {
                 const t = KATMANLAR[id]
                 const d = durum(id)
@@ -125,10 +118,10 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
                   >
                     <Ornek id={id} />
                     <span className="min-w-0">
-                      <b className="block text-[13px]">{t.ad}{t.deneysel && <span className="ml-1.5 rounded-[2px] border border-app-border px-1 text-[9.5px] font-medium text-app-text-dim">deneysel</span>}</b>
-                      <span className="block text-[11.5px] leading-snug text-app-text-muted">{t.anlam}</span>
+                      <b className="block text-small">{t.ad}{t.deneysel && <span className="ml-1.5 rounded-[2px] border border-app-border px-1 text-caption font-medium text-app-text-muted">deneysel</span>}</b>
+                      <span className="block text-caption leading-snug text-app-text-muted">{t.anlam}</span>
                     </span>
-                    <span className="num text-right text-[10px] leading-[1.35] text-app-text-muted">
+                    <span className="num text-right text-caption leading-[1.35] text-app-text-muted">
                       {t.kaynak}
                       <br />
                       {t.cozunurluk} · {d.not}
@@ -140,9 +133,9 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
             </div>
           ))}
           </div>
-          <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-t border-app-border px-2 pt-2 text-[12.5px] font-medium hover:bg-app-card-hover">
+          <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-t border-app-border px-2 pt-2 text-small font-medium hover:bg-app-card-hover">
             <input type="checkbox" checked={saha} onChange={(e) => setSaha(e.target.checked)} data-testid="saha-katmani" className="h-4 w-4 accent-[var(--color-app-text)]" />
-            <span><b className="block text-[13px]">Saha kayıtları</b><span className="block text-[11.5px] text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>
+            <span><b className="block text-small">Saha kayıtları</b><span className="block text-caption text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>
           </label>
         </div>
       )}

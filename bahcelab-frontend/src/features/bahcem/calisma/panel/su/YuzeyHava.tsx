@@ -19,7 +19,7 @@ export function YuzeyHava({ sicaklik }: { sicaklik: SuYaniti['sicaklik'] }) {
   const secili = useCalismaStore((s) => (s.katman === 'yuzeySicakligi' ? s.tarih : null))
   const w = Math.max(280, genislik)
   const p = sicaklik.noktalar
-  if (!p.length) return <p className="text-[12.5px] text-app-text-muted" data-testid="yuzey-hava-bos">Henüz Landsat yüzey sıcaklığı sahnesi yok.</p>
+  if (!p.length) return <p className="text-small text-app-text-muted" data-testid="yuzey-hava-bos">Henüz Landsat yüzey sıcaklığı sahnesi yok.</p>
   const son = p[p.length - 1]
   const tum = p.flatMap((n) => [n.yuzey_bahce_c, n.hava_c, n.hava_c != null && n.normal ? n.hava_c + n.normal.alt_c : null, n.hava_c != null && n.normal ? n.hava_c + n.normal.ust_c : null]).filter((v): v is number => v != null)
   const lo = Math.floor(Math.min(...tum) - 2)
@@ -41,7 +41,7 @@ export function YuzeyHava({ sicaklik }: { sicaklik: SuYaniti['sicaklik'] }) {
         {[lo, (lo + hi) / 2, hi].map((t) => (
           <g key={t}>
             <line x1={KENAR.sol} x2={w - KENAR.sag} y1={Y(t)} y2={Y(t)} stroke="var(--color-app-border)" strokeWidth={0.6} />
-            <text x={KENAR.sol - 5} y={Y(t) + 3.5} textAnchor="end" fontSize={10} fill="var(--color-app-text-muted)" className="num">{sayi(t, 0)}</text>
+            <text x={KENAR.sol - 5} y={Y(t) + 3.5} textAnchor="end" fontSize={12} fill="var(--color-app-text-muted)" className="num">{sayi(t, 0)}</text>
           </g>
         ))}
         {p.map((n, i) => {
@@ -74,17 +74,17 @@ export function YuzeyHava({ sicaklik }: { sicaklik: SuYaniti['sicaklik'] }) {
                 </>
               )}
               <circle cx={X(i)} cy={Y(n.yuzey_bahce_c)} r={4.6} fill={SU_RENK.yuzey}><title>{`${gunAy(n.tarih)} · yüzey (bahçe) ${sayi(n.yuzey_bahce_c, 1)} °C${n.yuzey_tampon_c != null ? ` · tampon ${sayi(n.yuzey_tampon_c, 1)} °C` : ''}`}</title></circle>
-              {n.fark_c != null && <text x={X(i)} y={YUKSEKLIK - 52} textAnchor="middle" fontSize={10.5} fill="var(--color-app-text-muted)" className="num">{isaretli(n.fark_c)}</text>}
-              <text x={X(i)} y={YUKSEKLIK - 38} textAnchor="middle" fontSize={11} fontWeight={700} fill={n.durum === 'ustunde' ? SU_RENK.yuzey : 'var(--color-app-text)'} className="num" data-testid="normale-gore">
+              {n.fark_c != null && <text x={X(i)} y={YUKSEKLIK - 52} textAnchor="middle" fontSize={12} fill="var(--color-app-text-muted)" className="num">{isaretli(n.fark_c)}</text>}
+              <text x={X(i)} y={YUKSEKLIK - 38} textAnchor="middle" fontSize={12} fontWeight={700} fill={n.durum === 'ustunde' ? SU_RENK.yuzey : 'var(--color-app-text)'} className="num" data-testid="normale-gore">
                 {n.sapma_c != null ? isaretli(n.sapma_c) : '—'}
               </text>
-              <text x={X(i)} y={YUKSEKLIK - 25} textAnchor="middle" fontSize={9.5} fill="var(--color-app-text-muted)" data-testid={n.karisik_piksel ? 'karisik-piksel' : undefined}>{n.karisik_piksel ? '▲ karışık' : n.stres ? '● stres' : ''}</text>
-              <text x={X(i)} y={YUKSEKLIK - 6} textAnchor="middle" fontSize={10} fill="var(--color-app-text-muted)">{gunAy(n.tarih)}</text>
+              <text x={X(i)} y={YUKSEKLIK - 25} textAnchor="middle" fontSize={12} fill="var(--color-app-text-muted)" data-testid={n.karisik_piksel ? 'karisik-piksel' : undefined}>{n.karisik_piksel ? '▲ karışık' : n.stres ? '● stres' : ''}</text>
+              <text x={X(i)} y={YUKSEKLIK - 6} textAnchor="middle" fontSize={12} fill="var(--color-app-text-muted)">{gunAy(n.tarih)}</text>
             </g>
           )
         })}
       </svg>
-      <p className="mt-0.5 text-[11.5px] leading-snug text-app-text-muted">
+      <p className="mt-0.5 text-caption leading-snug text-app-text-muted">
         <span style={{ color: SU_RENK.yuzey }}>●</span> yüzey (bahçe) · <span style={{ color: SU_RENK.hava }}>○</span> hava (11:00) · gri kutu: bahçenin aynı ay geçmişinde yüzey − hava farkının p{sicaklik.normal_alt_yuzde}–p{sicaklik.normal_ust_yuzde} aralığı · soluk sayı: yüzey − hava (°C) · kalın sayı: aynı ay ortancasından sapma (°C) · ▲ karışık: bahçe ile 300 m tampon farkı ≥ {sayi(sicaklik.karisik_piksel_esigi_c, 1)} °C (100 m piksel bahçe dışını da içerir) · ● stres: yalnız bandın üstünde ve karışık piksel değilken. Aynı ayda en az {sicaklik.min_sahne} geçmiş geçiş yoksa yargı verilmez. Bir geçişe dokununca harita o tarihi açar.
       </p>
     </div>

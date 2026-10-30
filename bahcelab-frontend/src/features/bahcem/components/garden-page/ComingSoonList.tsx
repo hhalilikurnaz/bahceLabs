@@ -5,7 +5,7 @@ import type { ComingSoonItem } from './comingSoonItems'
 export function ComingSoonList({ items, heading }: { items: ComingSoonItem[]; heading?: string }) {
   return (
     <section aria-label={heading ?? 'Yakında'} className="pt-1">
-      {heading && <h3 className="mb-1 text-caption font-semibold uppercase tracking-wide text-app-text-dim">{heading}</h3>}
+      {heading && <h3 className="mb-1 text-caption font-semibold text-app-text-dim">{heading}</h3>}
       <ul className="divide-y divide-app-border rounded-md border border-dashed border-app-border-strong bg-app-card/50">
         {items.map((item) => (
           <li key={item.title} data-testid="coming-soon" className="flex items-start gap-2.5 px-3 py-2">

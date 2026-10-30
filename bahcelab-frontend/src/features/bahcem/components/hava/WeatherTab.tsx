@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Card, ErrorState, Skeleton } from '@/components/ui'
-import { describeError } from '../../api/gardensApi'
+import { Akordeon, Akordeonlar, KararBlogu, PanelKabuk } from '../../calisma/panel/parcalar'
+import { havaKarar } from '../../lib/karar'
+import { bestSprayTime, noSprayReason } from '../../lib/spray'
 import { useWeather, useWeatherHistory } from '../../api/weatherApi'
 import type { Garden } from '../../api/types'
 import { shiftDays, todayIstanbul } from '../../lib/dates'
-import { ComingSoonList } from '../garden-page/ComingSoonList'
-import { WEATHER_ITEMS } from '../garden-page/comingSoonItems'
-import { WeatherChart } from '../indeks/WeatherChart'
-import { BestSprayBanner } from './BestSprayBanner'
+import { ChartState, HavaGrafikleri, TimeDomainProvider } from '@/components/chart'
+import { useElementWidth } from '../../hooks/useElementWidth'
+import { useCalismaStore } from '../../calisma/calismaStore'
 import { CurrentCard } from './CurrentCard'
 import { IrrigationCard } from './IrrigationCard'
 import { RisksCard } from './RisksCard'
@@ -38,53 +39,52 @@ export function WeatherTab({ garden }: { garden: Garden }) {
   const today = todayIstanbul()
   const range = useMemo(() => ({ from: shiftDays(today, -89), to: today }), [today])
   const history = useWeatherHistory(gardenId, range.from, shiftDays(today, -1), true)
-  const [hover, setHover] = useState<string | null>(null)
+  const imlec = useCalismaStore((st) => st.imlecTarih)
+  const setImlec = useCalismaStore((st) => st.setImlecTarih)
+  const [grafikRef, grafikW] = useElementWidth<HTMLDivElement>()
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2" aria-label="Hava durumu yükleniyor" aria-busy>
-        <Skeleton className="h-48" />
-        <Skeleton className="h-48" />
-        <Skeleton className="h-72" />
-        <Skeleton className="h-72" />
-      </div>
+      <PanelKabuk karar={null} testId="hava-paneli">
+        <div className="grid gap-3" aria-label="Hava durumu yükleniyor" aria-busy role="status"><Skeleton className="m-skeleton h-44" /><Skeleton className="m-skeleton h-56" /><Skeleton className="m-skeleton h-40" /></div>
+      </PanelKabuk>
     )
   }
   if (error || !data) {
     return (
-      <Card>
-        <ErrorState
-          title="Hava durumu alınamadı"
-          description={error ? describeError(error) : 'İnternet bağlantınızı kontrol edip tekrar deneyin.'}
-          retrying={isFetching}
-          onRetry={() => void refetch()}
-        />
-      </Card>
+      <PanelKabuk karar={null} testId="hava-paneli">
+        <Card><ErrorState title="Hava durumu alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} /></Card>
+      </PanelKabuk>
     )
   }
 
+  const simdi = data.simdi
+  const bestSpray = bestSprayTime(data.gunler.map((d) => ({ tarih: d.tarih, uygunSaat: d.ilaclama.uygunSaat, enIyiAralik: d.ilaclama.enIyiAralik })), today)
+  const don = data.uyarilar.some((u) => u.tur === 'don')
+  const yagisYakin = data.gunler.slice(0, 2).some((g) => (g.yagisMm ?? 0) >= 2)
+  const karar = havaKarar({ don, yagisYakin, ilaclamaUygun: bestSpray !== null })
   return (
-    <div className="space-y-3">
-      <BestSprayBanner weather={data} />
-      <WeatherAlertsCard alerts={data.uyarilar} />
-      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
-        <IrrigationCard garden={garden} />
-        <RisksCard gardenId={gardenId} />
-      </div>
-      <DailyForecast days={data.gunler} />
+    <PanelKabuk karar={karar} testId="hava-paneli">
+      <KararBlogu karar={karar} alt={bestSpray ? `En iyi ilaçlama zamanı: ${bestSpray.gun} ${bestSpray.aralik[0]}–${bestSpray.aralik[1]}.` : noSprayReason(data.saatlik)} sayi={`${Math.round(simdi.sicaklik)} °C`} etiket="şu an" kucuk={`${simdi.aciklama}${simdi.nem !== null ? ` · nem %${Math.round(simdi.nem)}` : ''} · rüzgâr ${Math.round(simdi.ruzgar)} km/s`} testId="hava-karar" />
       <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
-      <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2 p-3" data-testid="weather-layer">
-        <h3 className="font-display text-h2 text-app-text">Son 90 gün: yağış ve sıcaklık</h3>
-        <WeatherChart days={history.data ?? []} range={range} loading={history.isLoading} hoverDoy={hover} onHoverDoy={setHover} />
+      <WeatherAlertsCard alerts={data.uyarilar} />
+      <RisksCard gardenId={gardenId} />
+      <DailyForecast days={data.gunler} />
+      <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2 p-4" data-testid="weather-layer">
+        <h3 className="text-lead font-semibold text-app-text">Son 90 gün: yağış ve sıcaklık</h3>
+        <div ref={grafikRef}>
+          {history.isLoading ? <ChartState tur="yukleniyor" yukseklik={240} /> : history.isError ? <ChartState tur="hata" error={history.error} onRetry={() => void history.refetch()} /> : (
+            <TimeDomainProvider imlec={imlec} setImlec={setImlec}><HavaGrafikleri gunler={history.data ?? []} from={range.from} to={range.to} genislik={Math.max(280, grafikW)} /></TimeDomainProvider>
+          )}
+        </div>
       </Card>
-      <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @2xl:items-start">
-        <CurrentCard weather={data} />
-        <WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} />
-      </div>
-      <ComingSoonList heading="Yakında" items={WEATHER_ITEMS} />
-      <p className="px-1 pb-1 text-caption text-app-text-dim" data-testid="weather-attribution">
-        <Attribution text={data.atif} /> Saatler Europe/Istanbul. Tarımsal değerlendirmeler bilgi amaçlıdır.
-      </p>
-    </div>
+      <IrrigationCard garden={garden} />
+      <Akordeonlar>
+        <Akordeon baslik="Kaynak ve ayrıntı" ozet="Open-Meteo · saatler Europe/Istanbul">
+          <div className="grid gap-3"><CurrentCard weather={data} /><WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} /></div>
+          <p className="mt-3 text-caption text-app-text-dim" data-testid="weather-attribution"><Attribution text={data.atif} /> Tarımsal değerlendirmeler bilgi amaçlıdır.</p>
+        </Akordeon>
+      </Akordeonlar>
+    </PanelKabuk>
   )
 }

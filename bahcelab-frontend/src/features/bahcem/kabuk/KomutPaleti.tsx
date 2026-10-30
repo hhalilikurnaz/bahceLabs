@@ -62,12 +62,12 @@ function Palet({ onClose, seciliBahce }: { onClose: () => void; seciliBahce: str
           />
         </div>
         <ul role="listbox" className="max-h-[50vh] overflow-y-auto p-1.5">
-          {list.length === 0 && <li className="px-3 py-3 text-[13px] text-app-text-muted">Eşleşen komut yok. Serbest soru Asistan'da (Adım 16).</li>}
+          {list.length === 0 && <li className="px-3 py-3 text-[13px] text-app-text-muted">Eşleşen komut yok. Serbest soru Asistan'da (yakında).</li>}
           {list.map((k, n) => (
             <li key={k.id} role="option" aria-selected={n === i}>
-              <button type="button" onMouseEnter={() => setI(n)} onClick={() => run(k)} className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-[13.5px] ${n === i ? 'bg-app-card-hover' : ''}`}>
+              <button type="button" onMouseEnter={() => setI(n)} onClick={() => run(k)} className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-small ${n === i ? 'bg-app-card-hover' : ''}`}>
                 <span className="font-semibold">{k.baslik}</span>
-                <span className="text-[11.5px] text-app-text-muted">{k.ipucu}</span>
+                <span className="text-caption text-app-text-muted">{k.ipucu}</span>
               </button>
             </li>
           ))}

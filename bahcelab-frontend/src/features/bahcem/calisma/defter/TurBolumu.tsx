@@ -20,22 +20,22 @@ function Nokta({ gardenId, nokta, acik, ac, kayitSec }: { gardenId: string; nokt
       <button type="button" onClick={ac} aria-expanded={acik} className="flex min-h-11 w-full items-start gap-2.5 py-2 text-left">
         <span aria-hidden className="mono grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[var(--ink)] text-[12px] font-bold" style={{ background: nokta.ziyaret_edildi ? 'var(--paper-3)' : 'var(--lemon)' }}>{nokta.ziyaret_edildi ? '✓' : nokta.sira}</span>
         <span className="min-w-0 flex-1">
-          <b className="block text-[13.5px]">{TUR_AD[nokta.tur]}</b>
-          <span className="block text-[12.5px] text-[var(--ink-2)]">{nokta.neden}</span>
+          <b className="block text-small">{TUR_AD[nokta.tur]}</b>
+          <span className="block text-small text-[var(--ink-2)]">{nokta.neden}</span>
         </span>
-        <span className="mono shrink-0 text-[11.5px] text-[var(--ink-3)]">{nokta.ziyaret_edildi ? 'tamam' : `+${mesafe(nokta.mesafe_m)}`}</span>
+        <span className="mono shrink-0 text-caption text-[var(--ink-3)]">{nokta.ziyaret_edildi ? 'tamam' : `+${mesafe(nokta.mesafe_m)}`}</span>
       </button>
       {acik && (
         <div className="grid gap-1.5 pb-3 pl-[34px]" data-testid="tur-noktasi-ayrinti">
           {nokta.ziyaret_edildi ? (
-            <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+            <div className="flex flex-wrap items-center gap-2 text-small">
               <span>Ziyaret edildi.</span>
               {nokta.kayit_id && <button type="button" onClick={() => kayitSec(nokta.kayit_id!)} data-testid="tur-kayda-git" className="font-semibold underline underline-offset-2">Kaydı gör</button>}
               <button type="button" disabled={bekle} onClick={() => ziyaret.mutate({ nokta_anahtar: nokta.anahtar, ziyaret_edildi: false })} data-testid="tur-geri-al" className="font-semibold underline underline-offset-2">Geri al</button>
             </div>
           ) : (
             <>
-              <label className="text-[11.5px] font-semibold text-[var(--ink-3)]" htmlFor={`tn-${nokta.anahtar}`}>Not</label>
+              <label className="text-caption font-semibold text-[var(--ink-3)]" htmlFor={`tn-${nokta.anahtar}`}>Not</label>
               <textarea id={`tn-${nokta.anahtar}`} value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} placeholder="Ne gördünüz? Kısa not…" className="w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px]" data-testid="tur-notu" />
               <div className="flex flex-wrap items-center gap-2">
                 <label className="inline-flex min-h-9 cursor-pointer items-center border border-[var(--rule-2)] px-2.5 text-[12px] font-semibold hover:border-[var(--ink)] max-[560px]:min-h-11">
@@ -45,7 +45,7 @@ function Nokta({ gardenId, nokta, acik, ac, kayitSec }: { gardenId: string; nokt
                 <button type="button" disabled={bekle} onClick={notluKaydet} data-testid="tur-kaydet" className="btn primary max-[560px]:!h-11">Kaydet · ziyaret edildi</button>
                 <button type="button" disabled={bekle} onClick={() => ziyaret.mutate({ nokta_anahtar: nokta.anahtar, ziyaret_edildi: true })} data-testid="tur-ziyaret" className="btn quiet max-[560px]:!h-11">Yalnız ziyaret edildi</button>
               </div>
-              {(ziyaret.isError || olustur.isError) && <p role="alert" className="text-[12.5px] text-[var(--st-dikkat)]">Kaydedilemedi, tekrar deneyin.</p>}
+              {(ziyaret.isError || olustur.isError) && <p role="alert" className="text-small text-[var(--st-dikkat)]">Kaydedilemedi, tekrar deneyin.</p>}
             </>
           )}
         </div>
@@ -88,12 +88,12 @@ export function TurBolumu({ gardenId, kayitSec, noktaSec, seciliNokta, baslangic
       ) : (
         <>
           <h2 className="serif mt-1 text-[22px] leading-tight" data-testid="tur-baslik">{bekleyen} nokta · {mesafe(tur.toplam_m)} · yaklaşık {tur.sure_dk} dakika</h2>
-          <p className="mt-1 text-[12.5px] text-[var(--ink-2)]">{tur.not_}</p>
+          <p className="mt-1 text-small text-[var(--ink-2)]">{tur.not_}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-2" aria-live="polite">
             <button type="button" onClick={konumum} data-testid="tur-konumum" className="btn quiet max-[560px]:!h-11">Konumumdan sırala</button>
             {baslangic && <button type="button" onClick={() => setBaslangic(null)} className="btn quiet max-[560px]:!h-11">Bahçe merkezinden</button>}
             <button type="button" onClick={() => window.print()} className="btn quiet max-[560px]:!h-11">Yazdır</button>
-            <span className="mono text-[11.5px] text-[var(--ink-3)]" data-testid="tur-ilerleme">{tur.ziyaret_edilen}/{tur.noktalar.length} tamam</span>
+            <span className="mono text-caption text-[var(--ink-3)]" data-testid="tur-ilerleme">{tur.ziyaret_edilen}/{tur.noktalar.length} tamam</span>
           </div>
           {konumHata && <p role="status" className="mt-1 text-[12px] text-[var(--ink-3)]">{konumHata}</p>}
           <ol className="mt-2" data-testid="tur-listesi">
@@ -101,7 +101,7 @@ export function TurBolumu({ gardenId, kayitSec, noktaSec, seciliNokta, baslangic
               <Nokta key={n.anahtar} gardenId={gardenId} nokta={n} acik={seciliNokta === n.anahtar} ac={() => noktaSec(seciliNokta === n.anahtar ? null : n.anahtar)} kayitSec={kayitSec} />
             ))}
           </ol>
-          <p className="mt-1 text-[11.5px] text-[var(--ink-3)]">{tur.esik_durumu}</p>
+          <p className="mt-1 text-caption text-[var(--ink-3)]">{tur.esik_durumu}</p>
         </>
       )}
     </section>

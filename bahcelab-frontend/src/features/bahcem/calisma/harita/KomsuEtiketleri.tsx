@@ -65,7 +65,7 @@ export function KomsuEtiketleri({ others, kademeler }: { others: Garden[]; kadem
           onClick={() => navigate(gardenPath(p.id))}
           aria-label={`${p.ad} bahçesini aç`}
           data-testid="komsu-etiketi"
-          className="absolute z-[5] max-w-[160px] -translate-x-1/2 -translate-y-1/2 truncate rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[11.5px] font-semibold text-[#17201b] shadow-sm ring-1 ring-black/15 hover:bg-white max-[560px]:min-h-11"
+          className="absolute z-[5] max-w-[160px] -translate-x-1/2 -translate-y-1/2 truncate rounded-[3px] bg-white/85 px-1.5 py-0.5 text-caption font-semibold text-map-ink shadow-sm ring-1 ring-black/15 hover:bg-white max-[560px]:min-h-11"
           style={{ left: p.x, top: p.y }}
         >
           {kademeler && kademeler.get(p.id) && kademeler.get(p.id) !== 'veri_yok' && (

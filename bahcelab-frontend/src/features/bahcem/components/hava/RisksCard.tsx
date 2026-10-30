@@ -12,7 +12,7 @@ const LEVEL: Record<Risk['seviye'], { label: string; tone: BadgeTone }> = {
 
 /** Zararlı / hastalık risk tahminleri: seviye, gerekçe, geçerlilik tarihi ve kural durumu. Teşhis değil, risk tahmini. */
 export function RisksCard({ gardenId }: { gardenId: string }) {
-  const { data, isLoading, isError, refetch, isFetching } = useRisks(gardenId)
+  const { data, isLoading, isError, error, refetch, isFetching } = useRisks(gardenId)
   return (
     <Card aria-label="Zararlı ve hastalık riski" data-testid="risks-card" className="space-y-3 p-4">
       <h3 className="flex items-center gap-2 font-display text-h2 text-app-text">
@@ -21,7 +21,7 @@ export function RisksCard({ gardenId }: { gardenId: string }) {
       {isLoading ? (
         <Skeleton className="h-32" />
       ) : isError || !data ? (
-        <ErrorState title="Risk tahminleri alınamadı" description="İnternet bağlantınızı kontrol edip tekrar deneyin." retrying={isFetching} onRetry={() => void refetch()} />
+        <ErrorState title="Risk tahminleri alınamadı" error={error} retrying={isFetching} onRetry={() => void refetch()} />
       ) : data.riskler.length === 0 ? (
         <p className="text-body text-app-text-muted">Bu ürün için tanımlı risk kuralı yok.</p>
       ) : (

@@ -175,7 +175,7 @@ export function NorthArrow({ size = 44 }: { size?: number }) {
       <circle cx={22} cy={24} r={15} />
       <path d="M22 6L28 30L22 26L16 30Z" fill="var(--ink)" />
       <path d="M22 26L22 42" strokeWidth={0.7} />
-      <text x={22} y={5} textAnchor="middle" fontSize={8} fontWeight={700} fill="var(--ink)" stroke="none" fontFamily="var(--font-ui)">K</text>
+      <text x={22} y={5} textAnchor="middle" fontSize={12} fontWeight={700} fill="var(--ink)" stroke="none" fontFamily="var(--font-ui)">K</text>
     </svg>
   )
 }
@@ -192,8 +192,8 @@ export function ScaleBar({ pxPerMeter }: { pxPerMeter: number }) {
       {Array.from({ length: parts }, (_, i) => (
         <rect key={i} x={1 + (width / parts) * i} y={14} width={width / parts} height={5} fill={i % 2 ? 'var(--paper)' : 'var(--ink)'} stroke="var(--ink)" strokeWidth={1} />
       ))}
-      <text x={1} y={10} fontSize={9.5} fontFamily="var(--font-mono)" fill="var(--ink)">0</text>
-      <text x={1 + width} y={10} fontSize={9.5} fontFamily="var(--font-mono)" fill="var(--ink)" textAnchor="middle">{meters >= 1000 ? `${meters / 1000} km` : `${meters} m`}</text>
+      <text x={1} y={10} fontSize={12} fontFamily="var(--font-mono)" fill="var(--ink)">0</text>
+      <text x={1 + width} y={10} fontSize={12} fontFamily="var(--font-mono)" fill="var(--ink)" textAnchor="middle">{meters >= 1000 ? `${meters / 1000} km` : `${meters} m`}</text>
     </svg>
   )
 }
@@ -226,7 +226,7 @@ export function Logo({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-label="BahçeLab">
       <rect width={32} height={32} rx={3} fill="var(--brand)" />
-      <path d="M8 24C8 14 14 8 24 8c0 10-6 16-16 16zM8 24l9-9" stroke="#fbfaf6" strokeWidth={1.6} strokeLinecap="round" />
+      <path d="M8 24C8 14 14 8 24 8c0 10-6 16-16 16zM8 24l9-9" stroke="var(--paper)" strokeWidth={1.6} strokeLinecap="round" />
     </svg>
   )
 }

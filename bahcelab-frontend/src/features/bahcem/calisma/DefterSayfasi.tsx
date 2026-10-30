@@ -1,3 +1,4 @@
+import { DEFTER_KARAR } from '../lib/karar'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSahaKayitlari, useSahaTuru } from '../api/sahaApi'
@@ -29,11 +30,11 @@ export function DefterSayfasi({ garden }: { garden: Garden }) {
     <div className="notebook min-h-0 flex-1 overflow-y-auto max-[900px]:overflow-y-auto" data-testid="defter-sayfasi">
       <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--rule)] px-5 py-3 max-[560px]:px-3">
         <Link to={gardenPath(garden.id)} className="btn max-[560px]:!h-11" data-testid="calisma-alanina-don">← Çalışma alanı</Link>
-        <h1 className="serif text-[28px] leading-none" data-testid="defter-baslik">Saha Defteri</h1>
-        <span className="text-[12.5px] text-[var(--ink-3)]">{garden.ad} · {dekar(garden.alanDekar)} · sahaya çıkarken, yazdırılabilir</span>
+        <h1 className="text-h1 font-semibold leading-tight" data-testid="defter-baslik">{DEFTER_KARAR}</h1>
+        <span className="text-small text-[var(--ink-3)]">{garden.ad} · {dekar(garden.alanDekar)} · sahaya çıkarken, yazdırılabilir</span>
       </div>
       <div className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-0 max-[900px]:grid-cols-[minmax(0,1fr)]">
-        <section aria-label="Saha haritası" className="sticky top-0 h-[calc(100vh-170px)] min-h-[420px] border-r border-[var(--rule)] max-[900px]:static max-[900px]:h-[56vh] max-[900px]:border-r-0">
+        <section aria-label="Saha haritası" className="sticky top-0 h-[calc(100vh-170px)] min-h-[420px] border-r border-[var(--rule)] max-[900px]:relative max-[900px]:h-[56vh] max-[900px]:border-r-0">
           <SahaHaritasi garden={garden} kayitlar={kayitlar} tur={tur} konum={konum} secili={seciliKayit ?? seciliNokta} sec={sec} kayitlarGorunur={kayitlarGorunur} />
           <label className="absolute left-3 top-3 z-10 flex min-h-9 items-center gap-2 border border-[var(--rule-2)] bg-[var(--paper)] px-2.5 text-[12px] font-semibold max-[560px]:min-h-11">
             <input type="checkbox" checked={kayitlarGorunur} onChange={(e) => setKayitlarGorunur(e.target.checked)} data-testid="kayit-katmani" /> Saha kayıtları ({kayitlar.filter((k) => k.konum).length})
