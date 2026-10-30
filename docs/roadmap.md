@@ -1,7 +1,7 @@
 # BahçeLab — Yol haritası (Faz 1'in kalanı)
 
 > **Her yeni oturumda bu belgeyi oku.** Belge yalnız **sıra ve kapsamı** tutar; her adımın ayrıntılı tasarımı o adımın kendi isteminde gelir. Bu belgede yazan bir adımın kodu, istemi gelmeden yazılmaz.
-> Son güncelleme: 2026-10-29 (E kapanışı).
+> Son güncelleme: 2026-10-30 (U4 onayı; son tasarım turu notu).
 
 ## Değişmeyen ilkeler (her adımda)
 - **Sahte veri yok**: veri yoksa boş durum (neden + ne zaman gelir); test verisi yalnız `tests/support` ve API_DEBUG kapısı arkasında.
@@ -16,6 +16,9 @@
 
 ## Sıradaki
 **9H** (yeni görsel dilin üstüne). U1 (P0 ve hata dürüstlüğü) ve U4 (görsel dil v2 · Yön C: tek token dosyası, grafik bileşen seti, cam, hareket, sağ panel; ADR 0022; `docs/design/u4-ekranlar.pdf`, `docs/design/u4-hareket/`) tamamlandı.
+
+**Son tasarım turuna ertelenenler:** Saha Defteri iç bölümleri ve giriş/tanıtım sayfaları yeni görsel dile **son tasarım turunda** (adım 27 ile birlikte) taşınır; ara adımlarda yalnız işlevsel olarak korunur.
+**Kural:** bundan sonra her commit kendi başına derlenir ve testleri geçer.
 
 ## Kalan adımlar (bu sırayla)
 
