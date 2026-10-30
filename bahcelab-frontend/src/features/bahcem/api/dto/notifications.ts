@@ -21,6 +21,8 @@ export interface ApiNotification {
   metin: string
   baglanti: string
   okundu: boolean
+  /** Veri akışı (sistem) bildirimi: ürün uyarısı değildir */
+  sistem?: boolean
   durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
   ertelendi_bitis: string | null
   olusturma: string
@@ -33,6 +35,8 @@ export interface ApiNotificationList {
   toplam: number
   sayfa_sayisi: number
   okunmamis_sayisi: number
+  okunmamis_urun_sayisi?: number
+  okunmamis_sistem_sayisi?: number
   ogeler: ApiNotification[]
 }
 

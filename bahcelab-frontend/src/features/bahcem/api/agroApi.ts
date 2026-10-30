@@ -99,7 +99,17 @@ export interface TodayItem {
 
 const meta = (m: ApiKuralMeta | null): RuleMeta | null => (m ? { durum: m.durum, kaynak: m.kaynak, onaylayan: m.onaylayan } : null)
 
+/** Harita skalası eşikleri (katalog, ön değer): gerilmiş skala bahçe-içi aralık bunun altındayken kapalıdır. */
+export interface GorselEsikler {
+  meta: RuleMeta
+  gerilmeMinAralik: Record<string, number>
+}
+
 export const agroApi = {
+  async gorselEsikler(): Promise<GorselEsikler> {
+    const raw = await apiRequest<ApiKatalog>('/agro/katalog')
+    return { meta: meta(raw.gorsel.meta) as RuleMeta, gerilmeMinAralik: raw.gorsel.gerilme_min_aralik }
+  },
   async catalog(): Promise<CatalogProduct[]> {
     const raw = await apiRequest<ApiKatalog>('/agro/katalog')
     return raw.urunler.map((u) => ({
@@ -162,6 +172,10 @@ export const agroApi = {
 }
 
 /** Katalog sürümlüdür ve oturum boyunca değişmez. */
+export function useGorselEsikler() {
+  return useQuery({ queryKey: ['agro', 'gorsel-esikler'], queryFn: agroApi.gorselEsikler, staleTime: Infinity })
+}
+
 export function useCatalog() {
   return useQuery({ queryKey: ['agro', 'katalog'], queryFn: agroApi.catalog, staleTime: Infinity })
 }

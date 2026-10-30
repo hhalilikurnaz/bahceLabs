@@ -22,7 +22,8 @@ describe('kesintisiz canlılık eğrisi', () => {
   it('çizgi ve bant yolları boş girdide boştur, doluda kapalı/açık yol üretir', () => {
     const X = (k: number) => k * 10
     const Y = (v: number) => 100 - v * 100
-    expect(cizgiYolu([], X, Y)).toBe('') && expect(bantYolu([], X, Y)).toBe('')
+    expect(cizgiYolu([], X, Y)).toBe('')
+    expect(bantYolu([], X, Y)).toBe('')
     const pts = [n('2026-01-01', 0.6, false), n('2026-01-10', 0.7, false)]
     expect(cizgiYolu(pts, X, Y).startsWith('M')).toBe(true)
     expect(bantYolu(pts, X, Y).endsWith('Z')).toBe(true)

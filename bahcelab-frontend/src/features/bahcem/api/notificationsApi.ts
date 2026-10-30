@@ -12,6 +12,8 @@ export interface AppNotification {
   metin: string
   baglanti: string
   okundu: boolean
+  /** Veri akışı (sistem) bildirimi: ürün (bahçe) uyarılarından ayrı gösterilir, rozete ve toast'a girmez */
+  sistem: boolean
   /** Yaşam döngüsü: oluştu → görüldü → çözüldü / ertelendi (süre dolunca yeniden oluştu) */
   durum: 'olustu' | 'goruldu' | 'cozuldu' | 'ertelendi'
   ertelendiBitis: string | null
@@ -27,6 +29,9 @@ export interface NotificationPage {
   sayfaSayisi: number
   toplam: number
   okunmamis: number
+  /** Rozet yalnız ürün uyarılarını sayar */
+  okunmamisUrun: number
+  okunmamisSistem: number
   ogeler: AppNotification[]
 }
 
@@ -47,7 +52,7 @@ export interface Preference {
 
 const mapItem = (n: ApiNotification): AppNotification => ({
   id: n.id, bahceId: n.bahce_id, tur: n.tur, turAdi: n.tur_adi, oncelik: n.oncelik, baslik: n.baslik, metin: n.metin,
-  baglanti: n.baglanti, okundu: n.okundu, durum: n.durum, ertelendiBitis: n.ertelendi_bitis, olusturma: n.olusturma, ogeler: n.ogeler ?? [],
+  baglanti: n.baglanti, okundu: n.okundu, sistem: n.sistem ?? n.tur === 'besleme', durum: n.durum, ertelendiBitis: n.ertelendi_bitis, olusturma: n.olusturma, ogeler: n.ogeler ?? [],
 })
 
 export const PAGE_SIZE = 20
@@ -61,7 +66,7 @@ async function fetchPage(filters: NotificationFilters, size = PAGE_SIZE): Promis
   if (filters.yalnizOkunmamis) params.set('okunmamis', 'true')
   if (filters.gorunum && filters.gorunum !== 'aktif') params.set('durum', filters.gorunum)
   const raw = await apiRequest<ApiNotificationList>(`/notifications?${params}`)
-  return { sayfa: raw.sayfa, sayfaSayisi: raw.sayfa_sayisi, toplam: raw.toplam, okunmamis: raw.okunmamis_sayisi, ogeler: raw.ogeler.map(mapItem) }
+  return { sayfa: raw.sayfa, sayfaSayisi: raw.sayfa_sayisi, toplam: raw.toplam, okunmamis: raw.okunmamis_sayisi, okunmamisUrun: raw.okunmamis_urun_sayisi ?? raw.okunmamis_sayisi, okunmamisSistem: raw.okunmamis_sistem_sayisi ?? 0, ogeler: raw.ogeler.map(mapItem) }
 }
 
 export function useNotifications(filters: NotificationFilters) {

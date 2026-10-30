@@ -38,7 +38,8 @@ describe('band konumu ve çizimi', () => {
   })
   it('çubuk aralığı değeri ve bant uçlarını kapsar', () => {
     const [lo, hi] = cubukAraligi(0.45, band({}))
-    expect(lo).toBeLessThan(0.45) && expect(hi).toBeGreaterThan(0.7)
+    expect(lo).toBeLessThan(0.45)
+    expect(hi).toBeGreaterThan(0.7)
   })
 })
 

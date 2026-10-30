@@ -9,6 +9,7 @@ export interface ApiKuralMeta {
 
 export interface ApiKatalog {
   surum: number
+  gorsel: { meta: ApiKuralMeta; gerilme_min_aralik: Record<string, number> }
   urunler: {
     kod: string
     ad: string

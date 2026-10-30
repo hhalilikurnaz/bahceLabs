@@ -79,6 +79,8 @@ export interface SuYaniti {
   toprak: { kum_yuzde: number | null; kil_yuzde: number | null; silt_yuzde: number | null; organik_karbon_g_kg: number | null; tarla_kapasitesi: number | null; solma_noktasi: number | null; kaynak: string | null }
   kaynaklar: Record<'profil' | 'denge' | 'sicaklik', KaynakCipi>
   dogrulama: string[]
+  /** Aynı ERA5 hücresindeki diğer bahçeler: toprak nemi ve hava verisi onlarla birebir aynıdır */
+  ayni_hucre_bahceler?: string[]
 }
 
 export function useSu(gardenId: string | null) {

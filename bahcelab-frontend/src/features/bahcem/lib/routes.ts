@@ -19,9 +19,9 @@ export type GardenPage = (typeof GARDEN_PAGES)[number]
 export const NAV_ITEMS = [
   { key: 'bahceler', label: 'Bahçeler', path: '/bahceler', soon: null },
   { key: 'asistan', label: 'Asistan', path: '/asistan', soon: null },
-  { key: 'islerim', label: 'İşlerim', path: '/islerim', soon: 'Faz 1.5' },
-  { key: 'hizmetler', label: 'Hizmetler', path: '/hizmetler', soon: 'Faz 1.5' },
-  { key: 'pazar', label: 'Pazar', path: '/pazar', soon: 'Adım 17' },
+  { key: 'islerim', label: 'İşlerim', path: '/islerim', soon: 'yakında' },
+  { key: 'hizmetler', label: 'Hizmetler', path: '/hizmetler', soon: 'yakında' },
+  { key: 'pazar', label: 'Pazar', path: '/pazar', soon: 'yakında' },
 ] as const
 export type NavKey = (typeof NAV_ITEMS)[number]['key']
 

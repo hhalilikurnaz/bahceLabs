@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-/** WCAG 2.x göreli parlaklık ve kontrast oranı; renk token'ları `src/index.css`'ten okunur. */
-const css = readFileSync('src/index.css', 'utf8')
+/** WCAG 2.x göreli parlaklık ve kontrast oranı; renk token'ları `src/styles/tokens.css`'ten okunur. */
+const css = readFileSync('src/styles/tokens.css', 'utf8')
 
 function block(selector: string): Record<string, string> {
   const start = css.indexOf(selector)
@@ -16,6 +16,7 @@ function block(selector: string): Record<string, string> {
 
 const light = block('@theme')
 const dark = { ...light, ...block('.surface-dark {') }
+const koyuTema = { ...light, ...block("html[data-theme='dark'] .app-shell {") }
 
 const channel = (v: number) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4)
 function luminance(hex: string): number {
@@ -31,6 +32,10 @@ export function contrast(a: string, b: string): number {
 const PAIRS: [string, string, number, string][] = [
   ['app-text', 'app-panel', 4.5, 'Ana metin / panel'],
   ['app-text', 'app-card', 4.5, 'Ana metin / kart'],
+  ['app-text', 'app-canvas', 4.5, 'Ana metin / panel zemini'],
+  ['app-text-muted', 'app-canvas', 4.5, 'İkincil metin / panel zemini'],
+  ['app-text-dim', 'app-canvas', 4.5, 'Soluk metin / panel zemini'],
+  ['app-primary', 'app-card', 4.5, 'Birincil eylem rengi / kart (metin olarak)'],
   ['app-text-muted', 'app-panel', 4.5, 'İkincil metin / panel'],
   ['app-text-muted', 'app-card', 4.5, 'İkincil metin / kart'],
   ['app-text-dim', 'app-panel', 4.5, 'Soluk metin ve placeholder / panel'],
@@ -46,7 +51,7 @@ const PAIRS: [string, string, number, string][] = [
 ]
 
 describe('renk kontrastı (WCAG AA)', () => {
-  for (const [name, tokens] of [['açık tema', light], ['koyu yüzey (harita denetimleri)', dark]] as const) {
+  for (const [name, tokens] of [['açık tema', light], ['koyu yüzey (harita denetimleri)', dark], ['koyu tema', koyuTema]] as const) {
     describe(name, () => {
       for (const [fg, bg, min, label] of PAIRS) {
         if (!tokens[fg] || !tokens[bg]) continue
