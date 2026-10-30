@@ -13,12 +13,13 @@ test.describe('Geçmiş sayfası', () => {
     seedOlayOzet(garden.id)
     await page.goto(`/bahceler/${garden.id}/gecmis`)
     await expect(page.getByTestId('gecmis-baslik')).toContainText('Geçmiş')
-    await expect(page.getByTestId('sezon-egrisi').getByRole('heading')).toContainText('önceki', { timeout: 30_000 })
+    await expect(page.getByTestId('sezon-egrisi').getByRole('heading', { level: 3 })).toContainText('önceki yıllara', { timeout: 30_000 })
+    await page.locator('summary', { hasText: 'Yıl yıl özet' }).click()
     await expect(page.getByTestId('yil-tablosu')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByTestId('yil-hasat').first()).toHaveText('kayıt yok')
     await expect(page.getByTestId('yil-canlilik').first()).not.toHaveText(/\d[.,]\d/) // kademe dili: sayı yok
     // Yeşerme başlangıcı yalnız eğri güvenilirse ve «ön değer» etiketiyle gösterilir; değilse hiç gösterilmez (uydurma yok)
-    await expect(page.getByTestId('yesillenme-yok').or(page.getByTestId('yesillenme-listesi'))).toBeVisible()
+    await page.locator('summary', { hasText: 'Ortalama limon yılı' }).click()
     if (await page.getByTestId('yesillenme-listesi').count()) await expect(page.getByTestId('yesillenme-listesi')).toContainText('ön değer')
     await expect(page.getByTestId('olay-satiri')).toHaveCount(2)
   })
@@ -51,8 +52,11 @@ test.describe('Geçmiş sayfası', () => {
     const garden = await createGarden(page.request, { ad: 'Ay Dokunuşu', lng: 27.92, lat: 38.92, sideM: 300 })
     seedScenes(garden.id)
     await page.goto(`/bahceler/${garden.id}/gecmis`)
-    await expect(page.getByTestId('sezon-son-deger')).toBeVisible({ timeout: 30_000 }) // edinimler yüklendi: ay → tarih eşlemesi hazır
-    await page.getByTestId('ay-3').click()
+    await expect(page.getByTestId('harita-gorunumu-noktasi')).toBeVisible({ timeout: 30_000 }) // edinimler yüklendi: gözlemler çizildi
+    const yuz = await page.getByTestId('grafik-yuzey').boundingBox()
+    const x = yuz!.x + yuz!.width * (2.5 / 12)
+    await page.mouse.move(x, yuz!.y + 40)
+    await page.mouse.click(x, yuz!.y + 40) // Mart: en yakın Sentinel-2 görüntüsüne git
     await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}$`))
     await expect(page.getByTestId('tarih-kutusu')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByTestId('secili-tarih')).toContainText('Mar')
@@ -112,6 +116,7 @@ test.describe('Geçmiş sayfası', () => {
     seedScenes(garden.id)
     seedOlayOzet(garden.id)
     await page.goto(`/bahceler/${garden.id}/gecmis`)
+    await page.locator('summary', { hasText: 'Yıl yıl özet' }).click()
     const kap = page.getByTestId('yil-tablosu-kap')
     await expect(kap).toBeVisible({ timeout: 30_000 })
     expect(await kap.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1)

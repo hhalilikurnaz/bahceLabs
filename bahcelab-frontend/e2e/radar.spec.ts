@@ -59,6 +59,7 @@ test('Radar değişimi: iki yönlü skala, lejant «azalma → artış» ve nokt
 test('Su sekmesi: «Bulut altında görüş» şeridi bulgu cümlesi, optik/radar satırları, bulutlu bant ve RVI çizgisi', async ({ page }) => {
   const g = await kurulum(page, 'Radar Şerit', 27.53, { bulutlu: true })
   await page.goto(`/bahceler/${g.id}/su`)
+  await page.locator('summary', { hasText: 'Bulut altında görüş' }).click()
   const bolum = page.getByTestId('bulut-altinda-gorus')
   await expect(bolum).toBeVisible({ timeout: 30_000 })
   await expect(bolum.getByTestId('radar-bulgu')).toContainText(/Son 90 günde optik uydu 4 kez göremedi; radar bu sürede \d+ kez gördü/)
@@ -69,7 +70,7 @@ test('Su sekmesi: «Bulut altında görüş» şeridi bulgu cümlesi, optik/rada
   await expect(bolum.locator('[data-testid="radar-gecis"][data-aday="evet"]')).toHaveCount(2) // son iki ardışık geçiş
   expect(await bolum.getByTestId('bulutlu-bant').count()).toBeGreaterThanOrEqual(2)
   await expect(bolum.getByTestId('rvi-cizgi')).toBeVisible()
-  await expect(page.getByTestId('bos-su')).toContainText('9H') // sulama planı ve karar kartı 9H'de
+  await expect(page.getByTestId('bos-su')).toContainText('Sulama planı yakında')
   await expect(page.locator('body')).not.toContainText(/radar nemi/i)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])

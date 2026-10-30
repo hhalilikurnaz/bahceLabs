@@ -25,7 +25,7 @@ test('uydu verisi alınamazsa anlaşılır hata ve «Tekrar dene» gösterilir; 
   await page.goto(`/bahceler/${garden.id}`)
   await expect(page.getByRole('heading', { name: 'Uydu verisi alınamadı' })).toBeVisible({ timeout: 40_000 })
   fail = false
-  await page.getByRole('button', { name: 'Tekrar dene' }).click()
+  await page.getByRole('button', { name: 'Tekrar dene' }).first().click()
   await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
 })
 

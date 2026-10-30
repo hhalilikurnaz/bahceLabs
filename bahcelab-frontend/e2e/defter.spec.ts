@@ -14,7 +14,7 @@ test.describe('Saha Defteri', () => {
     const garden = await createGarden(page.request, { ad: 'Defter Bahçesi', lng: 27.9, lat: 38.9, sideM: 300 })
     seedOlayOzet(garden.id)
     await page.goto(`/bahceler/${garden.id}/defter`)
-    await expect(page.getByTestId('defter-baslik')).toHaveText('Saha Defteri')
+    await expect(page.getByTestId('defter-baslik')).toHaveText('Uydunun gördüğünü sahada doğrulayın.')
     await expect(page.getByTestId('tur-bos')).toBeVisible({ timeout: 30_000 }) // açık uyarı yok → uydurma nokta yok
     await expect(page.getByTestId('dogrulama-karti').first()).toBeVisible()
     await expect(page.getByTestId('kayit-bos')).toBeVisible()

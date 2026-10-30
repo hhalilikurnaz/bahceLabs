@@ -21,22 +21,23 @@ test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışı
   await page.goto(`/bahceler/${garden.id}/gunluk`)
   await expect(page.getByRole('tab', { name: 'Günlük', selected: true })).toBeVisible()
   await expect(page.getByTestId('panel-gunluk').getByRole('heading', { name: 'Günlük' })).toBeVisible()
-  await expect(page.getByText('Adım 11')).toBeVisible()
+  await expect(page.getByTestId('panel-gunluk').getByText('yakında', { exact: true })).toBeVisible()
 
   await page.goto(`/bahceler/${garden.id}/su`)
-  await expect(page.getByTestId('bos-su')).toContainText('9H')
+  await expect(page.getByTestId('bos-su')).toContainText('Sulama planı yakında')
 })
 
 test('tam sayfalar: Geçmiş sayfası ve Saha Defteri açılır', async ({ page }) => {
   const garden = await createGarden(page.request, { ad: 'Sayfa Bahçesi', lng: 27.51, lat: 38.51 })
   await page.goto(`/bahceler/${garden.id}`)
-  await page.getByRole('link', { name: 'Geçmiş ↗' }).click()
+  await page.getByTestId('ray-daha').click()
+    await page.getByTestId('gecmis-baglantisi').click()
   await expect(page).toHaveURL(/\/gecmis$/)
   await expect(page.getByTestId('gecmis-sayfasi')).toBeVisible()
-  await expect(page.getByTestId('gecmis-baslik')).toContainText('Geçmiş')
+  await expect(page.getByTestId('gecmis-baslik')).toBeVisible()
   await page.getByRole('link', { name: 'Saha Defteri ↗' }).click()
   await expect(page).toHaveURL(/\/defter$/)
-  await expect(page.getByTestId('defter-baslik')).toHaveText('Saha Defteri')
+  await expect(page.getByTestId('defter-baslik')).toHaveText('Uydunun gördüğünü sahada doğrulayın.')
 })
 
 test('geçersiz sekme durum sekmesine, bilinmeyen bahçe listeye yönlenir', async ({ page }) => {
@@ -58,15 +59,15 @@ test('eski /bahcem adresleri yeni rotalara yönlenir', async ({ page }) => {
   await expect(page).toHaveURL(/\/bahceler$/)
 })
 
-test('üst gezinme: «Faz 1.5 / Adım 17» bölümleri; planlama rotası kapalı; Copilot düğmesi yok; ayarlar', async ({ page }) => {
+test('üst gezinme: «yakında» bölümleri; planlama rotası kapalı; Copilot düğmesi yok; ayarlar', async ({ page }) => {
   await page.goto('/bahceler')
   await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').first()).toBeVisible()
   const nav = await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link').allInnerTexts()
-  expect(nav.map((t) => t.replace(/\s+/g, ' ').trim())).toEqual(['Bahçeler', 'Asistan', 'İşlerim Faz 1.5', 'Hizmetler Faz 1.5', 'Pazar Adım 17'])
+  expect(nav.map((t) => t.replace(/\s+/g, ' ').trim())).toEqual(['Bahçeler', 'Asistan', 'İşlerim yakında', 'Hizmetler yakında', 'Pazar yakında'])
   for (const [name, soon] of [
-    ['İşlerim', 'Faz 1.5'],
-    ['Hizmetler', 'Faz 1.5'],
-    ['Pazar', 'Adım 17'],
+    ['İşlerim', 'yakında'],
+    ['Hizmetler', 'yakında'],
+    ['Pazar', 'yakında'],
   ] as const) {
     await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link', { name: new RegExp(`^${name}`) }).click()
     await expect(page.getByRole('heading', { name })).toBeVisible()

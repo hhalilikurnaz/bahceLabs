@@ -56,9 +56,9 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
   await page.route('**/api/gardens/*/weather', (route) => route.fulfill({ json: fakeWeather(today) }))
 
   await page.goto(`/bahceler/${garden.id}/hava`)
-  await expect(page.getByTestId('best-spray')).toContainText('Bu hafta ilaçlama için en iyi zaman')
-  await expect(page.getByTestId('best-spray-time')).toContainText('13:00–19:00')
-  await expect(page.getByTestId('current-temp')).toContainText('20')
+  await expect(page.getByTestId('hava-karar')).toContainText('En iyi ilaçlama zamanı')
+  await expect(page.getByTestId('karar-alt')).toContainText('13:00–19:00')
+  await expect(page.getByTestId('buyuk-sayi')).toContainText('20')
   await expect(page.getByTestId('daily-forecast')).toContainText('Olasılık %')
   await expect(page.getByTestId('daily-forecast')).toContainText('13:00–19:00')
 
@@ -75,8 +75,9 @@ test('Hava sekmesi: etiketli yağış olasılığı, klavyeyle saat gezinme, su 
   await expect(strip.locator('[data-status="uygun"].spray-ok').first()).toBeVisible()
   await expect(strip.locator('[data-status="sinirda"].spray-edge').first()).toBeVisible()
   await expect(strip.locator('[data-status="uygun_degil"].spray-no').first()).toBeVisible()
-  await expect(strip.getByRole('list').getByText('✓')).toBeVisible()
+  await expect(strip.getByTestId('spray-label').first()).toContainText('uygun') // lejant yok: bloklar doğrudan etiketli
 
+  await page.locator('summary', { hasText: 'Kaynak ve ayrıntı' }).click()
   await expect(page.getByTestId('water-balance')).toContainText('−28 mm')
   await expect(page.getByTestId('weather-attribution').getByRole('link', { name: 'Open-Meteo.com' })).toHaveAttribute('href', 'https://open-meteo.com/')
 })

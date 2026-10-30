@@ -30,9 +30,11 @@ test('Su sekmesi: karar cümlesi üstte, dört kanıt grafiği ve kaynak çipler
   await expect(denge).toBeVisible()
   await expect(denge.getByTestId('birikimli-cizgi')).toBeVisible()
   await expect(denge.getByTestId('tahmin-bandi')).toBeVisible()
+  await expect(denge.getByTestId('tahmin-bandi-2')).toBeVisible() // U-02: iki panel, ortak zaman ekseni; çift eksen yok
   await expect(denge.getByTestId('birikimli-son')).toContainText('mm')
   await expect(page.getByTestId('kaynak-denge')).toBeVisible()
-  // 3) bulut altında görüş (9D)
+  // 3) bulut altında görüş (9D): ayrıntı akordeonunda
+  await page.locator('summary', { hasText: 'Bulut altında görüş' }).click()
   await expect(page.getByTestId('bulut-altinda-gorus')).toBeVisible()
   // 4) yüzey–hava sıcaklığı: son 6 Landsat geçişi; sabit eşik yok, bahçenin aynı ay bandı
   const yuzey = page.getByTestId('yuzey-hava')
@@ -41,8 +43,8 @@ test('Su sekmesi: karar cümlesi üstte, dört kanıt grafiği ve kaynak çipler
   await expect(yuzey.getByTestId('sicaklik-cumlesi')).toContainText(/normaline göre|normali içinde/) // aynı ay geçmişi yeterli (≥ 8 geçiş)
   expect(await yuzey.getByTestId('ay-normali').count()).toBeGreaterThan(0)
   await expect(yuzey.getByTestId('stres-esigi')).toHaveCount(0) // sabit +5 °C eşiği kaldırıldı
-  await expect(page.getByTestId('su-doluluk')).toBeVisible()
-  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre kök bölgesi doluluğu/)
+  await expect(page.getByTestId('buyuk-sayi')).toContainText('%')
+  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre/)
   await expect(page.getByTestId('kaynak-sicaklik')).toContainText('Landsat')
   // doğrulama kaynakları (SMAP/IMERG/CHIRPS) arayüzde görünmez; yalnız «Nasıl hesaplandı?» içinde anılabilir
   await expect(page.getByTestId('su-karar')).not.toContainText(/SMAP|IMERG|CHIRPS/)
@@ -91,7 +93,8 @@ test('TEK sulama kararı: Hava sekmesindeki sulama kartı ile Su sekmesi aynı c
   const g = await kurulum(page, 'Tek Karar', 27.64)
   seedWeather(g.id)
   await page.goto(`/bahceler/${g.id}/su`)
-  const suKarar = (await page.getByTestId('su-karar-cumlesi').innerText({ timeout: 30_000 })).trim()
+  await expect(page.getByTestId('su-dengesi')).toBeVisible({ timeout: 30_000 })
+  const suKarar = ((await page.getByTestId('su-karar-cumlesi').textContent()) ?? '').trim()
   await page.goto(`/bahceler/${g.id}/hava`)
   const hava = page.getByTestId('irrigation-sentence')
   await expect(hava).toBeVisible({ timeout: 30_000 })
@@ -110,7 +113,7 @@ test('Yeni bahçe eklenince ERA5 besleme işi kendiliğinden çalışır ve Su s
   }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 3_000] }) // iş arka planda 2015→bugün doldurur
   expect(await page.getByTestId('profil-nokta').count()).toBeGreaterThanOrEqual(3) // son gün model: 100–255 cm modelde yok
   await expect(page.getByTestId('su-karar-cumlesi')).not.toBeEmpty()
-  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre kök bölgesi doluluğu/)
+  await expect(page.getByTestId('su-on-deger')).toContainText(/normaline göre/)
 })
 
 test('Kesintisiz canlılık eğrisi: Durum sekmesindeki sezon eğrisi Sentinel-2 + HLS gözlemlerini ve belirsizliği gösterir', async ({ page }) => {
@@ -124,8 +127,12 @@ test('Kesintisiz canlılık eğrisi: Durum sekmesindeki sezon eğrisi Sentinel-2
     await expect(sezon.getByTestId('kesintisiz-egri')).toBeVisible({ timeout: 4_000 })
   }).toPass({ timeout: 90_000, intervals: [2_000, 3_000, 5_000] }) // HLS gözlemleri bahçe eklenince arka planda dolar
   await expect(sezon.getByTestId('egri-gozlem-parca').first()).toBeVisible()
-  expect(await sezon.locator('[data-testid="egri-gozlem"][data-kaynak="s2"]').count()).toBeGreaterThan(0)
-  expect(await sezon.locator('[data-testid="egri-gozlem"][data-kaynak="hls"]').count()).toBeGreaterThan(0)
+  await page.goto(`/bahceler/${garden.id}/gecmis`) // gözlem noktaları (Sentinel-2 dolu, HLS boş) Geçmiş sayfasındaki ayrıntılı grafikte
+  const gecmisSezon = page.getByTestId('sezon-egrisi')
+  await expect(gecmisSezon.getByTestId('kesintisiz-egri')).toBeVisible({ timeout: 30_000 })
+  expect(await gecmisSezon.locator('[data-testid="egri-gozlem"][data-kaynak="s2"]').count()).toBeGreaterThan(0)
+  expect(await gecmisSezon.locator('[data-testid="egri-gozlem"][data-kaynak="hls"]').count()).toBeGreaterThan(0)
+  await page.goBack()
   await expect(sezon.getByTestId('egri-notu')).toContainText('Kademe yalnız gerçek gözleme dayanır')
   await sezon.getByTestId('sezon-ndre').click()
   await expect(sezon.getByTestId('kesintisiz-egri')).toHaveCount(0) // kesintisiz eğri yalnız canlılık (NDVI) içindir

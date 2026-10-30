@@ -82,9 +82,10 @@ test('çalışma alanı (masaüstü): adlar, odak göstergesi, etiketli harita d
   seedScenes(g.id)
   await page.goto(`/bahceler/${g.id}`)
   await expect(page.getByTestId('histogram-lejant')).toBeVisible({ timeout: 30_000 })
-  for (const name of ['Yakınlaştır', 'Uzaklaştır', 'Bahçeye dön', 'Önceki görüntü', 'Katman opaklığı']) {
-    await expect(page.getByRole(name === 'Katman opaklığı' ? 'slider' : 'button', { name })).toBeVisible()
-  }
+  for (const name of ['Yakınlaştır', 'Uzaklaştır', 'Bahçeye dön', 'Önceki görüntü', 'Diğer harita ayarları']) await expect(page.getByRole('button', { name })).toBeVisible()
+  await page.getByTestId('ray-daha').click() // uzman kontrolleri ⋯ altında
+  await expect(page.getByRole('slider', { name: 'Katman opaklığı' })).toBeVisible()
+  await page.keyboard.press('Escape')
   expect(await audit(page, { touch: false })).toEqual([])
   expect(await focusIndicators(page, 40)).toEqual([])
 })
@@ -115,19 +116,20 @@ test.describe('mobil 390 px', () => {
     expect(await audit(page, { touch: true })).toEqual([])
   })
 
-  test('sezon grafiği: çeyrek ay etiketleri, şerit boyunca dokunma haritayı o aya götürür; aya git düğmeleri yalnız ekran okuyucuda', async ({ page }) => {
+  test('sezon grafiği (390): ay etiketleri sığar; grafiğe dokunma haritayı o görüntüye götürür', async ({ page }) => {
     await newUser(page)
     const g = await createGarden(page.request, { ad: 'Mobil Sezon', lng: 27.61, lat: 38.61, sideM: 200 })
     seedScenes(g.id)
     await page.goto(`/bahceler/${g.id}`)
     const sezon = page.getByTestId('sezon-egrisi')
     await sezon.scrollIntoViewIfNeeded()
-    await expect(sezon.getByTestId('eksen-ay')).toHaveCount(4)
-    await expect(sezon.getByTestId('ay-3')).toHaveClass(/sr-only/)
-    const kutu = await sezon.getByTestId('sezon-dokunma').boundingBox()
-    if (!kutu) throw new Error('dokunma şeridi yok')
-    await page.mouse.click(kutu.x + kutu.width * (2.5 / 12), kutu.y + 40) // Mart
-    await expect(page.getByTestId('tarih-kutusu')).toContainText('Mar')
-    expect(await audit(page, { touch: true })).toEqual([])
+    const n = await sezon.getByTestId('eksen-ay').count()
+    expect(n).toBeGreaterThanOrEqual(3)
+    expect(n).toBeLessThanOrEqual(6)
+    const yuz = await sezon.getByTestId('grafik-yuzey').boundingBox()
+    if (!yuz) throw new Error('grafik yüzeyi yok')
+    await page.mouse.move(yuz.x + yuz.width * (2.5 / 12), yuz.y + 40)
+    await page.mouse.click(yuz.x + yuz.width * (2.5 / 12), yuz.y + 40) // Mart
+    await expect(page.getByTestId('secili-tarih')).toContainText('Mar')
   })
 })

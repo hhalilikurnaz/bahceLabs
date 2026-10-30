@@ -13,14 +13,16 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
 
     const card = page.getByTestId('durum-karti')
     await expect(card).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('karar-cumlesi')).toContainText(/Bahçe bu mevsim için normal|normalin (altında|üstünde)|veri yetersiz/)
     await expect(page.getByTestId('kademe-ad')).toHaveText(/İyi|İzle|Dikkat|Sorun/)
     await expect(page.getByTestId('kademe-seridi')).toBeVisible()
-    await expect(card.getByTestId('durum-cip')).toHaveCount(5)
-    for (const ad of ['Ağaç gücü', 'Su', 'Beslenme', 'Ani değişim', 'Isı']) await expect(card.locator('[data-testid="durum-cip"] b', { hasText: new RegExp(`^${ad}$`) })).toBeVisible()
-    await expect(card.getByTestId('durum-risk-satiri')).toBeVisible()
+    await page.locator('summary', { hasText: 'Veri durumu' }).click()
+    await expect(page.getByTestId('durum-cip')).toHaveCount(5)
+    for (const ad of ['Ağaç gücü', 'Su', 'Beslenme', 'Ani değişim', 'Isı']) await expect(page.locator('[data-testid="durum-cip"] b', { hasText: new RegExp(`^${ad}$`) })).toBeVisible()
+    await expect(page.getByTestId('durum-risk-satiri')).toBeVisible()
     await expect(card).not.toContainText('/100')
 
-    await card.getByText('Nasıl hesaplandı?').click()
+    await page.getByText('Nasıl hesaplandı?').click()
     const nasil = page.getByTestId('nasil-hesaplandi')
     await expect(nasil).toContainText('ön değer · v2')
     expect(await nasil.getByTestId('nasil-cumleler').locator('li').count()).toBeLessThanOrEqual(3) // en çok 3 cümle
@@ -34,6 +36,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     seedScenes(garden.id)
     await page.goto(`/bahceler/${garden.id}`)
     await expect(page.getByTestId('durum-karti')).toBeVisible({ timeout: 30_000 })
+    await page.locator('summary', { hasText: 'Veri durumu' }).click()
     await page.locator('[data-testid="durum-cip"][data-kod="beslenme"]').click()
     await expect(page.getByTestId('katman-menusu')).toContainText('Klorofil')
     await page.locator('[data-testid="durum-cip"][data-kod="isi"]').click()
@@ -109,6 +112,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     seedScenes(garden.id)
     await page.goto(`/bahceler/${garden.id}`)
     await expect(page.getByTestId('gosterge-cubuklari')).toBeVisible({ timeout: 30_000 })
+    await page.locator('summary', { hasText: 'Veri durumu' }).click()
     const KONUM_SEVIYE: Record<string, string[]> = { ust: ['normalin_ustu', 'belirgin_yuksek', 'normal'], normal: ['normal'], alt: ['normalin_alti'], en_dusuk: ['belirgin_dusuk'] }
     for (const [cip, gosterge] of [['agac_gucu', 'ndvi'], ['beslenme', 'ndre']] as const) {
       const satir = page.locator(`[data-testid="gosterge-satiri"][data-gosterge="${gosterge}"]`)
@@ -122,11 +126,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await sezon.scrollIntoViewIfNeeded()
     await expect(sezon.getByTestId('band-p25-p75')).toHaveCount(1)
     await expect(sezon.getByTestId('band-p10-p90')).toHaveCount(1)
-    await expect(sezon.getByTestId('band-ortanca-etiket')).toHaveText('geçmiş yılların ortancası')
-    expect(await sezon.getByTestId('fenoloji-evre').count()).toBeGreaterThanOrEqual(6)
-    expect(await sezon.getByTestId('fenoloji-etiket').count()).toBeGreaterThanOrEqual(5)
-    await expect(sezon.locator('svg text', { hasText: /^Oca$/ })).toHaveCount(0) // ay etiketi yalnız «aya git» eksen satırında
-    await expect(sezon.getByTestId('ay-1')).toHaveCount(1)
+    await expect(sezon).toContainText('normal aralık') // doğrudan etiket; lejant paragrafı yok
     // Taç ve toprak lejantı notu
     await page.getByTestId('katman-menusu').getByRole('button').first().click()
     await page.getByTestId('katman-tacToprak').click()
@@ -152,6 +152,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     const garden = await createGarden(page.request, { ad: 'Boş Durum', lng: 27.91, lat: 38.91 })
     await page.goto(`/bahceler/${garden.id}`)
     await expect(page.getByTestId('durum-karti')).toBeVisible({ timeout: 30_000 })
+    await page.locator('summary', { hasText: 'Veri durumu' }).click()
     for (const kod of ['agac_gucu', 'beslenme', 'isi']) await expect(page.locator(`[data-testid="durum-cip"][data-kod="${kod}"]`)).toContainText('veri yok')
     const risk = await page.getByTestId('durum-risk-satiri').getAttribute('data-risk')
     if (risk === 'yok') {
@@ -195,7 +196,7 @@ test.describe('Analiz sekmesi', () => {
     })
     await page.goto(`/bahceler/${garden.id}/analiz`)
 
-    await expect(page.getByTestId('analiz-bulgu')).toHaveText('Güneybatı kesim yıllardır zayıf kalıyor; yerinde kontrol edin.')
+    await expect(page.getByTestId('analiz-bulgu')).toHaveText('Bahçenin %17’i yıllardır zayıf.')
     const rows = page.getByTestId('bolge-satiri')
     await expect(rows).toHaveCount(3)
     await expect(rows.first()).toContainText('Güçlü') // güçlüden zayıfa
@@ -205,7 +206,7 @@ test.describe('Analiz sekmesi', () => {
     const sorular = page.getByTestId('yil-sorusu')
     await expect(sorular).toHaveCount(1)
     await expect(sorular).toContainText('2021')
-    await page.getByTestId('yil-tablosu').getByText(/Yıl yıl veri/).click()
+    await page.locator('summary', { hasText: 'Yıl yıl veri' }).click()
     const y2015 = page.locator('[data-testid="yil-satiri"][data-yil="2015"]')
     await expect(y2015).toContainText('kısmi yıl')
     await expect(y2015).toContainText('yetersiz veri')

@@ -22,8 +22,8 @@ test.describe('çalışma alanı (harita + sabit panel)', () => {
     await expect(page.getByTestId('histogram-lejant')).toContainText('Yaprak suyu')
 
     // Skala seçimi lejantta
-    await page.getByRole('button', { name: 'Genel skala' }).click()
-    await expect(page.getByRole('button', { name: 'Genel skala' })).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: 'Mutlak skala' }).click()
+    await expect(page.getByRole('button', { name: 'Mutlak skala' })).toHaveAttribute('aria-pressed', 'true')
 
     // Tarih gezintisi: önceki görüntü
     const before = await page.getByTestId('secili-tarih').innerText()
@@ -55,12 +55,13 @@ test.describe('çalışma alanı (harita + sabit panel)', () => {
     await sep.focus()
     await page.keyboard.press('ArrowLeft')
     await page.keyboard.press('ArrowLeft')
-    await expect.poll(async () => (await map.boundingBox())?.width ?? 0).toBeLessThan(w0)
+    await expect.poll(async () => (await map.boundingBox())?.width ?? 0).toBeLessThan(w0) // sol ok: panel genişler (420–640 px), harita daralır
     const w1 = (await map.boundingBox())?.width ?? 0
     await page.reload()
     await expect.poll(async () => Math.abs(((await map.boundingBox())?.width ?? 0) - w1)).toBeLessThan(4)
 
-    await page.getByRole('link', { name: 'Geçmiş ↗' }).click()
+    await page.getByTestId('ray-daha').click()
+    await page.getByTestId('gecmis-baglantisi').click()
     await expect(page).toHaveURL(/\/gecmis$/)
   })
 
@@ -115,7 +116,7 @@ test.describe('harita görünümü (9B düzeltmeleri)', () => {
     const lejant = page.getByTestId('histogram-lejant')
     await expect(lejant).toContainText('zayıf → güçlü')
     await expect(page.getByTestId('lejant-ortanca')).toBeVisible()
-    await page.getByRole('button', { name: 'Genel skala' }).click()
+    await page.getByRole('button', { name: 'Mutlak skala' }).click()
     await expect(page.getByTestId('lejant-tipik-bant')).toBeVisible()
     await expect(page.getByTestId('lejant-ozet')).toContainText('tipik bant (ön değer)')
     // başlık tek satır: skala seçimi başlığın altında küçük bir seçim
