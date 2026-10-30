@@ -24,7 +24,7 @@ test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışı
   await expect(page.getByTestId('panel-gunluk').getByText('yakında', { exact: true })).toBeVisible()
 
   await page.goto(`/bahceler/${garden.id}/su`)
-  await expect(page.getByTestId('bos-su')).toContainText('Sulama planı yakında')
+  await expect(page.getByTestId('sulama-karti')).toBeVisible()
 })
 
 test('tam sayfalar: Geçmiş sayfası ve Saha Defteri açılır', async ({ page }) => {

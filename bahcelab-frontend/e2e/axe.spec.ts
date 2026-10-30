@@ -29,7 +29,7 @@ for (const tema of ['acik', 'koyu'] as const) {
         [`/bahceler/${garden.id}/analiz`, 'analiz-yok'],
         [`/bahceler/${garden.id}/gecmis`, 'gecmis-sayfasi'],
         [`/bahceler/${garden.id}/defter`, 'defter-sayfasi'],
-        [`/bahceler/${garden.id}/su`, 'bos-su'],
+        [`/bahceler/${garden.id}/su`, 'sulama-karti'],
       ] as const) {
         await page.goto(yol)
         await expect(page.getByTestId(hazir)).toBeVisible({ timeout: 30_000 })

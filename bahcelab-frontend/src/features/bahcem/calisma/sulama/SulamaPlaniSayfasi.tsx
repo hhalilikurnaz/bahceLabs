@@ -78,8 +78,10 @@ export function SulamaPlaniSayfasi({ garden }: { garden: Garden }) {
             </div>
           )}
         </section>
-        <div role="tablist" aria-label="Sulama planı bölümleri" className="flex gap-1" data-testid="sulama-bolumleri">
-          {BOLUMLER.map((b) => <button key={b.id} role="tab" type="button" aria-selected={bolum === b.id} onClick={() => setBolum(b.id)} data-testid={`sulama-bolum-${b.id}`} className={`min-h-11 rounded-md px-4 text-body font-semibold ${bolum === b.id ? 'bg-app-primary text-app-on-primary' : 'text-app-text-muted hover:bg-app-card-hover'}`}>{b.ad}</button>)}
+        <div className="flex gap-1" data-testid="sulama-bolumleri">
+          <div role="tablist" aria-label="Sulama planı bölümleri" className="flex gap-1">
+            {BOLUMLER.map((b) => <button key={b.id} role="tab" type="button" aria-selected={bolum === b.id} onClick={() => setBolum(b.id)} data-testid={`sulama-bolum-${b.id}`} className={`min-h-11 rounded-md px-4 text-body font-semibold ${bolum === b.id ? 'bg-app-primary text-app-on-primary' : 'text-app-text-muted hover:bg-app-card-hover'}`}>{b.ad}</button>)}
+          </div>
           <span className="flex-1" />
           <Button variant="secondary" onClick={() => setSihirbaz(true)} data-testid="sulama-bilgileri">{profil.data?.profil ? 'Sulama bilgileri' : 'Bilgileri gir'}</Button>
         </div>
