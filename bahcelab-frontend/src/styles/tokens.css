@@ -1,0 +1,262 @@
+/*
+ * BahçeLab · TEK token dosyası (görsel dil v2, Yön C «Saha» · docs/design/gorsel-dil-v2/tokens-c.css).
+ * Kurallar: bileşenlerde ham hex yok (tests/tokens.test.ts bekçisi); veri rampaları `features/bahcem/lib/paletler.ts` içindedir.
+ * Yüzeyler nötr; sıcaklık yalnız marka renginden ve veriden. Köşe 6 px, kartta gölge yok (1 px çizgi); gölge yalnız yüzen öğede.
+ * Yazı tipi: Source Sans 3 (self-host); mono yalnız koordinat/saat. Tanıtım sayfası başlıkları: Fraunces (uygulama kabuğunda kullanılmaz).
+ */
+@theme {
+  /* Yazı tipleri */
+  --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif; /* tanıtım; .app-shell içinde Source Sans */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; /* yalnız koordinat ve saat */
+
+  /* Tipografi ölçeği (12 px altı yok, yarım piksel yok) */
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-body: 15px;
+  --text-body--line-height: 21px;
+  --text-lead: 16px;
+  --text-lead--line-height: 22px;
+  --text-h2: 18px;
+  --text-h2--line-height: 24px;
+  --text-h1: 28px;
+  --text-h1--line-height: 34px;
+  --text-display: 32px;
+  --text-display--line-height: 38px;
+  --text-metric: 60px;
+  --text-metric--line-height: 58px;
+  --text-score: 60px;
+  --text-score--line-height: 58px;
+
+  /* Köşe */
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-glass: 10px;
+
+  /* Gölge: kartta yok; yalnız yüzen öğede çok hafif */
+  --shadow-e1: none;
+  --shadow-e2: 0 1px 3px rgb(0 0 0 / 0.14);
+  --shadow-e3: 0 8px 24px rgb(16 24 20 / 0.1);
+
+  /* Hareket: işlevsel, sakin (150–250 ms, ease-out) */
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-panel: 250ms;
+  --duration-base: 200ms;
+  --duration-draw: 600ms;
+
+  /* Marka ve tanıtım sayfaları */
+  --color-lemon: #f2c94c;
+  --color-lemon-strong: #e8bc33;
+  --color-forest: #0c1710;
+  --color-ink: #13241a;
+  --color-leaf-deep: #2f6b3f;
+  --color-leaf: #7fcb6b;
+  --color-cream: #f5f2e9;
+  --color-marketing-cream: #f7f4ee;
+  --color-brand: #1e4b35;
+  --color-brand-lemon: #e5bc2f;
+
+  /* Uygulama · AÇIK (Yön C). Kontrast: metin/kart 16,6 · muted 6,3 · dim 5,3 */
+  --color-app-bg: #f1f2f2;
+  --color-app-canvas: #f1f2f2; /* kartların oturduğu panel zemini */
+  --color-app-panel: #ffffff; /* üst çubuk, menü, diyalog */
+  --color-app-card: #ffffff;
+  --color-app-card-hover: #f6f7f7;
+  --color-app-border: #dcdfde;
+  --color-app-border-soft: #e9ebea;
+  --color-app-border-strong: #84908b; /* kontrol kenarı ≥ 3:1 */
+  --color-app-text: #1b201e;
+  --color-app-text-muted: #404745;
+  --color-app-text-dim: #59615f;
+  --color-app-accent: #1e4b35;
+  --color-app-accent-strong: #163a29;
+  --color-app-accent-soft: rgb(30 75 53 / 0.1);
+  --color-app-primary: #1e4b35; /* birincil eylem: marka yeşili */
+  --color-app-primary-hover: #163a29;
+  --color-app-on-primary: #ffffff;
+  --color-app-success: #1f7048;
+  --color-app-watch: #8f5b00;
+  --color-app-warn: #8f5b00; /* amber + ▲ */
+  --color-app-danger: #b3261e; /* kırmızı + ■ */
+  --color-app-water: #1f6fa8;
+  --color-app-focus: #1e4b35;
+  /* İlaçlama uygunluğu: renk körü dostu; renge ek olarak desen ve simge ayırır */
+  --color-spray-ok: #0b6b73;
+  --color-spray-edge: #d99a00;
+  --color-spray-no: #8d9893;
+  --color-thumb: #1c231f;
+
+  /* Veri: normal bant (tek tanım) ve su dengesi ETc rengi */
+  --color-band-koyu: rgb(78 143 92 / 0.3);
+  --color-band-acik: rgb(78 143 92 / 0.12);
+  --color-band-ortanca: #3f6e4c;
+  --color-su-etc: #c2461f;
+  --color-map-ink: #1b201e; /* açık zeminli harita etiketi metni */
+
+  /* Cam yüzey (yalnız harita üstü yüzen öğeler) */
+  --glass-bg: rgb(255 255 255 / 0.7);
+  --glass-bg-hareket: rgb(255 255 255 / 0.86); /* harita hareket halindeyken bulanıklıksız yedek */
+  --glass-bg-opak: #ffffff;
+  --glass-text: #1b201e;
+  --glass-text-muted: #343b39; /* en kötü zemin (koyu yeşil raster) üstünde AA: tests/glass.test.ts */
+}
+
+/* Koyu tema (aynı veri rampaları; yüzeyler antrasit) */
+html[data-theme='dark'] .app-shell {
+  --color-app-bg: #0e1311;
+  --color-app-canvas: #0e1311;
+  --color-app-panel: #161d1a;
+  --color-app-card: #161d1a;
+  --color-app-card-hover: #1c2521;
+  --color-app-border: #2a3430;
+  --color-app-border-soft: #1c2521;
+  --color-app-border-strong: #70807a;
+  --color-app-text: #e9eeec;
+  --color-app-text-muted: #bcc7c2;
+  --color-app-text-dim: #93a29c;
+  --color-app-accent: #8cc3a2;
+  --color-app-accent-strong: #a6d4b8;
+  --color-app-accent-soft: rgb(140 195 162 / 0.14);
+  --color-app-primary: #8cc3a2;
+  --color-app-primary-hover: #a6d4b8;
+  --color-app-on-primary: #0e1311;
+  --color-app-success: #6fd19b;
+  --color-app-watch: #f0b54a;
+  --color-app-warn: #f0b54a;
+  --color-app-danger: #ff8c7e;
+  --color-app-water: #6cb4ee;
+  --color-app-focus: #8cc3a2;
+  --color-spray-ok: #3fb3bd;
+  --color-spray-edge: #f2b43a;
+  --color-spray-no: #66726d;
+  --color-band-koyu: rgb(111 209 155 / 0.26);
+  --color-band-acik: rgb(111 209 155 / 0.1);
+  --color-band-ortanca: #8fd6ae;
+  --color-su-etc: #f0885a;
+  --glass-bg: rgb(22 29 26 / 0.78);
+  --glass-bg-hareket: rgb(22 29 26 / 0.9); /* koyu: beyaz zemin üstünde bile AA için biraz yoğun */
+  --glass-bg-opak: #161d1a;
+  --glass-text: #e9eeec;
+  --glass-text-muted: #cfd9d4;
+  color-scheme: dark;
+}
+
+/* Koyu zeminli yüzen öğeler (toast, çevrimdışı bandı, çizim denetimi): aynı token'lar koyu değerlerle */
+.surface-dark {
+  --color-app-bg: #0e1311;
+  --color-app-canvas: #0e1311;
+  --color-app-panel: #161d1a;
+  --color-app-card: #1c2521;
+  --color-app-card-hover: #232d28;
+  --color-app-primary: #8cc3a2;
+  --color-app-on-primary: #0e1311;
+  --color-app-accent-strong: #a6d4b8;
+  --color-app-success: #6fd19b;
+  --color-app-border: #2a3430;
+  --color-app-border-strong: #70807a;
+  --color-app-text: #e9eeec;
+  --color-app-text-muted: #bcc7c2;
+  --color-app-text-dim: #93a29c;
+  --color-app-accent: #8cc3a2;
+  --color-app-warn: #f0b54a;
+  --color-app-danger: #ff8c7e;
+  --color-app-water: #6cb4ee;
+  --color-app-focus: #e5bc2f;
+  color: var(--color-app-text);
+}
+
+/* Uygulama kabuğu: tek aile, sade */
+.app-shell {
+  --font-heading: 'Source Sans 3', system-ui, sans-serif;
+  --font-display: 'Source Sans 3', system-ui, sans-serif;
+  background: var(--color-app-bg);
+  color: var(--color-app-text);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color-scheme: light;
+}
+html[data-theme='dark'] .app-shell { color-scheme: dark; }
+.app-shell :focus-visible { outline: 2px solid var(--color-app-focus); outline-offset: 2px; }
+.app-shell .num { font-variant-numeric: tabular-nums; }
+.app-shell {
+  /* illüstrasyon/varlık bileşenlerinin kullandığı takma adlar (tek kaynağa bağlı) */
+  --ink: var(--color-app-text);
+  --brand: var(--color-brand);
+  --paper: var(--color-app-card);
+  --paper-2: var(--color-app-bg);
+  --paper-3: var(--color-app-card-hover);
+  --rule: var(--color-app-border);
+  --rule-2: var(--color-app-border-strong);
+  --font-ui: var(--font-sans);
+}
+html[data-theme='dark'] .app-shell { --brand: var(--color-app-accent); }
+.app-shell .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/*
+ * CAM («liquid glass»): YALNIZ haritadaki yüzen öğeler (ray, lejant, ölçek/yakınlaştırma, not kutuları, nokta inceleme, alt sayfa tutamağı,
+ * kaydırınca yapışkan panel başlığı). Paneller, kartlar ve tablolar düz beyaz kalır. Destek yoksa ya da şeffaflık azaltılmışsa opak yedek.
+ * Yasak: renkli parıltı, gradyan çerçeve, neon, büyük alanlarda aşırı bulanıklık.
+ */
+.glass {
+  --color-app-text-muted: var(--glass-text-muted);
+  --color-app-text-dim: var(--glass-text-muted);
+  color: var(--glass-text);
+  background: var(--glass-bg-opak);
+  border: 1px solid var(--color-app-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-e2);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border-color: rgb(255 255 255 / 0.45);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      inset 0 0 6px rgb(16 24 20 / 0.04),
+      0 8px 24px rgb(16 24 20 / 0.1);
+  }
+  html[data-theme='dark'] .glass {
+    border-color: rgb(255 255 255 / 0.12);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      inset 0 0 6px rgb(0 0 0 / 0.2),
+      0 8px 24px rgb(0 0 0 / 0.35);
+  }
+}
+/* gölgesiz cam (kartografik not: normal yazı, ince çizgi, gölgesiz) */
+.glass.glass-golgesiz { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7) !important; }
+html[data-harita-hareket] .glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: var(--glass-bg-hareket) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--glass-bg-opak) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Hareket yardımcıları: süre ve eğri token'ları; «reduced-motion»da hepsi kapalı/anlık */
+.m-fade-in { animation: m-fade-in var(--duration-base) var(--ease-out-soft) both; }
+.m-panel-in { animation: m-panel-in var(--duration-panel) var(--ease-out-soft) both; }
+@keyframes m-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes m-panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.m-skeleton { animation: m-skeleton 1.6s ease-in-out infinite; }
+@keyframes m-skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
+.m-draw-line { stroke-dasharray: var(--draw-len, 2000); stroke-dashoffset: var(--draw-len, 2000); animation: m-draw var(--duration-draw) var(--ease-out-soft) forwards; }
+.m-draw-band { opacity: 0; animation: m-fade-in var(--duration-draw) var(--ease-out-soft) 120ms forwards; }
+@keyframes m-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .m-fade-in, .m-panel-in, .m-draw-line, .m-draw-band { animation: none !important; opacity: 1 !important; stroke-dashoffset: 0 !important; transform: none !important; }
+  .m-skeleton { animation: none !important; }
+}
