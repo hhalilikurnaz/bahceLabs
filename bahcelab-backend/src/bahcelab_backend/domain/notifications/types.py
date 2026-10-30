@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+SISTEM_TURU = "besleme"  # veri akışı (sistem) bildirimi: ürün (bahçe) uyarılarından AYRI gösterilir ve rozete/toast'a girmez
+
 Oncelik = Literal["kritik", "onemli", "bilgi"]  # önem: kritik anında; önemli ve bilgi günlük özette (ADR 0018)
 
 TYPES: dict[str, dict[str, str]] = {

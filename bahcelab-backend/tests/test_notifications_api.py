@@ -396,3 +396,16 @@ async def test_risk_notification_follows_the_risk_level_with_a_single_active_ite
     await user_client.post(f"/notifications/{back[0]['id']}/durum", json={"durum": "cozuldu"})
     still = await run("yuksek")
     assert len(still) == 1 and still[0]["durum"] == "cozuldu"
+
+
+async def test_system_feed_alerts_are_flagged_and_counted_separately_from_product_alerts(user_client: AsyncClient, factory, provider):
+    """Veri akışı (sistem) bildirimi ürün uyarısı sayılmaz: `sistem` işareti ve ayrı okunmamış sayacı (rozet yalnız ürünü sayar)."""
+    from bahcelab_backend.domain.feedruns import service as fr
+
+    garden = await new_garden(user_client)
+    await fr.notify(factory, uuid.UUID(garden["id"]), "era5", "hata", "WeatherSourceError: ERA5 arşivine şu an ulaşılamıyor.", 1)
+    data = (await user_client.get("/notifications")).json()
+    feed = [n for n in data["ogeler"] if n["tur"] == "besleme"]
+    assert feed and all(n["sistem"] for n in feed) and not any(n["sistem"] for n in data["ogeler"] if n["tur"] != "besleme")
+    assert data["okunmamis_sistem_sayisi"] >= 1 and data["okunmamis_sayisi"] == data["okunmamis_urun_sayisi"] + data["okunmamis_sistem_sayisi"]
+    assert "WeatherSourceError" not in feed[0]["metin"]

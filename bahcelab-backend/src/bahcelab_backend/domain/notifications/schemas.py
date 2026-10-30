@@ -15,6 +15,7 @@ class BildirimYanit(BaseModel):
     metin: str
     baglanti: str
     okundu: bool
+    sistem: bool = False  # veri akışı (sistem) bildirimi; ürün uyarısı değildir
     durum: Literal["olustu", "goruldu", "cozuldu", "ertelendi"]
     ertelendi_bitis: datetime | None = None
     olusturma: datetime
@@ -26,7 +27,9 @@ class BildirimListesi(BaseModel):
     boyut: int
     toplam: int
     sayfa_sayisi: int
-    okunmamis_sayisi: int
+    okunmamis_sayisi: int  # hepsi
+    okunmamis_urun_sayisi: int = 0  # rozet bunu gösterir
+    okunmamis_sistem_sayisi: int = 0
     ogeler: list[BildirimYanit]
 
 

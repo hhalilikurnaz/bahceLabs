@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class KaynakCipi(BaseModel):
@@ -120,3 +120,4 @@ class SuYaniti(BaseModel):
     toprak: ToprakOzeti
     kaynaklar: dict[str, KaynakCipi]  # profil | denge | sicaklik
     dogrulama: list[str]  # «Nasıl hesaplandı?» kaynak listesi: doğrulama kaynakları (arayüzde gösterilmez)
+    ayni_hucre_bahceler: list[str] = Field(default_factory=list)  # aynı ERA5 hücresindeki diğer bahçeler: toprak nemi ve hava verisi onlarla birebir aynıdır

@@ -33,6 +33,7 @@ from bahcelab_backend.domain.agro.schemas import (
     FenolojiDuzeltme,
     FenolojiYanit,
     KatalogCesit,
+    KatalogGorsel,
     KatalogUrun,
     KatalogYanit,
     KuralMeta,
@@ -133,7 +134,12 @@ class AgroService:
                     gdd_taban_c=product.gdd.taban_c if product.gdd else None,
                 )
             )
-        return KatalogYanit(surum=self.catalog.surum, urunler=products)
+        gorsel = self.catalog.gorsel
+        return KatalogYanit(
+            surum=self.catalog.surum,
+            urunler=products,
+            gorsel=KatalogGorsel(meta=_meta_of(gorsel), gerilme_min_aralik=dict(gorsel.gerilme_min_aralik)),
+        )
 
     # ------------------------------------------------------------------ fenoloji
     def _season_year(self, requested: int | None, today: date) -> int:

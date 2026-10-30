@@ -175,3 +175,15 @@ async def test_root_zone_fill_band_gives_the_seasons_p10_p25_p75_p90_for_the_one
     band = body["profil"]["kok_bolgesi_bant"]
     assert band is not None and len(band) == 4 and band == sorted(band) and 0 <= band[0] and band[3] <= 100
     assert body["sicaklik"]["noktalar"][-1]["normal"] is None or body["sicaklik"]["noktalar"][-1]["normal"]["p10_c"] <= body["sicaklik"]["noktalar"][-1]["normal"]["alt_c"]
+
+
+async def test_su_names_other_gardens_in_the_same_era5_cell_and_omits_far_ones(user_client, factory):
+    """U-31: aynı 9 km ERA5 hücresindeki bahçeler için veri birebir aynıdır; kullanıcıya kısa not için adları döner. Uzak bahçe anılmaz."""
+    gid = await seed(user_client, factory)
+    near = (await user_client.post("/gardens", json=garden_body(ad="Komşu", geometry=square(80, LNG + 0.001, LAT + 0.001)))).json()
+    far = (await user_client.post("/gardens", json=garden_body(ad="Uzak", geometry=square(80, LNG + 1.5, LAT + 1.5)))).json()
+    assert near["id"] and far["id"]
+    body = (await user_client.get(f"/gardens/{gid}/su")).json()
+    assert body["ayni_hucre_bahceler"] == ["Komşu"]
+    alone = (await user_client.get(f"/gardens/{far['id']}/su")).json()
+    assert alone.get("ayni_hucre_bahceler", []) == []

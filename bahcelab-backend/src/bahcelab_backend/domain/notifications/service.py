@@ -15,7 +15,7 @@ from bahcelab_backend.domain.notifications.schemas import (
     TercihYanit,
     TopluOkundu,
 )
-from bahcelab_backend.domain.notifications.types import TYPES, Candidate
+from bahcelab_backend.domain.notifications.types import SISTEM_TURU, TYPES, Candidate
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 
@@ -30,7 +30,7 @@ def to_response(row: NotificationModel) -> BildirimYanit:
     state = effective_state(row)
     return BildirimYanit(
         id=row.id, bahce_id=row.garden_id, tur=row.tur, tur_adi=TYPES.get(row.tur, {}).get("ad", row.tur), oncelik=row.oncelik,  # type: ignore[arg-type]
-        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", durum=state, ogeler=list(row.ayrinti or []),  # type: ignore[arg-type]
+        baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", sistem=row.tur == SISTEM_TURU, durum=state, ogeler=list(row.ayrinti or []),  # type: ignore[arg-type]
         ertelendi_bitis=row.ertelendi_bitis if state == "ertelendi" else None, olusturma=row.created_at,
     )
 
@@ -47,7 +47,9 @@ class NotificationService:
         rows, total = await self.repo.page(tur=tur, garden_id=garden_id, unread_only=unread_only, page=page, size=size, durum=durum)
         return BildirimListesi(
             sayfa=page, boyut=size, toplam=total, sayfa_sayisi=max(1, math.ceil(total / size)),
-            okunmamis_sayisi=await self.repo.unread_count(), ogeler=[to_response(r) for r in rows],
+            okunmamis_sayisi=await self.repo.unread_count(),
+            okunmamis_urun_sayisi=await self.repo.unread_count(sistem=False), okunmamis_sistem_sayisi=await self.repo.unread_count(sistem=True),
+            ogeler=[to_response(r) for r in rows],
         )
 
     async def unread_count(self) -> int:

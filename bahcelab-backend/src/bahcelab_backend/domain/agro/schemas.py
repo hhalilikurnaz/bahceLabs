@@ -38,9 +38,17 @@ class KatalogUrun(BaseModel):
     gdd_taban_c: float | None
 
 
+class KatalogGorsel(BaseModel):
+    """Harita skalası eşikleri (ön değer): bahçe-içi aralık bunun altındaysa gerilmiş skala kapalı."""
+
+    meta: KuralMeta
+    gerilme_min_aralik: dict[str, float]
+
+
 class KatalogYanit(BaseModel):
     surum: int
     urunler: list[KatalogUrun]
+    gorsel: KatalogGorsel
 
 
 class EvreYanit(BaseModel):

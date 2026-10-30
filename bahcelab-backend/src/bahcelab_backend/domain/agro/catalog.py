@@ -325,11 +325,26 @@ class DisKanitKurali(KuralBlok):
     kiyi_rakim_azami_m: float = Field(default=50.0, ge=0)  # istasyon rakımı bunun altındaysa «kıyı», üstündeyse «iç kesim» denir (kıyı çizgisi verisi yok; rakıma dayalı yaklaşık etiket)  # kamu kaydı tarihi olay aralığının ± bu kadar günü içinde olmalı
 
 
+class GorselKurali(KuralBlok):
+    """Harita skalası (docs/design/gorsellestirme-ilkeleri.md, ilke 4): varsayılan skala mutlaktır; «bahçenin kendi farkları» gerilmesi
+    bahçe içi aralık burada verilen fiziksel gürültü eşiğinin altındaysa KAPALIDIR (harita mutlak skalada kalır, «anlamlı fark yok» denir).
+    Anahtar = göstergenin birimindeki en küçük anlamlı bahçe-içi aralık. Hepsi ön değer · mühendis onayı bekliyor."""
+
+    gerilme_min_aralik: dict[str, float]
+
+    @model_validator(mode="after")
+    def _positive(self) -> GorselKurali:
+        if any(v <= 0 for v in self.gerilme_min_aralik.values()):
+            raise ValueError("Gerilme eşikleri pozitif olmalı.")
+        return self
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
     normal_bant: NormalBant
     radar: RadarKurali
+    gorsel: GorselKurali
     su: SuKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali

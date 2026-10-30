@@ -31,6 +31,25 @@ async def garden_cell(session: AsyncSession, garden_id: uuid.UUID) -> tuple[uuid
     return cell, lat, lng
 
 
+async def ayni_hucre_bahceler(session: AsyncSession, garden_id: uuid.UUID) -> list[str]:
+    """Aynı çalışma alanında, bu bahçeyle AYNI hava hücresine (ERA5 ızgarası) düşen diğer bahçelerin adları (U-31: veri birebir aynıdır)."""
+    step = get_settings().weather_cell_degrees
+    rows = (
+        await session.execute(
+            text(
+                "SELECT g.ad, ST_Y(ST_Centroid(g.geom)), ST_X(ST_Centroid(g.geom)), g.id = :g AS self FROM gardens g "
+                "WHERE g.workspace_id = (SELECT workspace_id FROM gardens WHERE id = :g) ORDER BY g.ad"
+            ),
+            {"g": garden_id},
+        )
+    ).all()
+    me = next((r for r in rows if r[3]), None)
+    if me is None:
+        return []
+    cell = (snap(float(me[1]), step), snap(float(me[2]), step))
+    return [r[0] for r in rows if not r[3] and (snap(float(r[1]), step), snap(float(r[2]), step)) == cell]
+
+
 def merge_day(land: dict[str, list[float | None]] | None, reanalysis: dict[str, list[float | None]] | None, model: dict[str, list[float | None]] | None) -> dict[str, Any] | None:
     """Üç kaynaktan bir gün: toprak nemi ERA5-Land öncelikli (yoksa model), yağış/ET0 ERA5 öncelikli (yoksa model), sıcaklık ERA5-Land (yoksa model)."""
     primary = aggregate_day({**(land or {}), **(reanalysis or {})})

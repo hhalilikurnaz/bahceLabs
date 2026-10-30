@@ -18,7 +18,7 @@ from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.water import balance as wb
-from bahcelab_backend.domain.water.era5_sync import garden_cell
+from bahcelab_backend.domain.water.era5_sync import ayni_hucre_bahceler, garden_cell
 from bahcelab_backend.domain.water.models import ERA5, SoilProfileModel
 from bahcelab_backend.domain.water.pedotransfer import (
     aggregate_soilgrids,
@@ -188,6 +188,7 @@ class WaterService:
                 "sicaklik": KaynakCipi(ad="Landsat 8/9 yüzey sıcaklığı", cozunurluk="30 m ürün · 100 m fiziksel", tarih=last_thermal, not_=None),
             },
             dogrulama=VALIDATION_SOURCES,
+            ayni_hucre_bahceler=await ayni_hucre_bahceler(self.session, garden_id),
         )
 
     @staticmethod

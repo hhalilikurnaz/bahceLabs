@@ -11,7 +11,7 @@ from bahcelab_backend.domain.notifications.models import (
     NotificationPreferenceModel,
     RiskSnapshotModel,
 )
-from bahcelab_backend.domain.notifications.types import Candidate
+from bahcelab_backend.domain.notifications.types import SISTEM_TURU, Candidate
 
 
 class NotificationRepository:
@@ -54,14 +54,14 @@ class NotificationRepository:
         ).scalars()
         return list(rows), int(total)
 
-    async def unread_count(self) -> int:
-        return int(
-            (
-                await self.session.execute(
-                    select(func.count()).select_from(NotificationModel).where(NotificationModel.workspace_id == self.workspace_id, NotificationModel.teslim == "anlik", self._unread_cond())
-                )
-            ).scalar_one()
-        )
+    async def unread_count(self, *, sistem: bool | None = None) -> int:
+        """`sistem`: None = hepsi · True = yalnız veri akışı (sistem) · False = yalnız ürün (bahçe) bildirimleri."""
+        cond = [NotificationModel.workspace_id == self.workspace_id, NotificationModel.teslim == "anlik", self._unread_cond()]
+        if sistem is True:
+            cond.append(NotificationModel.tur == SISTEM_TURU)
+        elif sistem is False:
+            cond.append(NotificationModel.tur != SISTEM_TURU)
+        return int((await self.session.execute(select(func.count()).select_from(NotificationModel).where(*cond))).scalar_one())
 
     async def get(self, notification_id: uuid.UUID) -> NotificationModel | None:
         row = await self.session.get(NotificationModel, notification_id)

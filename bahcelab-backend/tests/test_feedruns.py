@@ -34,6 +34,13 @@ def test_next_action_resumes_cut_runs_retries_failures_with_backoff_and_gives_up
     assert [next_action(d, 0, NOW, NOW, **kw) for d in ("tamam", "atlandi", "calisiyor")] == ["yok"] * 3
 
 
+def test_user_facing_error_text_never_shows_raw_exception_class_names():
+    assert fr.kullanici_hata_metni("WeatherSourceError: ERA5 arşivine şu an ulaşılamıyor. Birazdan tekrar deneyin.") == "ERA5 arşivine şu an ulaşılamıyor. Birazdan tekrar deneyin"
+    assert "Error" not in fr.kullanici_hata_metni("httpx.ReadTimeout: x ConnectError: bağlantı reddedildi")
+    assert fr.kullanici_hata_metni("ValueError:") == "kaynak yanıt vermedi"
+    assert len(fr.kullanici_hata_metni("a" * 400)) == 160
+
+
 # ----------------------------------------------------------------------------- izleyici
 async def runs_of(factory, gid):  # noqa: ANN001, ANN201, F811
     async with factory() as session:

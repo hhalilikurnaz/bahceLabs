@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -65,6 +66,15 @@ async def _safe(factory: SessionFactory, stmt: Any) -> bool:
         return False
 
 
+_ISTISNA_ADI = re.compile(r"\b[A-Za-z_][\w.]*(?:Error|Exception)\b:?\s*")
+
+
+def kullanici_hata_metni(ayrinti: str, *, sinir: int = 160) -> str:
+    """Bildirimde gösterilecek hata özeti: ham istisna sınıf adları (`WeatherSourceError: …`) kullanıcıya gösterilmez; kayıt/log'da kalır."""
+    temiz = _ISTISNA_ADI.sub("", ayrinti).strip(" :.")
+    return (temiz or "kaynak yanıt vermedi")[:sinir]
+
+
 async def notify(factory: SessionFactory, garden_id: uuid.UUID, kaynak: str, olay: str, ayrinti: str, attempts: int) -> None:
     """Kesilme / başarısızlık bildirimi (günde bir, bahçe × kaynak × olay): bildirim merkezinde ANINDA görünür."""
     from bahcelab_backend.domain.notifications.repository import NotificationRepository
@@ -84,9 +94,9 @@ async def notify(factory: SessionFactory, garden_id: uuid.UUID, kaynak: str, ola
             if olay == "kesildi":
                 title, body = f"{ad}: {what} çekimi yarıda kaldı", "Arka plan işi (sunucu yeniden başlamış olabilir) kesildi; kaldığı yerden kendiliğinden devam edecek. Veri tamamlanana kadar bu kaynak eksik olabilir."
             elif durable:
-                title, body = f"{ad}: {what} çekimi tekrar tekrar başarısız", f"{attempts} denemede tamamlanamadı; kendiliğinden denemeyi bıraktı. Son hata: {ayrinti[:160]}. Hesap/erişim ya da kaynak durumu kontrol edilmeli."
+                title, body = f"{ad}: {what} çekimi tekrar tekrar başarısız", f"{attempts} denemede tamamlanamadı; kendiliğinden denemeyi bıraktı. Son hata: {kullanici_hata_metni(ayrinti)}. Hesap/erişim ya da kaynak durumu kontrol edilmeli."
             else:
-                title, body = f"{ad}: {what} çekimi başarısız", f"Deneme {attempts}/{settings.feed_retry_max}; {settings.feed_retry_backoff_minutes} dk sonra kendiliğinden yeniden denenecek. Hata: {ayrinti[:160]}."
+                title, body = f"{ad}: {what} çekimi başarısız", f"Deneme {attempts}/{settings.feed_retry_max}; {settings.feed_retry_backoff_minutes} dk sonra kendiliğinden yeniden denenecek. Neden: {kullanici_hata_metni(ayrinti)}."
             key = f"besleme:{garden_id}:{kaynak}:{'vazgec' if durable and olay == 'hata' else olay}:{today_istanbul()}"  # «denemeyi bıraktı» ayrı bildirimdir (ilk hata bildirimi aynı günde olsa da)
             await NotificationService(NotificationRepository(session, workspace_id)).publish_operational([Candidate(garden_id, "besleme", "onemli", title, body, "durum", key)])
             await session.commit()

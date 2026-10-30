@@ -95,6 +95,15 @@ async def test_catalog_lists_products_varieties_and_unverified_rules(user_client
     assert other["fenoloji"] is None and other["gdd_taban_c"] is None
 
 
+async def test_catalog_exposes_visual_stretch_thresholds_as_unverified_defaults(user_client: AsyncClient):
+    """Harita gerilmiş skalasının fiziksel gürültü eşiği katalogdadır (ön değer · mühendis onayı bekliyor), kodda değil."""
+    gorsel = (await user_client.get("/agro/katalog")).json()["gorsel"]
+    assert gorsel["meta"]["durum"] == "dogrulanmadi" and gorsel["meta"]["kaynak"]
+    esik = gorsel["gerilme_min_aralik"]
+    assert {"ndvi", "ndre", "ndmi", "msavi", "lai", "yuzey_sicakligi", "radar_vh", "radar_degisim", "degisim"} <= set(esik)
+    assert esik["yuzey_sicakligi"] == 1.5 and all(v > 0 for v in esik.values())
+
+
 async def test_variety_selection_sets_name_and_free_text_is_mapped(user_client: AsyncClient):
     chosen = await new_garden(user_client, cesit_kodu="kutdiken")
     assert (chosen["cesit_kodu"], chosen["cesit"]) == ("kutdiken", "Kütdiken")

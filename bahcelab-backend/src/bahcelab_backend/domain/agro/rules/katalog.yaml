@@ -107,6 +107,24 @@ radar:
   delta_yumusatma: 3
 
 # Su ve sıcaklık dilimi (ADR 0017): hepsi ön değer
+# Harita skalası (görselleştirme ilkesi 4): bahçe-içi aralık bu eşiğin altındaysa «kendi farkları» gerilmesi kapanır. Hepsi ön değer.
+gorsel:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer: sensör/işleme gürültüsünün üstünde fiziksel olarak anlamlı en küçük bahçe-içi aralık. NDVI/NDRE/NDMI/MSAVI ≈ 0,04–0,05 (Sentinel-2 yansıtma
+    belirsizliği mertebesi), LAI 0,4, Landsat yüzey sıcaklığı 1,5 °C (100 m fiziksel çözünürlükte bahçe içi ayrıntı vermez), radar VH 1,5 dB (Lee sonrası
+    kumlanma), radar değişimi radar.anlamli_degisim_db ile aynı, optik değişim 0,03. Ziraat mühendisi / uzaktan algılama uzmanı onayı bekliyor.
+  gerilme_min_aralik:
+    ndvi: 0.05
+    ndre: 0.04
+    ndmi: 0.05
+    msavi: 0.05
+    lai: 0.4
+    yuzey_sicakligi: 1.5
+    radar_vh: 1.5
+    radar_degisim: 2.0
+    degisim: 0.03
+
 su:
   durum: dogrulanmadi
   kaynak: >-
