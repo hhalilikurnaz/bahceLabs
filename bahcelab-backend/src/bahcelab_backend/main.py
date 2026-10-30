@@ -14,6 +14,7 @@ from bahcelab_backend.api.events.router import router as events_router
 from bahcelab_backend.api.fieldbook.router import router as fieldbook_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
 from bahcelab_backend.api.gecmis.router import router as gecmis_router
+from bahcelab_backend.api.irrigation.router import router as irrigation_router
 from bahcelab_backend.api.multiyear.router import router as multiyear_router
 from bahcelab_backend.api.ndvi.router import definitions_router
 from bahcelab_backend.api.ndvi.router import router as ndvi_router
@@ -124,6 +125,7 @@ def create_app() -> FastAPI:
     app.include_router(multiyear_router)
     app.include_router(acquisitions_router)
     app.include_router(water_router)
+    app.include_router(irrigation_router)
     app.include_router(series_router)
     app.include_router(events_router)
     app.include_router(gecmis_router)

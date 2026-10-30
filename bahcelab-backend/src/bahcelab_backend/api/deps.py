@@ -29,6 +29,7 @@ from bahcelab_backend.domain.imagery.registry import (
     get_landsat_provider,
     get_radar_provider,
 )
+from bahcelab_backend.domain.irrigation.service import IrrigationService
 from bahcelab_backend.domain.multiyear.service import MultiyearService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.service import NdviCoordinator, NdviService
@@ -199,6 +200,13 @@ async def get_water_service(
     workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
 ) -> WaterService:
     return WaterService(session, workspace_id)
+
+
+async def get_irrigation_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)],
+) -> IrrigationService:
+    return IrrigationService(session, workspace_id)
 
 
 async def get_multiyear_service(

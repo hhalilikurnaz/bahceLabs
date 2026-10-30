@@ -81,7 +81,7 @@ class DayOut:
 
 @dataclass(frozen=True)
 class Policy:
-    """Plan kuralı. `from_date` öncesinde motor sulama ÖNERMEZ (geçmiş yalnız uygulananlarla yürür)."""
+    """Plan kuralı. `from_date` öncesinde motor sulama ÖNERMEZ (geçmiş yalnız uygulananlarla yürür). `oran` < 1 kısıntıdır: tüketimin yalnız o payı geri verilir, kalan stres kabul edilir."""
 
     from_date: date
     oran: Callable[[date], float] = lambda d: 1.0  # kısıntı: net = Dr × oran
@@ -94,6 +94,7 @@ def run_bucket(
 ) -> list[DayOut]:
     applied_net_mm = applied_net_mm or {}
     dr = min(max(initial_dr, 0.0), taw)
+    base = 0.0  # kısıntı: son sulamadan hemen sonraki Dr; bundan beri tüketilen (Dr − base) RAW'a ulaşınca sulanır, tüketimin yalnız `oran`ı geri verilir
     out: list[DayOut] = []
     for d in days:
         kc = kc_monthly(d.tarih.month, cover_pct, rule)
@@ -105,11 +106,17 @@ def run_bucket(
         etc = d.et0_mm * kc
         dr = min(taw, max(0.0, dr - eff - applied + etc))
         planned_net = 0.0
-        if policy is not None and d.tarih >= policy.from_date and applied == 0.0 and dr >= raw:
-            net = dr * policy.oran(d.tarih)
-            if net >= policy.min_net_mm:
+        if policy is not None and d.tarih >= policy.from_date and applied == 0.0:
+            ratio = policy.oran(d.tarih)
+            if ratio >= 1.0:
+                base = 0.0
+                net = dr
+            else:
+                net = ratio * (dr - base)
+            if dr - base >= raw and net >= policy.min_net_mm:
                 planned_net = net
                 dr -= net
+                base = dr if ratio < 1.0 else 0.0
         out.append(DayOut(d.tarih, d.yagis_mm, eff, d.et0_mm, kc, etc, applied, planned_net, planned_net / efficiency, dr, dr > raw, d.tahmin, False))
     return out
 

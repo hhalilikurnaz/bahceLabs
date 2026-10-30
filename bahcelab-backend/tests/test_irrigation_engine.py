@@ -172,3 +172,14 @@ def test_geri_odeme_sezonu():
 
 def test_mm_m3():
     assert e.mm_to_m3(10, 10_000) == 100.0
+
+
+def test_kisinti_tuketimin_yalniz_oranini_geri_verir_ve_stresi_gosterir():
+    ds = [date(2025, 9, 16) + timedelta(days=i) for i in range(46)]
+    inp = [e.DayIn(d, 0.0, 6.0) for d in ds]
+    kw = dict(taw=120.0, raw=40.0, cover_pct=50, rule=RULE, efficiency=1.0, initial_dr=0.0)
+    full = e.run_bucket(inp, policy=e.Policy(ds[0]), **kw)
+    deficit = e.run_bucket(inp, policy=e.Policy(ds[0], oran=e.deficit_ratio_fn(RULE)), **kw)
+    f, d = sum(x.planli_brut_mm for x in full), sum(x.planli_brut_mm for x in deficit)
+    assert 0.6 < d / f < 0.9  # tüketimin ≈ `oran`ı geri verilir (olaylar ayrık olduğundan tam oran değil)
+    assert sum(1 for x in deficit if x.stres) > sum(1 for x in full if x.stres)  # kısıntının bedeli: stres günü
