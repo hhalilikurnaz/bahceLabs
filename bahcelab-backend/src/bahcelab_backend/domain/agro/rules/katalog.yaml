@@ -166,7 +166,7 @@ sulama_plani:
   kaynak: >-
     Ön değer · mühendis onayı bekliyor. Kc: FAO-56 Tablo 12 narenciye, yer örtüsüz, taç örtüsü %20/50/70 için başlangıç/orta/son
     (0,50-0,45-0,55 · 0,65-0,60-0,65 · 0,70-0,65-0,70); aylık Kc evre ağırlıklarıyla (Oca-Şub başlangıç, Mar-May gelişme, Haz-Eyl orta, Eki-Ara son; Tablo 11 alt tropik);
-    taç örtüsü sınıflar arası doğrusal. Taç örtüsü uydu NDVI'sından (0,30→0,85). p = 0,5, kök 80 cm. Sistem verimi damla 0,90 · mini yağmurlama 0,80 · salma 0,55.
+    taç örtüsü sınıflar arası doğrusal. Taç örtüsü uydu NDVI'sından (0,30→0,85). p = 0,5, kök 80 cm. Sistem verimi damla 0,90 · mini yağmurlama 0,80 · salma 0,55; sistem programı: damla RAW'ın %15'inde tetik ve en çok 8 mm net, mini yağmurlama %35 / 20 mm, salma %100 / 70 mm.
     Yerel ölçümle uyarlanmamıştır; değerler FAO-56'dan aktarılırken mühendis teyit etmelidir.
   kc_orten_siniflari: [20, 50, 70]
   kc_tablo:
@@ -197,7 +197,11 @@ sulama_plani:
   sistem_verimi: {damla: 0.90, mini_yagmurlama: 0.80, salma: 0.55}
   ilk_nem_sapma_uyari_mm: 15
   agac_sayisi_tolerans: 0.15
-  en_az_sulama_mm: 10
+  # Sistem programı: damla sık-az (RAW'ın %15'inde tetik, en çok 8 mm net), salma seyrek-çok (RAW'da tetik, 70 mm'ye kadar). Ön değer · mühendis onayı bekliyor
+  sistem_programi:
+    damla: {tetik_orani: 0.15, azami_net_mm: 8, en_az_net_mm: 3}
+    mini_yagmurlama: {tetik_orani: 0.35, azami_net_mm: 20, en_az_net_mm: 8}
+    salma: {tetik_orani: 1.0, azami_net_mm: 70, en_az_net_mm: 30}
   planlama_gun: 10
   sapma_bildirim_mm: 20
   yaklasma_gun: 1

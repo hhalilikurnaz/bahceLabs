@@ -86,6 +86,8 @@ class Policy:
     from_date: date
     oran: Callable[[date], float] = lambda d: 1.0  # kısıntı: net = Dr × oran
     min_net_mm: float = 10.0
+    tetik_mm: float | None = None  # None: RAW; damlada RAW'ın küçük bir payı (sık-az)
+    azami_net_mm: float = float("inf")  # tek seferde en çok (sistemin doğası: damla küçük, salma büyük)
 
 
 def run_bucket(
@@ -108,12 +110,13 @@ def run_bucket(
         planned_net = 0.0
         if policy is not None and d.tarih >= policy.from_date and applied == 0.0:
             ratio = policy.oran(d.tarih)
+            trigger = raw if policy.tetik_mm is None else policy.tetik_mm
             if ratio >= 1.0:
                 base = 0.0
-                net = dr
+                net = min(dr, policy.azami_net_mm)
             else:
-                net = ratio * (dr - base)
-            if dr - base >= raw and net >= policy.min_net_mm:
+                net = min(ratio * (dr - base), policy.azami_net_mm)
+            if dr - base >= trigger and net >= policy.min_net_mm:
                 planned_net = net
                 dr -= net
                 base = dr if ratio < 1.0 else 0.0
@@ -186,7 +189,7 @@ def cost(m3: float, c: CostInput) -> Cost:
         if kwh is None:
             return Cost(m3, hours, None, None, fee, None, src, "Pompa gücü ve debisi girilmedi; kWh ve TL hesaplanamaz.")
         if price is None:
-            return Cost(m3, hours, kwh, None, fee, None, "yok", "Tarife güncel değil; faturanızdaki birim fiyatı girin.")
+            return Cost(m3, hours, kwh, None, fee, None, "yok", "Tarife güncel değil, faturanızdaki birim fiyatı girin.")
         e = kwh * price
         return Cost(m3, hours, kwh, e, fee, e + (fee or 0.0), src, None)
     if c.kullanici_m3_maliyet is None:

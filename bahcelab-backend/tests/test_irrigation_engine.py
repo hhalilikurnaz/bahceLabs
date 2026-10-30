@@ -72,7 +72,7 @@ def test_uygulanan_sulama_kovadan_net_dusulur():
 
 
 def test_plan_RAW_asilinca_sulama_onerir_brut_net_bolu_verim():
-    pol = e.Policy(from_date=date(2025, 7, 1), min_net_mm=RULE.en_az_sulama_mm)
+    pol = e.Policy(from_date=date(2025, 7, 1), min_net_mm=10.0)
     r = e.run_bucket(days(date(2025, 7, 1), 30), taw=100.0, raw=30.0, cover_pct=50, rule=RULE, efficiency=0.8, initial_dr=0.0, policy=pol)
     first = next(x for x in r if x.planli_net_mm > 0)
     assert first.planli_brut_mm == pytest.approx(first.planli_net_mm / 0.8)
@@ -183,3 +183,33 @@ def test_kisinti_tuketimin_yalniz_oranini_geri_verir_ve_stresi_gosterir():
     f, d = sum(x.planli_brut_mm for x in full), sum(x.planli_brut_mm for x in deficit)
     assert 0.6 < d / f < 0.9  # tüketimin ≈ `oran`ı geri verilir (olaylar ayrık olduğundan tam oran değil)
     assert sum(1 for x in deficit if x.stres) > sum(1 for x in full if x.stres)  # kısıntının bedeli: stres günü
+
+
+def test_damla_sik_az_salma_seyrek_cok():
+    """Aynı hava, aynı toprak: damla küçük ve sık, salma büyük ve seyrek sulanır; toplam net su yakın (tüketimi karşılar)."""
+    ds = [date(2025, 7, 1) + timedelta(days=i) for i in range(60)]
+    inp = [e.DayIn(d, 0.0, 6.0) for d in ds]
+    out = {}
+    for sistem in ("damla", "salma"):
+        prog = RULE.sistem_programi[sistem]
+        pol = e.Policy(ds[0], min_net_mm=prog.en_az_net_mm, tetik_mm=prog.tetik_orani * 60.0, azami_net_mm=prog.azami_net_mm)
+        rows = e.run_bucket(inp, taw=120.0, raw=60.0, cover_pct=60, rule=RULE, efficiency=RULE.sistem_verimi[sistem], initial_dr=0.0, policy=pol)
+        out[sistem] = [x for x in rows if x.planli_net_mm > 0]
+    assert max(x.planli_net_mm for x in out["damla"]) <= RULE.sistem_programi["damla"].azami_net_mm + 1e-9
+    assert len(out["damla"]) > 3 * len(out["salma"])  # sık-az ↔ seyrek-çok
+    assert max(x.planli_net_mm for x in out["salma"]) > 3 * max(x.planli_net_mm for x in out["damla"])
+    net = {k: sum(x.planli_net_mm for x in v) for k, v in out.items()}
+    assert abs(net["damla"] - net["salma"]) < 0.25 * net["salma"]
+
+
+def test_damlada_esik_alti_stres_olmaz():
+    ds = [date(2025, 7, 1) + timedelta(days=i) for i in range(90)]
+    inp = [e.DayIn(d, 0.0, 7.0) for d in ds]
+    prog = RULE.sistem_programi["damla"]
+    pol = e.Policy(ds[0], min_net_mm=prog.en_az_net_mm, tetik_mm=prog.tetik_orani * 60.0, azami_net_mm=prog.azami_net_mm)
+    rows = e.run_bucket(inp, taw=120.0, raw=60.0, cover_pct=60, rule=RULE, efficiency=0.9, initial_dr=0.0, policy=pol)
+    assert not any(x.stres for x in rows)
+
+
+def test_katalog_sistem_programi_ve_verim_ayni_sistemler():
+    assert set(RULE.sistem_programi) == set(RULE.sistem_verimi) == {"damla", "mini_yagmurlama", "salma"}

@@ -204,6 +204,14 @@ class KisitliSulamaDonemi(BaseModel):
     verim_riski: Literal["dusuk", "orta", "yuksek"]
 
 
+class SistemProgrami(BaseModel):
+    """Sulama sistemi başına program: sık-az (damla) ile seyrek-çok (salma) farkı. Tetik = oran × RAW; tek seferde en çok `azami_net_mm`, en az `en_az_net_mm` (net)."""
+
+    tetik_orani: float = Field(gt=0, le=1)
+    azami_net_mm: float = Field(gt=0)
+    en_az_net_mm: float = Field(gt=0)
+
+
 class SulamaPlaniKurali(KuralBlok):
     """Sulama planı (ADR 0023): FAO-56 günlük su dengesi katsayıları. Hepsi ön değer · mühendis onayı bekliyor."""
 
@@ -228,7 +236,7 @@ class SulamaPlaniKurali(KuralBlok):
     sistem_verimi: dict[str, float] = {"damla": 0.90, "mini_yagmurlama": 0.80, "salma": 0.55}
     ilk_nem_sapma_uyari_mm: float = Field(default=15.0, gt=0)  # uydu/ERA5 nemi ile kova arasındaki fark bunu aşarsa uyarı
     agac_sayisi_tolerans: float = Field(default=0.15, gt=0, lt=1)  # beyan ile alan/aralık beklentisi arası göreli fark
-    en_az_sulama_mm: float = Field(default=10.0, gt=0)  # brüt değil net; bundan az eksiğe sulama önerilmez
+    sistem_programi: dict[str, SistemProgrami]
     planlama_gun: int = Field(default=10, ge=7, le=14)
     sapma_bildirim_mm: float = Field(default=20.0, gt=0)  # uygulanan − planlanan (son 14 gün) bunu aşarsa «plandan ciddi sapma»
     yaklasma_gun: int = Field(default=1, ge=0, le=3)  # «sulama günü yaklaştı» kaç gün önce
@@ -245,6 +253,8 @@ class SulamaPlaniKurali(KuralBlok):
     def _tablo(self) -> SulamaPlaniKurali:
         if set(self.kc_tablo) != {str(int(c)) for c in self.kc_orten_siniflari}:
             raise ValueError("Kc tablosu taç örtüsü sınıflarıyla aynı olmalı.")
+        if set(self.sistem_programi) != set(self.sistem_verimi):
+            raise ValueError("Sistem programı ve sistem verimi aynı sistemleri içermeli.")
         if len(self.kc_ay_agirliklari) != 12 or any(abs(sum(w) - 1) > 1e-6 for w in self.kc_ay_agirliklari):
             raise ValueError("Kc ay ağırlıkları 12 ay ve her ay toplamı 1 olmalı.")
         return self

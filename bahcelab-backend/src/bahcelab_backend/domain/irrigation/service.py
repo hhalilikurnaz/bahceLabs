@@ -171,13 +171,16 @@ class IrrigationService:
         return [en.DayIn(d, *c.weather.get(d, (None, None)), tahmin=d > c.today) for d in days if d in c.weather or d <= c.today]
 
     # ------------------------------------------------------------------ sezon tekrarı (geçmiş yıl ya da bu yıl)
-    def season_run(self, c: Ctx, year: int, *, oran: bool = False, eff: float | None = None) -> list[en.DayOut]:
+    def season_run(self, c: Ctx, year: int, *, oran: bool = False, sistem: str | None = None) -> list[en.DayOut]:
         days = [d for d in en.season_days(year, c.rule) if not (d.month == 2 and d.day == 29)]
         # bu yıl için hava verisi olan günler (geçmiş + tahmin ufku); sonrası uydurulmaz
         inputs = [x for x in self._days(c, days) if x.yagis_mm is not None or x.tarih <= c.today]
-        e = eff or c.eff
-        pol = en.Policy(from_date=days[0], oran=en.deficit_ratio_fn(c.rule) if oran else (lambda d: 1.0), min_net_mm=c.rule.en_az_sulama_mm)
-        return en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=c.rule, efficiency=e, initial_dr=0.0, policy=pol)
+        return en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=c.rule, efficiency=c.rule.sistem_verimi[sistem or c.profile.sistem], initial_dr=0.0, policy=self._policy(c, days[0], oran, sistem))
+
+    @staticmethod
+    def _policy(c: Ctx, from_date: date, oran: bool = False, sistem: str | None = None) -> en.Policy:
+        prog = c.rule.sistem_programi[sistem or c.profile.sistem]
+        return en.Policy(from_date=from_date, oran=en.deficit_ratio_fn(c.rule) if oran else (lambda d: 1.0), min_net_mm=prog.en_az_net_mm, tetik_mm=prog.tetik_orani * c.raw, azami_net_mm=prog.azami_net_mm)
 
     def _total(self, c: Ctx, rows: list[en.DayOut], eff_ci: en.CostInput) -> sc.SenaryoToplam:
         t = en.season_total(rows, c.rule)
@@ -226,9 +229,9 @@ class IrrigationService:
         initial = 0.5 * c.taw if fill is None else c.taw * (1 - fill / 100.0)
         applied_net, applied_gross, n_records, missing = await self._applied(c, date(today.year, 1, 1))
         inputs = self._days(c, window)
-        rows = en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, applied_net_mm=applied_net, policy=en.Policy(from_date=today, min_net_mm=rule.en_az_sulama_mm))
+        rows = en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, applied_net_mm=applied_net, policy=self._policy(c, today))
         # plansız karşılaştırma: aynı pencere, uygulanan sulama olmadan her gün plan → sapma
-        ref = en.run_bucket([x for x in inputs if x.tarih <= today], taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, policy=en.Policy(from_date=start, min_net_mm=rule.en_az_sulama_mm))
+        ref = en.run_bucket([x for x in inputs if x.tarih <= today], taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, policy=self._policy(c, start))
         last14 = today - timedelta(days=14)
         planned14 = sum(x.planli_net_mm for x in ref if x.tarih > last14)
         applied14 = sum(v for d, v in applied_net.items() if last14 < d <= today)
@@ -377,8 +380,7 @@ class IrrigationService:
         # 4) sistem değişikliği
         sistem = None
         if hedef in rule.sistem_verimi and hedef != p.sistem:
-            h_eff = rule.sistem_verimi[hedef]
-            ht = self._total(c, self.season_run(c, y, eff=h_eff), ci)
+            ht = self._total(c, self.season_run(c, y, sistem=hedef), ci)
             saving = None if plan_t.tl is None or ht.tl is None else plan_t.tl - ht.tl
             pb = en.payback(yatirim_tl, saving)
             sistem = sc.SistemSonuc(
