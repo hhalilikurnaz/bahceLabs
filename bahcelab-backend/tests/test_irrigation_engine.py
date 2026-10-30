@@ -56,7 +56,7 @@ def test_kova_ETc_biriktirir_yagis_azaltir_sinirlar():
     sat = e.run_bucket(days(date(2025, 7, 1), 1, rain=60.0), initial_dr=10.0, **kw)
     assert sat[0].tukenme_mm == 0.0  # taşan su derin sızıntı: Dr < 0 olmaz
     wp = e.run_bucket(days(date(2025, 7, 1), 40, et0=9.0), initial_dr=0.0, **kw)
-    assert wp[-1].tukenme_mm == 100.0 and wp[-1].stres  # TAW'ı aşmaz
+    assert 98.0 < wp[-1].tukenme_mm <= 100.0 and wp[-1].stres and wp[-1].ks < 0.05  # TAW'ı aşmaz; Ks → 0 (bitki artık su çekemez)
 
 
 def test_kova_eksik_veri_uydurmaz():
@@ -181,7 +181,7 @@ def test_kisinti_tuketimin_yalniz_oranini_geri_verir_ve_stresi_gosterir():
     full = e.run_bucket(inp, policy=e.Policy(ds[0]), **kw)
     deficit = e.run_bucket(inp, policy=e.Policy(ds[0], oran=e.deficit_ratio_fn(RULE)), **kw)
     f, d = sum(x.planli_brut_mm for x in full), sum(x.planli_brut_mm for x in deficit)
-    assert 0.6 < d / f < 0.9  # tüketimin ≈ `oran`ı geri verilir (olaylar ayrık olduğundan tam oran değil)
+    assert 0.45 < d / f < 0.9  # tüketimin ≈ `oran`ı geri verilir; stres altında Ks gerçek tüketimi (ETa) de düşürür
     assert sum(1 for x in deficit if x.stres) > sum(1 for x in full if x.stres)  # kısıntının bedeli: stres günü
 
 
@@ -246,3 +246,16 @@ def test_damlada_her_sulama_tukenmeye_gore_tetiklenir():
     planli = [x for x in rows if x.planli_net_mm > 0]
     assert planli and all(x.tukenme_mm + x.planli_net_mm >= tetik - 1e-9 for x in planli)  # sulamadan önceki tükenme ≥ tetik
     assert not any(x.stres for x in rows)
+
+
+def test_ks_eta_dp_ve_sistem_kaybi():
+    kw = dict(taw=100.0, raw=50.0, cover_pct=50, rule=RULE, efficiency=0.8)
+    # Ks: Dr ≤ RAW → 1; Dr = 75 (RAW ile TAW arası yarı) → 0,5
+    r = e.run_bucket([e.DayIn(date(2025, 7, 1), 0.0, 5.0)], initial_dr=75.0, **kw)[0]
+    assert r.ks == pytest.approx(0.5) and r.eta_mm == pytest.approx(0.5 * r.etc_mm)
+    # derin sızıntı: tarla kapasitesini aşan yağış
+    r = e.run_bucket([e.DayIn(date(2025, 7, 1), 40.0, 5.0)], initial_dr=10.0, **kw)[0]
+    assert r.dp_mm == pytest.approx(0.8 * 40 - 10 - r.eta_mm) and r.tukenme_mm == 0.0
+    # sistem kaybı: uygulanan net 20 mm, verim 0,8 → brüt 25, kayıp 5
+    r = e.run_bucket([e.DayIn(date(2025, 7, 1), 0.0, 0.0)], initial_dr=30.0, applied_net_mm={date(2025, 7, 1): 20.0}, **kw)[0]
+    assert r.kayip_mm == pytest.approx(5.0) and r.bosa_giden_mm == pytest.approx(5.0)

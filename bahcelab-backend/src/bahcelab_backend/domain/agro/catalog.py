@@ -237,6 +237,20 @@ class SulamaPlaniKurali(KuralBlok):
     ilk_nem_sapma_uyari_mm: float = Field(default=15.0, gt=0)  # uydu/ERA5 nemi ile kova arasındaki fark bunu aşarsa uyarı
     agac_sayisi_tolerans: float = Field(default=0.15, gt=0, lt=1)  # beyan ile alan/aralık beklentisi arası göreli fark
     sistem_programi: dict[str, SistemProgrami]
+    # Toprak suyu durum bantları (kullanılabilir su % = (TAW − Dr) / TAW): stres < alt · yakın alt–yakın_ust · yeterli yakın_ust–yeterli_ust · dolu ≥ yeterli_ust
+    durum_stres_alt: float = 50.0
+    durum_yakin_ust: float = 70.0
+    durum_yeterli_ust: float = 97.0
+    ihtiyac_yesil_min: float = 95.0  # ΣETa/ΣETc (son 7 gün) ≥ yeşil; ≥ sarı sarı; altı kırmızı
+    ihtiyac_sari_min: float = 85.0
+    yagis_vurgu_mm: float = 12.0  # su dengesi grafiğinde bu yağış üstü ok ile işaretlenir
+    vardiya_baslangic: str = "05:00"  # çizelge başlangıcı (profilde değiştirilebilir)
+    aliskanlik_min_kayit: int = Field(default=4, ge=2)  # «Alışkanlığım» için Saha Defteri'nde en az bu kadar sulama kaydı
+    # Güven etiketi: 5 koşuldan kaçı sağlanıyor → düşük / orta / yüksek (kural ADR 0024)
+    guven_ndvi_taze_gun: int = Field(default=14, ge=1)
+    guven_hava_taze_gun: int = Field(default=3, ge=0)
+    guven_orta_min: int = Field(default=3, ge=1)
+    guven_yuksek_min: int = Field(default=5, ge=1)
     tetik_alt_siniri: float = Field(default=0.8, gt=0, le=1)  # kova RAW'a bu orandan önce sulama ÖNERİLMEZ (sık-az damla dahil)
     planlama_gun: int = Field(default=10, ge=7, le=14)
     sapma_bildirim_mm: float = Field(default=20.0, gt=0)  # uygulanan − planlanan (son 14 gün) bunu aşarsa «plandan ciddi sapma»

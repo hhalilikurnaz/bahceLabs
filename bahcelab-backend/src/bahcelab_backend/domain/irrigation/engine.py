@@ -77,6 +77,14 @@ class DayOut:
     stres: bool  # Dr > RAW
     tahmin: bool
     veri_eksik: bool
+    eta_mm: float = 0.0  # gerçek tüketim: Ks × ETc (stresli günde ETc'den küçük)
+    ks: float = 1.0  # su stresi katsayısı (FAO-56 Denk. 84): Dr ≤ RAW → 1
+    dp_mm: float = 0.0  # kökün altına sızan (tarla kapasitesini aşan)
+    kayip_mm: float = 0.0  # sistem kaybı: brüt − net (sulama verimsizliği)
+
+    @property
+    def bosa_giden_mm(self) -> float:
+        return self.dp_mm + self.kayip_mm
 
 
 @dataclass(frozen=True)
@@ -106,7 +114,11 @@ def run_bucket(
             continue
         eff = effective_rain_mm(d.yagis_mm, rule)
         etc = d.et0_mm * kc
-        dr = min(taw, max(0.0, dr - eff - applied + etc))
+        ks = 1.0 if dr <= raw else max(0.0, (taw - dr) / (taw - raw))  # FAO-56 Denk. 84; gün başı Dr
+        eta = ks * etc
+        ham = dr - eff - applied + eta
+        dp = max(0.0, -ham)
+        dr = min(taw, max(0.0, ham))
         planned_net = 0.0
         if policy is not None and d.tarih >= policy.from_date and applied == 0.0:
             ratio = policy.oran(d.tarih)
@@ -120,7 +132,8 @@ def run_bucket(
                 planned_net = net
                 dr -= net
                 base = dr if ratio < 1.0 else 0.0
-        out.append(DayOut(d.tarih, d.yagis_mm, eff, d.et0_mm, kc, etc, applied, planned_net, planned_net / efficiency, dr, dr > raw, d.tahmin, False))
+        kayip = (planned_net + applied) * (1.0 / efficiency - 1.0)
+        out.append(DayOut(d.tarih, d.yagis_mm, eff, d.et0_mm, kc, etc, applied, planned_net, planned_net / efficiency, dr, dr > raw, d.tahmin, False, eta, ks, dp, kayip))
     return out
 
 

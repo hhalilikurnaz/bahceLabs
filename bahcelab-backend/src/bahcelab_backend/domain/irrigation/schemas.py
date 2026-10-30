@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -245,3 +246,204 @@ class SenaryoYaniti(BaseModel):
     kisinti: KisintiSonuc | None = None
     sistem: SistemSonuc | None = None
     kaynaklar: list[Kaynak] = []
+
+
+# ----------------------------------------------------------------------------- sektörler (vana) · 9H-S4
+class SektorGirdisi(BaseModel):
+    ad: str = Field(min_length=1, max_length=24)
+    geometry: dict[str, object]  # GeoJSON Polygon (EPSG:4326)
+    agac_sayisi: int | None = Field(default=None, ge=1, le=1_000_000)
+    sira_aralik_m: float | None = Field(default=None, gt=0, le=50)
+    agac_aralik_m: float | None = Field(default=None, gt=0, le=50)
+    vana_debi_m3h: float | None = Field(default=None, gt=0, le=5000)
+
+
+class SektorlerGirdisi(BaseModel):
+    sektorler: list[SektorGirdisi] = Field(max_length=40)
+
+
+class SektorKaydi(BaseModel):
+    id: UUID | None  # None: bahçe tek sektör (çizim yok)
+    ad: str
+    geometry: dict[str, object] | None
+    alan_m2: float
+    alan_dekar: float
+    agac_sayisi: int | None
+    agac_kaynak: Literal["sektor", "orantili", "beyan", "yok"]
+    sira_aralik_m: float | None
+    agac_aralik_m: float | None
+    vana_debi_m3h: float | None
+
+
+class SektorlerYaniti(BaseModel):
+    tanimli: bool
+    sektorler: list[SektorKaydi]
+    not_: str | None = Field(default=None, serialization_alias="not")
+
+
+DurumEtiketi = Literal["stres", "yakin", "yeterli", "dolu"]
+
+
+class SektorGunu(BaseModel):
+    tarih: date
+    doluluk_pct: float | None  # kullanılabilir su %, (TAW − Dr) / TAW
+    etc_mm: float | None
+    eta_mm: float | None
+    net_mm: float  # uygulanan + planlanan net sulama
+    brut_mm: float
+    yagis_mm: float | None
+    etkili_yagis_mm: float | None
+    bosa_mm: float  # derin sızıntı + sistem kaybı
+    ks: float | None
+    planli: bool
+    uygulandi: bool
+    tahmin: bool
+    veri_eksik: bool
+
+
+class SektorDurumu(BaseModel):
+    id: UUID | None
+    ad: str
+    alan_dekar: float
+    agac_sayisi: int | None
+    agac_kaynak: Literal["sektor", "orantili", "beyan", "yok"]
+    vana_debi_m3h: float | None
+    doluluk_pct: float | None
+    etiket: DurumEtiketi | None
+    sonraki_sulama: date | None
+    esik_alti_7gun: bool
+    gunler: list[SektorGunu]
+
+
+class VardiyaKalemi(BaseModel):
+    sektor: str
+    baslangic: str | None  # SS:DD
+    bitis: str | None
+    sure_dk: int | None
+    m3: float
+    brut_mm: float
+    litre_agac: float | None
+    emitor_dakika: int | None
+
+
+class Vardiya(BaseModel):
+    tarih: date
+    baslangic: str
+    kalemler: list[VardiyaKalemi]
+    toplam_m3: float
+    onayli: bool
+    zaman_notu: str | None  # süre/saat neden yok
+
+
+class Hafta7Gunu(BaseModel):
+    tarih: date
+    ort_doluluk_pct: float | None
+    yagis_mm: float | None
+    sulama: bool
+
+
+class KpiSonraki(BaseModel):
+    tarih: date
+    gun_sonra: int
+    vanalar: list[str]
+
+
+class Guven(BaseModel):
+    etiket: Literal["dusuk", "orta", "yuksek"]
+    puan: int
+    toplam: int
+    kosullar: list[dict[str, object]]  # {ad, ok, not}
+
+
+class PanelKpi(BaseModel):
+    sonraki: KpiSonraki | None
+    ihtiyac_karsilandi_pct: float | None  # son 7 gün ΣETa/ΣETc, vana ortalaması
+    ihtiyac_renk: Literal["yesil", "sari", "kirmizi"] | None
+    sezon_m3: float | None
+    sezon_hedef_pct: float | None  # sezon tahmininin (ortanca) yüzdesi
+    sezon_kaynak: Literal["uygulanan", "planlanan"] | None
+
+
+class PanelYaniti(BaseModel):
+    durum: Literal["hazir", "profil_yok", "veri_yok"]
+    neden: str | None
+    bugun: date
+    on_deger: bool = True
+    taw_mm: float | None = None
+    raw_mm: float | None = None
+    stres_pct: float = 50.0
+    yakin_pct: float = 70.0
+    yeterli_pct: float = 97.0
+    tetik_pct: float | None = None  # sulama eşiği (kullanılabilir su %): sistem tetiğine denk gelen seviye
+    sektorler: list[SektorDurumu] = []
+    sektor_tanimli: bool = False
+    kpi: PanelKpi | None = None
+    hafta: list[Hafta7Gunu] = []
+    vardiya: Vardiya | None = None
+    en_dusuk: dict[str, object] | None = None  # {ad, pct}
+    esik_alti_sektorler: list[str] = []
+    uyarilar: list[Uyari] = []
+    guven: Guven | None = None
+    kaynaklar: list[Kaynak] = []
+    yagis_vurgu_mm: float = 12.0
+    katalog_surum: int = 0
+    onayli_tarih: date | None = None
+
+
+class SimGunu(BaseModel):
+    tarih: date
+    yagis_mm: float
+    et0_mm: float
+    sulama: bool
+
+
+class SimSektor(BaseModel):
+    ad: str
+    doluluk_pct: list[float | None]  # gün sırasıyla
+    brut_mm: list[float]
+    stres: list[bool]
+
+
+class SimSayac(BaseModel):
+    m3: float
+    kwh: float | None
+    tl: float | None
+    fiyat_kaynagi: Literal["kullanici", "katalog", "yok"]
+    eksik: str | None
+    stres_gun: int
+    bosa_m3: float
+    sulama_gunu: int
+
+
+class SimYili(BaseModel):
+    yil: int
+    tip: Literal["kuru", "normal", "islak"] | None
+    yagis_mm: float
+
+
+class SimulasyonYaniti(BaseModel):
+    durum: Literal["hazir", "profil_yok", "veri_yok"]
+    neden: str | None
+    yil: int | None = None
+    mod: Literal["plan", "aliskanlik"] = "plan"
+    sistem: Sistem | None = None
+    yillar: list[SimYili] = []
+    gunler: list[SimGunu] = []
+    sektorler: list[SimSektor] = []
+    vardiyalar: list[Vardiya] = []
+    sayac: SimSayac | None = None
+    karsilastirma: dict[str, SimSayac] | None = None  # {plan, aliskanlik}
+    karsilastirma_cumle: str | None = None
+    aliskanlik: dict[str, object] | None = None  # {kaynak: kayit|elle, gunler, brut_mm, kayit_sayisi}
+    aliskanlik_neden: str | None = None
+    kisinti_uygulandi: bool = False
+    kilitli_donemler: list[KilitliDonem] = []
+    kaynaklar: list[Kaynak] = []
+
+
+class OnayGirdisi(BaseModel):
+    tarih: date
+
+
+class IsleGirdisi(BaseModel):
+    tarih: date

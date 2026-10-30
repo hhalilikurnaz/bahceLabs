@@ -199,6 +199,18 @@ sulama_plani:
   agac_sayisi_tolerans: 0.15
   # Sistem programı: tetik HER ZAMAN tükenmeye göre ve RAW'a yakın (alt sınır 0,8×RAW); damla sık-az (RAW'ın %80'inde tetik, her seferde en çok 8 mm net), salma seyrek-çok (RAW'da tetik, 70 mm'ye kadar). Ön değer · mühendis onayı bekliyor
   tetik_alt_siniri: 0.8
+  durum_stres_alt: 50
+  durum_yakin_ust: 70
+  durum_yeterli_ust: 97
+  ihtiyac_yesil_min: 95
+  ihtiyac_sari_min: 85
+  yagis_vurgu_mm: 12
+  vardiya_baslangic: "05:00"
+  aliskanlik_min_kayit: 4
+  guven_ndvi_taze_gun: 14
+  guven_hava_taze_gun: 3
+  guven_orta_min: 3
+  guven_yuksek_min: 5
   sistem_programi:
     damla: {tetik_orani: 0.8, azami_net_mm: 8, en_az_net_mm: 3}
     mini_yagmurlama: {tetik_orani: 0.9, azami_net_mm: 20, en_az_net_mm: 8}
