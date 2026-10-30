@@ -15,7 +15,7 @@ export function Chip({ selected, icon, count, className, children, type = 'butto
       type={type}
       aria-pressed={selected}
       className={cx(
-        'inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-small font-semibold transition-colors duration-[var(--duration-fast)]',
+        'inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3.5 text-small font-semibold transition-colors duration-[var(--duration-fast)]',
         selected
           ? 'border-app-accent bg-app-accent-soft text-app-text'
           : 'border-app-border-strong bg-app-card text-app-text-muted hover:border-app-accent hover:text-app-text',

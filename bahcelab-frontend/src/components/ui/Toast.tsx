@@ -30,7 +30,7 @@ export function Toast({ message, tone = 'info', actionLabel, onAction, onClose, 
       <Icon className={cx('h-4 w-4 shrink-0', TONE[tone])} aria-hidden />
       <span className="py-1.5">{message}</span>
       {actionLabel && (
-        <button type="button" onClick={onAction} className="min-h-9 rounded-full px-3 text-small font-semibold text-app-accent hover:bg-app-card-hover">
+        <button type="button" onClick={onAction} className="min-h-9 rounded-md px-3 text-small font-semibold text-app-accent hover:bg-app-card-hover">
           {actionLabel}
         </button>
       )}
