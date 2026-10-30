@@ -1,6 +1,6 @@
 # Agro kuralları — doğrulama durumu
 
-Kaynak dosya: `bahcelab-backend/src/bahcelab_backend/domain/agro/rules/katalog.yaml` (sürüm 1).
+Kaynak dosya: `bahcelab-backend/src/bahcelab_backend/domain/agro/rules/katalog.yaml` (sürüm 2).
 Bir kural mühendis tarafından onaylanınca ilgili bloğun `durum` alanı `muhendis_onayli`, `onaylayan` ve `onay_tarihi` doldurulur (doğrulayıcı olmadan yüklemeyi reddeder).
 
 ## Adım 8A — doğrulanmamış kurallar (tümü "ön değer – ziraat mühendisi onayı bekleniyor")
@@ -43,3 +43,18 @@ Bu çıktılar teşhis ya da ilaçlama/sulama reçetesi değildir; arayüzde "ri
 | Yıllık kompozit penceresi (narenciye) | Haziran–Eylül, NDVI, net sahnelerin piksel medyanı | Herdem yeşil narenciyede yazın sıra arası otlar kuruduğundan ağaç tacı sinyali baskın; Akdeniz'de bulutlu sahne az. Dosya: `rules/katalog.yaml` → `analiz_penceresi` | doğrulanmadı |
 
 Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük bölge 500 m²; yumuşatma 1,5 piksel; istikrar yüksek ≥ %75 / orta ≥ %50) tarımsal kural değil istatistiksel ayardır (`config.py`, `multiyear_*`).
+
+## Adım 9H — sulama planı (`sulama_plani` bloğu; hepsi «ön değer · mühendis onayı bekliyor», ADR 0023)
+
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| Kc tablosu (narenciye, yer örtüsüz) | taç örtüsü %20: 0,50-0,45-0,55 · %50: 0,65-0,60-0,65 · %70: 0,70-0,65-0,70 (başlangıç-orta-son) | FAO-56 Tablo 12; mühendis kaynaktan teyit etmeli | doğrulanmadı |
+| Aylık evre ağırlıkları | Oca-Şub başlangıç · Mar-May gelişme · Haz-Eyl orta · Eki-Ara son | FAO-56 Tablo 11 alt tropik evre sırası; yerel fenolojiyle uyarlanmadı | doğrulanmadı |
+| Taç örtüsü ← NDVI | 0,30 → 0,85, üs 1 | Carlson & Ripley (1997) ilişkisinin doğrusal hâli | doğrulanmadı |
+| Kök derinliği, tükenme oranı p | 80 cm · 0,5 | FAO-56 Tablo 22 aralığı; Su sekmesiyle aynı | doğrulanmadı |
+| Etkili yağış | günlük < 2 mm sayılmaz; üstünün %80'i | basit eşik yöntemi; USDA-SCS henüz yok | doğrulanmadı |
+| Sistem verimi | damla 0,90 · mini yağmurlama 0,80 · salma 0,55 | literatür ortalamaları | doğrulanmadı |
+| Kısıntılı sulama dönemleri | çiçeklenme–tutum ve hızlı meyve büyümesi **kilitli**; olgunlaşma onaylı, oran 0,75, verim riski düşük | ön değer; mühendis onayı olmadan genişletilmez | doğrulanmadı |
+| Bildirim eşikleri | sulama günü 1 gün önce · sapma > 20 mm (14 gün) | ön değer | doğrulanmadı |
+| Ağaç sayısı tutarlılığı | beyan ↔ alan/(sıra×ağaç) farkı > %15 uyarı | ön değer | doğrulanmadı |
+| EPDK tarımsal sulama tarifesi | **fiyat ve geçerlilik tarihi boş** (doğrulanamadı) | kaynak: epdk.gov.tr tarife tabloları; doğrulanınca fiyat + tarih + kaynak ile doldurulur | **doğrulanamadı** |

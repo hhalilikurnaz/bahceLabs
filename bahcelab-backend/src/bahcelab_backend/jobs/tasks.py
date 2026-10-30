@@ -11,15 +11,18 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from bahcelab_backend.domain.agro.catalog import load_catalog
 from bahcelab_backend.domain.agro.repository import AgroRepository
 from bahcelab_backend.domain.agro.service import AgroService
 from bahcelab_backend.domain.agro.tiers import active_risks_of
 from bahcelab_backend.domain.auth.models import WorkspaceModel
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.gardens.repository import GardenRepository
+from bahcelab_backend.domain.irrigation.service import IrrigationService
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.notifications.generator import build_candidates
+from bahcelab_backend.domain.notifications.plan_candidates import plan_candidates
 from bahcelab_backend.domain.notifications.repository import (
     NotificationRepository,
     RiskSnapshotRepository,
@@ -272,6 +275,10 @@ async def generate_notifications(factory: SessionFactory, provider: WeatherProvi
                     irrigation=irrigation,
                     today=agro.current_date(),
                 )
+                plan = await IrrigationService(session, workspace_id).plan(garden_id)
+                if plan.durum == "hazir":  # plan varsa eski haftalık «sulama ihtiyacı» yerine plan bildirimleri
+                    candidates = [c for c in candidates if c.tur != "sulama"]
+                extra = [*extra, *plan_candidates(garden_id, name, plan, load_catalog().sulama_plani, agro.current_date())]
                 notifier = NotificationService(NotificationRepository(session, workspace_id))
                 created = await notifier.publish([*candidates, *extra])
                 new_risk = await notifier.reconcile_risks(garden_id, name, [r for r, _, _ in risks])

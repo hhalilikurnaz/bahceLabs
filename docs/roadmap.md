@@ -27,6 +27,7 @@ FAO-56 su dengesi: ET₀ × narenciye Kc, uydu taç örtüsüyle düzeltme, etki
 - **Maliyet:** EPDK tarımsal sulama tarifesi varsayılan (kaynak + geçerlilik tarihiyle gösterilir); kullanıcı kendi fiyatını girebilir.
 - **Senaryolar:** alışkanlık mı plan mı · kuru/ıslak yıl (geçmiş gerçek hava) · kısıntılı sulama (uyarılı; riskli dönemde kilitli) · sistem değişikliği; sezon animasyonu.
 - **Yer:** ana yeri ayrı **«Sulama planı»** sayfası; Bugün kartında tek satır; haritada varsayılan **kapalı** katman.
+- **Not (9H sonrası):** blok (parsel alt bölümü) kavramı yok → hesap bahçe düzeyinde, «Su ihtiyacı» harita katmanı blok tanımı gelene kadar yok (ADR 0023). EPDK tarife fiyatı doğrulanamadı → boş; fatura fiyatı kullanıcıdan.
 - Bağımlılık: ERA5, SMAP ve IMERG verisi eksiksiz olmalı (besleme kapsama raporu: `docs/agro/besleme-kapsami.md`).
 
 ### 9I · Gerçek su tüketimi (uydu ET)

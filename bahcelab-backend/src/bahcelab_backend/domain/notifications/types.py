@@ -16,6 +16,8 @@ TYPES: dict[str, dict[str, str]] = {
     "indeks_dususu": {"ad": "Uydu uyarısı", "aciklama": "Bahçenin kendi normunun belirgin altına düşüş."},
     "cok_yillik": {"ad": "Çok yıllık analiz", "aciklama": "Çok yıllık ağaç gücü bölgeleri hazır olduğunda."},
     "sulama": {"ad": "Sulama", "aciklama": "Önümüzdeki günlerde belirgin su ihtiyacı görünüyorsa."},
+    "sulama_plani": {"ad": "Sulama günü yaklaştı", "aciklama": "Sulama planındaki bir sulama günü yaklaştığında."},
+    "sulama_sapma": {"ad": "Plandan ciddi sapma", "aciklama": "Uyguladığınız sulama plandan belirgin farklıysa."},
     "olay": {"ad": "Olay", "aciklama": "Don, aşırı yağış, kuvvetli rüzgâr ya da uydu ile doğrulanan ani değişim olayı."},
     "kademe_dususu": {"ad": "Durum kademesi düşüşü", "aciklama": "Bahçe durumu kademesi (İyi · İzle · Dikkat · Sorun) kötüleşirse."},
     "besleme": {"ad": "Veri akışı", "aciklama": "Arka plandaki veri çekimi (hava, yağış, toprak nemi, uydu) kesilir ya da tekrar tekrar başarısız olursa."},

@@ -292,6 +292,7 @@ class IrrigationService:
             durum="hazir", neden=None, bugun=today, taw_mm=c.taw, raw_mm=c.raw, orten_yuzde=c.cover, kc_bugun=kc_now, sistem_verimi=c.eff,
             gunler=[sc.PlanGunu(tarih=x.tarih, yagis_mm=None if x.veri_eksik else x.yagis_mm, etkili_yagis_mm=None if x.veri_eksik else x.etkili_yagis_mm, etc_mm=None if x.veri_eksik else x.etc_mm, uygulanan_net_mm=x.uygulanan_net_mm, planli_net_mm=x.planli_net_mm, planli_brut_mm=x.planli_brut_mm, tukenme_mm=x.tukenme_mm, tahmin=x.tahmin, veri_eksik=x.veri_eksik) for x in rows],
             sulamalar=sul, sonraki=sul[0] if sul else None, uyarilar=uyarilar, hafta_maliyet=_mal(en.cost(week_m3, ci)),
+            planlanan_bugune_kadar_m3=sum(en.mm_to_m3(x.planli_brut_mm, c.area_m2) for x in this_year if x.tarih <= today) if this_year else None,
             uygulanan_sezon_m3=sum(en.mm_to_m3(g, c.area_m2) for g in applied_gross.values()) if n_records > 0 else None, uygulanan_kayit_sayisi=n_records,
             sapma_mm=sapma, sapma_ciddi=sapma is not None and abs(sapma) > rule.sapma_bildirim_mm, projeksiyon=proj, aylik=aylik, kaynaklar=SOURCES, katalog_surum=cat.load_catalog().surum,
         )

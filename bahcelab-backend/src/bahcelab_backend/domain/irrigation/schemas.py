@@ -133,6 +133,7 @@ class PlanYaniti(BaseModel):
     sonraki: Sulama | None = None
     uyarilar: list[Uyari] = []
     hafta_maliyet: MaliyetYaniti | None = None
+    planlanan_bugune_kadar_m3: float | None = None  # bu yılın planı (sezon başından bugüne), gerçek havayla
     uygulanan_sezon_m3: float | None = None
     uygulanan_kayit_sayisi: int = 0
     sapma_mm: float | None = None  # son 14 gün: uygulanan net − planlanan net
