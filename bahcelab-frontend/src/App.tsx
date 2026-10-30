@@ -58,6 +58,7 @@ export default function App() {
         <Route path="/bahceler/yeni" element={<EklemeSayfasi />} />
         <Route path="/bahceler/:id" element={<BahceSayfasi />} />
         <Route path="/bahceler/:id/:sekme" element={<BahceSayfasi />} />
+        <Route path="/bahceler/:id/:sekme/:alt" element={<BahceSayfasi />} />
         <Route path="/asistan" element={<AsistanSayfasi />} />
         <Route path="/islerim" element={<IslerimSayfasi />} />
         <Route path="/hizmetler" element={<HizmetlerSayfasi />} />

@@ -10,7 +10,7 @@ import { SagPanel } from './panel/SagPanel'
 import { useUrlGorunumu } from './useUrlGorunumu'
 
 /** Bölünmüş çalışma alanı: solda harita, sağda sabit genişlikli panel (420–640 px, sürüklenebilir ayraç; tercih hatırlanır). ≤ 899 px: harita tam ekran, panel üç duraklı alt sayfa. */
-export function CalismaAlani({ garden, gardens, tab }: { garden: Garden; gardens: Garden[]; tab: GardenTab }) {
+export function CalismaAlani({ garden, gardens, tab, sulama = false }: { garden: Garden; gardens: Garden[]; tab: GardenTab; sulama?: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const panelPx = useCalismaStore((s) => s.panelPx)
   const bahceDegisti = useCalismaStore((s) => s.bahceDegisti)
@@ -33,7 +33,7 @@ export function CalismaAlani({ garden, gardens, tab }: { garden: Garden; gardens
       <div ref={box} className="relative min-h-0 flex-1 overflow-hidden" data-testid="calisma-alani" data-yerlesim="alt-sayfa">
         <div className="absolute inset-0"><HaritaPaneli garden={garden} gardens={gardens} /></div>
         <AltSayfa>
-          <aside aria-label="Bahçe paneli" className="flex min-h-0 flex-1 flex-col"><SagPanel garden={garden} tab={tab} /></aside>
+          <aside aria-label="Bahçe paneli" className="flex min-h-0 flex-1 flex-col"><SagPanel garden={garden} tab={tab} sulama={sulama} /></aside>
         </AltSayfa>
       </div>
     )
@@ -45,7 +45,7 @@ export function CalismaAlani({ garden, gardens, tab }: { garden: Garden; gardens
       </div>
       <Bolucu container={box} />
       <aside aria-label="Bahçe paneli" className="flex min-h-0 shrink-0 flex-col border-l border-app-border bg-app-canvas" style={{ width: panelPx, maxWidth: 'calc(100% - 360px)' }} data-testid="sag-panel">
-        <SagPanel garden={garden} tab={tab} />
+        <SagPanel garden={garden} tab={tab} sulama={sulama} />
       </aside>
     </div>
   )

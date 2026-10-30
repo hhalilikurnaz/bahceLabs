@@ -24,12 +24,12 @@ export function Annotation({ x, y, dx, dy, children }: { x: number; y: number; d
 }
 
 /** Threshold: eşik çizgisi + doğrudan etiket (don 0 °C, sulama eşiği…). */
-export function Threshold({ y, x1, x2, etiket, tone = 'uyari' }: { y: number; x1: number; x2: number; etiket: string; tone?: 'uyari' | 'sorun' | 'notr' }) {
+export function Threshold({ y, x1, x2, etiket, tone = 'uyari', etiketSol = false }: { y: number; x1: number; x2: number; etiket: string; tone?: 'uyari' | 'sorun' | 'notr'; etiketSol?: boolean }) {
   const c = { uyari: 'var(--color-app-warn)', sorun: 'var(--color-app-danger)', notr: 'var(--color-app-border-strong)' }[tone]
   return (
     <g data-testid="esik-cizgisi">
       <line x1={x1} x2={x2} y1={y} y2={y} stroke={c} strokeWidth={1.25} strokeDasharray="6 4" />
-      <text x={x2} y={y - 5} textAnchor="end" fontSize={YAZI.etiket} fill={c} fontWeight={600}>{etiket}</text>
+      <text x={etiketSol ? x1 + 6 : x2} y={y - 5} textAnchor={etiketSol ? 'start' : 'end'} fontSize={YAZI.etiket} fill={c} fontWeight={600}>{etiket}</text>
     </g>
   )
 }

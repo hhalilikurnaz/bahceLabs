@@ -191,7 +191,7 @@ export function useSulamaProfiliKaydet(gardenId: string) {
   return useMutation({
     mutationFn: (govde: SulamaProfil) => apiRequest<ProfilYaniti>(`/gardens/${gardenId}/sulama-profili`, { method: 'PUT', body: JSON.stringify(govde) }),
     onSuccess: () => {
-      for (const k of ['sulama-profil', 'sulama-plani', 'sulama-sezon', 'sulama-senaryo']) void qc.invalidateQueries({ queryKey: [k, gardenId] })
+      for (const k of ['sulama-profil', 'sulama-plani', 'sulama-sezon', 'sulama-senaryo', 'sulama-panel', 'sulama-sim', 'su', 'today']) void qc.invalidateQueries({ queryKey: [k, gardenId] })
     },
   })
 }

@@ -1,4 +1,4 @@
-/** Rotalar (Adım 9B, hibrit kabuk): `/bahceler/:id[/sekme]`, tam sayfa `/bahceler/:id/gecmis|defter|sulama-plani`; eski `/bahcem/...` yönlenir. */
+/** Rotalar (Adım 9B, hibrit kabuk): `/bahceler/:id[/sekme]`, tam sayfa `/bahceler/:id/gecmis|defter`; eski `/bahcem/...` yönlenir. */
 export const GARDEN_TABS = ['durum', 'analiz', 'su', 'hava', 'gunluk', 'rapor'] as const
 export type GardenTab = (typeof GARDEN_TABS)[number]
 
@@ -12,7 +12,7 @@ export const GARDEN_TAB_LABELS: Record<GardenTab, string> = {
 }
 
 /** Bahçeye bağlı tam sayfalar (çalışma alanı dışında) */
-export const GARDEN_PAGES = ['gecmis', 'defter', 'sulama-plani'] as const
+export const GARDEN_PAGES = ['gecmis', 'defter'] as const
 export type GardenPage = (typeof GARDEN_PAGES)[number]
 
 /** Üst gezinme */
@@ -29,6 +29,8 @@ export const isGardenTab = (value: string | undefined): value is GardenTab => (G
 export const isGardenPage = (value: string | undefined): value is GardenPage => (GARDEN_PAGES as readonly string[]).includes(value ?? '')
 
 export const gardenPath = (id: string, tab: GardenTab = 'durum'): string => (tab === 'durum' ? `/bahceler/${id}` : `/bahceler/${id}/${tab}`)
+/** Sulama modu: Su sekmesinde panel «Sulama»ya geçer (ayrı sayfa yok). */
+export const sulamaPath = (id: string): string => `/bahceler/${id}/su/sulama`
 export const gardenPagePath = (id: string, page: GardenPage): string => `/bahceler/${id}/${page}`
 export const NEW_GARDEN_PATH = '/bahceler/yeni'
 export const SETTINGS_PATH = '/ayarlar'

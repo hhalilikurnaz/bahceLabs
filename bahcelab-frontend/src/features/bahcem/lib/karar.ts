@@ -146,3 +146,58 @@ export function sulamaSatiri(p: SulamaKararGirdisi): string | null {
   const gun = fark === 0 ? 'bugün' : fark === 1 ? 'yarın' : gunAdi(p.sonraki.tarih)
   return `Sulama: ${gun}, ${p.sonraki.emitor_dakika ? sureMetni(p.sonraki.emitor_dakika) : `≈ ${Math.round(p.sonraki.m3_bahce)} m³`}`
 }
+
+// ----------------------------------------------------------------------------- sulama paneli (9H-S4)
+export interface PanelKararGirdisi {
+  durum: 'hazir' | 'profil_yok' | 'veri_yok'
+  bugun: string
+  kpi: { sonraki: { tarih: string; gun_sonra: number; vanalar: string[] } | null } | null
+  vardiya: { kalemler: { baslangic: string | null }[] } | null
+  tetik_pct: number | null
+  en_dusuk: { ad: string; pct: number } | null
+  esik_alti_sektorler: string[]
+}
+const vanaListesi = (v: string[]): string => (v.length <= 1 ? (v[0] === 'Bahçe' ? 'bahçe' : (v[0] ?? '')) : `${v.slice(0, -1).join(', ')} ve ${v[v.length - 1]}`)
+const gunZaman = (bugun: string, tarih: string): string => {
+  const f = gunFarki(bugun, tarih)
+  return f === 0 ? 'Bugün' : f === 1 ? 'Yarın' : gunAdi(tarih)
+}
+const gunAyKisa = (iso: string): string => `${Number(iso.slice(8, 10))} ${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(iso.slice(5, 7)) - 1]}`
+
+/** Panel başlığı: «Perşembe sabah 05:00 vardiyasıyla V1 ve V2 sulanacak.» / «Bu hafta sulama gerekmiyor.» */
+export function sulamaPanelKarar(p: PanelKararGirdisi): string {
+  if (p.durum === 'profil_yok') return 'Sulama planı için bahçenizin sulama bilgisi gerekiyor.'
+  if (p.durum === 'veri_yok' || !p.kpi) return 'Sulama planı için veri yetersiz.'
+  const s = p.kpi.sonraki
+  if (!s || s.gun_sonra > 6) return 'Bu hafta sulama gerekmiyor.'
+  const saat = p.vardiya?.kalemler[0]?.baslangic
+  return `${gunZaman(p.bugun, s.tarih)} sabah${saat ? ` ${saat} vardiyasıyla` : ''} ${vanaListesi(s.vanalar)} sulanacak.`
+}
+
+/** Kararın nedeni (tek cümle): en kuru vana ve eşik. */
+export function sulamaNeden(p: PanelKararGirdisi): string | null {
+  if (p.durum !== 'hazir' || !p.en_dusuk) return null
+  const e = `En kuru vana ${p.en_dusuk.ad === 'Bahçe' ? 'bahçe' : p.en_dusuk.ad} %${Math.round(p.en_dusuk.pct)}`
+  const s = p.kpi?.sonraki
+  if (s && s.gun_sonra <= 6 && p.tetik_pct !== null) return `${e}; kullanılabilir su %${Math.round(p.tetik_pct)} sulama eşiğine iniyor.`
+  return `${e}; sulama eşiğine inmesi beklenmiyor.`
+}
+
+/** Toprak suyu grafiğinin altındaki tek cümle. */
+export function toprakSuyuCumlesi(p: PanelKararGirdisi): string | null {
+  if (p.durum !== 'hazir' || !p.en_dusuk) return null
+  const ad = p.en_dusuk.ad === 'Bahçe' ? 'Bahçe' : `En düşük vana ${p.en_dusuk.ad}`
+  const alti = p.esik_alti_sektorler.length ? `7 günde eşik altına inecek: ${p.esik_alti_sektorler.join(', ')}` : '7 günde eşik altına inen yok'
+  const s = p.kpi?.sonraki
+  const ilk = s ? `ilk sulama ${gunAyKisa(s.tarih)}, ${s.vanalar.join(' + ')}` : 'sulama gerekmiyor'
+  return `${ad} %${Math.round(p.en_dusuk.pct)}; ${alti}; ${ilk}`
+}
+
+/** Su dengesi grafiğinin altındaki tek cümle (son 14 gün, vana ortalaması). */
+export function suDengesiCumlesi(g: { etc: number; eta: number; sulama: number; yagmur: number; karsilanmayan: number }): string {
+  if (g.etc <= 0) return 'Son 14 günde bitki tüketimi hesaplanamadı.'
+  const pct = Math.round((g.eta / g.etc) * 100)
+  return `Son 14 günde ihtiyacın %${pct}'i karşılandı: ${Math.round(g.sulama)} mm sulama, ${Math.round(g.yagmur)} mm yağmur; karşılanmayan ${Math.round(g.karsilanmayan)} mm`
+}
+
+export const GUVEN_AD = { dusuk: 'düşük', orta: 'orta', yuksek: 'yüksek' } as const

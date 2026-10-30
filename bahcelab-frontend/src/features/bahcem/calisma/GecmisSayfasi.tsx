@@ -8,7 +8,7 @@ import type { Garden } from '../api/types'
 import { useElementWidth } from '../hooks/useElementWidth'
 import { dekar, sayi } from '../lib/format'
 import { gecmisKarar } from '../lib/karar'
-import { gardenPagePath, gardenPath } from '../lib/routes'
+import { gardenPath, sulamaPath } from '../lib/routes'
 import { OlayZamanCizelgesi } from './gecmis/OlayZamanCizelgesi'
 import { YazHaritalari } from './gecmis/YazHaritalari'
 import { YilTablosu } from './gecmis/YilTablosu'
@@ -39,7 +39,7 @@ export function GecmisSayfasi({ garden }: { garden: Garden }) {
             <h1 className="text-h1 font-semibold text-app-text" data-testid="gecmis-baslik">{dagilim.yukleniyor ? 'Geçmiş yükleniyor' : karar}</h1>
             <p className="mt-1 text-small text-app-text-dim">{garden.ad} · {dekar(garden.alanDekar)} · {ozet?.ilk_yil ?? '…'}–{simdi}</p>
             {sulama?.durum === 'hazir' && sulama.planlanan_bugune_kadar_m3 != null && (
-              <p className="mt-1 text-small text-app-text-muted" data-testid="gecmis-sulama">Sulama: planlanan {sayi(sulama.planlanan_bugune_kadar_m3, 0)} m³ · uygulanan {sulama.uygulanan_sezon_m3 != null ? `${sayi(sulama.uygulanan_sezon_m3, 0)} m³` : 'kayıt yok'} <Link className="font-semibold underline" to={gardenPagePath(garden.id, 'sulama-plani')}>Plana git</Link></p>
+              <p className="mt-1 text-small text-app-text-muted" data-testid="gecmis-sulama">Sulama: planlanan {sayi(sulama.planlanan_bugune_kadar_m3, 0)} m³ · uygulanan {sulama.uygulanan_sezon_m3 != null ? `${sayi(sulama.uygulanan_sezon_m3, 0)} m³` : 'kayıt yok'} <Link className="font-semibold underline" to={sulamaPath(garden.id)}>Plana git</Link></p>
             )}
           </div>
           {dagilim.n > 0 && (

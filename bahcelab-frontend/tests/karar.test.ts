@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, sulamaKarar, sulamaSatiri, sureMetni, suKarar } from '@/features/bahcem/lib/karar'
+import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, sulamaKarar, sulamaNeden, sulamaPanelKarar, sulamaSatiri, suDengesiCumlesi, sureMetni, suKarar, toprakSuyuCumlesi } from '@/features/bahcem/lib/karar'
 
 const BAND = { p25: 0.643, p50: 0.676, p75: 0.717, ceyrek_yeterli: true }
 
@@ -97,5 +97,33 @@ describe('sulama planı cümleleri (9H)', () => {
     expect(sulamaSatiri(g('2026-10-29', 145))).toBe('Sulama: Perşembe, 2 sa 25 dk')
     expect(sulamaSatiri({ durum: 'hazir', bugun: '2026-10-27', sonraki: null })).toBe('Sulama: bu hafta gerekmiyor')
     expect(sulamaSatiri({ durum: 'profil_yok', bugun: '2026-10-27', sonraki: null })).toBeNull()
+  })
+})
+
+describe('sulama paneli cümleleri (9H-S4)', () => {
+  const p = (sonraki: { tarih: string; gun_sonra: number; vanalar: string[] } | null, saat: string | null = '05:00') => ({
+    durum: 'hazir' as const, bugun: '2026-07-14', kpi: { sonraki }, vardiya: saat ? { kalemler: [{ baslangic: saat }] } : null, tetik_pct: 60, en_dusuk: { ad: 'V3', pct: 62.4 }, esik_alti_sektorler: [] as string[],
+  })
+  it('başlık: gün + vardiya + vanalar', () => {
+    expect(sulamaPanelKarar(p({ tarih: '2026-07-16', gun_sonra: 2, vanalar: ['V1', 'V2'] }))).toBe('Perşembe sabah 05:00 vardiyasıyla V1 ve V2 sulanacak.')
+    expect(sulamaPanelKarar(p({ tarih: '2026-07-15', gun_sonra: 1, vanalar: ['Bahçe'] }, null))).toBe('Yarın sabah bahçe sulanacak.')
+    expect(sulamaPanelKarar(p({ tarih: '2026-07-14', gun_sonra: 0, vanalar: ['V1', 'V2', 'V3'] }))).toBe('Bugün sabah 05:00 vardiyasıyla V1, V2 ve V3 sulanacak.')
+    expect(sulamaPanelKarar(p(null))).toBe('Bu hafta sulama gerekmiyor.')
+    expect(sulamaPanelKarar(p({ tarih: '2026-07-25', gun_sonra: 11, vanalar: ['V1'] }))).toBe('Bu hafta sulama gerekmiyor.')
+    expect(sulamaPanelKarar({ ...p(null), durum: 'profil_yok' })).toContain('sulama bilgisi gerekiyor')
+  })
+  it('başlıklar tek cümle, noktalı virgül yok', () => {
+    for (const c of [sulamaPanelKarar(p({ tarih: '2026-07-16', gun_sonra: 2, vanalar: ['V1'] })), sulamaPanelKarar(p(null))]) {
+      expect(c).not.toContain(';')
+      expect(c.match(/\./g)).toHaveLength(1)
+    }
+  })
+  it('neden ve grafik altı cümleleri', () => {
+    expect(sulamaNeden(p({ tarih: '2026-07-16', gun_sonra: 2, vanalar: ['V1'] }))).toBe('En kuru vana V3 %62; kullanılabilir su %60 sulama eşiğine iniyor.')
+    expect(sulamaNeden(p(null))).toBe('En kuru vana V3 %62; sulama eşiğine inmesi beklenmiyor.')
+    expect(toprakSuyuCumlesi(p({ tarih: '2026-07-22', gun_sonra: 8, vanalar: ['V1'] }))).toBe('En düşük vana V3 %62; 7 günde eşik altına inen yok; ilk sulama 22 Tem, V1')
+    expect(toprakSuyuCumlesi({ ...p(null), esik_alti_sektorler: ['V2'] })).toBe('En düşük vana V3 %62; 7 günde eşik altına inecek: V2; sulama gerekmiyor')
+    expect(suDengesiCumlesi({ etc: 40, eta: 38, sulama: 41.2, yagmur: 63, karsilanmayan: 2.4 })).toBe("Son 14 günde ihtiyacın %95'i karşılandı: 41 mm sulama, 63 mm yağmur; karşılanmayan 2 mm")
+    expect(suDengesiCumlesi({ etc: 0, eta: 0, sulama: 0, yagmur: 0, karsilanmayan: 0 })).toContain('hesaplanamadı')
   })
 })
