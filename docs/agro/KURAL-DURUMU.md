@@ -54,6 +54,7 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Kök derinliği, tükenme oranı p | 80 cm · 0,5 | FAO-56 Tablo 22 aralığı; Su sekmesiyle aynı | doğrulanmadı |
 | Etkili yağış | günlük < 2 mm sayılmaz; üstünün %80'i | basit eşik yöntemi; USDA-SCS henüz yok | doğrulanmadı |
 | Sistem verimi | damla 0,90 · mini yağmurlama 0,80 · salma 0,55 | literatür ortalamaları | doğrulanmadı |
+| Sistem programı (tetik, tek seferde miktar) | tetik: damla 0,8 · mini yağmurlama 0,9 · salma 1,0 × RAW (**alt sınır 0,8; altı katalog yüklemeyi reddeder**); azami net: 8 · 20 · 70 mm | kova RAW'a yaklaşmadan sulama önerilmez; sık-az damla yalnız tükenme eşiğine göre | doğrulanmadı |
 | Kısıntılı sulama dönemleri | çiçeklenme–tutum ve hızlı meyve büyümesi **kilitli**; olgunlaşma onaylı, oran 0,75, verim riski düşük | ön değer; mühendis onayı olmadan genişletilmez | doğrulanmadı |
 | Bildirim eşikleri | sulama günü 1 gün önce · sapma > 20 mm (14 gün) | ön değer | doğrulanmadı |
 | Ağaç sayısı tutarlılığı | beyan ↔ alan/(sıra×ağaç) farkı > %15 uyarı | ön değer | doğrulanmadı |

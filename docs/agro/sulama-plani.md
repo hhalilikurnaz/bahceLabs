@@ -1,67 +1,67 @@
-# Sulama planı — jlnnlk için gerçek çıktı (9H)
+# Sulama planı — jlnnlk için gerçek çıktı (9H, tetik düzeltmesinden sonra)
 
-Üretim: `bahcelab-backend/scripts/sulama_raporu.py` (yalnız okur, işlem sonunda geri alır; ham çıktı: [sulama-plani-jlnnlk.json](sulama-plani-jlnnlk.json)). Tarih: **2026-10-30**. Bahçe: **jlnnlk**, 15,149 dekar.
+Üretim: `bahcelab-backend/scripts/sulama_raporu.py` (yalnız okur, işlem sonunda geri alır; ham çıktı: [sulama-plani-jlnnlk.json](sulama-plani-jlnnlk.json)). Tarih: **2026-10-30**. Bahçe: **jlnnlk**, 15,149 dekar. Günlük kova tablosu ve tutarsızlık analizi: [sulama-plani-jlnnlk-ekim.md](sulama-plani-jlnnlk-ekim.md).
 
-> **Dürüstlük notu (önce bunu okuyun).** jlnnlk için **kayıtlı sulama profili yok** ve **ağaç sayısı beyan edilmemiş**. Aşağıdaki sayılar bu yüzden bir **örnek profille** hesaplandı (veritabanına yazılmadı): damla, ağaç başına 4 damlatıcı × 4 L/sa, 5 × 4 m dikim aralığı, pompa 7,5 kW / 40 m³/sa, şebeke elektriği. Bu bilgiler sizin değil; sihirbaza gerçeklerini girince sayılar değişir. **Ağaç başına litre ve damlatıcı süresi** ağaç sayısı olmadığı için **hesaplanmadı** (kural gereği uydurulmaz). **TL** yok: EPDK tarife fiyatı doğrulanamadı ve fatura fiyatı girilmedi. Tüm katsayılar «ön değer · mühendis onayı bekliyor» (katalog sürüm 2).
+> **Dürüstlük notu.** jlnnlk için **kayıtlı sulama profili yok** ve **ağaç sayısı beyan edilmemiş**. Sayılar bir **örnek profille** (veritabanına yazılmadı) hesaplandı: damla, ağaç başına 4 damlatıcı × 4 L/sa, 5 × 4 m aralık, pompa 7,5 kW / 40 m³/sa, şebeke. Bu bilgiler sizin değil. **Ağaç başına litre ve süre** ağaç sayısı olmadığından **hesaplanmadı**. **TL yok**: EPDK tarife fiyatı doğrulanamadı, fatura fiyatı girilmedi. Katsayılar «ön değer · mühendis onayı bekliyor» (katalog sürüm 2).
 
 ## 1. Girdiler ve kaynakları
 
 | Girdi | Değer | Kaynak |
 |---|---|---|
-| Toprak (kök bölgesi 80 cm) | tarla kapasitesi 0,323 · solma noktası 0,175 → **TAW 118,2 mm**, **RAW 59,1 mm** (p = 0,5) | SoilGrids 2.0 (ISRIC, 250 m) + Saxton & Rawls 2006; FAO-56 Denk. 82–83 |
-| Taç örtüsü | **%67** (NDVI 0,669, 9 Eki 2026) | Sentinel-2 L2A; Carlson & Ripley dönüşümü (katalog) |
-| Kc (Ekim) | **0,67** | FAO-56 Tablo 12 (narenciye, yer örtüsüz, %20/50/70 sınıfları arası doğrusal) + aylık evre ağırlıkları |
-| ET₀, yağış (geçmiş) | günlük, 2015 – bugün | ERA5-Land (Open-Meteo, FAO-56 Penman-Monteith); yağış kaynağı IMERG/ERA5 seçimi Su sekmesiyle aynı |
-| ET₀, yağış (önümüzdeki 10 gün) | günlük | Open-Meteo tahmini (arayüzde taralı) |
-| Sistem verimi | damla **%90** → brüt = net ÷ 0,90 | katalog (ön değer) |
-| Program | damla: RAW'ın %15'inde tetik, tek seferde en çok 8 mm net | katalog (ön değer) |
+| Toprak (kök bölgesi 80 cm) | **TAW 118,2 mm**, **RAW 59,1 mm** (p = 0,5) | SoilGrids 2.0 + Saxton & Rawls 2006; FAO-56 Denk. 82–83 |
+| Taç örtüsü / Kc (Ekim) | **%67** (NDVI 0,669, 9 Eki) → Kc **0,67** | Sentinel-2 L2A; FAO-56 Tablo 12 + aylık evre ağırlıkları |
+| ET₀, yağış | günlük (geçmiş ERA5-Land; ileri 10 gün Open-Meteo tahmini) | `era5_daily`; yağış kaynağı seçimi: ERA5 (IMERG 27 Ekim'de bitiyor, kullanılmıyor) |
+| Başlangıç kovası | 30 gün önceki ERA5-Land kök bölgesi doluluğu | SMAP kullanılmaz (yalnız doğrulama) |
+| Sistem verimi / program | damla **%90**; tetik **0,8 × RAW = 47,3 mm**, tek seferde en çok 8 mm net | katalog (ön değer) |
 
 ## 2. Bu haftanın planı
 
-- **Karar cümlesi:** «Çarşamba yaklaşık 135 metreküp sulayın.» (süre cümlesi için damlatıcı + ağaç sayısı gerekir; yok, bu yüzden m³ söylenir.)
-- **Sonraki sulama:** 2026-11-04 · net 8,0 mm → brüt 8,9 mm = **135 m³** (8,9 m³/dekar).
-- **Önümüzdeki 7 gün:** 135 m³ · 3,4 pompa saati · **25,2 kWh** · TL: **yok** — «Tarife güncel değil, faturanızdaki birim fiyatı girin.»
-- Önceki günler: 27–29 Ekim yağışı kovayı doldurdu (29 Ekim eksik 0 mm); bu yüzden 29 Ekim–3 Kasım sulama önerilmedi.
-- **Uyarılar (olduğu gibi):** Alan ve aralığa göre beklenen ≈ 757 ağaç; ağaç sayısı beyan edilmemiş.; Ağaç sayısı beyan edilmediği için ağaç başına litre ve damlatıcı süresi gösterilmiyor.; Kova (1 mm eksik) ile ERA5-Land toprak nemi (19 mm eksik) arasında 18 mm fark var; ölçümünüzle kontrol edin.; Tarife güncel değil, faturanızdaki birim fiyatı girin.
+- **Karar cümlesi:** «Bu hafta sulama gerekmiyor.» (Su sekmesi: «Kök bölgesi Ekim normaline göre nemli (%100); önümüzdeki 7 gün sulama gerekmiyor.») — **ikisi aynı kovadan, çelişmiyor.**
+- Kova 29 Ekim yağışından sonra tam dolu (tükenme 0 mm); 4 Kasım'da 8,9 mm, 6 Kasım'da 12,0 mm. Tetik 47,3 mm: önümüzdeki 7–10 günde sulama yok.
+- Önümüzdeki 7 gün: **0 m³, 0 kWh, 0 TL** (maliyet satırı: «Tarife güncel değil, faturanızdaki birim fiyatı girin.»).
+- **Uyarılar:** Alan ve aralığa göre beklenen ≈ 757 ağaç; ağaç sayısı beyan edilmemiş.; Ağaç sayısı beyan edilmediği için ağaç başına litre ve damlatıcı süresi gösterilmiyor.; Tarife güncel değil, faturanızdaki birim fiyatı girin.
+
+*Düzeltme öncesi (hatalı) plan 4 Kasım için ≈ 135 m³ öneriyordu; nedeni ve düzeltmesi [sulama-plani-jlnnlk-ekim.md](sulama-plani-jlnnlk-ekim.md)'de.*
 
 ## 3. Sezon projeksiyonu (aralık, tek sayı değil)
 
-2015–2025 sezonlarının (1 Nis–31 Eki) **gerçek havasıyla** aynı plan oynatıldı:
+2015–2025 sezonlarının (1 Nis–31 Eki) **gerçek havasıyla** aynı plan oynatıldı (kova tarla kapasitesinde başlar, varsayım):
 
-- **Su: 7.810 – 8.753 m³** (p10–p90), ortanca 8.349 m³ → 516–578 m³/dekar.
-- **TL: yok** (tarife doğrulanamadı; fiyat girilince aralık hesaplanır).
-- Bu yıl (1 Nis → bugün) aynı kuralın planı: 6.733 m³; Saha Defteri'nde sulama kaydı yok, uygulanan: yok.
+- **Su: 6.868 – 7.945 m³** (p10–p90), ortanca 7.272 m³ → 453–524 m³/dekar.
+- **TL: yok** (tarife doğrulanamadı).
+- Bu yılın planı (1 Nis → bugün): 4.713 m³; Saha Defteri'nde sulama kaydı yok.
+
+*Düzeltme öncesi aralık 7.810–8.753 m³ idi; tetik %15 RAW iken kova gereğinden sık sulanıyordu (sezon ≈ %12–15 fazla).*
 
 ## 4. Kuru yıl ↔ ıslak yıl (gerçek geçmiş hava)
 
 | Yıl | Sezon yağışı (mm) | Sezon ET₀ (mm) | Plan suyu (m³) | m³/dekar |
 |---|---|---|---|---|
-| 2015 | 224 | 868 | 7.675 | 507 |
-| 2016 | 215 | 900 | 8.214 | 542 |
-| 2017 | 219 | 924 | 8.618 | 569 |
-| 2018 | 249 | 926 | 8.349 | 551 |
-| 2019 | 223 | 901 | 7.810 | 516 |
-| 2020 | 162 | 933 | 8.753 | 578 |
-| 2021 | 156 | 939 | 9.022 | 596 |
-| 2022 | 218 | 924 | 8.483 | 560 |
-| 2023 | 252 | 905 | 7.810 | 516 |
-| 2024 | 247 | 924 | 8.214 | 542 |
-| 2025 | 226 | 933 | 8.483 | 560 |
+| 2015 | 224 | 868 | 6.868 | 453 |
+| 2016 | 215 | 900 | 7.002 | 462 |
+| 2017 | 219 | 924 | 7.406 | 489 |
+| 2018 | 249 | 926 | 6.868 | 453 |
+| 2019 | 223 | 901 | 6.868 | 453 |
+| 2020 | 162 | 933 | 7.945 | 524 |
+| 2021 | 156 | 939 | 8.214 | 542 |
+| 2022 | 218 | 924 | 7.272 | 480 |
+| 2023 | 252 | 905 | 6.733 | 444 |
+| 2024 | 247 | 924 | 7.272 | 480 |
+| 2025 | 226 | 933 | 7.541 | 498 |
 
-- En çok su: **2021** (9.022 m³; yağış 156 mm) · en az su: **2015** (7.675 m³; yağış 224 mm). **Fark 1.347 m³** (≈ %18).
-- En kurak sezon yağışı 2021 (156 mm), en yağışlı 2023 (252 mm). Yağış kışa düştüğü için sezon suyu yağışla orantısız değişir; yıllar arası fark ET₀ ve yağışın sezon içi dağılımından gelir.
-- Damla sulamada olay sayısı 58–67 arasında; toplamlar olay büyüklüğüne (8,9 mm brüt) göre kademelidir, bu yüzden bazı yıllar aynı değerde görünür (7.810 m³ iki yıl).
+- En çok su **2021** (8.214 m³; yağış 156 mm), en az **2023** (6.733 m³; yağış 252 mm). **Fark 1.481 m³** (≈ %22).
+- Toplamlar olay büyüklüğüne (8,9 mm brüt) göre kademelidir; bazı yıllar aynı değerde görünür (2015/2018/2019: 6.868 m³).
+- 2021: 61 sulama, 2023: 50, 2025: 56; eşik altı (stres) gün her üçünde 0.
 
 ## 5. Diğer senaryolar (2025 havasıyla)
 
-- **Alışkanlık ↔ plan:** hesaplanmadı — ağaç sayısı yok, süreyi litreye çevirmek mümkün değil (uydurulmaz).
-- **Kısıntılı sulama:** yalnız olgunlaşma döneminde (%75): 8.483 → 8.133 m³, **tasarruf 350 m³** (≈ %4,1), **verim riski: düşük**, eşik altı gün 0. Çiçeklenme–meyve tutumu (15 Mar–15 Haz) ve hızlı meyve büyümesi (16 Haz–15 Eyl) **kilitli**: «Bu dönemde önerilmez.» Varsayılan plan değildir.
-- **Sistem değişikliği (damla → salma):** 8.483 → 13.396 m³ (**+4.913 m³**), +921 kWh; TL ve geri ödeme yok (tarife ve kurulum bedeli girilmedi; kötüleşme olduğu için geri ödeme zaten hesaplanmaz).
+- **Alışkanlık ↔ plan:** hesaplanmadı — ağaç sayısı yok (uydurulmaz).
+- **Kısıntılı sulama** (yalnız olgunlaşma, %75): 7.541 → 6.733 m³, **tasarruf 808 m³** (≈ %10,7), **verim riski: düşük**. Çiçeklenme–tutum ve hızlı meyve büyümesi **kilitli** («Bu dönemde önerilmez»). Varsayılan plan değil.
+- **Sistem değişikliği (damla → salma):** 7.541 → 13.396 m³ (**+5.855 m³**); TL ve geri ödeme yok.
 
 ## 6. Sınırlar
 
-- Sonuçlar katalog ön değerlerine bağlıdır; **mühendis onayı yok** (`docs/agro/KURAL-DURUMU.md`).
-- Taç örtüsü NDVI'ı 21 gün eski (son net Sentinel-2: 9 Eki). Evergreen narenciyede taç örtüsü mevsimde hızlı değişmediği için sabit alınır.
-- `nem_farki` uyarısı gerçek: kova yağıştan sonra dolu görünüyor, ERA5-Land toprak nemi daha kuru (18 mm fark). İkisi farklı modeldir; ölçümle karşılaştırılmalı. Plan ERA5 nemini otomatik uygulamaz.
-- Sezon tekrarı kovayı tarla kapasitesinde başlatır (varsayım). Bloklar yok → hesap bahçe düzeyinde.
-- Ağaç başına litre / damlatıcı süresi bu bahçede ancak ağaç sayısı beyan edilince görünür; mantık birim testlerde (`test_agac_basi_litre_ve_damlatici_suresi`) ve e2e'de sınanır.
+- Katalog ön değerleri, **mühendis onayı yok** (`KURAL-DURUMU.md`). Tetik oranı (0,8) da ön değerdir; mühendis değiştirebilir ama 0,8'in altına katalog izin vermez.
+- Taç örtüsü NDVI'ı 21 gün eski (9 Eki).
+- **İki yağış serisi** (Hava sekmesi 138 mm / Su ve plan 91 mm, son 7 gün) hâlâ ayrı: bkz. [sulama-plani-jlnnlk-ekim.md](sulama-plani-jlnnlk-ekim.md) §2.
+- Bloklar yok → hesap bahçe düzeyinde.
