@@ -2,7 +2,7 @@
 # TÜM DEĞERLER "doğrulanmadı" (ön değer): uygulamada "ön değer – ziraat mühendisi onayı bekleniyor" rozetiyle gösterilir.
 # Bir değer mühendis tarafından onaylanınca ilgili bloğun `durum` alanı `muhendis_onayli` yapılır ve `onaylayan`/`onay_tarihi` eklenir.
 # Kod içinde tarım sabiti yoktur; bu dosya sürümlüdür (`surum`). Tarihler "AA-GG" biçimindedir; evre yıl sonunu aşabilir (12-15 → 02-15).
-surum: 1
+surum: 2
 sezon_baslangici: "10-01"   # su yılı (DSİ/MGM ile uyumlu); weather/rules.py ile aynı kural
 
 # Durum kademesi (v1): iç skor (0–100) yalnız kademeyi belirler, arayüze ÇIKMAZ. Aktif risk varken kademe en fazla «İzle» olur.
@@ -159,6 +159,68 @@ su:
   sicaklik_min_sahne: 8
   karisik_piksel_c: 1.5
   landsat_gecis_saati: 11
+
+# Sulama planı (ADR 0023): FAO-56 günlük su dengesi. Hepsi ön değer · mühendis onayı bekliyor
+sulama_plani:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor. Kc: FAO-56 Tablo 12 narenciye, yer örtüsüz, taç örtüsü %20/50/70 için başlangıç/orta/son
+    (0,50-0,45-0,55 · 0,65-0,60-0,65 · 0,70-0,65-0,70); aylık Kc evre ağırlıklarıyla (Oca-Şub başlangıç, Mar-May gelişme, Haz-Eyl orta, Eki-Ara son; Tablo 11 alt tropik);
+    taç örtüsü sınıflar arası doğrusal. Taç örtüsü uydu NDVI'sından (0,30→0,85). p = 0,5, kök 80 cm. Sistem verimi damla 0,90 · mini yağmurlama 0,80 · salma 0,55.
+    Yerel ölçümle uyarlanmamıştır; değerler FAO-56'dan aktarılırken mühendis teyit etmelidir.
+  kc_orten_siniflari: [20, 50, 70]
+  kc_tablo:
+    "20": [0.50, 0.45, 0.55]
+    "50": [0.65, 0.60, 0.65]
+    "70": [0.70, 0.65, 0.70]
+  kc_ay_agirliklari:
+    - [1, 0, 0]
+    - [1, 0, 0]
+    - [0.83, 0.17, 0]
+    - [0.5, 0.5, 0]
+    - [0.17, 0.83, 0]
+    - [0, 1, 0]
+    - [0, 1, 0]
+    - [0, 1, 0]
+    - [0, 1, 0]
+    - [0, 0.5, 0.5]
+    - [0, 0, 1]
+    - [0, 0, 1]
+  orten_ndvi_alt: 0.30
+  orten_ndvi_ust: 0.85
+  orten_ndvi_us: 1.0
+  tukenme_orani_p: 0.5
+  kok_derinligi_cm: 80
+  etkili_yagis_yontemi: esik
+  etkili_yagis_esik_mm: 2
+  etkili_yagis_oran: 0.8
+  sistem_verimi: {damla: 0.90, mini_yagmurlama: 0.80, salma: 0.55}
+  ilk_nem_sapma_uyari_mm: 15
+  agac_sayisi_tolerans: 0.15
+  en_az_sulama_mm: 10
+  planlama_gun: 10
+  sapma_bildirim_mm: 20
+  yaklasma_gun: 1
+  sezon_baslangic: "04-01"
+  sezon_bitis: "10-31"
+  projeksiyon_alt: 10
+  projeksiyon_ust: 90
+  gecmis_ilk_yil: 2015
+  gecmis_son_yil: 2025
+  # Kısıntılı sulama: yalnız onaylı dönemde; çiçeklenme–meyve tutumu ve hızlı meyve büyümesi KİLİTLİ. Oran ve risk ön değer · mühendis onayı bekliyor
+  kisitli_donemler:
+    - {kod: ciceklenme_tutum, ad: "Çiçeklenme ve meyve tutumu", baslangic: "03-15", bitis: "06-15", durum: kilitli, verim_riski: yuksek}
+    - {kod: hizli_meyve_buyumesi, ad: "Hızlı meyve büyümesi", baslangic: "06-16", bitis: "09-15", durum: kilitli, verim_riski: yuksek}
+    - {kod: olgunlasma, ad: "Olgunlaşma", baslangic: "09-16", bitis: "10-31", durum: onayli, oran: 0.75, verim_riski: dusuk}
+  tarife:
+    ad: "EPDK tarımsal sulama tarifesi"
+    kaynak_url: "https://www.epdk.gov.tr/Detay/Icerik/3-0-23/elektrik-faturalarina-esas-tarife-tablolari"
+    # Güncel birim fiyat bu oturumda doğrulanamadı; sayı UYDURULMAZ. Kullanıcı fatura fiyatını girer; doğrulanınca burada tarih + fiyat ile doldurulur.
+    gecerlilik_baslangic: null
+    gecerlilik_bitis: null
+    birim_fiyat_tl_kwh: null
+
+# Durum v2
 
 # Durum v2 (ADR 0018): her bileşen bahçenin KENDİ dönem normuna göre; ortanca/MAD sapması, yalnız aşağı yön ceza. Hepsi ön değer · v2
 durum_v2:

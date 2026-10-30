@@ -184,6 +184,72 @@ class SuKurali(KuralBlok):
     landsat_gecis_saati: int = 11  # yerel saat; hava sıcaklığı bu saatin ERA5 değeri
 
 
+class TarifeKurali(BaseModel):
+    """EPDK tarımsal sulama tarifesi girdisi. `birim_fiyat_tl_kwh` None ise tarife DOĞRULANMAMIŞTIR: arayüz sayı uydurmaz, kullanıcıdan fatura fiyatını ister."""
+
+    ad: str
+    kaynak_url: str
+    gecerlilik_baslangic: date | None = None
+    gecerlilik_bitis: date | None = None
+    birim_fiyat_tl_kwh: float | None = Field(default=None, ge=0)
+
+
+class KisitliSulamaDonemi(BaseModel):
+    kod: str
+    ad: str
+    baslangic: str  # "AA-GG"
+    bitis: str
+    durum: Literal["onayli", "kilitli"]  # onayli: kısıntı önerilebilir; kilitli: «bu dönemde önerilmez»
+    oran: float | None = Field(default=None, gt=0, le=1)  # onayli dönemde uygulanacak su payı (tam plana göre)
+    verim_riski: Literal["dusuk", "orta", "yuksek"]
+
+
+class SulamaPlaniKurali(KuralBlok):
+    """Sulama planı (ADR 0023): FAO-56 günlük su dengesi katsayıları. Hepsi ön değer · mühendis onayı bekliyor."""
+
+    # FAO-56 Tablo 12, narenciye, yer örtüsüz: taç örtüsü sınıfı (%) → Kc [ini, mid, end]
+    kc_orten_siniflari: list[float] = [20.0, 50.0, 70.0]
+    kc_tablo: dict[str, tuple[float, float, float]] = {"20": (0.50, 0.45, 0.55), "50": (0.65, 0.60, 0.65), "70": (0.70, 0.65, 0.70)}
+    # ay (1–12) → [ini, mid, end] ağırlığı; aylık Kc = Σ ağırlık × Kc[evre]
+    kc_ay_agirliklari: list[tuple[float, float, float]] = [
+        (1, 0, 0), (1, 0, 0), (0.83, 0.17, 0), (0.5, 0.5, 0), (0.17, 0.83, 0), (0, 1, 0),
+        (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0.5, 0.5), (0, 0, 1), (0, 0, 1),
+    ]
+    # taç örtüsü (fCOVER) NDVI'dan: fc = ((NDVI − alt)/(üst − alt))^üs · 100 (Carlson & Ripley), sınırlar kırpılır
+    orten_ndvi_alt: float = 0.30
+    orten_ndvi_ust: float = 0.85
+    orten_ndvi_us: float = 1.0
+    tukenme_orani_p: float = Field(default=0.5, gt=0, lt=1)
+    kok_derinligi_cm: float = Field(default=80.0, gt=0)
+    etkili_yagis_yontemi: Literal["esik"] = "esik"  # günlük eşik + oran; başka yöntem eklenirse katalog sürümü artar
+    etkili_yagis_esik_mm: float = Field(default=2.0, ge=0)  # günlük bunun altı sayılmaz
+    etkili_yagis_oran: float = Field(default=0.8, gt=0, le=1)  # üstü bu oranda kök bölgesine girer (yüzey akışı/derine sızma payı)
+    # sistem verimi (net/brüt)
+    sistem_verimi: dict[str, float] = {"damla": 0.90, "mini_yagmurlama": 0.80, "salma": 0.55}
+    ilk_nem_sapma_uyari_mm: float = Field(default=15.0, gt=0)  # uydu/ERA5 nemi ile kova arasındaki fark bunu aşarsa uyarı
+    agac_sayisi_tolerans: float = Field(default=0.15, gt=0, lt=1)  # beyan ile alan/aralık beklentisi arası göreli fark
+    en_az_sulama_mm: float = Field(default=10.0, gt=0)  # brüt değil net; bundan az eksiğe sulama önerilmez
+    planlama_gun: int = Field(default=10, ge=7, le=14)
+    sapma_bildirim_mm: float = Field(default=20.0, gt=0)  # uygulanan − planlanan (son 14 gün) bunu aşarsa «plandan ciddi sapma»
+    yaklasma_gun: int = Field(default=1, ge=0, le=3)  # «sulama günü yaklaştı» kaç gün önce
+    sezon_baslangic: str = "04-01"
+    sezon_bitis: str = "10-31"
+    projeksiyon_alt: float = 10.0
+    projeksiyon_ust: float = 90.0
+    gecmis_ilk_yil: int = 2015
+    gecmis_son_yil: int = 2025
+    kisitli_donemler: list[KisitliSulamaDonemi] = []
+    tarife: TarifeKurali
+
+    @model_validator(mode="after")
+    def _tablo(self) -> SulamaPlaniKurali:
+        if set(self.kc_tablo) != {str(int(c)) for c in self.kc_orten_siniflari}:
+            raise ValueError("Kc tablosu taç örtüsü sınıflarıyla aynı olmalı.")
+        if len(self.kc_ay_agirliklari) != 12 or any(abs(sum(w) - 1) > 1e-6 for w in self.kc_ay_agirliklari):
+            raise ValueError("Kc ay ağırlıkları 12 ay ve her ay toplamı 1 olmalı.")
+        return self
+
+
 class DurumV2Kurali(KuralBlok):
     """Durum v2 (ADR 0018): bileşen ağırlıkları, bahçenin KENDİ dönem normuna göre ceza eşikleri ve kademe sınırları. Hepsi «ön değer · v2»."""
 
@@ -346,6 +412,7 @@ class Katalog(BaseModel):
     radar: RadarKurali
     gorsel: GorselKurali
     su: SuKurali
+    sulama_plani: SulamaPlaniKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali
