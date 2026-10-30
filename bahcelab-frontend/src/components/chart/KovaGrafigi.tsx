@@ -70,7 +70,7 @@ export function KovaGrafigi({ gunler, tawMm, rawMm, bugun, genislik, yukseklik =
         {bugunI >= 0 && (
           <g data-testid="kova-bugun"><line x1={X(bugunI)} x2={X(bugunI)} y1={ust - 4} y2={ust + ih} stroke="var(--color-app-text-muted)" strokeDasharray="2 3" /><DirectLabel x={X(bugunI)} y={ust - 7} anchor="middle" tone="soluk">bugün</DirectLabel></g>
         )}
-        {son && <DirectLabel x={Math.min(son[0] + 8, genislik - 2)} y={son[1] + 4} bold tone="metin">{fmt(tawMm - (gunler.filter((g) => !g.veri_eksik).slice(-1)[0]?.tukenme_mm ?? 0), 0)}</DirectLabel>}
+        {son && Math.abs(son[1] - Y(esik)) > 16 && <DirectLabel x={Math.min(son[0] + 8, genislik - 2)} y={son[1] + 4} bold tone="metin">{fmt(tawMm - (gunler.filter((g) => !g.veri_eksik).slice(-1)[0]?.tukenme_mm ?? 0), 0)}</DirectLabel>}
         {[0, Math.floor(n / 2), n - 1].map((i) => <text key={i} x={X(i)} y={yukseklik - 8} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">{trGun(gunler[i].tarih)}</text>)}
         {idx >= 0 && <line x1={X(idx)} x2={X(idx)} y1={ust - 4} y2={ust + ih + 2} stroke="var(--color-app-text)" pointerEvents="none" data-testid="grafik-imlec" />}
         <rect x={sol} y={0} width={iw} height={yukseklik} fill="transparent" onPointerMove={oyna} onPointerLeave={() => setImlec(null)} />
