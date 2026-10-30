@@ -156,3 +156,55 @@ async def test_scenarios_habit_needs_drip_info_and_tree_count(user_client, facto
 async def test_scenarios_without_profile(user_client, factory):
     gid = await seed(user_client, factory)
     assert (await user_client.get(f"/gardens/{gid}/sulama-senaryolar")).json()["durum"] == "profil_yok"
+
+
+async def add_ndvi_series(factory, gid: uuid.UUID, days: list, ndvi: float = 0.7) -> None:
+    async with factory() as session:
+        for d in days:
+            aid = uuid.uuid4()
+            await session.execute(text("INSERT INTO acquisitions (id, garden_id, source_id, scene_id, tarih, durum) VALUES (:i, :g, 'sentinel2-l2a', :s, :d, 'net')"), {"i": aid, "g": gid, "s": f"S2_{aid}", "d": d})
+            await session.execute(
+                text("INSERT INTO acquisition_stats (acquisition_id, indeks, ortalama, medyan, p10, p25, p75, p90, minimum, maksimum, gecerli_piksel) VALUES (:i, 'ndvi', :v, :v, :v, :v, :v, :v, :v, :v, 100)"), {"i": aid, "v": ndvi}
+            )
+        await session.commit()
+
+
+async def test_su_sekmesi_ve_plan_ayni_kovadan_beslenir_ve_celismez(user_client, factory):
+    """Tutarlılık güvencesi: (1) iki ekranın kova satırları AYNI; (2) plan yalnız tükenme RAW'a yaklaşınca sulama önerir; (3) Su kararı «sulama» ⇔ plan 7 gün içinde sulama öneriyor."""
+    from bahcelab_backend.domain.irrigation.service import IrrigationService
+    from bahcelab_backend.domain.water.service import WaterService
+
+    gid = await seed(user_client, factory)
+    sweep = [TODAY - timedelta(days=k) for k in range(0, 700, 6)]
+    await add_ndvi_series(factory, gid, [TODAY - timedelta(days=k) for k in range(0, 760, 20)])
+    async with factory() as session:  # kışları yağışlı, yazları kuru: hem «gerekmiyor» hem «sulama» günleri çıksın
+        from bahcelab_backend.domain.water.era5_sync import garden_cell
+
+        cell, _, _ = await garden_cell(session, gid)
+        await session.execute(text("UPDATE era5_daily SET yagis_mm = 30 WHERE cell_id = :c AND EXTRACT(MONTH FROM tarih) IN (10,11,12,1,2,3) AND EXTRACT(DOY FROM tarih)::int % 4 = 0"), {"c": cell})
+        await session.commit()
+    await user_client.put(f"/gardens/{gid}/sulama-profili", json=PROFIL)
+    async with factory() as session:
+        ws = (await session.execute(text("SELECT workspace_id FROM gardens WHERE id = :g"), {"g": gid})).scalar_one()
+        planli = karar_sulama = 0
+        for d in sweep:
+            plan = await IrrigationService(session, ws, d).plan(gid, hafif=True)
+            su = await WaterService(session, ws).su(gid, d)
+            assert plan.durum == "hazir", (d, plan.neden)
+            tetik = 0.8 * plan.raw_mm
+            # (2) kova RAW'a yaklaşmadan sulama önerilmez (sık-az damla dahil)
+            for g in plan.gunler:
+                if g.planli_net_mm > 0:
+                    assert g.tukenme_mm + g.planli_net_mm >= tetik - 1e-6, (d, g.tarih, g.tukenme_mm)
+            # (1) aynı kova: bugünden ÖNCEKİ günler ve tükenme eşiği birebir
+            assert su.denge.taw_mm == pytest.approx(plan.taw_mm) and su.denge.tukenme_esigi_mm == pytest.approx(plan.raw_mm)
+            sugun = {x.tarih: x for x in su.denge.gunler}
+            for g in plan.gunler:
+                if g.tarih < d and g.tarih in sugun and not g.veri_eksik:
+                    assert sugun[g.tarih].tukenme_mm == pytest.approx(g.tukenme_mm), (d, g.tarih)
+            # (3) karar çelişmez
+            yakin = plan.sonraki is not None and 0 <= (plan.sonraki.tarih - d).days <= 7
+            assert (su.karar_detay.durum == "sulama") == yakin, (d, su.karar_detay.durum, plan.sonraki)
+            planli += yakin
+            karar_sulama += su.karar_detay.durum == "sulama"
+    assert planli >= 3 and planli < len(sweep)  # test boş değil: hem sulama önerilen hem önerilmeyen günler var

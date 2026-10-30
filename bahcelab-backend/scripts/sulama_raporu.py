@@ -18,6 +18,7 @@ from bahcelab_backend.database import async_session_factory
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.irrigation.models import IrrigationProfileModel
 from bahcelab_backend.domain.irrigation.service import IrrigationService
+from bahcelab_backend.domain.water.service import WaterService
 
 ORNEK = dict(sistem="damla", damlatici_sayisi=4, damlatici_debi_lh=4.0, sira_aralik_m=5.0, agac_aralik_m=4.0, pompa_kw=7.5, pompa_debi_m3h=40.0, enerji="sebeke")
 
@@ -43,13 +44,14 @@ async def main() -> None:
             await session.execute(text("UPDATE gardens SET agac_sayisi = :n WHERE id = :g"), {"n": a.agac, "g": gid})
             session.expire_all()
         plan = await svc.plan(gid)
+        su = await WaterService(session, g.workspace_id).su(gid)
         yillar = list(range(2015, 2026))
         sen = await svc.scenarios(gid, yil=2025, gunler=[0, 3], saat=4.0, hedef="salma", yatirim_tl=None)
         sezonlar = {}
         for y in (2021, 2023, 2025):  # sezon yağışı en düşük / en yüksek yıl ve geçen yıl
             r = await svc.season(gid, y)
             sezonlar[y] = {"toplam_m3": r.toplam_m3, "sulama_sayisi": r.sulama_sayisi, "yagis_mm": r.yagis_mm, "stres_gun": r.stres_gun, "gunler": [{"tarih": str(x.tarih), "brut_mm": x.brut_mm} for x in r.gunler if x.brut_mm > 0]}
-        out = {"sezonlar": sezonlar, "garden": g.ad, "alan_dekar": float(g.alan_dekar), "ornek_profil": bool(a.ornek_profil), "plan": json.loads(plan.model_dump_json(by_alias=True)), "senaryo": json.loads(sen.model_dump_json(by_alias=True)), "yillar": yillar}
+        out = {"su": {"karar": su.karar_detay.model_dump(mode="json"), "denge": [{"tarih": str(x.tarih), "tukenme_mm": x.tukenme_mm} for x in su.denge.gunler]}, "sezonlar": sezonlar, "garden": g.ad, "alan_dekar": float(g.alan_dekar), "ornek_profil": bool(a.ornek_profil), "plan": json.loads(plan.model_dump_json(by_alias=True)), "senaryo": json.loads(sen.model_dump_json(by_alias=True)), "yillar": yillar}
         print(json.dumps(out, ensure_ascii=False, default=str))
         await session.rollback()  # hiçbir şey kalıcı değil
 

@@ -213,3 +213,36 @@ def test_damlada_esik_alti_stres_olmaz():
 
 def test_katalog_sistem_programi_ve_verim_ayni_sistemler():
     assert set(RULE.sistem_programi) == set(RULE.sistem_verimi) == {"damla", "mini_yagmurlama", "salma"}
+
+
+def test_dolu_kova_kasimda_sulama_onermez_damla_dahil():
+    """jlnnlk 30 Ekim: yağıştan sonra kova dolu (Dr 0), Kasım ET0 ≈ 2 mm/gün → 10 günde ~14 mm tükenme; RAW 59, tetik 47: öneri yok."""
+    ds = [date(2026, 10, 31) + timedelta(days=i) for i in range(10)]
+    inp = [e.DayIn(d, 0.0, 2.0) for d in ds]
+    prog = RULE.sistem_programi["damla"]
+    pol = e.Policy(ds[0], min_net_mm=prog.en_az_net_mm, tetik_mm=prog.tetik_orani * 59.1, azami_net_mm=prog.azami_net_mm)
+    rows = e.run_bucket(inp, taw=118.2, raw=59.1, cover_pct=67, rule=RULE, efficiency=0.9, initial_dr=0.0, policy=pol)
+    assert all(x.planli_net_mm == 0 for x in rows) and rows[-1].tukenme_mm < 20
+
+
+def test_tetik_her_sistemde_alt_sinirin_ustunde_ve_ihlal_reddedilir():
+    import pytest as _p
+
+    from bahcelab_backend.domain.agro.catalog import SulamaPlaniKurali
+
+    assert all(p.tetik_orani >= RULE.tetik_alt_siniri for p in RULE.sistem_programi.values())
+    veri = RULE.model_dump()
+    veri["sistem_programi"]["damla"]["tetik_orani"] = 0.15  # eski hatalı değer
+    with _p.raises(ValueError, match="RAW'a yaklaşmadan sulama önerilmez"):
+        SulamaPlaniKurali.model_validate(veri)
+
+
+def test_damlada_her_sulama_tukenmeye_gore_tetiklenir():
+    ds = [date(2025, 7, 1) + timedelta(days=i) for i in range(60)]
+    inp = [e.DayIn(d, 0.0, 6.0) for d in ds]
+    prog = RULE.sistem_programi["damla"]
+    tetik = prog.tetik_orani * 60.0
+    rows = e.run_bucket(inp, taw=120.0, raw=60.0, cover_pct=60, rule=RULE, efficiency=0.9, initial_dr=0.0, policy=e.Policy(ds[0], min_net_mm=prog.en_az_net_mm, tetik_mm=tetik, azami_net_mm=prog.azami_net_mm))
+    planli = [x for x in rows if x.planli_net_mm > 0]
+    assert planli and all(x.tukenme_mm + x.planli_net_mm >= tetik - 1e-9 for x in planli)  # sulamadan önceki tükenme ≥ tetik
+    assert not any(x.stres for x in rows)

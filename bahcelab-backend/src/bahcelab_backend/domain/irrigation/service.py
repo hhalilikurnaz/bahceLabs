@@ -72,14 +72,14 @@ def _tarife(rule: cat.SulamaPlaniKurali, today: date) -> sc.TarifeBilgisi:
 
 
 class IrrigationService:
-    def __init__(self, session: AsyncSession, workspace_id: uuid.UUID) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: uuid.UUID, today: date | None = None) -> None:
+        self.today = today
         self.session = session
         self.workspace_id = workspace_id
         self.gardens = GardenRepository(session, workspace_id)
 
-    @staticmethod
-    def _today() -> date:
-        return datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).date()
+    def _today(self) -> date:
+        return self.today or datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).date()
 
     async def _garden(self, garden_id: uuid.UUID) -> Any:
         row = await self.gardens.get(garden_id)
@@ -119,11 +119,13 @@ class IrrigationService:
         return await self.profile(garden_id)
 
     # ------------------------------------------------------------------ bağlam
-    async def _ctx(self, garden_id: uuid.UUID) -> Ctx:
+    async def _ctx(self, garden_id: uuid.UUID, profil_gerekli: bool = True) -> Ctx:
         g = await self._garden(garden_id)
         p = await self._profile(garden_id)
         if p is None:
-            raise Veri("profil_yok")
+            if profil_gerekli:
+                raise Veri("profil_yok")
+            p = IrrigationProfileModel(garden_id=garden_id, sistem="damla", enerji="sebeke")  # kaydedilmeyen geçici: yalnız kova (Su sekmesi); sistem verimi/TL kullanılmaz
         rule = cat.load_catalog().sulama_plani
         su_rule = cat.load_catalog().su
         today = self._today()
@@ -210,8 +212,34 @@ class IrrigationService:
             net[d] = net.get(d, 0.0) + mm * c.eff
         return net, gross, len(rows), missing
 
+    # ------------------------------------------------------------------ ortak kova (Su sekmesi ve plan AYNI hesabı kullanır)
+    async def _pencere(self, c: Ctx, politika: bool) -> tuple[list[en.DayOut], list[en.DayIn], float, float | None, dict[date, float], dict[date, float], int, int, Any, list[wb.Climatology]]:
+        """Gerçek zamanlı pencere: son `gecmis_gun` gün + `planlama_gun` ileri. Başlangıç eksiği ERA5-Land kök bölgesi doluluğundan (SMAP değil: o yalnız doğrulama);
+        uygulanan sulama Saha Defteri kayıtlarından. `politika`: bugünden itibaren sulama önerisi eklenir."""
+        su_rule = cat.load_catalog().su
+        today = c.today
+        start = today - timedelta(days=su_rule.gecmis_gun)
+        window = [start + timedelta(days=i + 1) for i in range((today + timedelta(days=c.rule.planlama_gun) - start).days)]
+        clims = await WaterService(self.session, self.workspace_id).climatology(c.cell, su_rule, start)
+        fill_row = (await self.session.execute(text("SELECT sm0, sm1, sm2, sm3 FROM era5_daily WHERE cell_id = :c AND tarih = :d AND toprak_kaynak = 'era5_land'"), {"c": c.cell, "d": start})).first()
+        fill = wb.root_zone_fill(list(fill_row), clims, su_rule.kok_katman_agirliklari) if fill_row else None
+        initial = 0.5 * c.taw if fill is None else c.taw * (1 - fill / 100.0)
+        applied_net, applied_gross, n_records, missing = await self._applied(c, date(today.year, 1, 1))
+        inputs = self._days(c, window)
+        rows = en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=c.rule, efficiency=c.eff, initial_dr=initial, applied_net_mm=applied_net, policy=self._policy(c, today) if politika else None)
+        return rows, inputs, initial, fill, applied_net, applied_gross, n_records, missing, start, clims
+
+    async def kova(self, garden_id: uuid.UUID) -> tuple[list[en.DayOut], float, float] | None:
+        """Su sekmesi için politikasız kova (satırlar, TAW, RAW); plan kurulamıyorsa (toprak ya da taç örtüsü verisi yok) None."""
+        try:
+            c = await self._ctx(garden_id, profil_gerekli=False)
+        except Veri:
+            return None
+        rows = (await self._pencere(c, False))[0]
+        return rows, c.taw, c.raw
+
     # ------------------------------------------------------------------ plan
-    async def plan(self, garden_id: uuid.UUID) -> sc.PlanYaniti:
+    async def plan(self, garden_id: uuid.UUID, hafif: bool = False) -> sc.PlanYaniti:
         today = self._today()
         try:
             c = await self._ctx(garden_id)
@@ -220,16 +248,8 @@ class IrrigationService:
                 return sc.PlanYaniti(durum="profil_yok", neden="Sulama profili henüz kurulmadı.", bugun=today, katalog_surum=cat.load_catalog().surum)
             return sc.PlanYaniti(durum="veri_yok", neden=str(v), bugun=today, katalog_surum=cat.load_catalog().surum)
         rule, su_rule = c.rule, cat.load_catalog().su
-        start = today - timedelta(days=30)
-        window = [start + timedelta(days=i + 1) for i in range((today + timedelta(days=rule.planlama_gun) - start).days)]
+        rows, inputs, initial, fill, applied_net, applied_gross, n_records, missing, start, clims = await self._pencere(c, True)
         wsvc = WaterService(self.session, self.workspace_id)
-        clims = await wsvc.climatology(c.cell, su_rule, start)
-        fill_row = (await self.session.execute(text("SELECT sm0, sm1, sm2, sm3 FROM era5_daily WHERE cell_id = :c AND tarih = :d AND toprak_kaynak = 'era5_land'"), {"c": c.cell, "d": start})).first()
-        fill = wb.root_zone_fill(list(fill_row), clims, su_rule.kok_katman_agirliklari) if fill_row else None
-        initial = 0.5 * c.taw if fill is None else c.taw * (1 - fill / 100.0)
-        applied_net, applied_gross, n_records, missing = await self._applied(c, date(today.year, 1, 1))
-        inputs = self._days(c, window)
-        rows = en.run_bucket(inputs, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, applied_net_mm=applied_net, policy=self._policy(c, today))
         # plansız karşılaştırma: aynı pencere, uygulanan sulama olmadan her gün plan → sapma
         ref = en.run_bucket([x for x in inputs if x.tarih <= today], taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=c.eff, initial_dr=initial, policy=self._policy(c, start))
         last14 = today - timedelta(days=14)
@@ -244,14 +264,14 @@ class IrrigationService:
             uyarilar.append(sc.Uyari(kod="agac_sayisi_yok", mesaj="Ağaç sayısı beyan edilmediği için ağaç başına litre ve damlatıcı süresi gösterilmiyor."))
         if c.profile.sistem == "damla" and not (c.profile.damlatici_sayisi and c.profile.damlatici_debi_lh):
             uyarilar.append(sc.Uyari(kod="damlatici_yok", mesaj="Damlatıcı sayısı ve debisi girilmediği için süre hesaplanamıyor."))
-        now = next((x for x in rows if x.tarih == today), None)
-        if now is not None and fill is not None:
-            end_fill = wb.root_zone_fill(list(fill_row), clims, su_rule.kok_katman_agirliklari) if fill_row else None
-            latest = (await self.session.execute(text("SELECT sm0, sm1, sm2, sm3 FROM era5_daily WHERE cell_id = :c AND toprak_kaynak = 'era5_land' AND sm0 IS NOT NULL AND tarih <= :d ORDER BY tarih DESC LIMIT 1"), {"c": c.cell, "d": today})).first()
-            fill_now = wb.root_zone_fill(list(latest), await wsvc.climatology(c.cell, su_rule, today), su_rule.kok_katman_agirliklari) if latest else None
-            dr_obs = None if fill_now is None else c.taw * (1 - fill_now / 100.0)
-            if end_fill is not None and en.soil_check(now.tukenme_mm, dr_obs, rule.ilk_nem_sapma_uyari_mm):
-                uyarilar.append(sc.Uyari(kod="nem_farki", mesaj=f"Kova ({now.tukenme_mm:.0f} mm eksik) ile ERA5-Land toprak nemi ({dr_obs:.0f} mm eksik) arasında {abs(now.tukenme_mm - cast(float, dr_obs)):.0f} mm fark var; ölçümünüzle kontrol edin."))
+        # kova ↔ ERA5-Land: AYNI gün karşılaştırılır (Su sekmesindeki gözlem günü: sm0'ı olan son gün, model satırları dahil)
+        obs = (await self.session.execute(text("SELECT tarih, sm0, sm1, sm2, sm3 FROM era5_daily WHERE cell_id = :c AND sm0 IS NOT NULL AND tarih <= :d ORDER BY tarih DESC LIMIT 1"), {"c": c.cell, "d": today})).first()
+        if obs is not None:
+            at = next((x for x in rows if x.tarih == obs[0]), None)
+            fill_obs = wb.root_zone_fill(list(obs[1:]), await wsvc.climatology(c.cell, su_rule, obs[0]), su_rule.kok_katman_agirliklari)
+            dr_obs = None if fill_obs is None else c.taw * (1 - fill_obs / 100.0)
+            if at is not None and not at.veri_eksik and en.soil_check(at.tukenme_mm, dr_obs, rule.ilk_nem_sapma_uyari_mm):
+                uyarilar.append(sc.Uyari(kod="nem_farki", mesaj=f"{obs[0].day}.{obs[0].month}: kova ({at.tukenme_mm:.0f} mm eksik) ile ERA5-Land toprak nemi ({cast(float, dr_obs):.0f} mm eksik) arasında {abs(at.tukenme_mm - cast(float, dr_obs)):.0f} mm fark var; ölçümünüzle kontrol edin."))
         if missing:
             uyarilar.append(sc.Uyari(kod="miktarsiz_kayit", mesaj=f"{missing} sulama kaydında süre ya da m³ yok; bu kayıtlar su dengesine eklenmedi."))
         if prof.profil is not None and prof.fiyat_kaynagi == "yok" and prof.profil.enerji == "sebeke":
@@ -266,7 +286,7 @@ class IrrigationService:
         week_m3 = sum(s.m3_bahce for s in sul if s.tarih < today + timedelta(days=7))
         # sezon projeksiyonu: geçmiş yılların GERÇEK havasıyla aynı plan; tek sayı değil aralık
         ci = _cost_input(c.profile, rule)
-        years = [y for y in range(rule.gecmis_ilk_yil, rule.gecmis_son_yil + 1) if len(c.weather) and any(d.year == y for d in c.weather)]
+        years = [] if hafif else [y for y in range(rule.gecmis_ilk_yil, rule.gecmis_son_yil + 1) if any(d.year == y for d in c.weather)]
         m3s, tls = [], []
         for y in years:
             t = self._total(c, self.season_run(c, y), ci)
@@ -277,8 +297,8 @@ class IrrigationService:
         rt = en.percentile_range(tls, rule.projeksiyon_alt, rule.projeksiyon_ust) if len(tls) == len(m3s) else None
         proj = sc.SezonProjeksiyon(yil_sayisi=len(years), ilk_yil=rule.gecmis_ilk_yil, son_yil=rule.gecmis_son_yil, m3=None if r3 is None else sc.Aralik(alt=r3[0], orta=r3[1], ust=r3[2]), tl=None if rt is None else sc.Aralik(alt=rt[0], orta=rt[1], ust=rt[2]), alt_yuzde=rule.projeksiyon_alt, ust_yuzde=rule.projeksiyon_ust)
         # aylık çubuklar: bu yıl (plan; uygulanan kayıtlar) ve geçen yıl planı
-        this_year = self.season_run(c, today.year)
-        last_year = self.season_run(c, today.year - 1) if any(d.year == today.year - 1 for d in c.weather) else []
+        this_year = [] if hafif else self.season_run(c, today.year)
+        last_year = [] if hafif or not any(d.year == today.year - 1 for d in c.weather) else self.season_run(c, today.year - 1)
         def monthly(rs: list[en.DayOut]) -> dict[int, float]:
             o: dict[int, float] = {}
             for x in rs:

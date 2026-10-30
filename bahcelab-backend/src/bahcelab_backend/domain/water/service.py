@@ -76,6 +76,7 @@ def soil_value(soil: dict[str, Any] | None, key: str) -> Any:
 class WaterService:
     def __init__(self, session: AsyncSession, workspace_id: uuid.UUID, soil_client: httpx.AsyncClient | None = None) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.gardens = GardenRepository(session, workspace_id)
         self.soil_client = soil_client
 
@@ -161,9 +162,28 @@ class WaterService:
         if soil is not None and soil["tarla_kapasitesi"] is not None and soil["solma_noktasi"] is not None:
             taw = available_water_mm(float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"]), rule.kok_derinligi_cm)
         balance = await self._balance(garden_id, cell, rows, taw, today, start, rule)
+        # Sulama planıyla AYNI kova: plan kurulabiliyorsa gün tablosu motordan gelir (Kc taç örtüsüne göre, etkili yağış katalogdan, uygulanan sulama kayıtları); kurulamıyorsa eski hesap
+        from bahcelab_backend.domain.irrigation.service import IrrigationService
+
+        isvc = IrrigationService(self.session, self.workspace_id, today)
+        shared = await isvc.kova(garden_id) if taw else None
+        if shared is not None:
+            rows_e, taw, raw_e = shared
+            cum = 0.0
+            days_e: list[wb.DayBalance] = []
+            for x in rows_e:
+                if x.tarih > today + timedelta(days=rule.tahmin_gun):
+                    continue
+                cum += 0.0 if x.veri_eksik else x.etkili_yagis_mm - x.etc_mm
+                days_e.append(wb.DayBalance(x.tarih, x.yagis_mm, x.etc_mm, x.etkili_yagis_mm, x.tukenme_mm, taw - x.tukenme_mm, cum, x.tahmin, x.veri_eksik))
+            balance = (days_e, balance[1], balance[2], balance[3])
         forecast = [b for b in balance[0] if b.tarih > today]  # önümüzdeki `tahmin_gun` gün
         now = next((b for b in balance[0] if b.tarih == today), None)
         decision = wb.irrigation_decision(profile.kok_bolgesi_doluluk, profile.bugun_tarihi, forecast, now, taw, rule)
+        if shared is not None:
+            plan = await isvc.plan(garden_id, hafif=True)
+            if plan.durum == "hazir":
+                decision = wb.reconcile_with_plan(decision, plan.sonraki.tarih if plan.sonraki else None, today, rule.tahmin_gun)
         thermal = await self._thermal(garden_id, cell, rule)
 
         last_thermal = thermal.noktalar[-1].tarih if thermal.noktalar else None
@@ -173,9 +193,9 @@ class WaterService:
             on_deger=True,
             profil=profile,
             denge=SuDengesi(
-                taw_mm=taw, tukenme_esigi_mm=None if taw is None else rule.tukenme_orani * taw, gunler=[self._day(b, balance[1].get(b.tarih, "yok")) for b in balance[0]],
+                taw_mm=taw, tukenme_esigi_mm=None if taw is None else (raw_e if shared is not None else rule.tukenme_orani * taw), gunler=[self._day(b, balance[1].get(b.tarih, "yok")) for b in balance[0]],
                 yagis_kaynagi=cast(Literal["era5", "imerg"], balance[2]), yagis_karari=balance[3],
-                kc_notu=f"Kc = NDVI'dan doğrusal ({rule.kc_alt}–{rule.kc_ust}); ETc = Kc × ET0 · ön değer · mühendis onayı bekliyor",
+                kc_notu=("Kc = FAO-56 Tablo 12'den taç örtüsüne göre (sulama planıyla aynı kova); ETc = Kc × ET0 · ön değer · mühendis onayı bekliyor" if shared is not None else f"Kc = NDVI'dan doğrusal ({rule.kc_alt}–{rule.kc_ust}); ETc = Kc × ET0 · ön değer · mühendis onayı bekliyor"),
             ),
             sicaklik=thermal,
             toprak=ToprakOzeti(

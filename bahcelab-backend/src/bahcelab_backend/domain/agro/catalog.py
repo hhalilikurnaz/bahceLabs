@@ -237,6 +237,7 @@ class SulamaPlaniKurali(KuralBlok):
     ilk_nem_sapma_uyari_mm: float = Field(default=15.0, gt=0)  # uydu/ERA5 nemi ile kova arasındaki fark bunu aşarsa uyarı
     agac_sayisi_tolerans: float = Field(default=0.15, gt=0, lt=1)  # beyan ile alan/aralık beklentisi arası göreli fark
     sistem_programi: dict[str, SistemProgrami]
+    tetik_alt_siniri: float = Field(default=0.8, gt=0, le=1)  # kova RAW'a bu orandan önce sulama ÖNERİLMEZ (sık-az damla dahil)
     planlama_gun: int = Field(default=10, ge=7, le=14)
     sapma_bildirim_mm: float = Field(default=20.0, gt=0)  # uygulanan − planlanan (son 14 gün) bunu aşarsa «plandan ciddi sapma»
     yaklasma_gun: int = Field(default=1, ge=0, le=3)  # «sulama günü yaklaştı» kaç gün önce
@@ -253,6 +254,9 @@ class SulamaPlaniKurali(KuralBlok):
     def _tablo(self) -> SulamaPlaniKurali:
         if set(self.kc_tablo) != {str(int(c)) for c in self.kc_orten_siniflari}:
             raise ValueError("Kc tablosu taç örtüsü sınıflarıyla aynı olmalı.")
+        for ad, prog in self.sistem_programi.items():
+            if prog.tetik_orani < self.tetik_alt_siniri:
+                raise ValueError(f"{ad}: tetik oranı {prog.tetik_orani}, alt sınır {self.tetik_alt_siniri}'in altında (kova RAW'a yaklaşmadan sulama önerilmez).")
         if set(self.sistem_programi) != set(self.sistem_verimi):
             raise ValueError("Sistem programı ve sistem verimi aynı sistemleri içermeli.")
         if len(self.kc_ay_agirliklari) != 12 or any(abs(sum(w) - 1) > 1e-6 for w in self.kc_ay_agirliklari):

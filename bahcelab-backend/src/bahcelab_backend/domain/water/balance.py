@@ -175,6 +175,24 @@ def irrigation_decision(fill: float | None, ref_day: date | None, forecast: list
     return IrrigationDecision("gerekmiyor", False, f"Kök bölgesi {base} orta nemde ({pct}); önümüzdeki {days} gün sulama gerekmiyor, durumu izleyin.", fill, donem, None)
 
 
+def reconcile_with_plan(decision: IrrigationDecision, next_irrigation: date | None, today: date, days: int) -> IrrigationDecision:
+    """Sulama planı kurulu bir bahçede TEK hakem plandır (Su sekmesi, Hava ve Durum aynı cümleyi verir; ikisi çelişemez).
+
+    Plan `days` gün içinde sulama öneriyorsa karar «sulama», önermiyorsa «sulama» olamaz (en fazla «izle»). Kova ikisinde de AYNI hesaptır;
+    fark yalnız eşiktedir (plan: sistem tetiği, durum cümlesi: RAW + mevsim normu).
+    """
+    if decision.durum == "veri_yok":
+        return decision
+    soon = next_irrigation is not None and 0 <= (next_irrigation - today).days <= days
+    base = f"{decision.donem} normaline göre" if decision.donem else "Normale göre"
+    pct = "" if decision.doluluk is None else f" %{round(decision.doluluk)} dolu"
+    if soon and decision.durum != "sulama":
+        return IrrigationDecision("sulama", True, f"Kök bölgesi {base}{pct}; kullanılabilir su sulama eşiğine yaklaştı, sulama planı {next_irrigation.day}.{next_irrigation.month:02d} için sulama öneriyor.", decision.doluluk, decision.donem, decision.ihtiyac_mm)  # type: ignore[union-attr]
+    if not soon and decision.durum == "sulama":
+        return IrrigationDecision("izle", False, f"Kök bölgesi {base}{pct}; sulama planı önümüzdeki {days} gün sulama önermiyor, durumu izleyin.", decision.doluluk, decision.donem, None)
+    return decision
+
+
 @dataclass(frozen=True)
 class ThermalNormal:
     """Bahçenin AYNI AY Landsat geçmişinde yüzey − hava farkının p25 / ortanca / p75 değeri."""
