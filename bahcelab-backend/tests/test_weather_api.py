@@ -320,3 +320,25 @@ def test_daily_point_dataclass_roundtrip():
     forecast = build_sample_forecast(datetime.now(ZoneInfo("Europe/Istanbul")))
     assert Forecast.model_validate(forecast.model_dump(mode="json")) == forecast
     assert isinstance(forecast.daily[0], DailyPoint)
+
+
+async def test_gecmis_yagis_su_sekmesiyle_ayni_seriden_gelir(user_client: AsyncClient, provider, test_engine):
+    """ADR 0025: Hava sekmesinin geçmiş yağışı `era5_daily` (Su/plan ile AYNI); `weather_daily` (arşiv) farklı olsa da etkisizdir."""
+    garden = await new_garden(user_client)
+    url = f"/gardens/{garden['id']}/weather"
+    await user_client.get(url)  # hücre + arşiv geçmişi (örnek sağlayıcı)
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
+    async with test_engine.begin() as conn:
+        cell = (await conn.execute(text("SELECT id FROM weather_cells WHERE ABS(enlem - :a) < 0.06 AND ABS(boylam - :b) < 0.06 ORDER BY ABS(enlem - :a) + ABS(boylam - :b) LIMIT 1"), {"a": LAT, "b": LNG})).scalar_one()
+        await conn.execute(text("UPDATE weather_daily SET yagis_mm = 50 WHERE cell_id = :c"), {"c": cell})  # arşiv: her gün 50 mm (ERA5'ten çok farklı)
+        for k in range(1, 40):
+            await conn.execute(
+                text("INSERT INTO era5_daily (cell_id, tarih, sm0, sm1, sm2, sm3, et0_mm, yagis_mm, toprak_kaynak, hava_kaynak) VALUES (:c, :d, .2, .2, .2, .2, 3.0, :y, 'era5_land', 'era5_land') ON CONFLICT DO NOTHING"),
+                {"c": cell, "d": today - timedelta(days=k), "y": 2.0},
+            )
+    data = (await user_client.get(url)).json()
+    son7 = next(t for t in data["yagis_toplamlari"] if t["etiket"] == "Son 7 gün")
+    assert son7["mm"] == pytest.approx(14.0)  # 7 gün × 2 mm (ERA5), arşivin 350 mm'si DEĞİL
+    assert data["yagis_kaynagi"].startswith("Yağış serisi: ERA5")
+    hist = (await user_client.get(f"{url}/history", params={"from": str(today - timedelta(days=5)), "to": str(today - timedelta(days=1))})).json()
+    assert {g["yagis_mm"] for g in hist["gunler"]} == {2.0} and hist["yagis_kaynagi"].startswith("Yağış serisi: ERA5")

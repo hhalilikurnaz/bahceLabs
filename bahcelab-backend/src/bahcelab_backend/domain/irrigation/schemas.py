@@ -415,6 +415,18 @@ class SimSayac(BaseModel):
     sulama_gunu: int
 
 
+class SimKisinti(BaseModel):
+    """Kısıntı HER ZAMAN su farkı + stres günü farkı + verim riskiyle birlikte (tasarruf tek başına gösterilmez)."""
+
+    tam: SimSayac
+    kisintili: SimSayac
+    fark_m3: float  # kısıntılı − tam (eksi = su tasarrufu)
+    fark_tl: float | None
+    fark_stres_gun: int  # kısıntılı − tam (artı = daha çok stres günü)
+    verim_riski: Literal["dusuk", "orta", "yuksek"] | None
+    cumle: str
+
+
 class SimYili(BaseModel):
     yil: int
     tip: Literal["kuru", "normal", "islak"] | None
@@ -437,6 +449,7 @@ class SimulasyonYaniti(BaseModel):
     aliskanlik: dict[str, object] | None = None  # {kaynak: kayit|elle, gunler, brut_mm, kayit_sayisi}
     aliskanlik_neden: str | None = None
     kisinti_uygulandi: bool = False
+    kisinti: SimKisinti | None = None
     kilitli_donemler: list[KilitliDonem] = []
     kaynaklar: list[Kaynak] = []
 

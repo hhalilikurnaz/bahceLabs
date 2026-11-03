@@ -138,7 +138,7 @@ async def test_scenarios_all_four_with_real_weather_and_locked_periods(user_clie
     k = body["kuru_islak"]
     assert len(k["yillar"]) >= 9 and k["secili"]["yil"] == y and k["fark_m3"] is not None
     d = body["kisinti"]
-    assert d["varsayilan_plan"] is False and d["uygulanabilir"] is True and d["tasarruf_m3"] >= 0 and d["verim_riski"] == "dusuk"
+    assert d["varsayilan_plan"] is False and d["uygulanabilir"] is True and d["tasarruf_m3"] >= 0 and d["verim_riski"] in ("dusuk", "orta", "yuksek")
     assert {x["kod"] for x in d["kilitli_donemler"]} == {"ciceklenme_tutum", "hizli_meyve_buyumesi"} and all(x["mesaj"] == "Bu dönemde önerilmez." for x in d["kilitli_donemler"])
     s = body["sistem"]
     assert s["hedef"] == "salma" and s["fark_m3"] > 0  # damla → salma daha fazla su (verim 0,55 < 0,90)

@@ -206,6 +206,8 @@ sulama_plani:
   ihtiyac_sari_min: 85
   yagis_vurgu_mm: 12
   vardiya_baslangic: "05:00"
+  kisinti_stres_orta_gun: 10
+  kisinti_stres_yuksek_gun: 30
   aliskanlik_min_kayit: 4
   guven_ndvi_taze_gun: 14
   guven_hava_taze_gun: 3

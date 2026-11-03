@@ -166,6 +166,15 @@ async def test_simulasyon_yillar_mod_sistem_kisinti(user_client, factory):
     assert salma["sayac"]["m3"] > s["sayac"]["m3"] and salma["sistem"] == "salma"
     ks = (await user_client.get(f"/gardens/{gid}/sulama-simulasyon", params={"kisinti": "true"})).json()
     assert ks["sayac"]["m3"] < s["sayac"]["m3"] and ks["kisinti_uygulandi"] is True and {d["kod"] for d in ks["kilitli_donemler"]} == {"ciceklenme_tutum", "hizli_meyve_buyumesi"}
+    k = ks["kisinti"]  # kısıntı: su farkı DAİMA stres günü farkı ve verim riskiyle birlikte
+    assert k["fark_m3"] < 0 and k["verim_riski"] in ("dusuk", "orta", "yuksek") and k["tam"]["m3"] == pytest.approx(s["sayac"]["m3"]) and k["kisintili"]["m3"] == pytest.approx(ks["sayac"]["m3"])
+    assert k["fark_stres_gun"] == k["kisintili"]["stres_gun"] - k["tam"]["stres_gun"]
+    assert "stres günü" in k["cumle"] and "verim riski: " in k["cumle"] and "az su" in k["cumle"]
+    from bahcelab_backend.domain.agro.catalog import load_catalog
+    from bahcelab_backend.domain.irrigation.engine import escalate_risk
+
+    assert k["verim_riski"] == escalate_risk("dusuk", k["fark_stres_gun"], load_catalog().sulama_plani)  # olgunlaşma dönemi riski «düşük»; stres artışı yükseltir
+    assert s["kisinti"] is None  # kısıntı kapalıyken karşılaştırma yok
     assert (await user_client.get(f"/gardens/{gid}/sulama-simulasyon", params={"sistem": "bilinmiyor"})).status_code == 422
     assert s["vardiyalar"] and all(v["kalemler"] for v in s["vardiyalar"])
 

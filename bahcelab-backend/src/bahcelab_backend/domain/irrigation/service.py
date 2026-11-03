@@ -21,6 +21,7 @@ from bahcelab_backend.domain.irrigation import schemas as sc
 from bahcelab_backend.domain.irrigation.models import IrrigationProfileModel
 from bahcelab_backend.domain.water import balance as wb
 from bahcelab_backend.domain.water.era5_sync import garden_cell
+from bahcelab_backend.domain.water.rain_series import gecmis_hava
 from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import TIMEZONE
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
@@ -91,6 +92,7 @@ def _tarife(rule: cat.SulamaPlaniKurali, today: date) -> sc.TarifeBilgisi:
 class IrrigationService:
     def __init__(self, session: AsyncSession, workspace_id: uuid.UUID, today: date | None = None) -> None:
         self.today = today
+        self._yagis_kaynak: str | None = None
         self.session = session
         self.workspace_id = workspace_id
         self.gardens = GardenRepository(session, workspace_id)
@@ -106,6 +108,10 @@ class IrrigationService:
 
     async def _profile(self, garden_id: uuid.UUID) -> IrrigationProfileModel | None:
         return await self.session.get(IrrigationProfileModel, garden_id)
+
+    def _kaynaklar(self) -> list[sc.Kaynak]:
+        """Kaynak satırı: yağış serisi HANGİSİ ise o yazılır (ADR 0025)."""
+        return [sc.Kaynak(ad=self._yagis_kaynak or "Yağış serisi: ERA5"), sc.Kaynak(ad="ET₀: ERA5 · FAO-56 Penman-Monteith", not_="günlük; önümüzdeki günler Open-Meteo tahmini"), *SOURCES[2:]]
 
     # ------------------------------------------------------------------ profil
     async def profile(self, garden_id: uuid.UUID) -> sc.ProfilYaniti:
@@ -169,22 +175,10 @@ class IrrigationService:
         return Ctx(g, p, rule, cell, today, taw, raw, cover, rule.sistem_verimi[p.sistem], area, g.agac_sayisi, weather, (float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"])), None if ndvi is None else ndvi[1])
 
     async def _weather(self, garden_id: uuid.UUID, cell: uuid.UUID, su_rule: cat.SuKurali, today: date) -> dict[date, tuple[float | None, float | None]]:
-        rows = (
-            await self.session.execute(
-                text("SELECT tarih, yagis_mm, et0_mm, hava_kaynak FROM era5_daily WHERE cell_id = :c AND tarih BETWEEN :s AND :e"),
-                {"c": cell, "s": date(su_rule.klima_ilk_yil, 1, 1), "e": today + timedelta(days=14)},
-            )
-        ).all()
-        imerg = {r[0]: float(r[1]) for r in (await self.session.execute(text("SELECT tarih, deger FROM dogrulama_gozlem WHERE garden_id = :g AND source_id = 'imerg-daily' AND deger IS NOT NULL"), {"g": garden_id})).all()}
-        era5 = {r[0]: float(r[1]) for r in rows if r[1] is not None and r[3] == "era5_land"}
-        source, _ = wb.choose_rain_source(wb.monthly_rain(era5, imerg, su_rule.kucuk_yagis_esigi_mm))
-        out: dict[date, tuple[float | None, float | None]] = {}
-        for d, rain, et0, _ in rows:
-            r = None if rain is None else float(rain)
-            if source == "imerg" and d < today and d in imerg:
-                r = imerg[d]
-            out[d] = (r, None if et0 is None else float(et0))
-        return out
+        """TEK seri (`rain_series`): Su sekmesi ve Hava sekmesiyle aynı yağış/ET₀."""
+        g = await gecmis_hava(self.session, garden_id, cell, today, su_rule)
+        self._yagis_kaynak = g.kaynak_metni()
+        return {d: (g.yagis[d], g.et0[d]) for d in g.yagis}
 
     def _days(self, c: Ctx, days: list[date]) -> list[en.DayIn]:
         return [en.DayIn(d, *c.weather.get(d, (None, None)), tahmin=d > c.today) for d in days if d in c.weather or d <= c.today]
@@ -346,7 +340,7 @@ class IrrigationService:
             sulamalar=sul, sonraki=sul[0] if sul else None, uyarilar=uyarilar, hafta_maliyet=_mal(en.cost(week_m3, ci)),
             planlanan_bugune_kadar_m3=sum(en.mm_to_m3(x.planli_brut_mm, c.area_m2) for x in this_year if x.tarih <= today) if this_year else None,
             uygulanan_sezon_m3=sum(en.mm_to_m3(g, c.area_m2) for g in applied_gross.values()) if n_records > 0 else None, uygulanan_kayit_sayisi=n_records,
-            sapma_mm=sapma, sapma_ciddi=sapma is not None and abs(sapma) > rule.sapma_bildirim_mm, projeksiyon=proj, aylik=aylik, kaynaklar=SOURCES, katalog_surum=cat.load_catalog().surum,
+            sapma_mm=sapma, sapma_ciddi=sapma is not None and abs(sapma) > rule.sapma_bildirim_mm, projeksiyon=proj, aylik=aylik, kaynaklar=self._kaynaklar(), katalog_surum=cat.load_catalog().surum,
         )
 
     # ------------------------------------------------------------------ sezon (animasyon ve kuru/ıslak yıl)
@@ -423,7 +417,7 @@ class IrrigationService:
         kisinti = sc.KisintiSonuc(
             yil=y, uygulanabilir=deficit_t is not None, tam=plan_t, kisintili=deficit_t,
             tasarruf_m3=None if deficit_t is None else plan_t.m3 - deficit_t.m3, tasarruf_tl=None if deficit_t is None or plan_t.tl is None or deficit_t.tl is None else plan_t.tl - deficit_t.tl,
-            verim_riski=cast(Any, risk), kilitli_donemler=locked, onayli_donemler=approved,
+            verim_riski=cast(Any, en.escalate_risk(risk, deficit_t.stres_gun - plan_t.stres_gun, rule) if deficit_t is not None else risk), kilitli_donemler=locked, onayli_donemler=approved,
             mesaj="Kısıntı yalnız katalogda onaylı dönemde (" + ", ".join(approved) + ") uygulanır; çiçeklenme–meyve tutumu ve hızlı meyve büyümesinde kilitlidir. Varsayılan plan değildir." if approved else "Katalogda onaylı kısıntı dönemi yok.",
         )
         # 4) sistem değişikliği
@@ -437,7 +431,7 @@ class IrrigationService:
                 fark_tl=None if saving is None else -saving, yatirim_tl=yatirim_tl, geri_odeme_sezon=pb.sezon,
                 not_="Aynı pompa ve basınç varsayılır (kWh yalnız m³ ile orantılı değişir); yatırım bedeli sizin girdiğiniz değerdir.",
             )
-        return sc.SenaryoYaniti(durum="hazir", neden=None, aliskanlik=habit, kuru_islak=dry, kisinti=kisinti, sistem=sistem, kaynaklar=SOURCES)
+        return sc.SenaryoYaniti(durum="hazir", neden=None, aliskanlik=habit, kuru_islak=dry, kisinti=kisinti, sistem=sistem, kaynaklar=self._kaynaklar())
 
     # ================================================================== sektörler (vana) · 9H-S4
     async def sektor_listesi(self, garden_id: uuid.UUID) -> sc.SektorlerYaniti:
@@ -737,6 +731,21 @@ class IrrigationService:
         if not plan_rows:
             return sc.SimulasyonYaniti(durum="veri_yok", neden=f"{y} için hava verisi yok.", yillar=yillar)
         plan_say = sayac(plan_rows, sum(r.planli_brut_mm for r in plan_rows))
+        kis = None
+        if kisinti:
+            tam_rows = self.season_run(c, y, oran=False, sistem=sistem)
+            tam = sayac(tam_rows, sum(r.planli_brut_mm for r in tam_rows))
+            dm3 = plan_say.m3 - tam.m3
+            dstres = plan_say.stres_gun - tam.stres_gun
+            temel = en.deficit_risk(rule, [r.tarih for r in plan_rows])
+            risk = en.escalate_risk(temel, dstres, rule)
+            dtl = None if plan_say.tl is None or tam.tl is None else plan_say.tl - tam.tl
+            risk_ad = {"dusuk": "düşük", "orta": "orta", "yuksek": "yüksek"}.get(risk or "", "")
+            cumle_k = (
+                f"Kısıntı {abs(dm3):.0f} m³ {'az' if dm3 <= 0 else 'fazla'} su{'' if dtl is None else f' ({abs(dtl):.0f} TL ' + ('az' if dtl <= 0 else 'fazla') + ')'} demek; "
+                f"stres günü {tam.stres_gun} → {plan_say.stres_gun} ({'değişmez' if dstres == 0 else f'{dstres:+d}'}); verim riski: {risk_ad or 'kısıntı bu yıl uygulanmadı (onaylı dönemde sulama yok)'}{' (dönem riski ' + {'dusuk': 'düşük', 'orta': 'orta', 'yuksek': 'yüksek'}[temel] + ', eklenen stres günü nedeniyle yükseldi)' if temel and risk != temel else ''}."
+            )
+            kis = sc.SimKisinti(tam=tam, kisintili=plan_say, fark_m3=dm3, fark_tl=dtl, fark_stres_gun=dstres, verim_riski=cast(Any, risk), cumle=cumle_k)
         # ---- alışkanlık: Saha Defteri'nden öğrenilir (≥ aliskanlik_min_kayit sulama günü), yoksa elle gün + süre
         _, gross, _, _ = await self._applied(c, date(2000, 1, 1))
         habit: dict[str, object] | None = None
@@ -785,5 +794,5 @@ class IrrigationService:
             durum="hazir", neden=None, yil=y, mod=cast(Any, mod if habit is not None or mod == "plan" else "plan"), sistem=cast(Any, sistem), yillar=yillar,
             gunler=[sc.SimGunu(tarih=r.tarih, yagis_mm=r.yagis_mm, et0_mm=r.et0_mm, sulama=(r.planli_net_mm > 0 or r.uygulanan_net_mm > 0)) for r in goster], sektorler=sektorler, vardiyalar=vardiyalar,
             sayac=hab_say if (mod == "aliskanlik" and hab_say is not None) else plan_say, karsilastirma=kars, karsilastirma_cumle=cumle, aliskanlik=habit, aliskanlik_neden=neden_h,
-            kisinti_uygulandi=kisinti, kilitli_donemler=kilit, kaynaklar=SOURCES,
+            kisinti_uygulandi=kisinti, kisinti=kis, kilitli_donemler=kilit, kaynaklar=self._kaynaklar(),
         )

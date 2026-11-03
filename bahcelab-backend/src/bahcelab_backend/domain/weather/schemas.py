@@ -105,6 +105,8 @@ class HavaYanit(BaseModel):
     su_dengesi: list[SuDengesi]
     yagis_toplamlari: list[YagisToplami]
     sezon_baslangici: date
+    # Geçmiş günlerin yağış/ET₀ serisi (Su sekmesi ve sulama planıyla AYNI, ADR 0025)
+    yagis_kaynagi: str | None = None
 
 
 class GecmisGun(BaseModel):
@@ -122,6 +124,7 @@ class GecmisYanit(BaseModel):
     guncelleme: datetime | None
     onbellekten: bool
     atif: str
+    yagis_kaynagi: str | None = None
 
 
 class IlaclamaAraligi(BaseModel):

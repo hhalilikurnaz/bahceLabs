@@ -250,6 +250,19 @@ def deficit_risk(rule: SulamaPlaniKurali, days: list[date]) -> str | None:
     return max(risks, key=lambda r: order[r]) if risks else None
 
 
+def escalate_risk(base: str | None, added_stress_days: int, rule: SulamaPlaniKurali) -> str | None:
+    """Kısıntının verim riski: dönemin katalog riski, kısıntının eklediği stres günü arttıkça yükselir (düşük riskli dönemde bile 30+ ek stres günü «yüksek»). Kısıntı uygulanmadıysa None."""
+    if base is None:
+        return None
+    order = ["dusuk", "orta", "yuksek"]
+    level = order.index(base)
+    if added_stress_days >= rule.kisinti_stres_yuksek_gun:
+        level = 2
+    elif added_stress_days >= rule.kisinti_stres_orta_gun:
+        level = max(level, 1)
+    return order[level]
+
+
 @dataclass(frozen=True)
 class SeasonTotal:
     brut_mm: float

@@ -259,3 +259,9 @@ def test_ks_eta_dp_ve_sistem_kaybi():
     # sistem kaybı: uygulanan net 20 mm, verim 0,8 → brüt 25, kayıp 5
     r = e.run_bucket([e.DayIn(date(2025, 7, 1), 0.0, 0.0)], initial_dr=30.0, applied_net_mm={date(2025, 7, 1): 20.0}, **kw)[0]
     assert r.kayip_mm == pytest.approx(5.0) and r.bosa_giden_mm == pytest.approx(5.0)
+
+
+def test_kisinti_verim_riski_eklenen_stres_gunuyle_yukselir():
+    assert e.escalate_risk("dusuk", 0, RULE) == "dusuk" and e.escalate_risk("dusuk", RULE.kisinti_stres_orta_gun, RULE) == "orta"
+    assert e.escalate_risk("dusuk", RULE.kisinti_stres_yuksek_gun, RULE) == "yuksek" and e.escalate_risk("orta", 3, RULE) == "orta"
+    assert e.escalate_risk("yuksek", 0, RULE) == "yuksek" and e.escalate_risk(None, 99, RULE) is None  # kısıntı uygulanmadıysa risk yok

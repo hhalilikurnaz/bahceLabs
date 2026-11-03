@@ -245,6 +245,9 @@ class SulamaPlaniKurali(KuralBlok):
     ihtiyac_sari_min: float = 85.0
     yagis_vurgu_mm: float = 12.0  # su dengesi grafiğinde bu yağış üstü ok ile işaretlenir
     vardiya_baslangic: str = "05:00"  # çizelge başlangıcı (profilde değiştirilebilir)
+    # Kısıntıda verim riski: dönemin katalog riski, kısıntının EKLEDİĞİ stres günü bu eşikleri aşarsa bir kademe (orta) ya da en yüksek kademeye (yüksek) çıkar
+    kisinti_stres_orta_gun: int = Field(default=10, ge=1)
+    kisinti_stres_yuksek_gun: int = Field(default=30, ge=1)
     aliskanlik_min_kayit: int = Field(default=4, ge=2)  # «Alışkanlığım» için Saha Defteri'nde en az bu kadar sulama kaydı
     # Güven etiketi: 5 koşuldan kaçı sağlanıyor → düşük / orta / yüksek (kural ADR 0024)
     guven_ndvi_taze_gun: int = Field(default=14, ge=1)
