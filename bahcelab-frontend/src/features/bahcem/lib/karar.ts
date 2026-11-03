@@ -201,3 +201,9 @@ export function suDengesiCumlesi(g: { etc: number; eta: number; sulama: number; 
 }
 
 export const GUVEN_AD = { dusuk: 'düşük', orta: 'orta', yuksek: 'yüksek' } as const
+
+/** Geçici (ERA5 kesinleşmemiş) son günler notu; 0 gün → null. */
+export function geciciNotu(gun: number): string | null {
+  if (gun <= 0) return null
+  return `Son ${gun} gün geçici: ERA5 henüz kesinleşmedi, kesinleşince plan yeniden hesaplanır.`
+}

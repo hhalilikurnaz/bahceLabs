@@ -65,6 +65,11 @@ export function seedWater(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_water', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 240_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
+/** Test aracı: son N günü (bugün dahil) «geçici» (ERA5 kesinleşmemiş) yapar; `kesinlestirMm` verilirse o günleri kesinleştirir ve yağışı yazar. */
+export function seedGecici(gardenId: string, n: number, kesinlestirMm?: number): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_gecici', gardenId, String(n), ...(kesinlestirMm !== undefined ? ['--kesinlestir', String(kesinlestirMm)] : [])], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 120_000 })
+}
+
 /** Test aracı: bahçeye taze olaylar (kritik don + önemli aşırı yağış) yazar; bildirimler karar katmanından geçer, günlük özet üretilir. */
 export function seedOlayOzet(gardenId: string): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_olay_ozet', gardenId], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })

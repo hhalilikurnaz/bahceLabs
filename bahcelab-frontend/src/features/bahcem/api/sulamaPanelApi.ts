@@ -21,6 +21,8 @@ export interface SektorGunu {
   uygulandi: boolean
   tahmin: boolean
   veri_eksik: boolean
+  gecici: boolean
+  yagis_olculdu: boolean
 }
 export interface SektorDurumu {
   id: string | null
@@ -89,6 +91,10 @@ export interface PanelYaniti {
   yagis_vurgu_mm: number
   katalog_surum: number
   onayli_tarih: string | null
+  gecici_gun: number
+  gecici_ilk: string | null
+  olculen_gun: number
+  yagis_yanlilik: { ay: string; gun: number; olculen_mm: number; seri_mm: number; oran: number | null; oneri: number | null; oneri_cumle: string | null }[]
 }
 export interface SimSayac {
   m3: number

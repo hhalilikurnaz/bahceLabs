@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useSulamaPlani } from '../../../api/sulamaApi'
-import { sulamaKarar } from '../../../lib/karar'
+import { geciciNotu, sulamaKarar } from '../../../lib/karar'
 import { sulamaPath } from '../../../lib/routes'
 import { IkincilKart } from '../parcalar'
 
@@ -15,6 +15,7 @@ export function SulamaKarti({ gardenId }: { gardenId: string }) {
         : (
           <>
             <p className="text-body font-semibold" data-testid="sulama-karti-karar">{sulamaKarar(p)}</p>
+            {p.durum === 'hazir' && (p.gecici_gun > 0 || p.olculen_gun > 0) && <p className="mt-1 text-caption text-app-text-muted" data-testid="sulama-karti-gecici">{geciciNotu(p.gecici_gun)}{p.olculen_gun > 0 ? ` ${p.olculen_gun} gün bahçede ölçüldü.` : ''}</p>}
             {p.durum === 'veri_yok' && p.neden && <p className="mt-1 text-small text-app-text-muted">{p.neden}</p>}
           </>
         )}

@@ -2,10 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/apiClient'
 
 /** Saha Defteri (ADR 0019): konumlu kayıtlar, «Uydu haklı mıydı?» doğrulaması, doğruluk özeti, saha turu. */
-export const KAYIT_TURLERI = ['gozlem', 'ilaclama', 'gubreleme', 'sulama', 'hasat', 'tuzak'] as const
+export const KAYIT_TURLERI = ['gozlem', 'ilaclama', 'gubreleme', 'sulama', 'hasat', 'tuzak', 'yagis'] as const
 export type KayitTuru = (typeof KAYIT_TURLERI)[number]
-export const KAYIT_TUR_AD: Record<KayitTuru, string> = { gozlem: 'Gözlem', ilaclama: 'İlaçlama', gubreleme: 'Gübreleme', sulama: 'Sulama', hasat: 'Hasat', tuzak: 'Tuzak' }
-export const KAYIT_TUR_ISARET: Record<KayitTuru, string> = { gozlem: '◉', ilaclama: '✚', gubreleme: '▲', sulama: '≈', hasat: '■', tuzak: '⌖' }
+export const KAYIT_TUR_AD: Record<KayitTuru, string> = { gozlem: 'Gözlem', ilaclama: 'İlaçlama', gubreleme: 'Gübreleme', sulama: 'Sulama', hasat: 'Hasat', tuzak: 'Tuzak', yagis: 'Yağış ölçümü' }
+export const KAYIT_TUR_ISARET: Record<KayitTuru, string> = { gozlem: '◉', ilaclama: '✚', gubreleme: '▲', sulama: '≈', hasat: '■', tuzak: '⌖', yagis: '∴' }
 
 export type Sonuc = 'gerceklesti' | 'gerceklesmedi' | 'bilinmiyor'
 export const SONUC_AD: Record<Sonuc, string> = { gerceklesti: 'Gerçekleşti', gerceklesmedi: 'Gerçekleşmedi', bilinmiyor: 'Bilinmiyor' }
@@ -32,7 +32,7 @@ export interface KayitGirdisi {
   konum: GeoJSON.Point | GeoJSON.Polygon | null
   aciklama: string | null
   /** Sulama kaydı: `sure_dk` (damlatıcı açık kalma süresi) ya da `m3`; sulama planının kovasına girer (ADR 0023) */
-  ayrinti?: { sure_dk?: number; m3?: number } | null
+  ayrinti?: { sure_dk?: number; m3?: number; sektor?: string; mm?: number } | null
 }
 /** Fotoğrafın EXIF'inden öneri (sunucuda okunur, saklanmaz): kullanıcı onaylamadan kayda yazılmaz. */
 export interface FotoOnerisi {

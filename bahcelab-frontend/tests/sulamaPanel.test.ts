@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SektorDurumu, SektorGunu } from '@/features/bahcem/api/sulamaPanelApi'
 import { suDengesi, vanaEtiketi } from '@/features/bahcem/lib/sulamaPanel'
 
-const g = (tarih: string, o: Partial<SektorGunu> = {}): SektorGunu => ({ tarih, doluluk_pct: 80, etc_mm: 4, eta_mm: 4, net_mm: 0, brut_mm: 0, yagis_mm: 0, etkili_yagis_mm: 0, bosa_mm: 0, ks: 1, planli: false, uygulandi: false, tahmin: false, veri_eksik: false, ...o })
+const g = (tarih: string, o: Partial<SektorGunu> = {}): SektorGunu => ({ tarih, doluluk_pct: 80, etc_mm: 4, eta_mm: 4, net_mm: 0, brut_mm: 0, yagis_mm: 0, etkili_yagis_mm: 0, bosa_mm: 0, ks: 1, planli: false, uygulandi: false, tahmin: false, veri_eksik: false, gecici: false, yagis_olculdu: false, ...o })
 const s = (ad: string, alan: number, gunler: SektorGunu[], o: Partial<SektorDurumu> = {}): SektorDurumu => ({ id: null, ad, alan_dekar: alan, agac_sayisi: null, agac_kaynak: 'yok', vana_debi_m3h: null, doluluk_pct: 92, etiket: 'yeterli', sonraki_sulama: '2026-07-22', esik_alti_7gun: false, gunler, ...o })
 
 describe('sulama paneli yardımcıları', () => {
@@ -16,6 +16,8 @@ describe('sulama paneli yardımcıları', () => {
     expect(o.gunler[1].yagis).toBeCloseTo(0.75 * 14)
     expect(o.toplam.karsilanmayan).toBeCloseTo(0.75 * 1)
     expect(suDengesi([], '2026-07-14').gunler).toEqual([])
+    const e = suDengesi([s('V1', 10, [g('2026-07-13', { gecici: true, yagis_olculdu: true }), g('2026-07-12')])], '2026-07-14')
+    expect(e.gunler.map((d) => [d.gecici, d.olculdu])).toEqual([[false, false], [true, true]]) // geçici ve «bahçede ölçüldü» işaretleri taşınır
   })
   it('vana etiketi: harita ve satır aynı metin', () => {
     expect(vanaEtiketi(s('V2', 10, []))).toEqual({ baslik: 'V2 · %92', alt: 'yeterli · sonraki 22 Tem' })

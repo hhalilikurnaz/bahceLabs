@@ -8,6 +8,8 @@ export interface DengeGunu {
   sulama: number
   yagis: number
   karsilanmayan: number
+  gecici: boolean
+  olculdu: boolean
 }
 export interface DengeOzeti {
   gunler: DengeGunu[]
@@ -24,6 +26,8 @@ export function suDengesi(sektorler: SektorDurumu[], bugun: string, gunSayisi = 
     let eta = 0
     let sulama = 0
     let yagis = 0
+    let gecici = false
+    let olculdu = false
     for (const s of sektorler) {
       const g = s.gunler.find((x) => x.tarih === t)
       if (!g || g.veri_eksik) continue
@@ -32,8 +36,10 @@ export function suDengesi(sektorler: SektorDurumu[], bugun: string, gunSayisi = 
       eta += w * (g.eta_mm ?? 0)
       sulama += w * (g.uygulandi ? g.net_mm : 0) // yalnız UYGULANAN: bugünkü planlı sulama henüz yapılmadı
       yagis += w * (g.yagis_mm ?? 0)
+      gecici ||= g.gecici
+      olculdu ||= g.yagis_olculdu
     }
-    return { tarih: t, etc, eta, sulama, yagis, karsilanmayan: Math.max(0, etc - eta) }
+    return { tarih: t, etc, eta, sulama, yagis, karsilanmayan: Math.max(0, etc - eta), gecici, olculdu }
   })
   const topla = (f: (g: DengeGunu) => number) => gunler.reduce((a, g) => a + f(g), 0)
   return { gunler, toplam: { etc: topla((g) => g.etc), eta: topla((g) => g.eta), sulama: topla((g) => g.sulama), yagmur: topla((g) => g.yagis), karsilanmayan: topla((g) => g.karsilanmayan) } }

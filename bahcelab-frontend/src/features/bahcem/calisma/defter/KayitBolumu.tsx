@@ -14,6 +14,7 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
   const [not, setNot] = useState('')
   const [sure, setSure] = useState('')
   const [m3, setM3] = useState('')
+  const [mm, setMm] = useState('')
   const [fotolar, setFotolar] = useState<File[]>([])
   const [oneri, setOneri] = useState<FotoOnerisi | null>(null)
   const eksikAlan = konum.mod === 'alan' && !konum.konum
@@ -22,11 +23,13 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
     const n = Number(t.trim().replace(',', '.'))
     return t.trim() !== '' && Number.isFinite(n) && n > 0 ? n : undefined
   }
-  const ayrinti = tur === 'sulama' && (sayiAl(sure) !== undefined || sayiAl(m3) !== undefined) ? { sure_dk: sayiAl(sure), m3: sayiAl(m3) } : undefined
+  const yagisMm = tur === 'yagis' ? sayiAl(mm) ?? (mm.trim() === '0' ? 0 : undefined) : undefined
+  const yagisGecersiz = tur === 'yagis' && (yagisMm === undefined || yagisMm > 500)
+  const ayrinti = tur === 'yagis' ? { mm: yagisMm } : tur === 'sulama' && (sayiAl(sure) !== undefined || sayiAl(m3) !== undefined) ? { sure_dk: sayiAl(sure), m3: sayiAl(m3) } : undefined
   const kaydet = () =>
     olustur.mutate(
       { girdi: { tur, tarih, konum: konum.konum, aciklama: not.trim() || null, ayrinti }, fotolar },
-      { onSuccess: () => (setNot(''), setSure(''), setM3(''), setFotolar([]), setOneri(null), konum.temizle()) },
+      { onSuccess: () => (setNot(''), setSure(''), setM3(''), setMm(''), setFotolar([]), setOneri(null), konum.temizle()) },
     )
   return (
     <form onSubmit={(e) => (e.preventDefault(), kaydet())} className="grid gap-2" aria-label="Yeni saha kaydı" data-testid="kayit-formu">
@@ -54,6 +57,12 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
           {konum.koseler.length < 3 ? `Alanın köşelerine dokunun (en az 3; şu an ${konum.koseler.length}).` : `${konum.koseler.length} köşe seçildi.`}{' '}
           {konum.koseler.length > 0 && <button type="button" onClick={konum.geriAl} className="font-semibold underline underline-offset-2">Son köşeyi geri al</button>}
         </p>
+      )}
+      {tur === 'yagis' && (
+        <div className="flex flex-wrap items-end gap-3" data-testid="yagis-olcumu">
+          <label className="grid text-caption font-semibold text-[var(--ink-3)]">Yağış (mm)<input inputMode="decimal" value={mm} onChange={(e) => setMm(e.target.value)} data-testid="yagis-mm" aria-invalid={mm.trim() !== '' && yagisGecersiz} className="mt-0.5 h-9 w-28 border border-[var(--rule-2)] bg-transparent px-2 text-[13px] max-[560px]:h-11" /></label>
+          <p className="basis-full text-caption text-[var(--ink-3)]">O gün için sulama planı bu değeri hava serisinden ÖNCE kullanır («bahçede ölçüldü»). Seri ile farkı ay ay biriktirilir; düzeltme önerilir, kendiliğinden uygulanmaz.</p>
+        </div>
       )}
       {tur === 'sulama' && (
         <div className="flex flex-wrap items-end gap-3" data-testid="sulama-miktar">
@@ -87,7 +96,7 @@ export function KayitFormu({ gardenId, konum }: { gardenId: string; konum: Konum
             if (secilen[0]) void fotoOner(gardenId, secilen[0]).then(setOneri).catch(() => setOneri(null))
           }} />
         </label>
-        <button type="submit" disabled={olustur.isPending || eksikAlan || eksikNokta} data-testid="kayit-kaydet" className="btn primary max-[560px]:!h-11">Kaydı ekle</button>
+        <button type="submit" disabled={olustur.isPending || eksikAlan || eksikNokta || yagisGecersiz} data-testid="kayit-kaydet" className="btn primary max-[560px]:!h-11">Kaydı ekle</button>
       </div>
       {olustur.isError && <p role="alert" className="text-small text-[var(--st-dikkat)]">Kaydedilemedi: {(olustur.error as Error).message}</p>}
     </form>

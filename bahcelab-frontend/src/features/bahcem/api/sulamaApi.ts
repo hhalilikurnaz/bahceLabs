@@ -102,6 +102,8 @@ export interface PlanYaniti {
   aylik: AyCubugu[]
   kaynaklar: { ad: string; not: string | null }[]
   katalog_surum: number
+  gecici_gun: number
+  olculen_gun: number
 }
 export interface SezonGunu {
   tarih: string

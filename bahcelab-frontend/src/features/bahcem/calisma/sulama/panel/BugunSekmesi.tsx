@@ -3,7 +3,7 @@ import { useToast } from '../../../components/layout/toastContext'
 import { describeError } from '../../../api/gardensApi'
 import { useSulamaIsle, useSulamaOnayla, type PanelYaniti, type Vardiya } from '../../../api/sulamaPanelApi'
 import { sayi } from '../../../lib/format'
-import { sureMetni } from '../../../lib/karar'
+import { geciciNotu, sureMetni } from '../../../lib/karar'
 import { vanaEtiketi } from '../../../lib/sulamaPanel'
 
 const GUN = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
@@ -47,6 +47,7 @@ export function BugunSekmesi({ gardenId, panel }: { gardenId: string; panel: Pan
           ))}
         </ol>
         <p className="mt-1 text-caption text-app-text-dim">Vana ortalaması % kullanılabilir su · yağış · sulama günü</p>
+        {geciciNotu(panel.gecici_gun) && <p className="mt-1 text-caption text-app-text-muted" data-testid="gecici-notu-bugun">{geciciNotu(panel.gecici_gun)}</p>}
       </section>
       <section className="rounded-md border border-app-border bg-app-card p-4" aria-label="Vanalar">
         <h3 className="text-lead font-semibold">{panel.sektor_tanimli ? 'Vanalar' : 'Bahçe'}</h3>

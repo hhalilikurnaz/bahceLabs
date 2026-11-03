@@ -7,7 +7,7 @@ import { useIlkCizim } from './useIlkCizim'
 
 export interface VanaSerisi {
   ad: string
-  gunler: { tarih: string; doluluk_pct: number | null; tahmin: boolean; planli: boolean; uygulandi: boolean }[]
+  gunler: { tarih: string; doluluk_pct: number | null; tahmin: boolean; planli: boolean; uygulandi: boolean; gecici?: boolean }[]
 }
 const trGun = (iso: string): string => `${Number(iso.slice(8, 10))} ${ayKisa(Number(iso.slice(5, 7)) - 1)}`
 const RENK = ['var(--color-app-text)', 'var(--color-app-water)', 'var(--color-app-accent-strong)', 'var(--color-app-warn)', 'var(--color-app-text-muted)', 'var(--color-app-success)']
@@ -29,6 +29,8 @@ export function ToprakSuyuGrafigi({ vanalar, bugun, genislik, yukseklik = 220, s
   const ilkTahmin = vanalar[0]?.gunler.findIndex((g) => g.tahmin) ?? -1
   const bx = ilkTahmin >= 0 ? X(Math.max(0, ilkTahmin - 0.5)) : 0
   const bugunI = tarihler.indexOf(bugun)
+  const geciciIlk = vanalar[0]?.gunler.findIndex((g) => g.gecici && !g.tahmin) ?? -1
+  const geciciSon = vanalar[0]?.gunler.reduce((a, g, i) => (g.gecici && !g.tahmin ? i : a), -1) ?? -1
   const idx = imlec ? tarihler.indexOf(imlec) : -1
   const oyna = (e: React.PointerEvent<SVGRectElement>) => {
     const p = localPoint(e)
@@ -49,6 +51,7 @@ export function ToprakSuyuGrafigi({ vanalar, bugun, genislik, yukseklik = 220, s
       <svg width={genislik} height={yukseklik} viewBox={`0 0 ${genislik} ${yukseklik}`} role="img" aria-label="Toprak suyu, kullanılabilir su yüzdesi, vanalara göre; son 14 gün düz çizgi, sonraki 7 gün kesikli" className="block overflow-visible">
         <rect x={sol} y={Y(stresPct)} width={iw} height={Y(0) - Y(stresPct)} fill="var(--color-app-warn)" opacity={0.14} data-testid="bant-stres" />
         <rect x={sol} y={Y(yeterliPct)} width={iw} height={Y(yakinPct) - Y(yeterliPct)} fill="var(--color-app-success)" opacity={0.14} data-testid="bant-ideal" />
+        {geciciIlk >= 0 && <g data-testid="gecici-bolge"><Forecast id="toprak-gecici" x={X(geciciIlk - 0.5)} y={ust - 4} width={Math.max(6, X(geciciSon + 0.5) - X(geciciIlk - 0.5))} height={ih + 8} etiket="geçici" /></g>}
         {ilkTahmin >= 0 && <Forecast id="toprak-tahmin" x={bx} y={ust - 4} width={sol + iw - bx} height={ih + 8} />}
         {[0, 50, 100].map((t) => (
           <g key={t}><line x1={sol} x2={sol + iw} y1={Y(t)} y2={Y(t)} stroke="var(--color-app-border)" /><text x={sol - 8} y={Y(t) + 4} textAnchor="end" fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">{t}</text></g>

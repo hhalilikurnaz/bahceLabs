@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, sulamaKarar, sulamaNeden, sulamaPanelKarar, sulamaSatiri, suDengesiCumlesi, sureMetni, suKarar, toprakSuyuCumlesi } from '@/features/bahcem/lib/karar'
+import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, geciciNotu, sulamaKarar, sulamaNeden, sulamaPanelKarar, sulamaSatiri, suDengesiCumlesi, sureMetni, suKarar, toprakSuyuCumlesi } from '@/features/bahcem/lib/karar'
 
 const BAND = { p25: 0.643, p50: 0.676, p75: 0.717, ceyrek_yeterli: true }
 
@@ -125,5 +125,12 @@ describe('sulama paneli cümleleri (9H-S4)', () => {
     expect(toprakSuyuCumlesi({ ...p(null), esik_alti_sektorler: ['V2'] })).toBe('En düşük vana V3 %62; 7 günde eşik altına inecek: V2; sulama gerekmiyor')
     expect(suDengesiCumlesi({ etc: 40, eta: 38, sulama: 41.2, yagmur: 63, karsilanmayan: 2.4 })).toBe("Son 14 günde ihtiyacın %95'i karşılandı: 41 mm sulama, 63 mm yağmur; karşılanmayan 2 mm")
     expect(suDengesiCumlesi({ etc: 0, eta: 0, sulama: 0, yagmur: 0, karsilanmayan: 0 })).toContain('hesaplanamadı')
+  })
+})
+
+describe('geçici gün notu', () => {
+  it('N gün → tek cümle; 0 → yok', () => {
+    expect(geciciNotu(5)).toBe('Son 5 gün geçici: ERA5 henüz kesinleşmedi, kesinleşince plan yeniden hesaplanır.')
+    expect(geciciNotu(0)).toBeNull()
   })
 })

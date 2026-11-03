@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedScenes, seedWater } from './yardimcilar'
+import { createGarden, newUser, seedGecici, seedScenes, seedWater } from './yardimcilar'
 
 /** Sulama paneli (9H-S4 dilim 1), GERÇEK arka uçla: ERA5 + toprak + uydu tohumlanır (tests/support); FAO-56 motoru, vanalar, panel ve simülasyon gerçek çalışır. */
 const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
@@ -204,4 +204,41 @@ test('mobil (390): panel alt sayfada, KPI yatay kaydırılır, sayfa taşmaz; si
   await page.keyboard.press('Escape')
   await expect(dlg).toBeHidden()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
+})
+
+test('geçici günler taralı ve notlu; bahçe yağış ölçümü seriden önce kullanılır, etiketlenir; yanlılık önerisi görünür; kesinleşince plan yeniden hesaplanır', async ({ page }) => {
+  const g = await kurulum(page, 'Sulama Gecici', 27.78, { agac: 1800 })
+  seedGecici(g.id, 5) // son 5 gün (bugün dahil) ERA5 kesinleşmemiş
+  // Saha Defteri: arayüzden «Yağış ölçümü (mm)» kaydı
+  await page.goto(`/bahceler/${g.id}/defter`)
+  await page.getByTestId('kayit-tur-yagis').click()
+  await expect(page.getByTestId('kayit-kaydet')).toBeDisabled() // mm girilmeden kaydedilmez
+  await page.getByTestId('yagis-mm').fill('21,5')
+  await page.getByTestId('kayit-tarih').fill(new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10))
+  await page.getByTestId('kayit-kaydet').click()
+  await expect(page.getByTestId('kayit-tur-yagis')).toBeVisible()
+  await page.goto(yol(g.id))
+  await expect(page.getByTestId('sulama-kpi')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('gecici-notu')).toContainText('Son 5 gün geçici')
+  await expect(page.getByTestId('gecici-notu-bugun')).toContainText('kesinleşince plan yeniden hesaplanır')
+  await expect(page.getByTestId('toprak-suyu-grafigi').getByTestId('gecici-bolge')).toBeVisible()
+  await expect(page.getByTestId('su-dengesi-grafigi').getByTestId('denge-gecici')).toBeVisible()
+  await expect(page.getByTestId('denge-olculdu')).toHaveCount(1) // «bahçede ölçüldü» işareti
+  await expect(page.getByTestId('olculdu-notu')).toContainText('bahçede ölçüldü')
+  await expect(page.getByTestId('sulama-kaynak')).toContainText('1 gün bahçede ölçüldü')
+  await expect(page.getByTestId('sulama-kaynak')).toContainText('son 5 gün geçici')
+  await expect(page.getByTestId('yagis-yanlilik')).toContainText('1 gün')
+  await expect(page.getByTestId('yagis-yanlilik')).toContainText('öneri için yeterli kanıt yok') // tek gün: öneri yok, otomatik uygulanmaz
+  // Su kartı da aynı notu verir
+  await page.goto(`/bahceler/${g.id}/su`)
+  await expect(page.getByTestId('sulama-karti-gecici')).toContainText('Son 5 gün geçici')
+  await expect(page.getByTestId('sulama-karti-gecici')).toContainText('1 gün bahçede ölçüldü')
+  // ERA5 kesinleşti (yağışlı geldi): geçici not kalkar, kova yeniden hesaplanır
+  seedGecici(g.id, 5, 40)
+  await page.goto(yol(g.id))
+  await expect(page.getByTestId('sulama-kpi')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('gecici-notu')).toHaveCount(0)
+  await expect(page.getByTestId('toprak-suyu-grafigi').getByTestId('gecici-bolge')).toHaveCount(0)
+  const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
+  expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })

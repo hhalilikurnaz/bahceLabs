@@ -6,7 +6,7 @@ import { useSulamaPanel, type PanelYaniti } from '../../../api/sulamaPanelApi'
 import { useSulamaProfili } from '../../../api/sulamaApi'
 import type { Garden } from '../../../api/types'
 import { useElementWidth } from '../../../hooks/useElementWidth'
-import { GUVEN_AD, sulamaNeden, sulamaPanelKarar, suDengesiCumlesi, toprakSuyuCumlesi } from '../../../lib/karar'
+import { GUVEN_AD, geciciNotu, sulamaNeden, sulamaPanelKarar, suDengesiCumlesi, toprakSuyuCumlesi } from '../../../lib/karar'
 import { gardenPath } from '../../../lib/routes'
 import { suDengesi } from '../../../lib/sulamaPanel'
 import { useCalismaStore } from '../../calismaStore'
@@ -31,6 +31,7 @@ function ToprakSuyuBlogu({ panel }: { panel: PanelYaniti }) {
         </TimeDomainProvider>
       </div>
       {cumle && <p className="mt-1 text-small text-app-text" data-testid="toprak-suyu-cumlesi">{cumle}</p>}
+      {geciciNotu(panel.gecici_gun) && <p className="mt-1 text-caption text-app-text-muted" data-testid="gecici-notu">{geciciNotu(panel.gecici_gun)}</p>}
     </ChartFrame>
   )
 }
@@ -42,6 +43,7 @@ function SuDengesiBlogu({ panel }: { panel: PanelYaniti }) {
     <ChartFrame mesaj="Su dengesi · son 14 gün" testId="su-dengesi-karti" ayrinti={<p>Vana ortalaması, mm/gün. Çerçeve bitki tüketimi ihtiyacı (ETc); koyu çubuk sulama, mavi çubuk yağmur ({panel.yagis_vurgu_mm} mm üstü okla), kırmızı karşılanmayan (stresle azalan tüketim).</p>}>
       <div ref={ref}>{o.gunler.length ? <SuDengesiGrafigi gunler={o.gunler} genislik={Math.max(280, w)} yagisVurguMm={panel.yagis_vurgu_mm} /> : <ChartState tur="yok" neden="Son 14 gün için hava verisi yok." yukseklik={120} />}</div>
       {o.gunler.length > 0 && <p className="mt-1 text-small text-app-text" data-testid="su-dengesi-cumlesi">{suDengesiCumlesi(o.toplam)}</p>}
+      {o.gunler.some((g) => g.olculdu) && <p className="mt-1 text-caption text-app-text-muted" data-testid="olculdu-notu">● işaretli günlerde yağış bahçede ölçüldü; kova bu değeri hava serisinden önce kullandı.</p>}
     </ChartFrame>
   )
 }
@@ -54,6 +56,14 @@ function KaynakSatiri({ panel }: { panel: PanelYaniti }) {
         <b className="text-app-text" data-testid="guven-etiketi" data-guven={g?.etiket ?? ''}>Güven: {g ? GUVEN_AD[g.etiket] : '—'}</b>
         {g ? ` (${g.puan}/${g.toplam})` : ''} · {panel.kaynaklar.map((k) => k.ad).join(' · ')} · katalog sürüm {panel.katalog_surum} · ön değer · mühendis onayı bekliyor
       </p>
+      {panel.yagis_yanlilik.length > 0 && (
+        <div className="mt-2" data-testid="yagis-yanlilik">
+          <p className="font-semibold text-app-text">Bahçe yağış ölçeri ↔ seri</p>
+          <ul className="list-disc pl-5">
+            {panel.yagis_yanlilik.map((a) => <li key={a.ay} data-testid="yanlilik-ay">{a.ay}: {a.gun} gün · ölçüm {Math.round(a.olculen_mm)} mm, seri {Math.round(a.seri_mm)} mm{a.oran != null ? ` (×${a.oran.toFixed(2).replace('.', ',')})` : ''}{a.oneri_cumle ? <b className="block text-app-text" data-testid="yanlilik-oneri"> {a.oneri_cumle}</b> : ' · öneri için yeterli kanıt yok'}</li>)}
+          </ul>
+        </div>
+      )}
       {g && (
         <details className="mt-1">
           <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-app-text">Güven nasıl hesaplandı?</summary>

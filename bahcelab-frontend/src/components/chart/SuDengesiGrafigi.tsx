@@ -1,9 +1,9 @@
 import { scaleLinear } from '@visx/scale'
-import { DirectLabel } from './parcalar'
+import { DirectLabel, Forecast } from './parcalar'
 import { ayKisa, fmt, niceTicks, YAZI } from './ekseller'
 import { useIlkCizim } from './useIlkCizim'
 
-export interface DengeGunuGrafik { tarih: string; etc: number; eta: number; sulama: number; yagis: number; karsilanmayan: number }
+export interface DengeGunuGrafik { tarih: string; etc: number; eta: number; sulama: number; yagis: number; karsilanmayan: number; gecici?: boolean; olculdu?: boolean }
 const trGun = (iso: string): string => `${Number(iso.slice(8, 10))} ${ayKisa(Number(iso.slice(5, 7)) - 1)}`
 
 /**
@@ -26,6 +26,10 @@ export function SuDengesiGrafigi({ gunler, genislik, yukseklik = 170, yagisVurgu
         <g key={t}><line x1={sol} x2={sol + iw} y1={Y(t)} y2={Y(t)} stroke="var(--color-app-border)" /><text x={sol - 8} y={Y(t) + 4} textAnchor="end" fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">{fmt(t, 0)}</text></g>
       ))}
       <text x={sol - 8} y={ust - 8} textAnchor="end" fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">mm</text>
+      {(() => {
+        const ilkG = gunler.findIndex((g) => g.gecici)
+        return ilkG >= 0 ? <g data-testid="denge-gecici"><Forecast id="denge-gecici-desen" x={sol + ilkG * w} y={ust - 2} width={(n - ilkG) * w} height={ih + 4} etiket="geçici" /></g> : null
+      })()}
       <g className={ilk ? 'm-draw-band' : undefined}>
         {gunler.map((g, i) => {
           const x = sol + i * w + (w - bw) / 2
@@ -36,11 +40,13 @@ export function SuDengesiGrafigi({ gunler, genislik, yukseklik = 170, yagisVurgu
               {g.karsilanmayan > 0.05 && <rect x={x} y={Y(g.etc)} width={bw} height={Math.max(1, Y(g.etc - g.karsilanmayan) - Y(g.etc))} fill="var(--color-app-danger)" opacity={0.85} data-testid="denge-karsilanmayan" />}
               {g.sulama > 0 && <rect x={x + bw * 0.25} y={Y(g.sulama)} width={bw * 0.5} height={Y(0) - Y(g.sulama)} fill="var(--color-app-text)" data-testid="denge-sulama" />}
               {g.yagis > 0 && <rect x={x} y={Y(Math.min(g.yagis, yagisVurguMm))} width={bw * 0.4} height={Y(0) - Y(Math.min(g.yagis, yagisVurguMm))} fill="var(--color-app-water)" data-testid="denge-yagmur" />}
+              {g.olculdu && <g data-testid="denge-olculdu"><circle cx={x + bw * 0.2} cy={Y(0) + 7} r={3} fill="var(--color-app-water)" /></g>}
               {ok && <g data-testid="denge-yagmur-oku"><path d={`M${x + bw * 0.2},${ust - 2} v-9 m-3,3 l3,-4 l3,4`} stroke="var(--color-app-water)" fill="none" strokeWidth={1.5} /><DirectLabel x={x + bw * 0.2} y={ust - 14} anchor="middle" tone="su">{fmt(g.yagis, 0)}</DirectLabel></g>}
             </g>
           )
         })}
       </g>
+      {gunler.some((g) => g.olculdu) && <DirectLabel x={sol + iw} y={ust - 6} anchor="end" tone="su">● bahçede ölçüldü</DirectLabel>}
       {[0, Math.floor(n / 2), n - 1].map((i) => gunler[i] && <text key={i} x={sol + i * w + w / 2} y={yukseklik - 8} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">{trGun(gunler[i].tarih)}</text>)}
     </svg>
   )
