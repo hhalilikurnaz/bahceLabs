@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createGarden, newUser, seedScenes, seedWater } from './yardimcilar'
 
@@ -36,6 +36,27 @@ test('9H-S4: Sulama paneli (Bugün, Simülasyon, vanalar, boş durum) — test t
       const el = page.getByTestId('sulama-paneli')
       await el.evaluate((n) => { n.scrollTop = 0 })
       await page.screenshot({ path: join(cikti, `${dosya}-${ad}.png`) })
+      if (width <= 560) {
+        // mobil: panel alt sayfada kırpılır → kaydırarak parça parça al (yapışkan başlık gizli); birleştirme: stitch.py (parçalar + json yazılır)
+        await page.addStyleTag({ content: '[data-testid="yapiskan-baslik"]{display:none!important}' })
+        const tutamak = page.getByTestId('alt-sayfa-tutamak')
+        if (await tutamak.count()) { await tutamak.focus(); await page.keyboard.press('ArrowUp'); await page.keyboard.press('ArrowUp'); await page.waitForTimeout(800) }
+        const { ch, sh } = await el.evaluate((n) => ({ ch: n.clientHeight, sh: n.scrollHeight }))
+        const box = (await el.boundingBox())!
+        const parts: { f: string; y: number }[] = []
+        for (let top = 0, k = 0; ; k++) {
+          const y = Math.min(top, sh - ch)
+          await el.evaluate((n, v) => { n.scrollTop = v }, y)
+          await page.waitForTimeout(350)
+          const f = join(cikti, `${dosya}-tam-${ad}-part${k}.png`)
+          await page.screenshot({ path: f, clip: { x: box.x, y: box.y, width: box.width, height: Math.min(ch, box.height) } })
+          parts.push({ f, y })
+          if (top + ch >= sh) break
+          top += ch - 40
+        }
+        writeFileSync(join(cikti, `${dosya}-tam-${ad}.json`), JSON.stringify({ parts, ch: Math.min(ch, box.height) }))
+        return
+      }
       const tam = await el.evaluate((n) => n.scrollHeight)
       await el.evaluate((n) => { n.style.height = `${n.scrollHeight}px`; n.style.overflow = 'visible' })
       await page.setViewportSize({ width, height: Math.min(6000, tam + 200) })

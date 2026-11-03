@@ -95,6 +95,7 @@ export interface Weather {
   guncelleme: string
   onbellekten: boolean
   atif: string
+  yagisKaynagi: string | null
   simdi: WeatherNow
   gunler: WeatherDay[]
   saatlik: WeatherHour[]
@@ -156,6 +157,7 @@ function mapWeather(d: ApiWeather): Weather {
     guncelleme: d.guncelleme,
     onbellekten: d.onbellekten,
     atif: d.atif,
+    yagisKaynagi: d.yagis_kaynagi ?? null,
     simdi: mapNow(d.simdi),
     gunler: d.gunler.map(
       (g): WeatherDay => ({

@@ -131,6 +131,7 @@ test('simülasyon: yıl düğmeleri (kuru/normal/ıslak), 4 sayaç, sistem ve k�
   await expect(sim.getByTestId('sim-kisinti-notu')).toContainText('Kilitli: Çiçeklenme ve meyve tutumu, Hızlı meyve büyümesi')
   await expect(sim.getByTestId('sim-kisinti-notu')).toContainText('Bu dönemde önerilmez')
   await expect.poll(m3, { timeout: 30_000 }).toBeLessThan(damla)
+  await expect(sim.getByTestId('sim-kisinti-ozet')).toContainText(/az su .*stres günü \d+ → \d+ .*verim riski: (düşük|orta|yüksek)/) // tasarruf tek başına gösterilmez
   await sim.getByTestId('sim-kisinti').uncheck()
   await sim.getByTestId('sim-kwh').fill('2,5')
   await expect(sim.getByTestId('sayac-tl')).toContainText('TL', { timeout: 30_000 })

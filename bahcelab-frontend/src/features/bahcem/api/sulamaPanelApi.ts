@@ -116,6 +116,7 @@ export interface SimulasyonYaniti {
   aliskanlik: { kaynak: 'kayit' | 'elle'; gunler: number[]; brut_mm: number; kayit_sayisi: number } | null
   aliskanlik_neden: string | null
   kisinti_uygulandi: boolean
+  kisinti: { tam: SimSayac; kisintili: SimSayac; fark_m3: number; fark_tl: number | null; fark_stres_gun: number; verim_riski: 'dusuk' | 'orta' | 'yuksek' | null; cumle: string } | null
   kilitli_donemler: { kod: string; ad: string; baslangic: string; bitis: string; mesaj: string }[]
   kaynaklar: { ad: string; not: string | null }[]
 }

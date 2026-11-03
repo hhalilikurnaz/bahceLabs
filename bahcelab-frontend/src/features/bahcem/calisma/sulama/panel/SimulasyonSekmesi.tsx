@@ -64,7 +64,8 @@ export function SimulasyonSekmesi({ gardenId, mevcutSistem }: { gardenId: string
         </div>
         {kisinti && (
           <p className="mt-2 rounded-md border border-app-border bg-app-canvas px-3 py-2 text-small" data-testid="sim-kisinti-notu">
-            Kısıntı yalnız onaylı dönemde uygulanır (olgunlaşma). Kilitli: {d.kilitli_donemler.map((k) => k.ad).join(', ')} — «Bu dönemde önerilmez». Tasarruf ile birlikte stres günü ve verim riski artar; varsayılan plan değildir.
+            Kısıntı yalnız onaylı dönemde uygulanır (olgunlaşma). Kilitli: {d.kilitli_donemler.map((k) => k.ad).join(', ')} — «Bu dönemde önerilmez». Varsayılan plan değildir.
+            {d.kisinti && <b className="mt-1 block" data-testid="sim-kisinti-ozet" data-risk={d.kisinti.verim_riski ?? ''}>{d.kisinti.cumle}</b>}
           </p>
         )}
         {mod === 'aliskanlik' && d.aliskanlik_neden && (

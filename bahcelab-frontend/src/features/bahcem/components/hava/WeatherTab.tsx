@@ -82,7 +82,7 @@ export function WeatherTab({ garden }: { garden: Garden }) {
       <Akordeonlar>
         <Akordeon baslik="Kaynak ve ayrıntı" ozet="Open-Meteo · saatler Europe/Istanbul">
           <div className="grid gap-3"><CurrentCard weather={data} /><WaterCard balances={data.suDengesi} totals={data.yagisToplamlari} /></div>
-          <p className="mt-3 text-caption text-app-text-dim" data-testid="weather-attribution"><Attribution text={data.atif} /> Tarımsal değerlendirmeler bilgi amaçlıdır.</p>
+          <p className="mt-3 text-caption text-app-text-dim" data-testid="weather-attribution"><Attribution text={data.atif} />{data.yagisKaynagi ? <span data-testid="yagis-kaynagi"> {data.yagisKaynagi}.</span> : null} Tarımsal değerlendirmeler bilgi amaçlıdır.</p>
         </Akordeon>
       </Akordeonlar>
     </PanelKabuk>

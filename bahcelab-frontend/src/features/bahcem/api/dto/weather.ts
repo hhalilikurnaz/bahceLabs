@@ -84,6 +84,8 @@ export interface ApiWeather {
   guncelleme: string
   onbellekten: boolean
   atif: string
+  /** Geçmiş günlerin yağış serisi (Su sekmesi ve sulama planıyla aynı) */
+  yagis_kaynagi?: string | null
   simdi: ApiWeatherNow
   gunler: ApiWeatherDay[]
   saatlik: ApiWeatherHour[]
