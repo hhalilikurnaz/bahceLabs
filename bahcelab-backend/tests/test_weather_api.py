@@ -342,3 +342,25 @@ async def test_gecmis_yagis_su_sekmesiyle_ayni_seriden_gelir(user_client: AsyncC
     assert data["yagis_kaynagi"].startswith("Yağış serisi: ERA5")
     hist = (await user_client.get(f"{url}/history", params={"from": str(today - timedelta(days=5)), "to": str(today - timedelta(days=1))})).json()
     assert {g["yagis_mm"] for g in hist["gunler"]} == {2.0} and hist["yagis_kaynagi"].startswith("Yağış serisi: ERA5")
+
+
+async def test_bahce_olcumu_hava_sekmesinde_seriden_once_kullanilir(user_client: AsyncClient, provider, test_engine):
+    """ADR 0026: Saha Defteri «Yağış ölçümü» Hava sekmesinin geçmiş yağışında ve toplamında da (kovayla aynı) seriden ÖNCE gelir."""
+    garden = await new_garden(user_client, ad="Ölçer")
+    url = f"/gardens/{garden['id']}/weather"
+    await user_client.get(url)
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).date()
+    async with test_engine.begin() as conn:
+        cell = (await conn.execute(text("SELECT id FROM weather_cells WHERE ABS(enlem - :a) < 0.06 AND ABS(boylam - :b) < 0.06 ORDER BY ABS(enlem - :a) + ABS(boylam - :b) LIMIT 1"), {"a": LAT, "b": LNG})).scalar_one()
+        for k in range(1, 40):
+            await conn.execute(
+                text("INSERT INTO era5_daily (cell_id, tarih, sm0, sm1, sm2, sm3, et0_mm, yagis_mm, toprak_kaynak, hava_kaynak) VALUES (:c, :d, .2, .2, .2, .2, 3.0, 2.0, 'era5_land', 'era5_land') ON CONFLICT DO NOTHING"),
+                {"c": cell, "d": today - timedelta(days=k)},
+            )
+    dun = today - timedelta(days=2)
+    assert (await user_client.post(f"/gardens/{garden['id']}/saha-kayitlari", json={"tur": "yagis", "tarih": str(dun), "ayrinti": {"mm": 20}})).status_code == 201
+    hist = (await user_client.get(f"{url}/history", params={"from": str(dun), "to": str(dun)})).json()
+    assert hist["gunler"][0]["yagis_mm"] == 20 and hist["gunler"][0]["yagis_olculdu"] is True
+    assert "1 gün bahçede ölçüldü" in hist["yagis_kaynagi"]
+    son7 = next(t for t in (await user_client.get(url)).json()["yagis_toplamlari"] if t["etiket"] == "Son 7 gün")
+    assert son7["mm"] == pytest.approx(6 * 2.0 + 20)  # 6 gün seri (2 mm) + ölçülen gün (20 mm)

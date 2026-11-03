@@ -28,6 +28,7 @@ async def main(garden_id: uuid.UUID, tmin: float) -> None:
         if raw is None:
             raise SystemExit("Bahçe bulunamadı")
         c = shape(json.loads(raw)).centroid
+        await session.execute(text("DELETE FROM stations WHERE saglayici = 'test'"))  # önceki koşulardan kalan test istasyonları en yakın 3'e girip kanıtı gölgeler (kullanıcı verisi gibi temizlenmez)
         sid = f"E2E-{str(garden_id)[:8]}"
         session.add(StationModel(id=sid, saglayici="test", ad="E2E test istasyonu", lat=float(c.y) + 0.1, lng=float(c.x) + 0.1, yukseklik=5.0, gozlem_baslangic=today - timedelta(days=30), gozlem_bitis=today))
         await session.flush()

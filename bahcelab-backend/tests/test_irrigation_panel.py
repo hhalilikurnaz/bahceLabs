@@ -206,3 +206,78 @@ async def test_vardiya_24_saati_asarsa_uyarir(user_client, factory):
     await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
     v = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["vardiya"]
     assert v is not None and "24 saati aşıyor" in (v["zaman_notu"] or "")
+
+
+# ---------------------------------------------------------------- ADR 0026: geçici günler, bahçe yağış ölçeri, kesinleşen veriyle plan değişikliği
+def test_yagis_yanlilik_aylik_oneri_otomatik_uygulanmaz():
+    from datetime import date
+
+    from bahcelab_backend.domain.agro.catalog import load_catalog
+    from bahcelab_backend.domain.water.rain_series import yanlilik_hesapla
+
+    rule = load_catalog().sulama_plani
+    gunler = [date(2026, 10, d) for d in range(1, 8)]
+    seri = {d: 5.0 for d in gunler}  # Σ 35 mm
+    # ölçüm seriden belirgin fazla: 7 gün × 8 = 56 → oran 1,6 → öneri 1,6
+    a = yanlilik_hesapla({d: 8.0 for d in gunler}, seri, rule)[0]
+    assert a.ay == "2026-10" and a.gun == 7 and a.oran == pytest.approx(1.6) and a.oneri == pytest.approx(1.6)
+    # kırpma: oran 3 → üst sınır 2
+    assert yanlilik_hesapla({d: 15.0 for d in gunler}, seri, rule)[0].oneri == rule.yagis_olcer_oran_ust
+    # az gün (4 < 5), küçük sapma (%10), küçük seri (Σ 7 mm < 10): öneri YOK ama farkı gösterir
+    assert yanlilik_hesapla({d: 8.0 for d in gunler[:4]}, seri, rule)[0].oneri is None
+    assert yanlilik_hesapla({d: 5.5 for d in gunler}, seri, rule)[0].oneri is None
+    assert yanlilik_hesapla({d: 2.0 for d in gunler}, {d: 1.0 for d in gunler}, rule)[0].oneri is None
+    assert yanlilik_hesapla({date(2026, 10, 9): 5.0}, seri, rule) == ()  # seride günü olmayan ölçüm eşleşmez
+
+
+async def test_yagis_olcumu_kaydi_dogrulanir(user_client, factory):
+    gid = await seed(user_client, factory)
+    ok = await user_client.post(f"/gardens/{gid}/saha-kayitlari", json={"tur": "yagis", "tarih": str(TODAY), "ayrinti": {"mm": 12.5}})
+    assert ok.status_code == 201 and ok.json()["ayrinti"]["mm"] == 12.5
+    for kotu in ({}, {"mm": -1}, {"mm": 900}, {"mm": "çok"}, {"mm": True}):
+        assert (await user_client.post(f"/gardens/{gid}/saha-kayitlari", json={"tur": "yagis", "tarih": str(TODAY), "ayrinti": kotu})).status_code == 422
+    rid = ok.json()["id"]
+    assert (await user_client.patch(f"/gardens/{gid}/saha-kayitlari/{rid}", json={"ayrinti": {"mm": 9999}})).status_code == 422
+
+
+async def test_panel_gecici_gunler_ve_bahce_olcumu_seriden_once_kullanilir(user_client, factory):
+    gid = await kur(user_client, factory)
+    p0 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    # tohum: son 6 gün (bugün dahil) «model» satırı → geçici
+    assert p0["gecici_gun"] == 6 and p0["gecici_ilk"] == str(TODAY - timedelta(days=5)) and p0["olculen_gun"] == 0
+    gunler = {g["tarih"]: g for g in p0["sektorler"][0]["gunler"]}
+    assert all(gunler[str(TODAY - timedelta(days=k))]["gecici"] for k in range(0, 6)) and not gunler[str(TODAY - timedelta(days=6))]["gecici"]
+    assert "geçici" in " ".join(k["ad"] for k in p0["kaynaklar"]) and "bahçede ölçüldü" not in " ".join(k["ad"] for k in p0["kaynaklar"])
+    # bahçede 30 mm ölçüldü (3 gün önce): kova bunu seriden ÖNCE kullanır (etkili = %80)
+    gun = TODAY - timedelta(days=3)
+    assert (await user_client.post(f"/gardens/{gid}/saha-kayitlari", json={"tur": "yagis", "tarih": str(gun), "ayrinti": {"mm": 30}})).status_code == 201
+    p1 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    g1 = next(g for g in p1["sektorler"][0]["gunler"] if g["tarih"] == str(gun))
+    assert p1["olculen_gun"] == 1 and g1["yagis_olculdu"] is True and g1["yagis_mm"] == 30 and g1["etkili_yagis_mm"] == pytest.approx(24.0)
+    assert "1 gün bahçede ölçüldü" in " ".join(k["ad"] for k in p1["kaynaklar"])
+    assert len(p1["yagis_yanlilik"]) == 1 and p1["yagis_yanlilik"][0]["gun"] == 1 and p1["yagis_yanlilik"][0]["oneri"] is None  # tek gün: öneri yok
+    # aynı gün ikinci kayıt: EN SON girilen sayılır (çift sayım yok)
+    await user_client.post(f"/gardens/{gid}/saha-kayitlari", json={"tur": "yagis", "tarih": str(gun), "ayrinti": {"mm": 10}})
+    g2 = next(g for g in (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["sektorler"][0]["gunler"] if g["tarih"] == str(gun))
+    assert g2["yagis_mm"] == 10
+
+
+async def test_kesinlesen_veri_plani_degistirirse_bildirim(user_client, factory):
+    from bahcelab_backend.domain.irrigation.revize import once_al, sonra_bildir
+    from bahcelab_backend.domain.water.era5_sync import garden_cell
+
+    gid = await kur(user_client, factory)
+    async with factory() as s:
+        cell, _, _ = await garden_cell(s, gid)
+    once = await once_al(factory, cell)
+    assert gid in once.imzalar and len(once.gecici) == 6 and once.imzalar[gid][2].gunler  # kurak tohum: sulama önerisi var
+    assert await sonra_bildir(factory, cell, once) == 0  # hiçbir gün kesinleşmedi → bildirim yok
+    # son 5 gün KESİNLEŞTİ ve çok yağışlı geldi (ERA5 finali): plan değişir
+    async with factory() as s:
+        await s.execute(text("UPDATE era5_daily SET hava_kaynak = 'era5_land', yagis_mm = 60 WHERE cell_id = :c AND tarih BETWEEN :a AND :b"), {"c": cell, "a": TODAY - timedelta(days=5), "b": TODAY - timedelta(days=1)})
+        await s.commit()
+    assert await sonra_bildir(factory, cell, once) == 1
+    async with factory() as s:
+        n = (await s.execute(text("SELECT baslik, metin FROM notifications WHERE garden_id = :g AND tur = 'sulama_revize'"), {"g": gid})).all()
+    assert len(n) == 1 and "kesinleşen veriyle değişti" in n[0][0] and "5 günün" in n[0][1] and "→" in n[0][1]
+    assert await sonra_bildir(factory, cell, once) == 0  # tekrar çalışınca aynı bildirim ikinci kez çıkmaz (tekil anahtar)

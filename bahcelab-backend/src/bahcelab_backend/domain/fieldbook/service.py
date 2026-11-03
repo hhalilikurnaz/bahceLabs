@@ -50,6 +50,7 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     SahaTuru,
     TurNoktasi,
     TurOzetiYanit,
+    yagis_mm,
 )
 from bahcelab_backend.domain.gecmis.schemas import HasatOzeti
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, pixel_center_lnglat
@@ -254,6 +255,11 @@ class FieldbookService:
             row.aciklama = (body.aciklama or "").strip() or None
         if "ayrinti" in fields:
             row.ayrinti = body.ayrinti
+        if row.tur == "yagis":  # tür değişse de ayrinti değişse de bozuk ölçüm kaydedilmez
+            try:
+                yagis_mm(row.ayrinti)
+            except ValueError as exc:
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, str(exc)) from exc
         if body.konumu_sil:
             row.konum, row.konum_tur = None, None
         elif body.konum:

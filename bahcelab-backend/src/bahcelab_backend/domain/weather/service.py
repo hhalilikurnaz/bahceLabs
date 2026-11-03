@@ -192,13 +192,13 @@ class WeatherService:
         }
 
     # ------------------------------------------------------------------ yanıtlar
-    async def _tek_seri(self, garden_id: uuid.UUID, cell_id: uuid.UUID, today: date, rows: dict[date, DailyPoint]) -> tuple[dict[date, DailyPoint], str]:
+    async def _tek_seri(self, garden_id: uuid.UUID, cell_id: uuid.UUID, today: date, rows: dict[date, DailyPoint]) -> tuple[dict[date, DailyPoint], str, Any]:
         """Geçmiş günlerin yağış ve ET₀ değeri Su sekmesi/sulama planıyla AYNI seriden (ADR 0025); `weather_daily` yalnız sıcaklık içindir. Seride günü olmayan günün yağışı BİLİNMEZ (None)."""
         g = await gecmis_hava(self.repo.session, garden_id, cell_id, today, load_catalog().su)
         if not any(g.yagis.get(d) is not None for d in rows):  # ERA5 beslemesi bu hücre için henüz çalışmadı (yeni bahçe): açıkça etiketli geçici yedek
-            return rows, "Yağış serisi: Open-Meteo arşiv (ERA5 verisi bu bahçe için henüz alınmadı)"
+            return rows, "Yağış serisi: Open-Meteo arşiv (ERA5 verisi bu bahçe için henüz alınmadı)", g
         out = {d: r.model_copy(update={"yagis": g.yagis.get(d), "et0": g.et0.get(d)}) for d, r in rows.items()}
-        return out, g.kaynak_metni()
+        return out, g.kaynak_metni(), g
 
     async def get(self, garden_id: uuid.UUID) -> HavaYanit:
         point = await self._point(garden_id)
@@ -212,7 +212,7 @@ class WeatherService:
         rows = await self._daily_rows(
             cell, today - timedelta(days=history_days), today - timedelta(days=1)
         )
-        rows, yagis_kaynagi = await self._tek_seri(garden_id, cell.id, today, rows)
+        rows, yagis_kaynagi, _ = await self._tek_seri(garden_id, cell.id, today, rows)
         yanit = self._compose(data, rows, lat, lng, today, local.strftime("%Y-%m-%dT%H:%M"))
         return yanit.model_copy(update={"yagis_kaynagi": yagis_kaynagi})
 
@@ -329,12 +329,12 @@ class WeatherService:
         cell = await self.repo.cell(lat, lng)
         today = self._local_now().date()
         await self._sync_history(cell, today)
-        rows, yagis_kaynagi = await self._tek_seri(garden_id, cell.id, today, await self._daily_rows(cell, start, end))
+        rows, yagis_kaynagi, tek = await self._tek_seri(garden_id, cell.id, today, await self._daily_rows(cell, start, end))
         return GecmisYanit(
             baslangic=start,
             bitis=end,
             gunler=[
-                GecmisGun(tarih=d, min=r.min, max=r.max, yagis_mm=r.yagis, et0_mm=r.et0)
+                GecmisGun(tarih=d, min=r.min, max=r.max, yagis_mm=r.yagis, et0_mm=r.et0, yagis_olculdu=d in tek.olculen, gecici=d in tek.model_gunleri)
                 for d, r in sorted(rows.items())
             ],
             guncelleme=cell.tahmin_zamani,

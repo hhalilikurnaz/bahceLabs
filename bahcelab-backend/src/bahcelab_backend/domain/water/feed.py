@@ -43,13 +43,26 @@ async def last_era5_day(session: AsyncSession, cell_id: uuid.UUID) -> date | Non
 
 async def feed_cell(factory: SessionFactory, cell_id: uuid.UUID, lat: float, lng: float, client: Era5Source, today: date | None = None) -> dict[str, int | str]:
     """Hücre için ERA5 satırlarını tamamlar: veri yoksa 2015'ten, varsa son ERA5-Land gününden 10 gün geriden."""
+    from bahcelab_backend.domain.irrigation.revize import once_al, sonra_bildir
+
     today = today or datetime.now(UTC).date()
+    try:
+        once = await once_al(factory, cell_id, today)  # geçici günler kesinleşince plan değişirse bildirim için (ADR 0026)
+    except Exception:  # noqa: BLE001 - izleme besleme işini düşürmemeli
+        logger.exception("Sulama kararı besleme öncesi alınamadı (hücre %s)", cell_id)
+        once = None
     async with factory() as session:
         last = await last_era5_day(session, cell_id)
         start = ERA5_START if last is None else max(ERA5_START, last - timedelta(days=REFRESH_OVERLAP_DAYS))
         result = await sync_cell(session, client, cell_id, lat, lng, start, today)
         await session.commit()
-    return {**result, "kip": "ilk" if last is None else "artimli"}
+    bildirim = 0
+    if once is not None and once.imzalar:
+        try:
+            bildirim = await sonra_bildir(factory, cell_id, once, today)
+        except Exception:  # noqa: BLE001
+            logger.exception("Plan değişikliği izlenemedi (hücre %s)", cell_id)
+    return {**result, "kip": "ilk" if last is None else "artimli", "plan_bildirimi": bildirim}
 
 
 async def feed_garden(factory: SessionFactory, garden_id: uuid.UUID, client: Era5Source | None = None) -> dict[str, int | str]:

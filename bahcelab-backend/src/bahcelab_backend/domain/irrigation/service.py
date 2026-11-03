@@ -51,6 +51,9 @@ class Ctx:
     weather: dict[date, tuple[float | None, float | None]]
     soil_fc_wp: tuple[float, float]
     ndvi_tarih: date | None = None
+    gecici: frozenset[date] = frozenset()  # ERA5'in kesinleşmemiş (model) günleri
+    olculen: frozenset[date] = frozenset()  # bahçede yağışı ölçülen günler
+    yanlilik: tuple[Any, ...] = ()
     sektor_ad: str | None = None  # tanımlı sektörlerde: yalnız bu vanaya (ya da vana belirtilmemiş) kayıtlar sayılır
 
 
@@ -93,6 +96,7 @@ class IrrigationService:
     def __init__(self, session: AsyncSession, workspace_id: uuid.UUID, today: date | None = None) -> None:
         self.today = today
         self._yagis_kaynak: str | None = None
+        self._gecmis: Any = None
         self.session = session
         self.workspace_id = workspace_id
         self.gardens = GardenRepository(session, workspace_id)
@@ -172,16 +176,17 @@ class IrrigationService:
             raise Veri("Son 60 günde net Sentinel-2 görüntüsü yok; taç örtüsü (Kc düzeltmesi) hesaplanamıyor.")
         taw, raw = en.taw_raw_mm(float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"]), rule.kok_derinligi_cm, rule.tukenme_orani_p)
         weather = await self._weather(garden_id, cell, su_rule, today)
-        return Ctx(g, p, rule, cell, today, taw, raw, cover, rule.sistem_verimi[p.sistem], area, g.agac_sayisi, weather, (float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"])), None if ndvi is None else ndvi[1])
+        return Ctx(g, p, rule, cell, today, taw, raw, cover, rule.sistem_verimi[p.sistem], area, g.agac_sayisi, weather, (float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"])), None if ndvi is None else ndvi[1], frozenset(d for d in self._gecmis.model_gunleri if d <= today), frozenset(self._gecmis.olculen), self._gecmis.yanlilik)
 
     async def _weather(self, garden_id: uuid.UUID, cell: uuid.UUID, su_rule: cat.SuKurali, today: date) -> dict[date, tuple[float | None, float | None]]:
         """TEK seri (`rain_series`): Su sekmesi ve Hava sekmesiyle aynı yağış/ET₀."""
-        g = await gecmis_hava(self.session, garden_id, cell, today, su_rule)
+        g = await gecmis_hava(self.session, garden_id, cell, today, su_rule, cat.load_catalog().sulama_plani)
         self._yagis_kaynak = g.kaynak_metni()
+        self._gecmis = g
         return {d: (g.yagis[d], g.et0[d]) for d in g.yagis}
 
     def _days(self, c: Ctx, days: list[date]) -> list[en.DayIn]:
-        return [en.DayIn(d, *c.weather.get(d, (None, None)), tahmin=d > c.today) for d in days if d in c.weather or d <= c.today]
+        return [en.DayIn(d, *c.weather.get(d, (None, None)), tahmin=d > c.today, gecici=d in c.gecici, olculen=d in c.olculen) for d in days if d in c.weather or d <= c.today]
 
     # ------------------------------------------------------------------ sezon tekrarı (geçmiş yıl ya da bu yıl)
     def season_run(self, c: Ctx, year: int, *, oran: bool = False, sistem: str | None = None) -> list[en.DayOut]:
@@ -341,6 +346,7 @@ class IrrigationService:
             planlanan_bugune_kadar_m3=sum(en.mm_to_m3(x.planli_brut_mm, c.area_m2) for x in this_year if x.tarih <= today) if this_year else None,
             uygulanan_sezon_m3=sum(en.mm_to_m3(g, c.area_m2) for g in applied_gross.values()) if n_records > 0 else None, uygulanan_kayit_sayisi=n_records,
             sapma_mm=sapma, sapma_ciddi=sapma is not None and abs(sapma) > rule.sapma_bildirim_mm, projeksiyon=proj, aylik=aylik, kaynaklar=self._kaynaklar(), katalog_surum=cat.load_catalog().surum,
+            gecici_gun=len(c.gecici), olculen_gun=len(c.olculen),
         )
 
     # ------------------------------------------------------------------ sezon (animasyon ve kuru/ıslak yıl)
@@ -549,7 +555,7 @@ class IrrigationService:
                     sc.SektorGunu(
                         tarih=r.tarih, doluluk_pct=None if r.veri_eksik else self._pct(c.taw, r.tukenme_mm), etc_mm=None if r.veri_eksik else r.etc_mm, eta_mm=None if r.veri_eksik else r.eta_mm,
                         net_mm=r.uygulanan_net_mm + r.planli_net_mm, brut_mm=r.planli_brut_mm + (r.uygulanan_net_mm / c.eff), yagis_mm=None if r.veri_eksik else r.yagis_mm,
-                        etkili_yagis_mm=None if r.veri_eksik else r.etkili_yagis_mm, bosa_mm=r.bosa_giden_mm, ks=None if r.veri_eksik else r.ks, planli=r.planli_net_mm > 0, uygulandi=r.uygulanan_net_mm > 0, tahmin=r.tahmin, veri_eksik=r.veri_eksik,
+                        etkili_yagis_mm=None if r.veri_eksik else r.etkili_yagis_mm, bosa_mm=r.bosa_giden_mm, ks=None if r.veri_eksik else r.ks, planli=r.planli_net_mm > 0, uygulandi=r.uygulanan_net_mm > 0, tahmin=r.tahmin, veri_eksik=r.veri_eksik, gecici=r.gecici, yagis_olculdu=r.olculen,
                     )
                 )
             now = next((r for r in rows if r.tarih == today), None)
@@ -599,11 +605,19 @@ class IrrigationService:
             onayli_tarih = kpi_sonraki.tarih if vardiya.onayli else None
         dusuk = min((d for d in durumlar if d.doluluk_pct is not None), key=lambda d: cast(float, d.doluluk_pct), default=None)
         guven = self._guven(c)
+        yan = [
+            sc.YagisYanlilik(
+                ay=a.ay, gun=a.gun, olculen_mm=a.olculen_mm, seri_mm=a.seri_mm, oran=a.oran, oneri=a.oneri,
+                oneri_cumle=None if a.oneri is None else f"{a.ay}: bahçe ölçeri {a.olculen_mm:.0f} mm, seri {a.seri_mm:.0f} mm ({a.gun} gün); serinin ×{a.oneri:.2f} düzeltilmesi ÖNERİLİR. Otomatik uygulanmaz.",
+            )
+            for a in c.yanlilik
+        ]
         return sc.PanelYaniti(
             durum="hazir", neden=None, bugun=today, taw_mm=c.taw, raw_mm=c.raw, stres_pct=rule.durum_stres_alt, yakin_pct=rule.durum_yakin_ust, yeterli_pct=rule.durum_yeterli_ust,
             tetik_pct=self._pct(c.taw, prog.tetik_orani * c.raw), sektorler=durumlar, sektor_tanimli=tanimli, kpi=kpi, hafta=hafta, vardiya=vardiya,
             en_dusuk=None if dusuk is None else {"ad": dusuk.ad, "pct": dusuk.doluluk_pct}, esik_alti_sektorler=[d.ad for d in durumlar if d.esik_alti_7gun], uyarilar=plan.uyarilar, guven=guven,
             kaynaklar=plan.kaynaklar, yagis_vurgu_mm=rule.yagis_vurgu_mm, katalog_surum=plan.katalog_surum, onayli_tarih=onayli_tarih,
+            gecici_gun=len(c.gecici), gecici_ilk=min(c.gecici, default=None), olculen_gun=len(c.olculen), yagis_yanlilik=yan,
         )
 
     def _guven(self, c: Ctx) -> sc.Guven:

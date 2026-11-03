@@ -245,6 +245,12 @@ class SulamaPlaniKurali(KuralBlok):
     ihtiyac_sari_min: float = 85.0
     yagis_vurgu_mm: float = 12.0  # su dengesi grafiğinde bu yağış üstü ok ile işaretlenir
     vardiya_baslangic: str = "05:00"  # çizelge başlangıcı (profilde değiştirilebilir)
+    # Bahçe yağış ölçeri: ölçüm ile seri farkı sezon boyunca AYLIK biriktirilir; düzeltme ÖNERİLİR, otomatik uygulanmaz (ADR 0026)
+    yagis_olcer_min_gun: int = Field(default=5, ge=2)  # öneri için ay içinde eşleşen (ölçüm + seri) en az gün
+    yagis_olcer_min_seri_mm: float = Field(default=10.0, gt=0)  # ... ve serinin o günlerdeki toplamı en az bu kadar
+    yagis_olcer_sapma_esigi: float = Field(default=0.2, gt=0, lt=1)  # |ölçüm/seri − 1| bunu aşarsa öneri çıkar
+    yagis_olcer_oran_alt: float = Field(default=0.5, gt=0, lt=1)  # önerilen çarpan [alt, üst] aralığına kırpılır
+    yagis_olcer_oran_ust: float = Field(default=2.0, gt=1)
     # Kısıntıda verim riski: dönemin katalog riski, kısıntının EKLEDİĞİ stres günü bu eşikleri aşarsa bir kademe (orta) ya da en yüksek kademeye (yüksek) çıkar
     kisinti_stres_orta_gun: int = Field(default=10, ge=1)
     kisinti_stres_yuksek_gun: int = Field(default=30, ge=1)

@@ -60,6 +60,8 @@ class DayIn:
     yagis_mm: float | None
     et0_mm: float | None
     tahmin: bool = False
+    gecici: bool = False  # ERA5 henüz kesinleşmedi (Open-Meteo tahmin modeli satırı)
+    olculen: bool = False  # yağış bahçede ölçüldü (Saha Defteri)
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,8 @@ class DayOut:
     ks: float = 1.0  # su stresi katsayısı (FAO-56 Denk. 84): Dr ≤ RAW → 1
     dp_mm: float = 0.0  # kökün altına sızan (tarla kapasitesini aşan)
     kayip_mm: float = 0.0  # sistem kaybı: brüt − net (sulama verimsizliği)
+    gecici: bool = False
+    olculen: bool = False
 
     @property
     def bosa_giden_mm(self) -> float:
@@ -110,7 +114,7 @@ def run_bucket(
         kc = kc_monthly(d.tarih.month, cover_pct, rule)
         applied = applied_net_mm.get(d.tarih, 0.0)
         if d.yagis_mm is None or d.et0_mm is None:
-            out.append(DayOut(d.tarih, 0.0, 0.0, 0.0, kc, 0.0, applied, 0.0, 0.0, dr, dr > raw, d.tahmin, True))
+            out.append(DayOut(d.tarih, 0.0, 0.0, 0.0, kc, 0.0, applied, 0.0, 0.0, dr, dr > raw, d.tahmin, True, gecici=d.gecici, olculen=d.olculen))
             continue
         eff = effective_rain_mm(d.yagis_mm, rule)
         etc = d.et0_mm * kc
@@ -133,7 +137,7 @@ def run_bucket(
                 dr -= net
                 base = dr if ratio < 1.0 else 0.0
         kayip = (planned_net + applied) * (1.0 / efficiency - 1.0)
-        out.append(DayOut(d.tarih, d.yagis_mm, eff, d.et0_mm, kc, etc, applied, planned_net, planned_net / efficiency, dr, dr > raw, d.tahmin, False, eta, ks, dp, kayip))
+        out.append(DayOut(d.tarih, d.yagis_mm, eff, d.et0_mm, kc, etc, applied, planned_net, planned_net / efficiency, dr, dr > raw, d.tahmin, False, eta, ks, dp, kayip, d.gecici, d.olculen))
     return out
 
 

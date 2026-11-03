@@ -40,7 +40,7 @@ class FieldRecordModel(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), nullable=False, index=True)
-    tur: Mapped[str] = mapped_column(String(12), nullable=False)  # gozlem | ilaclama | gubreleme | sulama | hasat | tuzak
+    tur: Mapped[str] = mapped_column(String(12), nullable=False)  # gozlem | ilaclama | gubreleme | sulama | hasat | tuzak | yagis (ayrinti.mm)
     tarih: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     konum_tur: Mapped[str | None] = mapped_column(String(6), nullable=True)  # nokta | alan | null (konumsuz)
     konum = mapped_column(Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False), nullable=True)

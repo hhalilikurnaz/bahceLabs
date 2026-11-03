@@ -115,6 +115,8 @@ class GecmisGun(BaseModel):
     max: float | None
     yagis_mm: float | None
     et0_mm: float | None
+    yagis_olculdu: bool = False  # bahçede ölçüldü (Saha Defteri); kova seriden önce bunu kullanır
+    gecici: bool = False  # ERA5 henüz kesinleşmedi
 
 
 class GecmisYanit(BaseModel):

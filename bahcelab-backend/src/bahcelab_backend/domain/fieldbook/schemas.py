@@ -2,9 +2,18 @@ import uuid
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-KayitTuru = Literal["gozlem", "ilaclama", "gubreleme", "sulama", "hasat", "tuzak"]
+KayitTuru = Literal["gozlem", "ilaclama", "gubreleme", "sulama", "hasat", "tuzak", "yagis"]
+YAGIS_AZAMI_MM = 500.0  # tek günlük ölçüm üst sınırı (daha büyüğü yazım hatası sayılır)
+
+
+def yagis_mm(ayrinti: dict[str, Any] | None) -> float:
+    """«Yağış ölçümü» kaydının mm değeri: `ayrinti.mm` sayı, 0 ≤ mm ≤ 500. Aksi hâlde ValueError."""
+    v = (ayrinti or {}).get("mm")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 <= v <= YAGIS_AZAMI_MM:
+        raise ValueError(f"Yağış ölçümü için 0–{YAGIS_AZAMI_MM:.0f} mm arası bir değer (ayrinti.mm) gerekir.")
+    return float(v)
 Sonuc = Literal["gerceklesti", "gerceklesmedi", "bilinmiyor"]
 HedefTuru = Literal["olay", "uyari"]
 
@@ -36,6 +45,12 @@ class KayitGirdisi(BaseModel):
     @classmethod
     def _strip(cls, v: str | None) -> str | None:
         return (v.strip() or None) if v is not None else None
+
+    @model_validator(mode="after")
+    def _yagis(self) -> "KayitGirdisi":
+        if self.tur == "yagis":
+            yagis_mm(self.ayrinti)
+        return self
 
 
 class KayitGuncelle(BaseModel):

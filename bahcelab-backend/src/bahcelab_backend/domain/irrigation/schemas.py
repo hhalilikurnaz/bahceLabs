@@ -143,6 +143,8 @@ class PlanYaniti(BaseModel):
     aylik: list[AyCubugu] = []
     kaynaklar: list[Kaynak] = []
     katalog_surum: int = 0
+    gecici_gun: int = 0  # kovada geçici (ERA5 kesinleşmemiş) gün sayısı
+    olculen_gun: int = 0  # yağışı bahçede ölçülen gün sayısı
 
 
 class SezonGunu(BaseModel):
@@ -299,6 +301,8 @@ class SektorGunu(BaseModel):
     uygulandi: bool
     tahmin: bool
     veri_eksik: bool
+    gecici: bool = False  # ERA5 henüz kesinleşmedi (son günler)
+    yagis_olculdu: bool = False  # yağış bahçede ölçüldü (Saha Defteri)
 
 
 class SektorDurumu(BaseModel):
@@ -355,6 +359,16 @@ class Guven(BaseModel):
     kosullar: list[dict[str, object]]  # {ad, ok, not}
 
 
+class YagisYanlilik(BaseModel):
+    ay: str
+    gun: int
+    olculen_mm: float
+    seri_mm: float
+    oran: float | None
+    oneri: float | None
+    oneri_cumle: str | None  # «ÖNERİ»: otomatik uygulanmaz
+
+
 class PanelKpi(BaseModel):
     sonraki: KpiSonraki | None
     ihtiyac_karsilandi_pct: float | None  # son 7 gün ΣETa/ΣETc, vana ortalaması
@@ -388,6 +402,10 @@ class PanelYaniti(BaseModel):
     yagis_vurgu_mm: float = 12.0
     katalog_surum: int = 0
     onayli_tarih: date | None = None
+    gecici_gun: int = 0  # kovada «geçici» işaretli (ERA5 kesinleşmemiş) gün sayısı, bugün dahil
+    gecici_ilk: date | None = None
+    olculen_gun: int = 0  # yağışı bahçede ölçülen gün sayısı
+    yagis_yanlilik: list[YagisYanlilik] = []
 
 
 class SimGunu(BaseModel):

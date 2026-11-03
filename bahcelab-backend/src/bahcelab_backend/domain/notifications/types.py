@@ -17,6 +17,7 @@ TYPES: dict[str, dict[str, str]] = {
     "cok_yillik": {"ad": "Çok yıllık analiz", "aciklama": "Çok yıllık ağaç gücü bölgeleri hazır olduğunda."},
     "sulama": {"ad": "Sulama", "aciklama": "Önümüzdeki günlerde belirgin su ihtiyacı görünüyorsa."},
     "sulama_plani": {"ad": "Sulama günü yaklaştı", "aciklama": "Sulama planındaki bir sulama günü yaklaştığında."},
+    "sulama_revize": {"ad": "Plan kesinleşen veriyle değişti", "aciklama": "Geçici (model) yağış günleri kesinleşince sulama programı değiştiyse."},
     "sulama_sapma": {"ad": "Plandan ciddi sapma", "aciklama": "Uyguladığınız sulama plandan belirgin farklıysa."},
     "olay": {"ad": "Olay", "aciklama": "Don, aşırı yağış, kuvvetli rüzgâr ya da uydu ile doğrulanan ani değişim olayı."},
     "kademe_dususu": {"ad": "Durum kademesi düşüşü", "aciklama": "Bahçe durumu kademesi (İyi · İzle · Dikkat · Sorun) kötüleşirse."},
