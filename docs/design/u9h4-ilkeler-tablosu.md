@@ -16,4 +16,6 @@
 | 10 Harita–grafik bağı | — | ◐ imleç ortak (`calismaStore`); haritada vana etiketi **dilim 2** | — | ◐ imleç ortak; sektör dolgusu dilim 2 | — | — | tek etiket metni: `vanaEtiketi` (satır = harita) |
 | 11 Bir grafik bir mesaj; ≤ 150 ms | ✓ | ✓ | ✓ | ✓ «hangi vana eşiğe iniyor» | ✓ «ihtiyaç karşılandı mı» | — | `e2e/performans.spec.ts` geçti |
 
+**Eklenen kurallar (inceleme sonrası):** (7 belirsizlik) kaynak satırı yağış serisini adıyla yazar («Yağış serisi: ERA5…; 10 son gün model değeri»); (6/7) kısıntıda su farkı daima stres günü farkı ve verim riskiyle aynı satırda. Gerçek veri ekranları: [u9h4-ekranlar-jlnnlk.pdf](u9h4-ekranlar-jlnnlk.pdf).
+
 **Kalan borçlar:** harita simülatörü (sektör dolgusu, dik etiketler, animasyon, alt çubuk, vana çizim aracı), mobil sabit alt çubuk ve harita %45 yerleşimi, sulama günü kareleri ve webm — **dilim 2**. Simülasyon sekmesinde «canlı çizelge» şimdilik sulama günleri arasında gezinen vardiya tablosudur (zaman çubuğu animasyonu dilim 2).

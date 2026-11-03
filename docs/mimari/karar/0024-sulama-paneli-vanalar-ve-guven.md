@@ -14,5 +14,12 @@ Durum: kabul edildi (dilim 1: veri modeli, motor, panel; dilim 2: harita simüla
 9. **Alışkanlığım:** Saha Defteri'nde en az 4 sulama günü kaydı (m³ ya da süre ile) varsa haftanın günleri ve medyan miktar kayıttan öğrenilir; yoksa elle gün + süre girilir (damlatıcı bilgisi ve ağaç sayısı gerekir). Veri yoksa neden yazılır, sayı üretilmez.
 10. **Güven etiketi (düşük/orta/yüksek):** 5 koşuldan kaçı sağlanıyor — (1) son net uydu görüntüsü ≤ 14 gün, (2) son gerçek hava günü ≤ 3 gün, (3) ağaç sayısı beyan edilmiş, (4) sulama sistemi bilgisi tam (damlada damlatıcı sayısı ve debisi), (5) pompa bilgisi tam. 5 → yüksek, 3–4 → orta, ≤ 2 → düşük. Eşikler katalogda (`guven_*`); koşullar arayüzde «Güven nasıl hesaplandı?» altında tek tek görünür.
 
+## Kısıntı gösterimi (dilim 1 sonrası düzeltme)
+Kısıntıda su/TL farkı **hiçbir yerde tek başına** gösterilmez: aynı satırda stres günü farkı ve verim riski bulunur («Kısıntı 1077 m³ az su demek; stres günü 0 → 37 (+37); verim riski: yüksek»). Verim riski = dönemin katalog riski; kısıntının **eklediği stres günü** `kisinti_stres_orta_gun` (10) ve `kisinti_stres_yuksek_gun` (30) eşiklerini aşarsa yükselir (düşük riskli olgunlaşmada bile 37 ek stres günü «yüksek»). Eşikler ön değerdir.
+
 ## Dilim 2 (bu ADR'de karar, henüz uygulanmadı)
 Harita simülatörü: MapLibre sulama katmanı (sektör dolgusu üç göstergeyle, dik etiketler, ağaç sıraları dikim aralığından, hat/boru/pompa/vana), alt çubuk, animasyon (yalnız sulama/yağmur günü, reduced-motion'da kapalı), mobil yerleşim, vana çizim aracı. Ağaç sıraları, hat ve boru **yalnız kullanıcının girdiği aralık ve vana verisinden** üretilir; veri yoksa çizilmez.
+
+### Dilim 2 ek notları
+- **Vana başına taç örtüsü → Kc:** vana çokgeni tanımlıysa Sentinel-2 NDVI'ı o çokgenin 10 m piksellerinin ortalamasından alınır (bulut maskesi uygulanır); ekranda **piksel sayısı ve bulut maskesi** gösterilir. Çokgen çok küçükse (az piksel) bahçe medyanına düşülür ve bu yazılır.
+- **Toprak vana başına AYRIŞMAZ:** SoilGrids 250 m, tek bahçe noktasında alınır; vanalar aynı TAW/RAW'ı paylaşır. Bu sınır **ekranda yazılmaz** (kullanıcı kararı); ADR'de not: vana farkları taç örtüsü, alan, debi ve uygulanan sulamadan gelir, toprak farkından değil.
