@@ -2,6 +2,11 @@ import { execFileSync } from 'node:child_process'
 import { backendEnv } from './ortam'
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 
+/** Axe, süren (sonlu) animasyonlar bitmeden koşarsa yarı saydam öğeler için sahte «color-contrast» üretir (CI'da aralıklı düşme; kök neden): önce bitmelerini bekler. */
+export async function animasyonlarBitsin(page: Page): Promise<void> {
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || (a.effect?.getComputedTiming().endTime ?? 0) === Infinity), undefined, { timeout: 10_000 })
+}
+
 export const PASSWORD = 'test1234'
 
 /** Karelik bahçe (kenar ≈ metre) — belirli bir yer değil, test için rastgele ofsetli. */

@@ -1,9 +1,10 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedScenes } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedScenes } from './yardimcilar'
 
 /** axe-core (WCAG 2.1 A/AA): ciddi ve kritik ihlal 0 olmalı. Harita telifi (Mapbox/OSM yükümlülüğü) ve tuval hariç. */
 async function taraYaz(page: Page, etiket: string): Promise<void> {
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .exclude('.maplibregl-ctrl-attrib')

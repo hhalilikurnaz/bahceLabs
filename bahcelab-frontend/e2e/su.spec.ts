@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedRadar, seedScenes, seedWater, seedWeather } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedRadar, seedScenes, seedWater, seedWeather } from './yardimcilar'
 
 /** Su ve sıcaklık dilimi (9E), GERÇEK arka uçla: ERA5 önbelleği + toprak profili tohumlanır, Landsat gerçek doldurma hattından geçer. */
 async function kurulum(page: Page, ad: string, lng: number) {
@@ -49,6 +49,7 @@ test('Su sekmesi: karar cümlesi üstte, dört kanıt grafiği ve kaynak çipler
   // doğrulama kaynakları (SMAP/IMERG/CHIRPS) arayüzde görünmez; yalnız «Nasıl hesaplandı?» içinde anılabilir
   await expect(page.getByTestId('su-karar')).not.toContainText(/SMAP|IMERG|CHIRPS/)
   for (const id of ['nem-profili', 'su-dengesi', 'bulut-altinda-gorus', 'yuzey-hava']) await expect(page.getByTestId(id)).not.toContainText(/SMAP|IMERG|CHIRPS/)
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })

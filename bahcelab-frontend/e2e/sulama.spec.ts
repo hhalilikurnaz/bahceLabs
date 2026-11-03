@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedGecici, seedScenes, seedWater } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedGecici, seedScenes, seedWater } from './yardimcilar'
 
 /** Sulama paneli (9H-S4 dilim 1), GERÇEK arka uçla: ERA5 + toprak + uydu tohumlanır (tests/support); FAO-56 motoru, vanalar, panel ve simülasyon gerçek çalışır. */
 const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
@@ -45,6 +45,7 @@ test('profil yokken boş durum; sihirbazla kayıttan sonra panel gelir; eski adr
   await page.getByTestId('pompa-bilmiyorum').check()
   await page.getByTestId('sihirbaz-ileri').click()
   await expect(page.getByTestId('tarife-guncel-degil')).toContainText('Tarife güncel değil, faturanızdaki birim fiyatı girin')
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).include('[data-testid="sulama-sihirbazi"]').withTags(['wcag2a', 'wcag2aa']).analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
   await page.getByTestId('sihirbaz-kaydet').click()
@@ -79,6 +80,7 @@ test('panel: karar, 3 KPI, Bugün sekmesi, toprak suyu (bantlar + eşik), su den
   await expect(page.getByTestId('su-dengesi-cumlesi')).toContainText(/^Son 14 günde ihtiyacın %\d+'i karşılandı/)
   await expect(page.getByTestId('guven-etiketi')).toContainText(/Güven: (düşük|orta|yüksek)/)
   await expect(page.getByTestId('sulama-kaynak')).toContainText('FAO-56')
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })
@@ -149,6 +151,7 @@ test('simülasyon: yıl düğmeleri (kuru/normal/ıslak), 4 sayaç, sistem ve k�
   await sim.getByTestId('sim-elle-saat').fill('4')
   await expect(sim.getByTestId('sim-karsilastirma-cumle')).toContainText('alışkanlığınız plana göre', { timeout: 30_000 })
   await expect(sim.getByTestId('sim-karsilastirma')).toContainText('Boşa giden')
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })
@@ -239,6 +242,7 @@ test('geçici günler taralı ve notlu; bahçe yağış ölçümü seriden önce
   await expect(page.getByTestId('sulama-kpi')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByTestId('gecici-notu')).toHaveCount(0)
   await expect(page.getByTestId('toprak-suyu-grafigi').getByTestId('gecici-bolge')).toHaveCount(0)
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })

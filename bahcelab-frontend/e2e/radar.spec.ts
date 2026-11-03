@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedRadar, seedScenes } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedRadar, seedScenes } from './yardimcilar'
 
 /** Radar (Sentinel-1) dilimi, GERÇEK arka uçla: sahte radar sağlayıcısı + gerçek doldurma hattı. «Radar nemi» hiçbir yerde geçmez. */
 async function kurulum(page: Page, ad: string, lng: number, options: { eskiOptik?: boolean; bulutlu?: boolean } = {}) {
@@ -72,6 +72,7 @@ test('Su sekmesi: «Bulut altında görüş» şeridi bulgu cümlesi, optik/rada
   await expect(bolum.getByTestId('rvi-cizgi')).toBeVisible()
   await expect(page.getByTestId('sulama-karti')).toBeVisible()
   await expect(page.locator('body')).not.toContainText(/radar nemi/i)
+  await animasyonlarBitsin(page)
   const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
   expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([])
 })
