@@ -63,3 +63,4 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Güven etiketi eşikleri | uydu ≤ 14 gün · hava ≤ 3 gün · 5 koşuldan ≥ 3 orta, 5 yüksek | ön değer (ADR 0024) | doğrulanmadı |
 | Durum bantları / ihtiyaç renkleri | stres < %50 · yakın 50–70 · yeterli 70–97 · dolu ≥ 97; ihtiyaç ≥ %95 yeşil, 85–95 sarı | ön değer | doğrulanmadı |
 | Yağış serisi | `era5_daily` (IMERG yalnız sistematik farkta); Hava sekmesi dahil TEK seri | ADR 0025; `docs/agro/yagis-kaynak-karsilastirma.md` | karar verildi (istasyon referansı zayıf: 26 km) |
+| Bahçe yağış ölçeri düzeltme önerisi | ayda ≥ 5 eşleşen gün · seri toplamı ≥ 10 mm · |ölçüm/seri − 1| ≥ 0,20 · çarpan [0,5; 2,0]; **otomatik uygulanmaz** | ADR 0026 | doğrulanmadı |

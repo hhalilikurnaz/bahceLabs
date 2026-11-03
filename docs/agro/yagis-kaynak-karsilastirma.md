@@ -36,5 +36,8 @@
 4. **Kapsam:** yalnız `era5_daily` 2015'ten bugüne kesintisiz (sezon tekrarı, kuru/ıslak yıl sınıflaması ve normal bant için zorunlu) ve ET₀ ve toprak nemiyle aynı veri seti.
 5. **Gerçek çelişki** (Hava sekmesi 7 gün 138 mm ↔ Su/plan 91 mm): `weather_daily`/`era5_daily` farkı özellikle 28–29 Ekim'de (27,1/89,8 mm ↔ 16,0/52,6 mm). Bu günlerin gerçeği bu verilerle belirlenemez (istasyon ve IMERG yok).
 
+## Daha yakın referans istasyon var mı? (15 km içi: Erdemli / Silifke MGM AWS)
+**Yok.** Meteostat istasyon listesi (`bulk.meteostat.net/v2/stations/lite.json.gz`, 2026-11-03'te indirildi, 15.931 istasyon) jlnnlk merkezine (36,664 K · 34,380 D) göre tarandı: **60 km içinde yalnızca 17340 Mersin (25,9 km)** var; Erdemli ve Silifke (MGM otomatik meteoroloji istasyonları) Meteostat listesinde **bulunmuyor**. 15 km içinde istasyon yok; bu belge bu yüzden 17340 ile üretildi. Daha yakın bir referans için kaynak MGM'nin kendi gözlem verisi ya da bahçe yağış ölçeri olabilir (Saha Defteri «Yağış ölçümü», ADR 0026).
+
 ## Karar (ADR 0025)
 **Tek seri: `era5_daily`** (IMERG yalnız mevcut kuralla: aylık karşılaştırmada sistematik fark varsa geçmiş günlerde). Hava sekmesinin geçmiş yağış/ET₀ değerleri ve toplamları artık bu seriden gelir; `weather_daily` yalnız sıcaklık içindir. Gerekçe: kapsam, iç tutarlılık (aynı ET₀/nem), uzun dönem toplam sapması en küçük; zayıf yanı (yanlış alarm, son günlerin model değeri) **kaynak satırında** söylenir. Seri değişirse karar bu belgenin yeniden üretilmesiyle gözden geçirilir.
