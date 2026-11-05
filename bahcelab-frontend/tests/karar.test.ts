@@ -102,7 +102,7 @@ describe('sulama planı cümleleri (9H)', () => {
 
 describe('sulama paneli cümleleri (9H-S4)', () => {
   const p = (sonraki: { tarih: string; gun_sonra: number; vanalar: string[] } | null, saat: string | null = '05:00') => ({
-    durum: 'hazir' as const, bugun: '2026-07-14', kpi: { sonraki }, vardiya: saat ? { kalemler: [{ baslangic: saat }] } : null, tetik_pct: 60, en_dusuk: { ad: 'V3', pct: 62.4 }, esik_alti_sektorler: [] as string[],
+    durum: 'hazir' as const, bugun: '2026-07-14', kpi: { sonraki }, vardiya: saat ? { kalemler: [{ baslangic: saat }] } : null, tetik_pct: 60, en_dusuk: { ad: 'V3', pct: 62.4 }, esik_alti_sektorler: [] as string[], sektor_tanimli: true, sektor_sayisi: 3, ufuk_gun: 10,
   })
   it('başlık: gün + vardiya + vanalar', () => {
     expect(sulamaPanelKarar(p({ tarih: '2026-07-16', gun_sonra: 2, vanalar: ['V1', 'V2'] }))).toBe('Perşembe sabah 05:00 vardiyasıyla V1 ve V2 sulanacak.')
@@ -120,9 +120,14 @@ describe('sulama paneli cümleleri (9H-S4)', () => {
   })
   it('neden ve grafik altı cümleleri', () => {
     expect(sulamaNeden(p({ tarih: '2026-07-16', gun_sonra: 2, vanalar: ['V1'] }))).toBe('En kuru vana V3 %62; kullanılabilir su %60 sulama eşiğine iniyor.')
-    expect(sulamaNeden(p(null))).toBe('En kuru vana V3 %62; sulama eşiğine inmesi beklenmiyor.')
+    expect(sulamaNeden(p(null))).toBe('En kuru vana V3 %62; 10 gün içinde eşiğe inmesi beklenmiyor.')
     expect(toprakSuyuCumlesi(p({ tarih: '2026-07-22', gun_sonra: 8, vanalar: ['V1'] }))).toBe('En düşük vana V3 %62; 7 günde eşik altına inen yok; ilk sulama 22 Tem, V1')
     expect(toprakSuyuCumlesi({ ...p(null), esik_alti_sektorler: ['V2'] })).toBe('En düşük vana V3 %62; 7 günde eşik altına inecek: V2; sulama gerekmiyor')
+    // tek sektör: «En kuru vana bahçe» ifadesi YOK
+    const tek = { ...p(null), en_dusuk: { ad: 'Bahçe', pct: 93.4 }, sektor_tanimli: false, sektor_sayisi: 1 }
+    expect(sulamaNeden(tek)).toBe('Kök bölgesi %93 dolu; 10 gün içinde eşiğe inmesi beklenmiyor.')
+    expect(sulamaNeden({ ...tek, kpi: { sonraki: { tarih: '2026-07-16', gun_sonra: 2, vanalar: ['Bahçe'] } } })).toBe('Kök bölgesi %93 dolu; kullanılabilir su %60 sulama eşiğine iniyor.')
+    expect(toprakSuyuCumlesi(tek)).toBe('Kök bölgesi %93; 7 günde eşik altına inen yok; sulama gerekmiyor')
     expect(suDengesiCumlesi({ etc: 40, eta: 38, sulama: 41.2, yagmur: 63, karsilanmayan: 2.4 })).toBe("Son 14 günde ihtiyacın %95'i karşılandı: 41 mm sulama, 63 mm yağmur; karşılanmayan 2 mm")
     expect(suDengesiCumlesi({ etc: 0, eta: 0, sulama: 0, yagmur: 0, karsilanmayan: 0 })).toContain('hesaplanamadı')
   })

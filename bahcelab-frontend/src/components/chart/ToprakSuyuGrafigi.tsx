@@ -25,7 +25,9 @@ export function ToprakSuyuGrafigi({ vanalar, bugun, genislik, yukseklik = 220, s
   const iw = Math.max(40, genislik - sol - sag)
   const ih = yukseklik - ust - alt
   const X = (i: number) => sol + (i * iw) / Math.max(1, n - 1)
-  const Y = scaleLinear({ domain: [0, 100], range: [ust + ih, ust] })
+  const ALT = 30 // eksen %30–100: altı kesik işaretiyle (stres bandı 30–%50 görünür; daha kuru değerler kırpılır)
+  const Y0 = scaleLinear({ domain: [ALT, 100], range: [ust + ih, ust] })
+  const Y = (v: number) => Y0(Math.max(ALT, Math.min(100, v)))
   const ilkTahmin = vanalar[0]?.gunler.findIndex((g) => g.tahmin) ?? -1
   const bx = ilkTahmin >= 0 ? X(Math.max(0, ilkTahmin - 0.5)) : 0
   const bugunI = tarihler.indexOf(bugun)
@@ -49,17 +51,18 @@ export function ToprakSuyuGrafigi({ vanalar, bugun, genislik, yukseklik = 220, s
   return (
     <div className="relative" style={{ width: genislik }} data-testid="toprak-suyu-grafigi">
       <svg width={genislik} height={yukseklik} viewBox={`0 0 ${genislik} ${yukseklik}`} role="img" aria-label="Toprak suyu, kullanılabilir su yüzdesi, vanalara göre; son 14 gün düz çizgi, sonraki 7 gün kesikli" className="block overflow-visible">
-        <rect x={sol} y={Y(stresPct)} width={iw} height={Y(0) - Y(stresPct)} fill="var(--color-app-warn)" opacity={0.14} data-testid="bant-stres" />
+        <rect x={sol} y={Y(stresPct)} width={iw} height={Y(ALT) - Y(stresPct)} fill="var(--color-app-warn)" opacity={0.14} data-testid="bant-stres" />
         <rect x={sol} y={Y(yeterliPct)} width={iw} height={Y(yakinPct) - Y(yeterliPct)} fill="var(--color-app-success)" opacity={0.14} data-testid="bant-ideal" />
         {geciciIlk >= 0 && <g data-testid="gecici-bolge"><Forecast id="toprak-gecici" x={X(geciciIlk - 0.5)} y={ust - 4} width={Math.max(6, X(geciciSon + 0.5) - X(geciciIlk - 0.5))} height={ih + 8} etiket="geçici" /></g>}
         {ilkTahmin >= 0 && <Forecast id="toprak-tahmin" x={bx} y={ust - 4} width={sol + iw - bx} height={ih + 8} />}
-        {[0, 50, 100].map((t) => (
+        {[ALT, 50, 100].map((t) => (
           <g key={t}><line x1={sol} x2={sol + iw} y1={Y(t)} y2={Y(t)} stroke="var(--color-app-border)" /><text x={sol - 8} y={Y(t) + 4} textAnchor="end" fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">{t}</text></g>
         ))}
         <text x={sol - 8} y={ust - 5} textAnchor="end" fontSize={YAZI.eksen} fill="var(--color-app-text-dim)">%</text>
-        <DirectLabel x={sol + 6} y={Y(stresPct / 2) + 4} tone="sicak" bold>stres</DirectLabel>
+        <DirectLabel x={sol + 6} y={Y((ALT + stresPct) / 2) + 4} tone="sicak" bold>stres</DirectLabel>
         <DirectLabel x={sol + 6} y={Y((yakinPct + yeterliPct) / 2) + 4} tone="soluk">ideal aralık</DirectLabel>
         <line x1={sol} x2={sol + iw} y1={Y(100)} y2={Y(100)} stroke="var(--color-app-border-strong)" />
+        <path d={`M${sol - 4},${ust + ih - 9} l8,-3 M${sol - 4},${ust + ih - 5} l8,-3`} stroke="var(--color-app-text-dim)" strokeWidth={1.5} fill="none" data-testid="eksen-kesik" />
         <DirectLabel x={sol + 6} y={Y(100) - 5} tone="soluk">tarla kapasitesi</DirectLabel>
         {tetikPct !== null && <Threshold y={Y(tetikPct)} x1={sol} x2={sol + iw} etiket="sulama eşiği" etiketSol />}
         <g className={ilk ? 'm-draw-band' : undefined}>

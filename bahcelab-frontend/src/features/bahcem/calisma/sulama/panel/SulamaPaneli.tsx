@@ -22,7 +22,7 @@ function ToprakSuyuBlogu({ panel }: { panel: PanelYaniti }) {
   const [ref, w] = useElementWidth<HTMLDivElement>()
   const imlec = useCalismaStore((s) => s.imlecTarih)
   const setImlec = useCalismaStore((s) => s.setImlecTarih)
-  const cumle = toprakSuyuCumlesi(panel)
+  const cumle = toprakSuyuCumlesi({ ...panel, sektor_sayisi: panel.sektorler.length })
   return (
     <ChartFrame mesaj="Toprak suyu · vanalara göre" testId="toprak-suyu-karti" ayrinti={<p>Çizgi her vananın kullanılabilir su yüzdesi (100 = tarla kapasitesi, %{panel.stres_pct} altı bitki stresi). Son 14 gün düz, sonraki 7 gün tahmindir (kesikli, taralı). Üçgen: sulama günü (dolu = uyguladığınız, boş = planlanan).</p>}>
       <div ref={ref}>
@@ -74,19 +74,53 @@ function KaynakSatiri({ panel }: { panel: PanelYaniti }) {
   )
 }
 
-/** Su sekmesinin «Sulama» modu (/bahceler/:id/su/sulama): karar → 3 KPI → Bugün | Simülasyon → toprak suyu (vanalara göre) → su dengesi → kaynak + güven. */
+const EKSIK_KODLAR = new Set(['agac_sayisi', 'agac_sayisi_yok', 'damlatici_yok', 'tarife_yok'])
+
+/** «Eksik bilgi (3) · Tamamla →»: tek satır; tıklayınca liste açılır ve Sulama bilgileri formuna götürür. */
+function EksikBilgi({ uyarilar, tamamla }: { uyarilar: { kod: string; mesaj: string }[]; tamamla: () => void }) {
+  const [acik, setAcik] = useState(false)
+  const eksik = uyarilar.filter((u) => EKSIK_KODLAR.has(u.kod))
+  if (eksik.length === 0) return null
+  return (
+    <div className="rounded-md border border-app-border bg-app-card" data-testid="eksik-bilgi">
+      <button type="button" aria-expanded={acik} onClick={() => setAcik(!acik)} data-testid="eksik-bilgi-satiri" className="flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-small">
+        <span><b>Eksik bilgi ({eksik.length})</b> <span className="text-app-text-muted">· hesaplar yine çalışır, bazı değerler gösterilemez</span></span>
+        <span className="shrink-0 font-semibold underline">Tamamla {acik ? '↑' : '→'}</span>
+      </button>
+      {acik && (
+        <div className="border-t border-app-border px-3 py-2" data-testid="eksik-bilgi-listesi">
+          <ul className="list-disc space-y-1 pl-5 text-small text-app-text-muted">{eksik.map((u) => <li key={u.kod} data-testid={`uyari-${u.kod}`}>{u.mesaj}</li>)}</ul>
+          <Button variant="secondary" className="mt-2" onClick={tamamla} data-testid="eksik-bilgi-tamamla">Sulama bilgilerini tamamla</Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Su sekmesinin «Sulama» modu (/bahceler/:id/su/sulama): başlık + Bugün | Simülasyon → 3 KPI → [Bugün: karar, eksik bilgi, 7 gün, vanalar, program | Simülasyon] → toprak suyu → su dengesi → kaynak + güven. */
 export function SulamaPaneli({ garden }: { garden: Garden }) {
   const q = useSulamaPanel(garden.id)
   const profil = useSulamaProfili(garden.id)
   const [sekme, setSekme] = useState<Sekme>('bugun')
   const [sihirbaz, setSihirbaz] = useState(false)
   const p = q.data
-  const karar = p ? sulamaPanelKarar(p) : null
+  const girdi = p ? { ...p, sektor_sayisi: p.sektorler.length } : null
+  const karar = girdi ? sulamaPanelKarar(girdi) : null
   return (
     <PanelKabuk karar={karar} testId="sulama-paneli">
-      <div className="flex items-center justify-between gap-2">
-        <Link to={gardenPath(garden.id, 'su')} data-testid="sulamadan-cik" className="inline-flex min-h-11 items-center text-small font-semibold text-app-text-muted hover:text-app-text">← Su</Link>
-        <Button variant="secondary" onClick={() => setSihirbaz(true)} data-testid="sulama-bilgileri">{profil.data?.profil ? 'Sulama bilgileri' : 'Bilgileri gir'}</Button>
+      <div className="flex items-start justify-between gap-2" data-testid="sulama-baslik-satiri">
+        <div className="min-w-0">
+          <Link to={gardenPath(garden.id, 'su')} data-testid="sulamadan-cik" className="inline-flex min-h-6 items-center text-caption font-semibold text-app-text-muted hover:text-app-text">← Su</Link>
+          <h2 className="text-h1 font-semibold leading-tight text-app-text">Sulama</h2>
+          <button type="button" onClick={() => setSihirbaz(true)} data-testid="sulama-bilgileri" className="min-h-9 text-small font-semibold text-app-text-muted underline hover:text-app-text">{profil.data?.profil ? 'Sulama bilgileri' : 'Bilgileri gir'}</button>
+        </div>
+        {p?.durum === 'hazir' && (
+          <div role="tablist" aria-label="Sulama sekmeleri" className="inline-flex shrink-0 rounded-md bg-app-text/8 p-0.5" data-testid="sulama-sekmeleri">
+            {([['bugun', 'Bugün'], ['simulasyon', 'Simülasyon']] as const).map(([id, ad]) => (
+              <button key={id} role="tab" type="button" aria-selected={sekme === id} onClick={() => setSekme(id)} data-testid={`sulama-sekme-${id}`} className={`min-h-11 rounded-sm px-3 text-small font-semibold ${sekme === id ? 'bg-app-card text-app-text shadow-e1' : 'text-app-text-muted hover:text-app-text'}`}>{ad}</button>
+            ))}
+          </div>
+        )}
       </div>
       {q.isLoading ? <div className="m-skeleton h-40 rounded-md bg-app-card-hover" role="status" aria-label="Sulama paneli yükleniyor" />
         : q.isError || !p ? <ErrorState title="Sulama paneli alınamadı" error={q.error} retrying={q.isFetching} onRetry={() => void q.refetch()} />
@@ -98,14 +132,10 @@ export function SulamaPaneli({ garden }: { garden: Garden }) {
         : p.durum === 'veri_yok' ? <KararBlogu karar={karar ?? ''} testId="sulama-karar-blogu" alt={p.neden ?? undefined} />
         : (
           <>
-            <KararBlogu karar={karar ?? ''} alt={sulamaNeden(p)} testId="sulama-karar-blogu" />
             <KpiSatiri panel={p} />
-            {p.uyarilar.length > 0 && <ul className="space-y-1" data-testid="sulama-uyarilar">{p.uyarilar.map((u) => <li key={u.kod} data-testid={`uyari-${u.kod}`} className="rounded-md border border-app-border bg-app-card px-3 py-2 text-small text-app-text-muted"><b className="text-app-text">Not · </b>{u.mesaj}</li>)}</ul>}
-            <div role="tablist" aria-label="Sulama sekmeleri" className="flex gap-1" data-testid="sulama-sekmeleri">
-              {([['bugun', 'Bugün'], ['simulasyon', 'Simülasyon']] as const).map(([id, ad]) => (
-                <button key={id} role="tab" type="button" aria-selected={sekme === id} onClick={() => setSekme(id)} data-testid={`sulama-sekme-${id}`} className={`min-h-11 flex-1 rounded-md px-4 text-body font-semibold ${sekme === id ? 'bg-app-primary text-app-on-primary' : 'text-app-text-muted hover:bg-app-card-hover'}`}>{ad}</button>
-              ))}
-            </div>
+            {sekme === 'bugun' && <KararBlogu karar={karar ?? ''} alt={girdi ? sulamaNeden(girdi) : undefined} testId="sulama-karar-blogu" />}
+            <EksikBilgi uyarilar={p.uyarilar} tamamla={() => setSihirbaz(true)} />
+            {p.uyarilar.some((u) => !EKSIK_KODLAR.has(u.kod)) && <ul className="space-y-1" data-testid="sulama-uyarilar">{p.uyarilar.filter((u) => !EKSIK_KODLAR.has(u.kod)).map((u) => <li key={u.kod} data-testid={`uyari-${u.kod}`} className="rounded-md border border-app-border bg-app-card px-3 py-2 text-small text-app-text-muted"><b className="text-app-text">Not · </b>{u.mesaj}</li>)}</ul>}
             {sekme === 'bugun' ? <BugunSekmesi gardenId={garden.id} panel={p} /> : <SimulasyonSekmesi gardenId={garden.id} mevcutSistem={profil.data?.profil?.sistem ?? 'damla'} />}
             <ToprakSuyuBlogu panel={p} />
             <SuDengesiBlogu panel={p} />

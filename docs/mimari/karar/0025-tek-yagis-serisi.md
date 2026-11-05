@@ -15,3 +15,9 @@ Durum: kabul edildi. Tarih: 2026-11-03. Kanıt: `docs/agro/yagis-kaynak-karsilas
 ## Sonuçlar
 - Hava sekmesindeki yağış sayıları değişir (jlnnlk 29 Ekim: 89,8 → 52,6 mm). Hangisinin doğru olduğunu bu veriler kanıtlamaz (istasyon 20 Ekim'de bitiyor, IMERG gecikmeli); bir yerel yağmur ölçer Saha Defteri'ne girilebilirse seri ona göre sınanabilir (sonraki iş).
 - `weather_daily`'nin yağış alanı artık okunmuyor; tablo sıcaklık ve yedek için kalır.
+
+## Ek (2026-11-05): «geçici gün sayısı» neden 10 görünmüştü
+Ölçüm: Open-Meteo arşivi (`models=era5`) 5 Kasım 2026'da **30 Ekim'e kadar** tam günlük veri veriyor (31 Ekim kısmi) → ERA5 gecikmesi tipik **5–6 gün**. jlnnlk'de 3 Kasım'da «son 10 gün geçici» görünmesinin nedeni gecikme değil, **dev ortamında günlük ERA5 işinin çalışmaması** (satırlar 29 Ekim'den beri tazelenmemişti: gecikme 5 gün + besleme eskiliği 5 gün). Besleme çalıştırılınca (`feed_garden`) geçici gün sayısı 6'ya (31 Ekim–5 Kasım, bugün dahil) indi. Üretimde günlük iş (`refresh_era5`) çalıştığı sürece sayı 5–6'dır; 7'yi aşması «besleme eski» işaretidir. Kova bu sayıyı olduğu gibi gösterir; sayı uydurulmaz ya da kırpılmaz.
+
+## Ek: büyük sayı tek kaynaktan
+Su sekmesi/Su kartının büyük «kök bölgesi doluluğu» sayısı **kovadan** (kullanılabilir su %, sulama paneliyle aynı) gelir (`SuYaniti.kova_doluluk_pct`); ERA5-Land'in mevsim normuna göre nemi yalnız küçük «model toprak nemi» referans satırıdır. Karar cümlesi de kova yüzdesiyle kurulur («Kök bölgesi %93 dolu (Ekim normuna göre nemli); …»). Tutarlılık testi: `su.kova_doluluk_pct == panel.sektorler[0].doluluk_pct`.

@@ -61,6 +61,16 @@ test('panel: karar, 3 KPI, Bugün sekmesi, toprak suyu (bantlar + eşik), su den
   expect(baslik).toMatch(/sulanacak\.$|^Bu hafta sulama gerekmiyor\.$/)
   await expect(page.getByTestId('kpi-sonraki')).toBeVisible()
   await expect(page.getByTestId('kpi-ihtiyac')).toContainText('İhtiyaç karşılandı')
+  await expect(page.getByTestId('kpi-sezon-alt')).toContainText('Plan · uygulanan: kayıt yok')
+  const kpiY = (await page.getByTestId('sulama-kpi').boundingBox())!.y
+  const kararY = (await page.getByTestId('karar-cumlesi').boundingBox())!.y
+  expect(kpiY).toBeLessThan(kararY) // prototip: KPI'lar üstte, karar cümlesi altında
+  await expect(page.getByTestId('sulama-baslik-satiri')).toContainText('Sulama')
+  await expect(page.getByTestId('karar-alt')).toContainText(/^Kök bölgesi %\d+ dolu; (10 gün içinde eşiğe inmesi beklenmiyor|kullanılabilir su %\d+ sulama eşiğine iniyor)\.$/) // tek vanada «En kuru vana» yok
+  await expect(page.getByTestId('karar-alt')).not.toContainText('En kuru vana')
+  await expect(page.getByTestId('eksik-bilgi-listesi')).toHaveCount(0) // eksik bilgi tek satırda toplu, liste kapalı
+  await expect(page.getByTestId('eksik-bilgi-satiri')).toContainText(/Eksik bilgi \(\d\)/)
+  await expect(page.getByTestId('eksik-bilgi-satiri')).toContainText('Tamamla')
   await expect(page.getByTestId('kpi-ihtiyac')).toContainText(/karşılanıyor|dikkat|yetersiz/) // renk + yazı
   await expect(page.getByTestId('kpi-sezon')).toContainText('Sezon suyu')
   expect(await page.getByTestId('hafta-seridi').locator('li').count()).toBe(7)
@@ -73,7 +83,7 @@ test('panel: karar, 3 KPI, Bugün sekmesi, toprak suyu (bantlar + eşik), su den
   await expect(toprak.getByTestId('esik-cizgisi')).toContainText('sulama eşiği')
   await expect(toprak.getByTestId('toprak-bugun')).toContainText('bugün')
   await expect(toprak.getByTestId('tahmin-bolgesi')).toBeVisible()
-  await expect(page.getByTestId('toprak-suyu-cumlesi')).toContainText(/^(En düşük vana|Bahçe) .*%\d+; 7 günde eşik altına/)
+  await expect(page.getByTestId('toprak-suyu-cumlesi')).toContainText(/^(Kök bölgesi|En düşük vana|Bahçe) .*%\d+; 7 günde eşik altına/)
   const denge = page.getByTestId('su-dengesi-grafigi')
   await expect(denge).toBeVisible()
   expect(await denge.getByTestId('denge-gunu').count()).toBe(14)
@@ -99,9 +109,9 @@ test('vanalar: iki vana satırı + iki çizgi, vardiya saatleri; «sonraki sulam
     // KPI'daki tarih ile «Sonraki program» başlığındaki tarih aynı
     const kpi = (await page.getByTestId('kpi-sonraki').textContent()) ?? ''
     const gun = /(\d+) (Oca|Şub|Mar|Nis|May|Haz|Tem|Ağu|Eyl|Eki|Kas|Ara)/.exec(kpi)
-    expect(gun).not.toBeNull()
     const prog = (await page.getByTestId('sonraki-program').locator('h3').textContent()) ?? ''
-    expect(prog).toContain(`${gun![1]}.`)
+    if (gun) expect(prog).toContain(`${gun[1]}.`)
+    else expect(kpi).toContain('Bugün') // sulama bugün: KPI tarih yerine «Bugün» yazar
     await page.getByTestId('programi-onayla').click()
     await expect(page.getByTestId('programi-onayla')).toHaveText('Program onaylandı', { timeout: 30_000 })
     await page.getByTestId('sahaya-isle').click()
@@ -118,9 +128,9 @@ test('simülasyon: yıl düğmeleri (kuru/normal/ıslak), 4 sayaç, sistem ve k�
   const sim = page.getByTestId('sulama-simulasyon')
   await expect(sim.getByTestId('sim-sayaclar')).toBeVisible({ timeout: 45_000 })
   const yillar = sim.getByTestId('sim-yillar')
-  await expect(yillar).toContainText('kuru')
-  await expect(yillar).toContainText('normal')
-  await expect(yillar).toContainText('ıslak')
+  expect(await yillar.locator('button').count()).toBeGreaterThanOrEqual(10) // 2015–2025 hepsi
+  for (const tip of ['kuru', 'normal', 'islak']) expect(await yillar.locator(`[data-tip="${tip}"]`).count()).toBeGreaterThan(0)
+  await expect(yillar.getByRole('button', { name: /kuru yıl, sezon yağışı \d+ mm/ }).first()).toBeVisible() // her sütunun erişilebilir adı var
   await expect(sim.getByTestId('sayac-tl')).toHaveText('—')
   await expect(sim.getByTestId('sim-tl-eksik')).toContainText('Tarife güncel değil, faturanızdaki birim fiyatı girin')
   const m3 = async () => parseInt(((await sim.getByTestId('sayac-m3').textContent()) ?? '0').replace(/\D/g, ''), 10)
@@ -129,12 +139,12 @@ test('simülasyon: yıl düğmeleri (kuru/normal/ıslak), 4 sayaç, sistem ve k�
   await expect.poll(m3, { timeout: 30_000 }).toBeGreaterThan(damla) // salma daha çok su
   await sim.getByTestId('sim-sistem-damla').click()
   await expect.poll(m3, { timeout: 30_000 }).toBe(damla)
-  await sim.getByTestId('sim-kisinti').check()
+  await sim.getByTestId('sim-kisinti').click()
   await expect(sim.getByTestId('sim-kisinti-notu')).toContainText('Kilitli: Çiçeklenme ve meyve tutumu, Hızlı meyve büyümesi')
   await expect(sim.getByTestId('sim-kisinti-notu')).toContainText('Bu dönemde önerilmez')
   await expect.poll(m3, { timeout: 30_000 }).toBeLessThan(damla)
   await expect(sim.getByTestId('sim-kisinti-ozet')).toContainText(/az su .*stres günü \d+ → \d+ .*verim riski: (düşük|orta|yüksek)/) // tasarruf tek başına gösterilmez
-  await sim.getByTestId('sim-kisinti').uncheck()
+  await sim.getByTestId('sim-kisinti').click()
   await sim.getByTestId('sim-kwh').fill('2,5')
   await expect(sim.getByTestId('sayac-tl')).toContainText('TL', { timeout: 30_000 })
   await expect(sim.getByTestId('sayac-kwh')).toContainText('kWh')
@@ -161,6 +171,7 @@ test('ağaç sayısı yoksa ağaç başına değer gizlenir; hareketi azalt aç�
   const g = await kurulum(page, 'Sulama Agacsiz', 27.75)
   await page.goto(yol(g.id))
   await expect(page.getByTestId('sulama-kpi')).toBeVisible({ timeout: 30_000 })
+  await page.getByTestId('eksik-bilgi-satiri').click() // «Eksik bilgi (N) · Tamamla →» tek satır; tıklayınca liste
   await expect(page.getByTestId('uyari-agac_sayisi_yok')).toContainText('Ağaç sayısı beyan edilmediği için')
   await expect(page.getByTestId('sulama-paneli')).not.toContainText('L/ağaç')
   await expect(page.getByTestId('toprak-suyu-grafigi')).toBeVisible()
@@ -169,7 +180,13 @@ test('ağaç sayısı yoksa ağaç başına değer gizlenir; hareketi azalt aç�
 
 test('Su kartı, Bugün satırı ve Geçmiş satırı sulama moduna bağlanır; Saha Defteri miktarı kovaya girer', async ({ page }) => {
   const g = await kurulum(page, 'Sulama Baglanti', 27.76, { agac: 1800 })
+  // BÜYÜK SAYI TEK KAYNAKTAN: Su sekmesi ↔ sulama paneli (kova), ERA5-Land nemi yalnız küçük referans satırı
+  await page.goto(yol(g.id))
+  await expect(page.getByTestId('vana-baslik').first()).toHaveText(/^Bahçe · %\d+$/, { timeout: 30_000 })
+  const panelPct = ((await page.getByTestId('vana-baslik').first().textContent()) ?? '').match(/%(\d+)/)![1]
   await page.goto(`/bahceler/${g.id}/su`)
+  await expect(page.getByTestId('buyuk-sayi')).toHaveText(`%${panelPct}`, { timeout: 30_000 })
+  await expect(page.getByTestId('su-on-deger')).toContainText('model toprak nemi (ERA5-Land')
   const kart = page.getByTestId('sulama-karti')
   await expect(kart.getByTestId('sulama-karti-karar')).toContainText(/sulayın\.|sulama gerekmiyor\./, { timeout: 30_000 })
   await kart.getByTestId('plana-git').click()
@@ -185,7 +202,8 @@ test('Su kartı, Bugün satırı ve Geçmiş satırı sulama moduna bağlanır; 
   expect((await page.request.post(`/api/gardens/${g.id}/saha-kayitlari`, { data: { tur: 'sulama', tarih: gun, ayrinti: { m3: 150 } } })).ok()).toBeTruthy()
   await page.reload()
   await expect(page.getByTestId('kpi-sezon')).toContainText('150 m³', { timeout: 30_000 })
-  await expect(page.getByTestId('kpi-sezon')).toContainText('uygulanan')
+  await expect(page.getByTestId('kpi-sezon-alt')).not.toContainText('kayıt yok')
+  await expect(page.getByTestId('kpi-sezon-alt')).toContainText('Uygulanan · plan')
   await page.goto(`/bahceler/${g.id}/gecmis`)
   await expect(page.getByTestId('gecmis-sulama')).toContainText(/planlanan .* m³ · uygulanan 150 m³/, { timeout: 30_000 })
 })

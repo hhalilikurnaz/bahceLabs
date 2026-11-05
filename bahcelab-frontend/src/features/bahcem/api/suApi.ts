@@ -73,6 +73,8 @@ export interface SuYaniti {
   karar: string
   karar_detay: SulamaKarari
   on_deger: boolean
+  /** kullanılabilir su % (kova, sulama paneliyle aynı); null: kova kurulamadı */
+  kova_doluluk_pct?: number | null
   profil: NemProfili
   denge: { taw_mm: number | null; tukenme_esigi_mm: number | null; gunler: DengeGunu[]; yagis_kaynagi: 'era5' | 'imerg'; yagis_karari: string; kc_notu: string }
   sicaklik: { noktalar: SicaklikNoktasi[]; karisik_piksel_esigi_c: number; normal_alt_yuzde: number; normal_ust_yuzde: number; min_sahne: number }

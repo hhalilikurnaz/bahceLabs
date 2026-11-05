@@ -156,6 +156,10 @@ export interface PanelKararGirdisi {
   tetik_pct: number | null
   en_dusuk: { ad: string; pct: number } | null
   esik_alti_sektorler: string[]
+  /** çizilmiş (2+) vana var mı: «En kuru vana …» yalnız o zaman anlamlı */
+  sektor_tanimli?: boolean
+  sektor_sayisi?: number
+  ufuk_gun?: number
 }
 const vanaListesi = (v: string[]): string => (v.length <= 1 ? (v[0] === 'Bahçe' ? 'bahçe' : (v[0] ?? '')) : `${v.slice(0, -1).join(', ')} ve ${v[v.length - 1]}`)
 const gunZaman = (bugun: string, tarih: string): string => {
@@ -174,23 +178,28 @@ export function sulamaPanelKarar(p: PanelKararGirdisi): string {
   return `${gunZaman(p.bugun, s.tarih)} sabah${saat ? ` ${saat} vardiyasıyla` : ''} ${vanaListesi(s.vanalar)} sulanacak.`
 }
 
-/** Kararın nedeni (tek cümle): en kuru vana ve eşik. */
+const cokVana = (p: PanelKararGirdisi): boolean => (p.sektor_sayisi ?? (p.sektor_tanimli ? 2 : 1)) >= 2
+
+/** Kararın nedeni (tek cümle). Tek sektörde «Kök bölgesi %93 dolu; …» (bahçe tek vana), 2+ vanada «En kuru vana V3 %62; …». */
 export function sulamaNeden(p: PanelKararGirdisi): string | null {
   if (p.durum !== 'hazir' || !p.en_dusuk) return null
-  const e = `En kuru vana ${p.en_dusuk.ad === 'Bahçe' ? 'bahçe' : p.en_dusuk.ad} %${Math.round(p.en_dusuk.pct)}`
+  const pct = Math.round(p.en_dusuk.pct)
+  const ufuk = p.ufuk_gun ?? 10
   const s = p.kpi?.sonraki
-  if (s && s.gun_sonra <= 6 && p.tetik_pct !== null) return `${e}; kullanılabilir su %${Math.round(p.tetik_pct)} sulama eşiğine iniyor.`
-  return `${e}; sulama eşiğine inmesi beklenmiyor.`
+  const yakin = s && s.gun_sonra <= 6 && p.tetik_pct !== null
+  if (!cokVana(p)) return yakin ? `Kök bölgesi %${pct} dolu; kullanılabilir su %${Math.round(p.tetik_pct as number)} sulama eşiğine iniyor.` : `Kök bölgesi %${pct} dolu; ${ufuk} gün içinde eşiğe inmesi beklenmiyor.`
+  const e = `En kuru vana ${p.en_dusuk.ad} %${pct}`
+  return yakin ? `${e}; kullanılabilir su %${Math.round(p.tetik_pct as number)} sulama eşiğine iniyor.` : `${e}; ${ufuk} gün içinde eşiğe inmesi beklenmiyor.`
 }
 
 /** Toprak suyu grafiğinin altındaki tek cümle. */
 export function toprakSuyuCumlesi(p: PanelKararGirdisi): string | null {
   if (p.durum !== 'hazir' || !p.en_dusuk) return null
-  const ad = p.en_dusuk.ad === 'Bahçe' ? 'Bahçe' : `En düşük vana ${p.en_dusuk.ad}`
+  const pct = Math.round(p.en_dusuk.pct)
   const alti = p.esik_alti_sektorler.length ? `7 günde eşik altına inecek: ${p.esik_alti_sektorler.join(', ')}` : '7 günde eşik altına inen yok'
   const s = p.kpi?.sonraki
   const ilk = s ? `ilk sulama ${gunAyKisa(s.tarih)}, ${s.vanalar.join(' + ')}` : 'sulama gerekmiyor'
-  return `${ad} %${Math.round(p.en_dusuk.pct)}; ${alti}; ${ilk}`
+  return `${cokVana(p) ? `En düşük vana ${p.en_dusuk.ad}` : 'Kök bölgesi'} %${pct}; ${alti}; ${ilk}`
 }
 
 /** Su dengesi grafiğinin altındaki tek cümle (son 14 gün, vana ortalaması). */

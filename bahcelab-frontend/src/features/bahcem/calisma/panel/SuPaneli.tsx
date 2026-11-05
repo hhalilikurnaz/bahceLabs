@@ -27,8 +27,8 @@ export function SuPaneli({ garden }: { garden: Garden }) {
       ) : (
         <>
           <div data-testid="su-karar">
-            <KararBlogu karar={karar!} testId="su-karar-blogu" sayi={data.profil.kok_bolgesi_doluluk != null ? `%${Math.round(data.profil.kok_bolgesi_doluluk)}` : null} etiket="kök bölgesi doluluğu"
-              kucuk={<span data-testid="su-on-deger">{data.profil.donem ?? 'Dönem'} normaline göre · ön değer · mühendis onayı bekliyor</span>} yas={<StaleBadge kaynak="ERA5-Land · 9 km" gun={data.profil.bugun_tarihi ? gunOnce(data.profil.bugun_tarihi) : null} />}>
+            <KararBlogu karar={karar!} testId="su-karar-blogu" sayi={(data.kova_doluluk_pct ?? data.profil.kok_bolgesi_doluluk) != null ? `%${Math.round((data.kova_doluluk_pct ?? data.profil.kok_bolgesi_doluluk) as number)}` : null} etiket={data.kova_doluluk_pct != null ? 'kök bölgesi dolu (kullanılabilir su)' : 'kök bölgesi doluluğu'}
+              kucuk={<span data-testid="su-on-deger">{data.kova_doluluk_pct != null && data.profil.kok_bolgesi_doluluk != null ? `model toprak nemi (ERA5-Land, ${data.profil.donem ?? 'dönem'} normaline göre): %${Math.round(data.profil.kok_bolgesi_doluluk)} · ` : `${data.profil.donem ?? 'Dönem'} normaline göre · `}ön değer · mühendis onayı bekliyor</span>} yas={<StaleBadge kaynak="ERA5-Land · 9 km" gun={data.profil.bugun_tarihi ? gunOnce(data.profil.bugun_tarihi) : null} />}>
               {(data.ayni_hucre_bahceler?.length ?? 0) > 0 && <p className="mt-3 text-small text-app-text-muted" data-testid="ayni-hucre-notu">Bu bahçe, {data.ayni_hucre_bahceler!.join(', ')} ile aynı 9 km’lik hava hücresinde: toprak nemi, yağış ve sıcaklık verisi birebir aynıdır.</p>}
               
             </KararBlogu>

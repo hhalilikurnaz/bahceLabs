@@ -5,6 +5,7 @@ import { useSulamaIsle, useSulamaOnayla, type PanelYaniti, type Vardiya } from '
 import { sayi } from '../../../lib/format'
 import { geciciNotu, sureMetni } from '../../../lib/karar'
 import { vanaEtiketi } from '../../../lib/sulamaPanel'
+import { VardiyaGantt } from './VardiyaGantt'
 
 const GUN = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 const gunKisa = (iso: string): string => GUN[new Date(`${iso}T12:00:00Z`).getUTCDay()]
@@ -32,6 +33,8 @@ export function BugunSekmesi({ gardenId, panel }: { gardenId: string; panel: Pan
   const isle = useSulamaIsle(gardenId)
   const toast = useToast()
   const v = panel.vardiya
+  const simdiD = new Date()
+  const simdi = simdiD.getHours() * 60 + simdiD.getMinutes()
   return (
     <div className="grid gap-3" data-testid="sulama-bugun">
       <section className="rounded-md border border-app-border bg-app-card p-4" aria-label="Bu hafta">
@@ -40,6 +43,7 @@ export function BugunSekmesi({ gardenId, panel }: { gardenId: string; panel: Pan
           {panel.hafta.map((d) => (
             <li key={d.tarih} data-testid={d.sulama ? 'hafta-sulama' : 'hafta-gun'} className={`rounded-md border p-1.5 text-center text-caption ${d.sulama ? 'border-app-text bg-app-primary text-app-on-primary' : 'border-app-border bg-app-canvas text-app-text-muted'}`}>
               <b className="block">{d.tarih === panel.bugun ? 'Bugün' : gunKisa(d.tarih)}</b>
+              <span className="mx-auto my-1 block h-7 w-2.5 overflow-hidden rounded-full border border-current opacity-80" aria-hidden data-testid="hafta-tup"><span className="block w-full bg-current" style={{ height: `${100 - Math.max(0, Math.min(100, d.ort_doluluk_pct ?? 0))}%`, opacity: 0 }} /><span className="block w-full" style={{ height: `${Math.max(0, Math.min(100, d.ort_doluluk_pct ?? 0))}%`, background: 'var(--color-app-water)' }} /></span>
               <span className="block tabular-nums">{d.ort_doluluk_pct == null ? '—' : `%${Math.round(d.ort_doluluk_pct)}`}</span>
               <span className="block tabular-nums">{d.yagis_mm != null && d.yagis_mm >= 1 ? `${sayi(d.yagis_mm, 0)} mm` : '·'}</span>
               <span className="block font-semibold">{d.sulama ? 'sulama' : ' '}</span>
@@ -69,7 +73,7 @@ export function BugunSekmesi({ gardenId, panel }: { gardenId: string; panel: Pan
         <h3 className="text-lead font-semibold">Sonraki program {v && <span className="text-small font-normal text-app-text-dim">{Number(v.tarih.slice(8, 10))}.{v.tarih.slice(5, 7)} · {v.baslangic}'ten itibaren</span>}</h3>
         {v ? (
           <>
-            <div className="mt-2"><VardiyaTablosu v={v} /></div>
+            <div className="mt-2"><VardiyaGantt v={v} simdiDk={v.tarih === panel.bugun ? simdi : null} />{v.zaman_notu && <p className="mt-1 text-caption text-app-text-dim" data-testid="vardiya-notu">{v.zaman_notu}</p>}</div>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button variant="primary" loading={onayla.isPending} disabled={v.onayli} onClick={() => onayla.mutate(v.tarih, { onSuccess: () => toast.show('Program onaylandı; sulama günü yaklaşınca bildirim gelir.'), onError: (e) => toast.show(describeError(e), { tone: 'warn' }) })} data-testid="programi-onayla">{v.onayli ? 'Program onaylandı' : 'Programı onayla'}</Button>
               <Button onClick={() => isle.mutate(v.tarih, { onSuccess: (r) => toast.show(r.yazilan > 0 ? `Saha Defteri'ne ${r.yazilan} sulama kaydı işlendi.` : 'Bu program zaten işlenmiş.'), onError: (e) => toast.show(describeError(e), { tone: 'warn' }) })} loading={isle.isPending} data-testid="sahaya-isle">Saha Defteri'ne işle</Button>

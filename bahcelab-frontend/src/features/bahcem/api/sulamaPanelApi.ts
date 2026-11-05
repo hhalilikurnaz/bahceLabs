@@ -80,6 +80,8 @@ export interface PanelYaniti {
     sezon_m3: number | null
     sezon_hedef_pct: number | null
     sezon_kaynak: 'uygulanan' | 'planlanan' | null
+    sezon_plan_m3: number | null
+    sezon_uygulanan_m3: number | null
   } | null
   hafta: { tarih: string; ort_doluluk_pct: number | null; yagis_mm: number | null; sulama: boolean }[]
   vardiya: Vardiya | null
@@ -91,6 +93,7 @@ export interface PanelYaniti {
   yagis_vurgu_mm: number
   katalog_surum: number
   onayli_tarih: string | null
+  ufuk_gun: number
   gecici_gun: number
   gecici_ilk: string | null
   olculen_gun: number
