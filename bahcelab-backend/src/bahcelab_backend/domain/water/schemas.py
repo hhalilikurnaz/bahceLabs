@@ -114,6 +114,7 @@ class SuYaniti(BaseModel):
     karar: str
     karar_detay: SulamaKarari
     on_deger: bool  # katalogda «ön değer · mühendis onayı bekliyor»
+    kova_doluluk_pct: float | None = None  # kullanılabilir su % (kova); Su kartının BÜYÜK SAYISI (sulama paneliyle aynı). None: kova kurulamadı → eski gösterim
     profil: NemProfili
     denge: SuDengesi
     sicaklik: YuzeyHava

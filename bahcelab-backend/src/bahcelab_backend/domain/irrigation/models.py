@@ -75,3 +75,26 @@ class IrrigationApprovalModel(Base):
     program: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)  # onay anındaki vardiya listesi
     onaylayan: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class IrrigationNetworkModel(Base):
+    """Sulama ağı: isteğe bağlı pompa noktası ve ana boru çizgisi (kullanıcı çizer; çizilmezse haritada gösterilmez), ağaç sırası yönü (None: parsel uzun ekseni)."""
+
+    __tablename__ = "irrigation_network"
+
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
+    pompa = mapped_column(Geometry(geometry_type="POINT", srid=4326, spatial_index=False), nullable=True)
+    ana_boru = mapped_column(Geometry(geometry_type="LINESTRING", srid=4326, spatial_index=False), nullable=True)
+    sira_yonu_derece: Mapped[float | None] = mapped_column(Float, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class IrrigationExtraModel(Base):
+    """[Bu vanayı programa ekle]: planın önermediği vananın elle eklendiği sulama günü."""
+
+    __tablename__ = "irrigation_extras"
+
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
+    tarih: Mapped[date] = mapped_column(Date, primary_key=True)
+    sektor_ad: Mapped[str] = mapped_column(String(24), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -211,6 +211,8 @@ sulama_plani:
   yagis_olcer_sapma_esigi: 0.2
   yagis_olcer_oran_alt: 0.5
   yagis_olcer_oran_ust: 2.0
+  kc_vana_min_piksel: 20
+  kc_vana_min_gecerli_oran: 0.5
   kisinti_stres_orta_gun: 10
   kisinti_stres_yuksek_gun: 30
   aliskanlik_min_kayit: 4

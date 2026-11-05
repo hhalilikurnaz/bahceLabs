@@ -5,26 +5,31 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
+import numpy as np
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bahcelab_backend.domain.acquisitions.store import decode_grids
 from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.domain.irrigation import engine as en
 from bahcelab_backend.domain.irrigation import schemas as sc
 from bahcelab_backend.domain.irrigation.models import IrrigationProfileModel
+from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
 from bahcelab_backend.domain.water import balance as wb
 from bahcelab_backend.domain.water.era5_sync import garden_cell
 from bahcelab_backend.domain.water.rain_series import gecmis_hava
 from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import TIMEZONE
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
+from bahcelab_backend.shared.storage import get_storage
 
 SOURCES = [
     sc.Kaynak(ad="ERA5-Land (Open-Meteo) · ET₀ FAO-56 Penman-Monteith, geçmiş", not_="günlük; önümüzdeki günler Open-Meteo tahmini"),
@@ -54,6 +59,7 @@ class Ctx:
     gecici: frozenset[date] = frozenset()  # ERA5'in kesinleşmemiş (model) günleri
     olculen: frozenset[date] = frozenset()  # bahçede yağışı ölçülen günler
     yanlilik: tuple[Any, ...] = ()
+    ndvi_degeri: float | None = None
     sektor_ad: str | None = None  # tanımlı sektörlerde: yalnız bu vanaya (ya da vana belirtilmemiş) kayıtlar sayılır
 
 
@@ -176,7 +182,7 @@ class IrrigationService:
             raise Veri("Son 60 günde net Sentinel-2 görüntüsü yok; taç örtüsü (Kc düzeltmesi) hesaplanamıyor.")
         taw, raw = en.taw_raw_mm(float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"]), rule.kok_derinligi_cm, rule.tukenme_orani_p)
         weather = await self._weather(garden_id, cell, su_rule, today)
-        return Ctx(g, p, rule, cell, today, taw, raw, cover, rule.sistem_verimi[p.sistem], area, g.agac_sayisi, weather, (float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"])), None if ndvi is None else ndvi[1], frozenset(d for d in self._gecmis.model_gunleri if d <= today), frozenset(self._gecmis.olculen), self._gecmis.yanlilik)
+        return Ctx(g, p, rule, cell, today, taw, raw, cover, rule.sistem_verimi[p.sistem], area, g.agac_sayisi, weather, (float(soil["tarla_kapasitesi"]), float(soil["solma_noktasi"])), None if ndvi is None else ndvi[1], frozenset(d for d in self._gecmis.model_gunleri if d <= today), frozenset(self._gecmis.olculen), self._gecmis.yanlilik, None if ndvi is None else float(ndvi[0]))
 
     async def _weather(self, garden_id: uuid.UUID, cell: uuid.UUID, su_rule: cat.SuKurali, today: date) -> dict[date, tuple[float | None, float | None]]:
         """TEK seri (`rain_series`): Su sekmesi ve Hava sekmesiyle aynı yağış/ET₀."""
@@ -444,9 +450,19 @@ class IrrigationService:
         g = await self._garden(garden_id)
         seks = await self._sektor_satirlari(garden_id, g, float(g.alan_dekar) * 1000.0)
         tanimli = any(x.id is not None for x in seks)
+        ag = await self._ag(garden_id)
         return sc.SektorlerYaniti(
-            tanimli=tanimli, sektorler=[self._kayit(x) for x in seks],
+            tanimli=tanimli, sektorler=[self._kayit(x) for x in seks], pompa=ag.pompa, ana_boru=ag.ana_boru, sira_yonu_derece=ag.sira_yonu_derece,
+            varsayilan_sira_aralik_m=ag.varsayilan_sira_aralik_m, varsayilan_agac_aralik_m=ag.varsayilan_agac_aralik_m,
             not_=None if tanimli else "Sektör çizilmedi: bahçe tek sektör olarak hesaplanır. Haritada parseli bölerek vana sektörleri tanımlayabilirsiniz.",
+        )
+
+    async def _ag(self, garden_id: uuid.UUID) -> sc.SulamaAgi:
+        r = (await self.session.execute(text("SELECT ST_AsGeoJSON(pompa), ST_AsGeoJSON(ana_boru), sira_yonu_derece FROM irrigation_network WHERE garden_id = :g"), {"g": garden_id})).first()
+        p = await self._profile(garden_id)
+        return sc.SulamaAgi(
+            pompa=json.loads(r[0]) if r and r[0] else None, ana_boru=json.loads(r[1]) if r and r[1] else None, sira_yonu_derece=r[2] if r else None,
+            varsayilan_sira_aralik_m=p.sira_aralik_m if p else None, varsayilan_agac_aralik_m=p.agac_aralik_m if p else None,
         )
 
     @staticmethod
@@ -507,17 +523,99 @@ class IrrigationService:
                 ),
                 {"g": garden_id, "ad": x.ad.strip(), "sira": i, "geo": geo, "alan": float(chk[2]), "ag": x.agac_sayisi, "sa": x.sira_aralik_m, "aa": x.agac_aralik_m, "vd": x.vana_debi_m3h},
             )
+        await self._ag_kaydet(garden_id, body)
         await self.session.flush()
         return await self.sektor_listesi(garden_id)
 
-    # ------------------------------------------------------------------ sektör bazında kova
-    def _sektor_ctx(self, c: Ctx, x: SekRow) -> Ctx:
-        return replace(c, area_m2=x.alan_m2, trees=x.agac_sayisi, sektor_ad=x.ad if x.id is not None else None)
+    async def _ag_kaydet(self, garden_id: uuid.UUID, body: sc.SektorlerGirdisi) -> None:
+        """Pompa noktası ve ana boru (isteğe bağlı): bahçeye en çok 300 m uzakta olmalı (el çizimi payı); yoksa kayıt silinir (haritada gösterilmez)."""
+        for ad, geo, tur in (("Pompa", body.pompa, "ST_Point"), ("Ana boru", body.ana_boru, "ST_LineString")):
+            if geo is None:
+                continue
+            chk = (
+                await self.session.execute(
+                    text("SELECT ST_IsValid(s.g), ST_GeometryType(s.g), ST_DWithin(s.g::geography, gd.geom::geography, 300) FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON(:geo), 4326) AS g) s, gardens gd WHERE gd.id = :gid"),
+                    {"geo": json.dumps(geo), "gid": garden_id},
+                )
+            ).one()
+            if not chk[0] or chk[1] != tur:
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"{ad}: geçerli bir {'nokta' if tur == 'ST_Point' else 'çizgi'} değil.")
+            if not chk[2]:
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"{ad} bahçeden 300 m'den uzakta.")
+        if body.pompa is None and body.ana_boru is None and body.sira_yonu_derece is None:
+            await self.session.execute(text("DELETE FROM irrigation_network WHERE garden_id = :g"), {"g": garden_id})
+            return
+        await self.session.execute(
+            text(
+                "INSERT INTO irrigation_network (garden_id, pompa, ana_boru, sira_yonu_derece) VALUES (:g, CASE WHEN CAST(:p AS text) IS NULL THEN NULL ELSE ST_SetSRID(ST_GeomFromGeoJSON(:p), 4326) END, "
+                "CASE WHEN CAST(:b AS text) IS NULL THEN NULL ELSE ST_SetSRID(ST_GeomFromGeoJSON(:b), 4326) END, :y) "
+                "ON CONFLICT (garden_id) DO UPDATE SET pompa = EXCLUDED.pompa, ana_boru = EXCLUDED.ana_boru, sira_yonu_derece = EXCLUDED.sira_yonu_derece, updated_at = now()"
+            ),
+            {"g": garden_id, "p": None if body.pompa is None else json.dumps(body.pompa), "b": None if body.ana_boru is None else json.dumps(body.ana_boru), "y": body.sira_yonu_derece},
+        )
 
-    async def _sektor_kovalari(self, c: Ctx, seks: list[SekRow], politika: bool) -> list[tuple[SekRow, Ctx, list[en.DayOut]]]:
+    # ------------------------------------------------------------------ vana başına Sentinel-2 taç örtüsü → Kc
+    async def _vana_kc(self, c: Ctx, seks: list[SekRow]) -> dict[str, sc.KcKaynagi]:
+        """Çizilmiş her vana için son temiz Sentinel-2 NDVI'ının O ÇOKGENDEKİ 10 m piksel ortalaması → taç örtüsü → Kc. Yeterli temiz piksel (katalog) yoksa bahçe değerine düşülür ve NEDEN yazılır.
+        Çizilmemişse (tek sektör «Bahçe») bahçe değeri. Toprak (SoilGrids 250 m) vana başına ayrışmaz."""
+        rule = c.rule
+        kc_now = en.kc_monthly(c.today.month, c.cover, rule)
+        garden_kc = sc.KcKaynagi(kaynak="bahce", tarih=c.ndvi_tarih, ndvi=c.ndvi_degeri, orten_yuzde=c.cover, kc_bugun=kc_now, piksel=None, toplam_piksel=None, maske_orani=None, neden=None)
+        out: dict[str, sc.KcKaynagi] = {x.ad: garden_kc for x in seks}
+        tanimli = [x for x in seks if x.id is not None and x.geometry]
+        if not tanimli:
+            return out
+        geo = json.loads((await self.session.execute(text("SELECT ST_AsGeoJSON(geom) FROM gardens WHERE id = :g"), {"g": c.garden.id})).scalar_one())
+        grid = canonical_grid(geo)
+        masks = {x.ad: garden_mask(grid, cast(dict[str, Any], x.geometry)) for x in tanimli}
+        acqs = (
+            await self.session.execute(
+                text("SELECT tarih, izgara_yolu FROM acquisitions WHERE garden_id = :g AND source_id = 'sentinel2-l2a' AND durum = 'net' AND izgara_yolu IS NOT NULL AND tarih BETWEEN :s AND :e ORDER BY tarih DESC"),
+                {"g": c.garden.id, "s": c.today - timedelta(days=60), "e": c.today},
+            )
+        ).all()
+        storage = get_storage()
+        kalan = {x.ad for x in tanimli}
+        neden: dict[str, str] = {}
+        for tarih, yol in acqs:
+            if not kalan:
+                break
+            try:
+                ndvi = decode_grids(storage.read(yol)).get("ndvi")
+            except Exception:  # noqa: BLE001 - eksik dosya bu sahneyi atlatır
+                continue
+            if ndvi is None or ndvi.shape != grid.shape:
+                continue
+            for ad in list(kalan):
+                m = masks[ad]
+                toplam = int(m.sum())
+                gecerli = int((m & np.isfinite(ndvi)).sum())
+                if toplam == 0:
+                    neden[ad] = "çokgen 10 m pikselin altında"
+                    continue
+                oran = gecerli / toplam
+                if gecerli < rule.kc_vana_min_piksel or oran < rule.kc_vana_min_gecerli_oran:
+                    neden[ad] = f"son görüntülerde temiz piksel yetersiz ({gecerli}/{toplam}, asgari {rule.kc_vana_min_piksel} ve %{round(rule.kc_vana_min_gecerli_oran * 100)})"
+                    continue
+                nd = float(np.nanmean(np.where(m, ndvi, np.nan)))
+                cover = en.canopy_cover_from_ndvi(nd, rule)
+                if cover is None:
+                    continue
+                out[ad] = sc.KcKaynagi(kaynak="vana", tarih=tarih, ndvi=nd, orten_yuzde=cover, kc_bugun=en.kc_monthly(c.today.month, cover, rule), piksel=gecerli, toplam_piksel=toplam, maske_orani=1 - oran, neden=None)
+                kalan.discard(ad)
+        for ad in kalan:
+            out[ad] = garden_kc.model_copy(update={"neden": (neden.get(ad) or "Sentinel-2 görüntüsü yok") + "; bahçe değeri kullanıldı"})
+        return out
+
+    # ------------------------------------------------------------------ sektör bazında kova
+    def _sektor_ctx(self, c: Ctx, x: SekRow, kc: sc.KcKaynagi | None = None) -> Ctx:
+        return replace(c, area_m2=x.alan_m2, trees=x.agac_sayisi, sektor_ad=x.ad if x.id is not None else None, cover=c.cover if kc is None else kc.orten_yuzde)
+
+    async def _sektor_kovalari(self, c: Ctx, seks: list[SekRow], politika: bool, kcs: dict[str, sc.KcKaynagi] | None = None) -> list[tuple[SekRow, Ctx, list[en.DayOut]]]:
         out = []
+        kcs = kcs or await self._vana_kc(c, seks)
         for x in seks:
-            cs = self._sektor_ctx(c, x)
+            cs = self._sektor_ctx(c, x, kcs[x.ad])
             out.append((x, cs, (await self._pencere(cs, politika))[0]))
         return out
 
@@ -540,8 +638,9 @@ class IrrigationService:
         g = c.garden
         seks = await self._sektor_satirlari(garden_id, g, c.area_m2)
         tanimli = any(x.id is not None for x in seks)
-        policy_runs = await self._sektor_kovalari(c, seks, True)
-        free_runs = await self._sektor_kovalari(c, seks, False)
+        kcs = await self._vana_kc(c, seks)
+        policy_runs = await self._sektor_kovalari(c, seks, True, kcs)
+        free_runs = await self._sektor_kovalari(c, seks, False, kcs)
         prog = rule.sistem_programi[c.profile.sistem]
         toplam_alan = sum(x.alan_m2 for x in seks)
         a0, a1 = today - timedelta(days=14), today + timedelta(days=7)
@@ -553,21 +652,29 @@ class IrrigationService:
                     continue
                 gunler.append(
                     sc.SektorGunu(
-                        tarih=r.tarih, doluluk_pct=None if r.veri_eksik else self._pct(c.taw, r.tukenme_mm), etc_mm=None if r.veri_eksik else r.etc_mm, eta_mm=None if r.veri_eksik else r.eta_mm,
+                        tarih=r.tarih, doluluk_pct=None if r.veri_eksik else self._pct(c.taw, (next((f.tukenme_mm for f in free if f.tarih == today), r.tukenme_mm) if r.tarih == today else r.tukenme_mm)), etc_mm=None if r.veri_eksik else r.etc_mm, eta_mm=None if r.veri_eksik else r.eta_mm,
                         net_mm=r.uygulanan_net_mm + r.planli_net_mm, brut_mm=r.planli_brut_mm + (r.uygulanan_net_mm / c.eff), yagis_mm=None if r.veri_eksik else r.yagis_mm,
                         etkili_yagis_mm=None if r.veri_eksik else r.etkili_yagis_mm, bosa_mm=r.bosa_giden_mm, ks=None if r.veri_eksik else r.ks, planli=r.planli_net_mm > 0, uygulandi=r.uygulanan_net_mm > 0, tahmin=r.tahmin, veri_eksik=r.veri_eksik, gecici=r.gecici, yagis_olculdu=r.olculen,
                     )
                 )
-            now = next((r for r in rows if r.tarih == today), None)
+            now = next((r for r in free if r.tarih == today), None)  # BUGÜNKÜ % = bugün sulama yapılmadan kova (Su kartıyla AYNI sayı); planlanan sulama ayrıca işaretlenir
             pct = None if now is None or now.veri_eksik else self._pct(c.taw, now.tukenme_mm)
             sonraki = next((r.tarih for r in rows if r.tarih >= today and r.planli_net_mm > 0), None)
             alti = any(r.stres for r in free if today <= r.tarih <= today + timedelta(days=7) and not r.veri_eksik)
+            son7 = [r for r in free if today - timedelta(days=6) <= r.tarih <= today and not r.veri_eksik]
             durumlar.append(
                 sc.SektorDurumu(
                     id=x.id, ad=x.ad, alan_dekar=x.alan_m2 / 1000.0, agac_sayisi=x.agac_sayisi, agac_kaynak=cast(Any, x.agac_kaynak), vana_debi_m3h=x.vana_debi_m3h, doluluk_pct=pct,
                     etiket=None if pct is None else cast(Any, self._etiket(pct, rule)), sonraki_sulama=sonraki, esik_alti_7gun=alti, gunler=gunler,
+                    stres_7g=sum(1 for r in son7 if r.ks < 1.0), fazla_su_7g_mm=sum(r.bosa_giden_mm for r in son7), kc=kcs[x.ad], geometry=x.geometry,
+                    sira_aralik_m=x.sira_aralik_m if x.sira_aralik_m is not None else c.profile.sira_aralik_m, agac_aralik_m=x.agac_aralik_m if x.agac_aralik_m is not None else c.profile.agac_aralik_m,
                 )
             )
+        ekler = (await self.session.execute(text("SELECT tarih, sektor_ad FROM irrigation_extras WHERE garden_id = :g AND tarih >= :t"), {"g": garden_id, "t": today})).all()
+        for d_, ad_ in ekler:  # elle eklenen vana programa girer: «sonraki sulama» o gündür
+            for dd in durumlar:
+                if dd.ad == ad_ and (dd.sonraki_sulama is None or d_ < dd.sonraki_sulama):
+                    dd.sonraki_sulama = d_
         # ---- KPI
         sonrakiler = [(d.sonraki_sulama, d.ad) for d in durumlar if d.sonraki_sulama is not None]
         kpi_sonraki = None
@@ -588,6 +695,7 @@ class IrrigationService:
         kpi = sc.PanelKpi(
             sonraki=kpi_sonraki, ihtiyac_karsilandi_pct=ihtiyac, ihtiyac_renk=cast(Any, renk), sezon_m3=sezon_m3, sezon_hedef_pct=None if sezon_m3 is None or not ortanca else sezon_m3 / ortanca * 100.0,
             sezon_kaynak=None if sezon_m3 is None else ("uygulanan" if plan.uygulanan_sezon_m3 is not None else "planlanan"),
+            sezon_plan_m3=plan.planlanan_bugune_kadar_m3, sezon_uygulanan_m3=plan.uygulanan_sezon_m3,
         )
         # ---- 7 gün şeridi
         hafta = []
@@ -617,7 +725,8 @@ class IrrigationService:
             tetik_pct=self._pct(c.taw, prog.tetik_orani * c.raw), sektorler=durumlar, sektor_tanimli=tanimli, kpi=kpi, hafta=hafta, vardiya=vardiya,
             en_dusuk=None if dusuk is None else {"ad": dusuk.ad, "pct": dusuk.doluluk_pct}, esik_alti_sektorler=[d.ad for d in durumlar if d.esik_alti_7gun], uyarilar=plan.uyarilar, guven=guven,
             kaynaklar=plan.kaynaklar, yagis_vurgu_mm=rule.yagis_vurgu_mm, katalog_surum=plan.katalog_surum, onayli_tarih=onayli_tarih,
-            gecici_gun=len(c.gecici), gecici_ilk=min(c.gecici, default=None), olculen_gun=len(c.olculen), yagis_yanlilik=yan,
+            ag=await self._ag(garden_id), parsel=json.loads((await self.session.execute(text("SELECT ST_AsGeoJSON(geom) FROM gardens WHERE id = :g"), {"g": garden_id})).scalar_one()),
+            ufuk_gun=rule.planlama_gun, gecici_gun=len(c.gecici), gecici_ilk=min(c.gecici, default=None), olculen_gun=len(c.olculen), yagis_yanlilik=yan,
         )
 
     def _guven(self, c: Ctx) -> sc.Guven:
@@ -645,6 +754,17 @@ class IrrigationService:
             m3 = en.mm_to_m3(r.planli_brut_mm, x.alan_m2)
             t = en.per_tree(r.planli_brut_mm, x.alan_m2, x.agac_sayisi, cs.profile.damlatici_sayisi, cs.profile.damlatici_debi_lh) if cs.profile.sistem == "damla" else None
             items.append((self._pct(c.taw, r.tukenme_mm + r.planli_net_mm), x, m3, r.planli_brut_mm, t))
+        ekler = {r[0] for r in (await self.session.execute(text("SELECT sektor_ad FROM irrigation_extras WHERE garden_id = :g AND tarih = :d"), {"g": garden_id, "d": gun})).all()}
+        for x, cs, rows in runs:  # [Bu vanayı programa ekle]: planın önermediği vana elle eklendi → eksiğini kapatacak kadar (azami/en az sınırlarıyla)
+            if x.ad in ekler and not any(z[1].ad == x.ad for z in items):
+                r = next((r for r in rows if r.tarih == gun), None)
+                if r is None or r.veri_eksik:
+                    continue
+                prog = c.rule.sistem_programi[c.profile.sistem]
+                net = min(max(r.tukenme_mm, prog.en_az_net_mm), prog.azami_net_mm)
+                brut = net / c.eff
+                t = en.per_tree(brut, x.alan_m2, x.agac_sayisi, cs.profile.damlatici_sayisi, cs.profile.damlatici_debi_lh) if cs.profile.sistem == "damla" else None
+                items.append((self._pct(c.taw, r.tukenme_mm), x, en.mm_to_m3(brut, x.alan_m2), brut, t))
         items.sort(key=lambda z: (z[0], z[1].ad))
         p = c.profile
         hh, mm = (int(v) for v in (p.vardiya_baslangic or c.rule.vardiya_baslangic).split(":"))
@@ -667,6 +787,20 @@ class IrrigationService:
             neden = f"Vardiya toplamı {toplam_sa:.0f} saat: 24 saati aşıyor. Pompa/vana debisi bu alan için yetersiz; vanaları birlikte açmak ya da daha yüksek debi gerekir."
         return sc.Vardiya(tarih=gun, baslangic=p.vardiya_baslangic or c.rule.vardiya_baslangic, kalemler=kalemler, toplam_m3=sum(k.m3 for k in kalemler), onayli=onay is not None, zaman_notu=neden)
 
+    async def program_ekle(self, garden_id: uuid.UUID, sektor: str, gun: date | None) -> sc.PanelYaniti:
+        """[Bu vanayı programa ekle]: planın önermediği vana, en yakın program gününe (ya da verilen güne, bugün..ufuk) elle eklenir. Onay/işle akışı değişmez."""
+        panel = await self.panel(garden_id)
+        if panel.durum != "hazir":
+            raise AppError(409, AppErrorCode.VALIDATION_ERROR, panel.neden or "Sulama paneli hazır değil.")
+        if sektor not in {s_.ad for s_ in panel.sektorler}:
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Vana bulunamadı.")
+        hedef = gun or (panel.kpi.sonraki.tarih if panel.kpi and panel.kpi.sonraki else panel.bugun)
+        if not panel.bugun <= hedef <= panel.bugun + timedelta(days=panel.ufuk_gun):
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"Gün bugün ile {panel.ufuk_gun} gün sonrası arasında olmalı.")
+        await self.session.execute(text("INSERT INTO irrigation_extras (garden_id, tarih, sektor_ad) VALUES (:g, :d, :s) ON CONFLICT DO NOTHING"), {"g": garden_id, "d": hedef, "s": sektor})
+        await self.session.flush()
+        return await self.panel(garden_id)
+
     # ------------------------------------------------------------------ [Programı onayla] ve [Saha Defteri'ne işle]
     async def onayla(self, garden_id: uuid.UUID, gun: date, user_id: uuid.UUID | None) -> sc.PanelYaniti:
         panel = await self.panel(garden_id)
@@ -679,13 +813,16 @@ class IrrigationService:
         await self.session.flush()
         return await self.panel(garden_id)
 
-    async def isle(self, garden_id: uuid.UUID, gun: date, user_id: uuid.UUID | None) -> int:
+    async def isle(self, garden_id: uuid.UUID, gun: date, user_id: uuid.UUID | None, sektor: str | None = None) -> int:
         """Gerçekleşen sulamayı Saha Defteri'ne yazar (her vana için bir kayıt: m3 + süre + vana adı). Alışkanlık verisi buradan beslenir. Aynı gün/vana için tekrar yazmaz."""
         panel = await self.panel(garden_id)
         if panel.vardiya is None or panel.vardiya.tarih != gun:
             raise AppError(409, AppErrorCode.VALIDATION_ERROR, "Bu gün için işlenecek bir sulama programı yok.")
         yazilan = 0
-        for k in panel.vardiya.kalemler:
+        kalemler = [k for k in panel.vardiya.kalemler if sektor is None or k.sektor == sektor]
+        if sektor is not None and not kalemler:
+            raise AppError(409, AppErrorCode.VALIDATION_ERROR, f"{sektor} bu günün programında yok.")
+        for k in kalemler:
             var = (await self.session.execute(text("SELECT 1 FROM field_records WHERE garden_id = :g AND tur = 'sulama' AND tarih = :d AND ayrinti->>'sektor' = :s"), {"g": garden_id, "d": gun, "s": k.sektor})).first()
             if var is not None:
                 continue
@@ -723,35 +860,48 @@ class IrrigationService:
             return sc.SimulasyonYaniti(durum="veri_yok", neden="Geçmiş sezon yağış verisi yok.")
         sirali = sorted(rains, key=lambda y: rains[y])
         med = sorted(rains.values())[len(rains) // 2]
-        tip = {sirali[0]: "kuru", sirali[-1]: "islak", min(rains, key=lambda y: abs(rains[y] - med)): "normal"}
+        n3 = max(1, len(sirali) // 3)
+        tip = {y: ("kuru" if i < n3 else "islak" if i >= len(sirali) - n3 else "normal") for i, y in enumerate(sirali)}  # sezon yağışı terciline göre: en kuru üçte bir / ortası / en yağışlı üçte bir
         yillar = [sc.SimYili(yil=y, tip=cast(Any, tip.get(y)), yagis_mm=rains[y]) for y in sorted(rains)]
-        y = yil if yil in rains else next(k for k, v in tip.items() if v == "normal")
+        bu_yil = c.today.year
+        gun_bu = [d for d in en.season_days(bu_yil, rule) if d <= c.today and c.weather.get(d, (None, None))[0] is not None]
+        yillar.append(sc.SimYili(yil=bu_yil, tip=None, yagis_mm=sum(cast(float, c.weather[d][0]) for d in gun_bu), guncel=True))  # bu yıl: gerçek son 30 gün + plan tekrarı (haritanın «Bugün» kipi)
+        y = yil if (yil in rains or yil == bu_yil) else min(rains, key=lambda k: abs(rains[k] - med))
         seks = await self._sektor_satirlari(garden_id, c.garden, c.area_m2)
-        alan = sum(x.alan_m2 for x in seks)
+        kcs = await self._vana_kc(c, seks)
+        cts = {x.ad: self._sektor_ctx(c, x, kcs[x.ad]) for x in seks}
         eff = rule.sistem_verimi[sistem]
         ci = _cost_input(c.profile, rule)
         if kwh_fiyat is not None:
             ci = replace(ci, kullanici_kwh_fiyat=kwh_fiyat)
+        SekRows = list[tuple[SekRow, list[en.DayOut]]]
 
-        def sayac(rows: list[en.DayOut], gross_mm: float) -> sc.SimSayac:
-            m3 = en.mm_to_m3(gross_mm, alan)
+        async def kos(year: int, *, oran: bool = False) -> SekRows:
+            return [(x, await self._seri(cts[x.ad], year, oran=oran, sistem=sistem)) for x in seks]
+
+        def sayac(rr: SekRows, brut: Callable[[en.DayOut], float]) -> sc.SimSayac:
+            m3 = sum(en.mm_to_m3(sum(brut(r) for r in rows), x.alan_m2) for x, rows in rr)
             cost = en.cost(m3, ci)
+            n = min(len(rows) for _, rows in rr)
+            stres = sum(1 for i in range(n) if any(rows[i].stres and not rows[i].veri_eksik and en.in_season(rows[i].tarih, rule) for _, rows in rr))
+            gun = sum(1 for i in range(n) if any((rows[i].planli_net_mm > 0 or rows[i].uygulanan_net_mm > 0) and en.in_season(rows[i].tarih, rule) for _, rows in rr))
             return sc.SimSayac(
-                m3=m3, kwh=cost.kwh, tl=cost.toplam_tl, fiyat_kaynagi=cast(Any, cost.fiyat_kaynagi), eksik=cost.eksik, stres_gun=sum(1 for r in rows if r.stres and not r.veri_eksik),
-                bosa_m3=en.mm_to_m3(sum(r.bosa_giden_mm for r in rows), alan), sulama_gunu=sum(1 for r in rows if r.planli_net_mm > 0 or r.uygulanan_net_mm > 0),
+                m3=m3, kwh=cost.kwh, tl=cost.toplam_tl, fiyat_kaynagi=cast(Any, cost.fiyat_kaynagi), eksik=cost.eksik, stres_gun=stres,
+                bosa_m3=sum(en.mm_to_m3(sum(r.bosa_giden_mm for r in rows if en.in_season(r.tarih, rule)), x.alan_m2) for x, rows in rr), sulama_gunu=gun,
             )
 
-        plan_rows = self.season_run(c, y, oran=kisinti, sistem=sistem)
-        if not plan_rows:
+        plan_rr = await kos(y, oran=kisinti)
+        if not plan_rr or not plan_rr[0][1]:
             return sc.SimulasyonYaniti(durum="veri_yok", neden=f"{y} için hava verisi yok.", yillar=yillar)
-        plan_say = sayac(plan_rows, sum(r.planli_brut_mm for r in plan_rows))
+        base = plan_rr[0][1]  # tarih ve hava (yağış, ET₀) tüm vanalarda aynıdır
+        plan_say = sayac(plan_rr, lambda r: r.planli_brut_mm if en.in_season(r.tarih, rule) else 0.0)
         kis = None
         if kisinti:
-            tam_rows = self.season_run(c, y, oran=False, sistem=sistem)
-            tam = sayac(tam_rows, sum(r.planli_brut_mm for r in tam_rows))
+            tam_rr = await kos(y, oran=False)
+            tam = sayac(tam_rr, lambda r: r.planli_brut_mm if en.in_season(r.tarih, rule) else 0.0)
             dm3 = plan_say.m3 - tam.m3
             dstres = plan_say.stres_gun - tam.stres_gun
-            temel = en.deficit_risk(rule, [r.tarih for r in plan_rows])
+            temel = en.deficit_risk(rule, [r.tarih for r in base])
             risk = en.escalate_risk(temel, dstres, rule)
             dtl = None if plan_say.tl is None or tam.tl is None else plan_say.tl - tam.tl
             risk_ad = {"dusuk": "düşük", "orta": "orta", "yuksek": "yüksek"}.get(risk or "", "")
@@ -776,12 +926,13 @@ class IrrigationService:
         else:
             neden_h = f"Alışkanlık için Saha Defteri'nde en az {rule.aliskanlik_min_kayit} sulama günü kaydı (süre ya da m³ ile) gerekir; elle girmek için gün, süre, damlatıcı bilgisi ve ağaç sayısı gerekir."
         hab_say = None
-        hab_rows: list[en.DayOut] = []
+        hab_rr: SekRows = []
         if habit is not None:
-            days_in = [en.DayIn(r.tarih, r.yagis_mm, r.et0_mm) for r in plan_rows if not r.veri_eksik]
-            ap = {d.tarih: cast(float, habit["brut_mm"]) * eff for d in days_in if d.tarih.weekday() in cast(list[int], habit["gunler"])}
-            hab_rows = en.run_bucket(days_in, taw=c.taw, raw=c.raw, cover_pct=c.cover, rule=rule, efficiency=eff, initial_dr=0.0, applied_net_mm=ap)
-            hab_say = sayac(hab_rows, sum(ap.values()) / eff)
+            for x, rows in plan_rr:
+                days_in = [en.DayIn(r.tarih, r.yagis_mm, r.et0_mm) for r in rows if not r.veri_eksik]
+                ap = {d.tarih: cast(float, habit["brut_mm"]) * eff for d in days_in if d.tarih.weekday() in cast(list[int], habit["gunler"]) and en.in_season(d.tarih, rule)}
+                hab_rr.append((x, en.run_bucket(days_in, taw=c.taw, raw=c.raw, cover_pct=cts[x.ad].cover, rule=rule, efficiency=eff, initial_dr=0.0, applied_net_mm=ap)))
+            hab_say = sayac(hab_rr, lambda r: r.uygulanan_net_mm / eff)
         kars = cumle = None
         if hab_say is not None:
             kars = {"plan": plan_say, "aliskanlik": hab_say}
@@ -792,21 +943,46 @@ class IrrigationService:
             parca.append(f"stres günü {hab_say.stres_gun} (plan {plan_say.stres_gun})")
             parca.append(f"boşa giden su {hab_say.bosa_m3:.0f} m³ (plan {plan_say.bosa_m3:.0f})")
             cumle = ", ".join(parca) + "."
-        goster = hab_rows if (mod == "aliskanlik" and habit is not None) else plan_rows
-        runs = [(x, self._sektor_ctx(c, x), plan_rows) for x in seks]
+        goster_rr = hab_rr if (mod == "aliskanlik" and habit is not None) else plan_rr
+        goster = goster_rr[0][1]
         vardiyalar: list[sc.Vardiya] = []
-        if goster is plan_rows:
-            for r in plan_rows:
-                if r.planli_net_mm > 0:
+        if goster_rr is plan_rr:
+            runs = [(x, cts[x.ad], rows) for x, rows in plan_rr]
+            for i, r in enumerate(base):
+                if any(rows[i].planli_net_mm > 0 for _, rows in plan_rr):
                     vardiyalar.append(await self._vardiya(c, runs, r.tarih, garden_id, onay_ara=False))
         sektorler = [
-            sc.SimSektor(ad=x.ad, doluluk_pct=[None if r.veri_eksik else self._pct(c.taw, r.tukenme_mm) for r in goster], brut_mm=[r.planli_brut_mm + r.uygulanan_net_mm / eff for r in goster], stres=[r.stres for r in goster])
-            for x in seks
+            sc.SimSektor(
+                ad=x.ad, doluluk_pct=[None if r.veri_eksik else self._pct(c.taw, r.tukenme_mm) for r in rows], brut_mm=[r.planli_brut_mm + r.uygulanan_net_mm / eff for r in rows], stres=[r.stres for r in rows],
+                ks=[None if r.veri_eksik else r.ks for r in rows], bosa_mm=[r.bosa_giden_mm for r in rows], etc_mm=[None if r.veri_eksik else r.etc_mm for r in rows], eta_mm=[None if r.veri_eksik else r.eta_mm for r in rows],
+                kc=kcs[x.ad],
+            )
+            for x, rows in goster_rr
         ]
+        bugun_idx = next((i for i, r in enumerate(goster) if r.tarih == c.today), None)
         kilit = [sc.KilitliDonem(kod=d.kod, ad=d.ad, baslangic=d.baslangic, bitis=d.bitis, mesaj="Bu dönemde önerilmez.") for d in rule.kisitli_donemler if d.durum == "kilitli"]
         return sc.SimulasyonYaniti(
             durum="hazir", neden=None, yil=y, mod=cast(Any, mod if habit is not None or mod == "plan" else "plan"), sistem=cast(Any, sistem), yillar=yillar,
-            gunler=[sc.SimGunu(tarih=r.tarih, yagis_mm=r.yagis_mm, et0_mm=r.et0_mm, sulama=(r.planli_net_mm > 0 or r.uygulanan_net_mm > 0)) for r in goster], sektorler=sektorler, vardiyalar=vardiyalar,
+            gunler=[sc.SimGunu(tarih=r.tarih, yagis_mm=r.yagis_mm, et0_mm=r.et0_mm, sulama=any(rows[i].planli_net_mm > 0 or rows[i].uygulanan_net_mm > 0 for _, rows in goster_rr), gecici=r.gecici, olculen=r.olculen, tahmin=r.tahmin) for i, r in enumerate(goster)],
+            sektorler=sektorler, vardiyalar=vardiyalar, bugun_idx=bugun_idx, tetik_pct=self._pct(c.taw, rule.sistem_programi[sistem].tetik_orani * c.raw), taw_mm=c.taw, raw_mm=c.raw,
             sayac=hab_say if (mod == "aliskanlik" and hab_say is not None) else plan_say, karsilastirma=kars, karsilastirma_cumle=cumle, aliskanlik=habit, aliskanlik_neden=neden_h,
             kisinti_uygulandi=kisinti, kisinti=kis, kilitli_donemler=kilit, kaynaklar=self._kaynaklar(),
         )
+
+    async def _seri(self, cs: Ctx, year: int, *, oran: bool = False, sistem: str | None = None) -> list[en.DayOut]:
+        """Bir vananın sezon serisi. Geçmiş yıl: sezon tekrarı (Nis–Eki). BU YIL (varsayılan sistem, kısıntısız): Mart başından penceredeki başlangıca plan tekrarı + SON 30 GÜN GERÇEK PENCERE
+        (panel, Su kartı ve harita etiketiyle AYNI sayılar) + ufuk; harita şeridi ve «Bugün» kipi bunu kullanır."""
+        if year != cs.today.year or oran or (sistem is not None and sistem != cs.profile.sistem):
+            return self.season_run(cs, year, oran=oran, sistem=sistem)
+        rule = cs.rule
+        pencere = (await self._pencere(cs, True))[0]
+        w0 = pencere[0].tarih
+        days = [d for d in (date(year, 3, 1) + timedelta(days=i) for i in range((w0 - date(year, 3, 1)).days)) if d in cs.weather or d <= cs.today]
+        sezon_bas = date(year, int(rule.sezon_baslangic[:2]), int(rule.sezon_baslangic[3:]))
+        sezon_bit = date(year, int(rule.sezon_bitis[:2]), int(rule.sezon_bitis[3:]))
+        prog = rule.sistem_programi[cs.profile.sistem]
+        pol = en.Policy(from_date=sezon_bas, until=sezon_bit, min_net_mm=prog.en_az_net_mm, tetik_mm=prog.tetik_orani * cs.raw, azami_net_mm=prog.azami_net_mm)
+        rep = en.run_bucket(self._days(cs, days), taw=cs.taw, raw=cs.raw, cover_pct=cs.cover, rule=rule, efficiency=cs.eff, initial_dr=0.0, policy=pol)
+        serbest = {r.tarih: r for r in (await self._pencere(cs, False))[0]}
+        pencere = [replace(r, tukenme_mm=serbest[r.tarih].tukenme_mm) if r.tarih == cs.today and r.tarih in serbest else r for r in pencere]  # BUGÜNKÜ değer: sulama yapılmadan (panel ve Su kartıyla aynı)
+        return [*rep, *pencere]

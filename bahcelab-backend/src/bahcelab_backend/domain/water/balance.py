@@ -141,21 +141,27 @@ class IrrigationDecision:
     ihtiyac_mm: float | None  # gerekliyse: tarla kapasitesine dönmek için su açığı (mm), yoksa None
 
 
-def irrigation_decision(fill: float | None, ref_day: date | None, forecast: list[DayBalance], now: DayBalance | None, taw_mm: float | None, rule: SuKurali) -> IrrigationDecision:
+def irrigation_decision(fill: float | None, ref_day: date | None, forecast: list[DayBalance], now: DayBalance | None, taw_mm: float | None, rule: SuKurali, shown_pct: float | None = None) -> IrrigationDecision:
     """Sulama kararı (ön değer · mühendis onayı bekliyor): mevsim normaline göre doluluk ve su dengesi AÇIĞI birlikte aranır.
 
     «Sulama planlayın» yalnız ikisi birlikte varsa çıkar: doluluk mevsim normaline göre düşük (≤ kuru eşiği) VE kova stres eşiğinde ya da 7 gün içinde ona iniyor.
     Tek göstergenin düşük olması «izleyin» der; mutlak «kuru» sözü normale göre düşük olmayan yerde kurulmaz.
+    `shown_pct`: cümlede gösterilen sayı KOVADAN (kullanılabilir su %, sulama paneliyle aynı); verilmişse «normaline göre» durum kelimesi yalnız sınıflama için parantezde kalır,
+    verilmezse (kova kurulamadı) eski biçim: mevsim normuna göre doluluk.
     """
     state = classify_fill(fill, rule)
     if state == "bilinmiyor" or fill is None or ref_day is None:
         return IrrigationDecision("veri_yok", False, "Kök bölgesi nemi için yeterli veri yok; durum değerlendirilemiyor.", None, None, None)
     donem = TR_AYLAR[ref_day.month - 1]
-    pct = f"%{round(fill)}"
+    pct = f"%{round(fill if shown_pct is None else shown_pct)}"
     base = f"{donem} normaline göre"
+
+    def lead(word: str) -> str:
+        return f"Kök bölgesi {base} {word} ({pct})" if shown_pct is None else f"Kök bölgesi {pct} dolu ({base} {word})"
+
     usable = [d for d in forecast if not d.veri_eksik]
     if taw_mm is None or taw_mm <= 0 or not usable:
-        return IrrigationDecision("izle", False, f"Kök bölgesi {base} {pct} dolu; su dengesi hesaplanamadığından sulama kararı verilemiyor, durumu izleyin.", fill, donem, None)
+        return IrrigationDecision("izle", False, f"Kök bölgesi {base} {pct} dolu; su dengesi hesaplanamadığından sulama kararı verilemiyor, durumu izleyin." if shown_pct is None else f"Kök bölgesi {pct} dolu; su dengesi hesaplanamadığından sulama kararı verilemiyor, durumu izleyin.", fill, donem, None)
     raw = rule.tukenme_orani * taw_mm
     worst = max(d.tukenme_mm for d in usable)
     days = len(forecast)
@@ -163,16 +169,16 @@ def irrigation_decision(fill: float | None, ref_day: date | None, forecast: list
     deficit_soon = worst >= raw
     refill = round(max(worst, now.tukenme_mm if now is not None and not now.veri_eksik else 0.0), 1)
     if state == "kuru" and deficit_now:
-        return IrrigationDecision("sulama", True, f"Kök bölgesi {base} kuru ({pct}) ve kullanılabilir su stres eşiğinin altında: sulama planlayın.", fill, donem, refill)
+        return IrrigationDecision("sulama", True, f"{lead('kuru')} ve kullanılabilir su stres eşiğinin altında: sulama planlayın.", fill, donem, refill)
     if state == "kuru" and deficit_soon:
-        return IrrigationDecision("sulama", True, f"Kök bölgesi {base} kuru ({pct}) ve önümüzdeki {days} gün içinde kullanılabilir su stres eşiğine iniyor: sulama planlayın.", fill, donem, refill)
+        return IrrigationDecision("sulama", True, f"{lead('kuru')} ve önümüzdeki {days} gün içinde kullanılabilir su stres eşiğine iniyor: sulama planlayın.", fill, donem, refill)
     if state == "kuru":
-        return IrrigationDecision("izle", False, f"Kök bölgesi {base} düşük ({pct}); su dengesi açık vermiyor, şimdilik sulama gerekmiyor, durumu izleyin.", fill, donem, None)
+        return IrrigationDecision("izle", False, f"{lead('düşük')}; su dengesi açık vermiyor, şimdilik sulama gerekmiyor, durumu izleyin.", fill, donem, None)
     if deficit_now or deficit_soon:
-        return IrrigationDecision("izle", False, f"Su dengesi açığa {'indi' if deficit_now else 'yaklaşıyor'} ama kök bölgesi {base} {pct} dolu: sulama gerekmiyor, durumu izleyin.", fill, donem, None)
+        return IrrigationDecision("izle", False, f"Su dengesi açığa {'indi' if deficit_now else 'yaklaşıyor'} ama kök bölgesi {(base + ' ') if shown_pct is None else ''}{pct} dolu: sulama gerekmiyor, durumu izleyin.", fill, donem, None)
     if state == "nemli":
-        return IrrigationDecision("gerekmiyor", False, f"Kök bölgesi {base} nemli ({pct}); önümüzdeki {days} gün sulama gerekmiyor.", fill, donem, None)
-    return IrrigationDecision("gerekmiyor", False, f"Kök bölgesi {base} orta nemde ({pct}); önümüzdeki {days} gün sulama gerekmiyor, durumu izleyin.", fill, donem, None)
+        return IrrigationDecision("gerekmiyor", False, f"{lead('nemli')}; önümüzdeki {days} gün sulama gerekmiyor.", fill, donem, None)
+    return IrrigationDecision("gerekmiyor", False, f"{lead('orta nemde')}; önümüzdeki {days} gün sulama gerekmiyor, durumu izleyin.", fill, donem, None)
 
 
 def reconcile_with_plan(decision: IrrigationDecision, next_irrigation: date | None, today: date, days: int) -> IrrigationDecision:

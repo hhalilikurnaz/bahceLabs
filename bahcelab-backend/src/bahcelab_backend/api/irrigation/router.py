@@ -82,4 +82,10 @@ async def post_onay(garden_id: UUID, body: sc.OnayGirdisi, service: Service, use
 @router.post("/gardens/{garden_id}/sulama-isle")
 async def post_isle(garden_id: UUID, body: sc.IsleGirdisi, service: Service, user: User) -> dict[str, int]:
     """[Saha Defteri'ne işle]: gerçekleşen sulamayı vana başına bir kayıt olarak yazar."""
-    return {"yazilan": await service.isle(garden_id, body.tarih, user.id)}
+    return {"yazilan": await service.isle(garden_id, body.tarih, user.id, body.sektor)}
+
+
+@router.post("/gardens/{garden_id}/sulama-program-ekle", response_model=sc.PanelYaniti)
+async def post_program_ekle(garden_id: UUID, body: sc.ProgramEkleGirdisi, service: Service) -> sc.PanelYaniti:
+    """[Bu vanayı programa ekle]: planın önermediği vana en yakın program gününe elle eklenir."""
+    return await service.program_ekle(garden_id, body.sektor, body.tarih)

@@ -179,7 +179,10 @@ class WaterService:
             balance = (days_e, balance[1], balance[2], balance[3])
         forecast = [b for b in balance[0] if b.tarih > today]  # önümüzdeki `tahmin_gun` gün
         now = next((b for b in balance[0] if b.tarih == today), None)
-        decision = wb.irrigation_decision(profile.kok_bolgesi_doluluk, profile.bugun_tarihi, forecast, now, taw, rule)
+        kova_pct = None
+        if shared is not None and now is not None and not now.veri_eksik and taw:
+            kova_pct = max(0.0, min(100.0, (taw - now.tukenme_mm) / taw * 100.0))  # BÜYÜK SAYI HER YERDE KOVADAN (sulama paneliyle aynı); ERA5-Land nemi yalnız küçük referans
+        decision = wb.irrigation_decision(profile.kok_bolgesi_doluluk, profile.bugun_tarihi, forecast, now, taw, rule, kova_pct)
         if shared is not None:
             plan = await isvc.plan(garden_id, hafif=True)
             if plan.durum == "hazir":
@@ -191,6 +194,7 @@ class WaterService:
             karar=decision.cumle,
             karar_detay=SulamaKarari(durum=cast(Literal["sulama", "izle", "gerekmiyor", "veri_yok"], decision.durum), gerekli=decision.gerekli, cumle=decision.cumle, doluluk=decision.doluluk, donem=decision.donem, ihtiyac_mm=decision.ihtiyac_mm),
             on_deger=True,
+            kova_doluluk_pct=kova_pct,
             profil=profile,
             denge=SuDengesi(
                 taw_mm=taw, tukenme_esigi_mm=None if taw is None else (raw_e if shared is not None else rule.tukenme_orani * taw), gunler=[self._day(b, balance[1].get(b.tarih, "yok")) for b in balance[0]],

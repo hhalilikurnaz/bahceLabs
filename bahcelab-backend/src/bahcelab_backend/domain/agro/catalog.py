@@ -251,6 +251,9 @@ class SulamaPlaniKurali(KuralBlok):
     yagis_olcer_sapma_esigi: float = Field(default=0.2, gt=0, lt=1)  # |ölçüm/seri − 1| bunu aşarsa öneri çıkar
     yagis_olcer_oran_alt: float = Field(default=0.5, gt=0, lt=1)  # önerilen çarpan [alt, üst] aralığına kırpılır
     yagis_olcer_oran_ust: float = Field(default=2.0, gt=1)
+    # Vana başına taç örtüsü → Kc (Sentinel-2 NDVI, 10 m piksel ortalaması): vana çokgeninde en az bu kadar TEMİZ piksel ve geçerli oran yoksa bahçe değerine düşülür
+    kc_vana_min_piksel: int = Field(default=20, ge=1)
+    kc_vana_min_gecerli_oran: float = Field(default=0.5, gt=0, le=1)
     # Kısıntıda verim riski: dönemin katalog riski, kısıntının EKLEDİĞİ stres günü bu eşikleri aşarsa bir kademe (orta) ya da en yüksek kademeye (yüksek) çıkar
     kisinti_stres_orta_gun: int = Field(default=10, ge=1)
     kisinti_stres_yuksek_gun: int = Field(default=30, ge=1)

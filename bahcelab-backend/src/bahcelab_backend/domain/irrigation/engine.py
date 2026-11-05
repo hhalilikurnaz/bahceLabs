@@ -100,6 +100,7 @@ class Policy:
     min_net_mm: float = 10.0
     tetik_mm: float | None = None  # None: RAW; damlada RAW'ın küçük bir payı (sık-az)
     azami_net_mm: float = float("inf")  # tek seferde en çok (sistemin doğası: damla küçük, salma büyük)
+    until: date | None = None  # bu günden SONRA sulama önerilmez (sezon sonu)
 
 
 def run_bucket(
@@ -124,7 +125,7 @@ def run_bucket(
         dp = max(0.0, -ham)
         dr = min(taw, max(0.0, ham))
         planned_net = 0.0
-        if policy is not None and d.tarih >= policy.from_date and applied == 0.0:
+        if policy is not None and d.tarih >= policy.from_date and (policy.until is None or d.tarih <= policy.until) and applied == 0.0:
             ratio = policy.oran(d.tarih)
             trigger = raw if policy.tetik_mm is None else policy.tetik_mm
             if ratio >= 1.0:

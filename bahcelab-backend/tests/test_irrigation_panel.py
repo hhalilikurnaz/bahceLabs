@@ -153,6 +153,9 @@ async def test_simulasyon_yillar_mod_sistem_kisinti(user_client, factory):
     gid = await kur(user_client, factory)
     s = (await user_client.get(f"/gardens/{gid}/sulama-simulasyon")).json()
     assert s["durum"] == "hazir" and {y["tip"] for y in s["yillar"] if y["tip"]} == {"kuru", "normal", "islak"}
+    gecmis = [y for y in s["yillar"] if not y["guncel"]]
+    assert len(gecmis) >= 10 and all(y["tip"] for y in gecmis) and sum(1 for y in s["yillar"] if y["guncel"]) == 1  # 2015–2025 hepsi tipli (tercil) + bu yıl
+    assert max(y["yagis_mm"] for y in gecmis if y["tip"] == "kuru") <= min(y["yagis_mm"] for y in gecmis if y["tip"] == "islak")
     kuru = next(y["yil"] for y in s["yillar"] if y["tip"] == "kuru")
     islak = next(y["yil"] for y in s["yillar"] if y["tip"] == "islak")
     assert next(y for y in s["yillar"] if y["yil"] == kuru)["yagis_mm"] <= next(y for y in s["yillar"] if y["yil"] == islak)["yagis_mm"]
@@ -281,3 +284,134 @@ async def test_kesinlesen_veri_plani_degistirirse_bildirim(user_client, factory)
         n = (await s.execute(text("SELECT baslik, metin FROM notifications WHERE garden_id = :g AND tur = 'sulama_revize'"), {"g": gid})).all()
     assert len(n) == 1 and "kesinleşen veriyle değişti" in n[0][0] and "5 günün" in n[0][1] and "→" in n[0][1]
     assert await sonra_bildir(factory, cell, once) == 0  # tekrar çalışınca aynı bildirim ikinci kez çıkmaz (tekil anahtar)
+
+
+# ---------------------------------------------------------------- Dilim 2: ağ (pompa/boru/sıra yönü), vana Kc, göstergeler, bu yıl serisi, vana eylemleri
+def _nokta(dx: float = 0.0, dy: float = 0.0) -> dict:
+    return {"type": "Point", "coordinates": [XS[0] + dx, YS[0] + dy]}
+
+
+def _cizgi() -> dict:
+    return {"type": "LineString", "coordinates": [[XS[0], YS[0]], [XS[0], YS[1]]]}
+
+
+async def test_ag_pompa_boru_sira_yonu_kaydedilir_ve_dogrulanir(user_client, factory):
+    gid = await kur(user_client, factory)
+    bos = (await user_client.get(f"/gardens/{gid}/sulama-sektorleri")).json()
+    assert bos["pompa"] is None and bos["ana_boru"] is None and bos["sira_yonu_derece"] is None  # çizilmedi: haritada gösterilmez
+    ok = await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json={**IKI, "pompa": _nokta(), "ana_boru": _cizgi(), "sira_yonu_derece": 12.5})
+    assert ok.status_code == 200
+    j = ok.json()
+    assert j["pompa"]["type"] == "Point" and j["ana_boru"]["type"] == "LineString" and j["sira_yonu_derece"] == 12.5
+    assert j["varsayilan_sira_aralik_m"] == PROFIL["sira_aralik_m"] and j["varsayilan_agac_aralik_m"] == PROFIL["agac_aralik_m"]
+    panel = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    assert panel["ag"]["pompa"] is not None and panel["ag"]["sira_yonu_derece"] == 12.5 and panel["parsel"]["type"] in ("Polygon", "MultiPolygon")
+    # geçersiz: bahçeden uzak pompa, nokta yerine çizgi
+    assert (await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json={**IKI, "pompa": {"type": "Point", "coordinates": [XS[1] + 0.05, YS[1] + 0.05]}})).status_code == 422
+    assert (await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json={**IKI, "pompa": _cizgi()})).status_code == 422
+    assert (await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json={**IKI, "sira_yonu_derece": 400})).status_code == 422
+    # hepsi boşsa ağ silinir
+    son = (await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)).json()
+    assert son["pompa"] is None and son["ana_boru"] is None and son["sira_yonu_derece"] is None
+
+
+async def _sentinel_ndvi(factory, gid: uuid.UUID, sol: float, sag: float, gun_once: int = 3, nan_sag: bool = False) -> None:
+    """Gerçek depolama + gerçek işleme: bahçe kanonik ızgarasında NDVI (sol yarı `sol`, sağ yarı `sag`); `nan_sag`: sağ yarı bulutlu (NaN)."""
+    import numpy as np
+
+    from bahcelab_backend.domain.acquisitions.models import AcquisitionModel
+    from bahcelab_backend.domain.acquisitions.repository import AcquisitionRepository
+    from bahcelab_backend.domain.acquisitions.store import encode_grids, pixel_stats
+    from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
+    from bahcelab_backend.shared.storage import get_storage
+
+    async with factory() as session:
+        repo = AcquisitionRepository(session)
+        geometry = await repo.geometry_geojson(gid)
+        grid = canonical_grid(geometry)
+        mask = garden_mask(grid, geometry)
+        yarim = grid.shape[1] // 2
+        ndvi = np.full(grid.shape, sol, dtype=np.float32)
+        ndvi[:, yarim:] = np.nan if nan_sag else sag
+        tarih = TODAY - timedelta(days=gun_once)
+        key = f"acq/{gid}/S2_{tarih}_d2.npz"
+        get_storage().save(key, encode_grids({"ndvi": ndvi}))
+        row = AcquisitionModel(garden_id=gid, source_id="sentinel2-l2a", scene_id=f"S2_{tarih}_d2", tarih=tarih, bulut_orani=5.0, durum="net", gecerli_oran=1.0, formul_surumu="test", izgara_yolu=key)
+        st = pixel_stats(ndvi, mask)
+        await repo.upsert_acquisition(row, {"ndvi": st} if st else {})
+        await session.commit()
+
+
+async def test_vana_basina_sentinel2_orten_kc_piksel_ve_maske(user_client, factory):
+    gid = await seed(user_client, factory)
+    await _sentinel_ndvi(factory, gid, 0.80, 0.50)
+    await user_client.put(f"/gardens/{gid}/sulama-profili", json=PROFIL)
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
+    p = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    v1, v2 = p["sektorler"]
+    assert v1["kc"]["kaynak"] == "vana" and v2["kc"]["kaynak"] == "vana"
+    assert v1["kc"]["ndvi"] == pytest.approx(0.80, abs=0.02) and v2["kc"]["ndvi"] == pytest.approx(0.50, abs=0.02)  # her vana KENDİ pikselleri
+    assert v1["kc"]["orten_yuzde"] > v2["kc"]["orten_yuzde"] and v1["kc"]["kc_bugun"] >= v2["kc"]["kc_bugun"]
+    assert v1["kc"]["piksel"] >= 20 and v1["kc"]["piksel"] == v1["kc"]["toplam_piksel"] and v1["kc"]["maske_orani"] == pytest.approx(0.0) and v1["kc"]["tarih"] == str(TODAY - timedelta(days=3))
+    # Kc farkı kovayı ayrıştırır: yüksek örtülü vana daha çok tüketir (daha kuru)
+    assert v1["doluluk_pct"] < v2["doluluk_pct"]
+    # çizilmemiş: bahçe değeri
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json={"sektorler": []})
+    tek = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["sektorler"][0]
+    assert tek["kc"]["kaynak"] == "bahce" and tek["kc"]["piksel"] is None
+
+
+async def test_vana_kc_bulutlu_yarim_icin_bahce_degerine_duser_ve_nedenini_yazar(user_client, factory):
+    gid = await seed(user_client, factory)
+    await _sentinel_ndvi(factory, gid, 0.80, 0.50, nan_sag=True)  # sağ vana tamamen bulutlu
+    await user_client.put(f"/gardens/{gid}/sulama-profili", json=PROFIL)
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
+    v1, v2 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["sektorler"]
+    assert v1["kc"]["kaynak"] == "vana" and v2["kc"]["kaynak"] == "bahce"
+    assert "temiz piksel yetersiz" in v2["kc"]["neden"] and "bahçe değeri kullanıldı" in v2["kc"]["neden"]
+
+
+async def test_gostergeler_stres_7g_ve_fazla_su_7g(user_client, factory):
+    gid = await kur(user_client, factory)
+    p0 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["sektorler"][0]
+    assert 0 <= p0["stres_7g"] <= 7 and p0["fazla_su_7g_mm"] >= 0
+    # son günlerde 120 m³ sulama kaydı: sistem kaybı (brüt − net) «fazla su»ya girer
+    await user_client.post(f"/gardens/{gid}/saha-kayitlari", json={"tur": "sulama", "tarih": str(TODAY - timedelta(days=1)), "ayrinti": {"m3": 120}})
+    p1 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["sektorler"][0]
+    assert p1["fazla_su_7g_mm"] > p0["fazla_su_7g_mm"]
+
+
+async def test_bu_yil_serisi_panelle_ayni_bugun_degeri_ve_gecici_bayragi(user_client, factory):
+    gid = await kur(user_client, factory)
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
+    p = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    s = (await user_client.get(f"/gardens/{gid}/sulama-simulasyon", params={"yil": TODAY.year})).json()
+    assert s["durum"] == "hazir" and s["yil"] == TODAY.year and s["bugun_idx"] is not None and next(y for y in s["yillar"] if y["guncel"])["yil"] == TODAY.year
+    i = s["bugun_idx"]
+    assert s["gunler"][i]["tarih"] == str(TODAY) and s["gunler"][i]["gecici"] is True  # tohum: son günler model
+    for sim_v, pan_v in zip(s["sektorler"], p["sektorler"], strict=True):
+        assert sim_v["ad"] == pan_v["ad"] and sim_v["doluluk_pct"][i] == pytest.approx(pan_v["doluluk_pct"])  # harita şeridi ↔ panel ↔ Su kartı AYNI
+        n = len(sim_v["doluluk_pct"])
+        assert n == len(sim_v["ks"]) == len(sim_v["bosa_mm"]) == len(s["gunler"]) and n > 150
+    assert s["gunler"][0]["tarih"] == f"{TODAY.year}-03-01"  # Mart başından
+    assert s["tetik_pct"] == pytest.approx(60.0, abs=0.01) and s["taw_mm"] > s["raw_mm"] > 0
+
+
+async def test_vana_eylemleri_kayit_isle_ve_programa_ekle(user_client, factory):
+    gid = await kur(user_client, factory)
+    await user_client.put(f"/gardens/{gid}/sulama-sektorleri", json=IKI)
+    p = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
+    gun = p["vardiya"]["tarih"]
+    # yalnız bir vanaya kayıt işle
+    assert (await user_client.post(f"/gardens/{gid}/sulama-isle", json={"tarih": gun, "sektor": "V2"})).json() == {"yazilan": 1}
+    kay = [k for k in (await user_client.get(f"/gardens/{gid}/saha-kayitlari")).json()["kayitlar"] if k["tur"] == "sulama"]
+    assert len(kay) == 1 and kay[0]["ayrinti"]["sektor"] == "V2"
+    assert (await user_client.post(f"/gardens/{gid}/sulama-isle", json={"tarih": gun, "sektor": "V9"})).status_code == 409
+    # planın önermediği vanayı programa ekle: gelecek bir güne
+    yarin = str(TODAY + timedelta(days=2))
+    r = await user_client.post(f"/gardens/{gid}/sulama-program-ekle", json={"sektor": "V1", "tarih": yarin})
+    assert r.status_code == 200
+    v1 = next(s for s in r.json()["sektorler"] if s["ad"] == "V1")
+    assert v1["sonraki_sulama"] is not None and v1["sonraki_sulama"] <= yarin
+    assert (await user_client.post(f"/gardens/{gid}/sulama-program-ekle", json={"sektor": "V7"})).status_code == 404
+    assert (await user_client.post(f"/gardens/{gid}/sulama-program-ekle", json={"sektor": "V1", "tarih": str(TODAY + timedelta(days=60))})).status_code == 422

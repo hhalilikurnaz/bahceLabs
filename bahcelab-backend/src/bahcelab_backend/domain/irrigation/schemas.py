@@ -262,6 +262,9 @@ class SektorGirdisi(BaseModel):
 
 class SektorlerGirdisi(BaseModel):
     sektorler: list[SektorGirdisi] = Field(max_length=40)
+    pompa: dict[str, object] | None = None  # GeoJSON Point (isteğe bağlı)
+    ana_boru: dict[str, object] | None = None  # GeoJSON LineString (isteğe bağlı)
+    sira_yonu_derece: float | None = Field(default=None, ge=0, lt=360)  # ağaç sırası yönü (kuzeyden saat yönünde); None: parsel uzun ekseni
 
 
 class SektorKaydi(BaseModel):
@@ -280,7 +283,27 @@ class SektorKaydi(BaseModel):
 class SektorlerYaniti(BaseModel):
     tanimli: bool
     sektorler: list[SektorKaydi]
+    pompa: dict[str, object] | None = None
+    ana_boru: dict[str, object] | None = None
+    sira_yonu_derece: float | None = None
+    # Ağaç sırası için varsayılan aralık (profil): vana kendi aralığını girmediyse buradan
+    varsayilan_sira_aralik_m: float | None = None
+    varsayilan_agac_aralik_m: float | None = None
     not_: str | None = Field(default=None, serialization_alias="not")
+
+
+class KcKaynagi(BaseModel):
+    """Taç örtüsü → Kc'nin KAYNAĞI: vana çokgeninin 10 m Sentinel-2 piksel ortalaması (kaynak «vana») ya da bahçe değeri (kaynak «bahçe»; neden yazılır). Toprak vana başına ayrışmaz (SoilGrids 250 m; ADR 0024)."""
+
+    kaynak: Literal["vana", "bahce"]
+    tarih: date | None
+    ndvi: float | None
+    orten_yuzde: float
+    kc_bugun: float
+    piksel: int | None  # temiz (bulutsuz) piksel sayısı
+    toplam_piksel: int | None  # çokgen içindeki piksel sayısı
+    maske_orani: float | None  # bulut/geçersiz maske payı (0–1)
+    neden: str | None
 
 
 DurumEtiketi = Literal["stres", "yakin", "yeterli", "dolu"]
@@ -317,6 +340,12 @@ class SektorDurumu(BaseModel):
     sonraki_sulama: date | None
     esik_alti_7gun: bool
     gunler: list[SektorGunu]
+    stres_7g: int = 0  # son 7 günde Ks < 1 gün sayısı (bugün dahil)
+    fazla_su_7g_mm: float = 0.0  # son 7 günde kökün altına sızan + sistem kaybı (mm)
+    kc: KcKaynagi | None = None
+    geometry: dict[str, object] | None = None
+    sira_aralik_m: float | None = None
+    agac_aralik_m: float | None = None
 
 
 class VardiyaKalemi(BaseModel):
@@ -376,6 +405,18 @@ class PanelKpi(BaseModel):
     sezon_m3: float | None
     sezon_hedef_pct: float | None  # sezon tahmininin (ortanca) yüzdesi
     sezon_kaynak: Literal["uygulanan", "planlanan"] | None
+    sezon_plan_m3: float | None = None  # bu yılın planı (sezon başından bugüne, gerçek havayla)
+    sezon_uygulanan_m3: float | None = None  # Saha Defteri sulama kayıtları; kayıt yoksa None («uygulanan: kayıt yok»)
+
+
+class SulamaAgi(BaseModel):
+    """Haritada çizilecek ağ: pompa noktası ve ana boru YALNIZ kullanıcı çizdiyse vardır (uydurma yok); sıra yönü None ise parsel uzun ekseni."""
+
+    pompa: dict[str, object] | None = None
+    ana_boru: dict[str, object] | None = None
+    sira_yonu_derece: float | None = None
+    varsayilan_sira_aralik_m: float | None = None
+    varsayilan_agac_aralik_m: float | None = None
 
 
 class PanelYaniti(BaseModel):
@@ -402,6 +443,9 @@ class PanelYaniti(BaseModel):
     yagis_vurgu_mm: float = 12.0
     katalog_surum: int = 0
     onayli_tarih: date | None = None
+    ufuk_gun: int = 10  # plan ufku (gün)
+    ag: SulamaAgi = SulamaAgi()
+    parsel: dict[str, object] | None = None  # bahçe sınırı (GeoJSON)
     gecici_gun: int = 0  # kovada «geçici» işaretli (ERA5 kesinleşmemiş) gün sayısı, bugün dahil
     gecici_ilk: date | None = None
     olculen_gun: int = 0  # yağışı bahçede ölçülen gün sayısı
@@ -413,13 +457,21 @@ class SimGunu(BaseModel):
     yagis_mm: float
     et0_mm: float
     sulama: bool
+    gecici: bool = False
+    olculen: bool = False
+    tahmin: bool = False
 
 
 class SimSektor(BaseModel):
     ad: str
     doluluk_pct: list[float | None]  # gün sırasıyla
     brut_mm: list[float]
-    stres: list[bool]
+    stres: list[bool]  # Dr > RAW
+    ks: list[float | None] = []  # su stresi katsayısı (Ks < 1: stres)
+    bosa_mm: list[float] = []  # kökün altına sızan + sistem kaybı (mm)
+    etc_mm: list[float | None] = []
+    eta_mm: list[float | None] = []
+    kc: KcKaynagi | None = None
 
 
 class SimSayac(BaseModel):
@@ -449,6 +501,7 @@ class SimYili(BaseModel):
     yil: int
     tip: Literal["kuru", "normal", "islak"] | None
     yagis_mm: float
+    guncel: bool = False  # bu yıl (gerçek son 30 gün + plan tekrarı)
 
 
 class SimulasyonYaniti(BaseModel):
@@ -461,6 +514,10 @@ class SimulasyonYaniti(BaseModel):
     gunler: list[SimGunu] = []
     sektorler: list[SimSektor] = []
     vardiyalar: list[Vardiya] = []
+    bugun_idx: int | None = None
+    tetik_pct: float | None = None
+    taw_mm: float | None = None
+    raw_mm: float | None = None
     sayac: SimSayac | None = None
     karsilastirma: dict[str, SimSayac] | None = None  # {plan, aliskanlik}
     karsilastirma_cumle: str | None = None
@@ -478,3 +535,9 @@ class OnayGirdisi(BaseModel):
 
 class IsleGirdisi(BaseModel):
     tarih: date
+    sektor: str | None = None  # yalnız bu vana (haritadan aksiyon)
+
+
+class ProgramEkleGirdisi(BaseModel):
+    sektor: str
+    tarih: date | None = None

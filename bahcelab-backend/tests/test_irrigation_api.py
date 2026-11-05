@@ -202,6 +202,12 @@ async def test_su_sekmesi_ve_plan_ayni_kovadan_beslenir_ve_celismez(user_client,
             for g in plan.gunler:
                 if g.tarih < d and g.tarih in sugun and not g.veri_eksik:
                     assert sugun[g.tarih].tukenme_mm == pytest.approx(g.tukenme_mm), (d, g.tarih)
+            # (1b) Su kartının BÜYÜK SAYISI = panelin vana yüzdesi (kova) — ERA5-Land nemi değil
+            if su.kova_doluluk_pct is not None:
+                from bahcelab_backend.domain.irrigation.service import IrrigationService as _IS
+
+                pan = await _IS(session, ws, d).panel(gid)
+                assert su.kova_doluluk_pct == pytest.approx(pan.sektorler[0].doluluk_pct), (d,)
             # (3) karar çelişmez
             yakin = plan.sonraki is not None and 0 <= (plan.sonraki.tarih - d).days <= 7
             assert (su.karar_detay.durum == "sulama") == yakin, (d, su.karar_detay.durum, plan.sonraki)
