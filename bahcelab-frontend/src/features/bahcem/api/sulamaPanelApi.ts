@@ -24,6 +24,25 @@ export interface SektorGunu {
   gecici: boolean
   yagis_olculdu: boolean
 }
+/** Taç örtüsü → Kc kaynağı: vana çokgeninin 10 m Sentinel-2 piksel ortalaması ya da bahçe değeri (neden yazılır). */
+export interface KcKaynagi {
+  kaynak: 'vana' | 'bahce'
+  tarih: string | null
+  ndvi: number | null
+  orten_yuzde: number
+  kc_bugun: number
+  piksel: number | null
+  toplam_piksel: number | null
+  maske_orani: number | null
+  neden: string | null
+}
+export interface SulamaAgi {
+  pompa: GeoJSON.Point | null
+  ana_boru: GeoJSON.LineString | null
+  sira_yonu_derece: number | null
+  varsayilan_sira_aralik_m: number | null
+  varsayilan_agac_aralik_m: number | null
+}
 export interface SektorDurumu {
   id: string | null
   ad: string
@@ -35,6 +54,12 @@ export interface SektorDurumu {
   etiket: DurumEtiketi | null
   sonraki_sulama: string | null
   esik_alti_7gun: boolean
+  stres_7g: number
+  fazla_su_7g_mm: number
+  kc: KcKaynagi | null
+  geometry: GeoJSON.Polygon | null
+  sira_aralik_m: number | null
+  agac_aralik_m: number | null
   gunler: SektorGunu[]
 }
 export interface VardiyaKalemi {
@@ -94,6 +119,8 @@ export interface PanelYaniti {
   katalog_surum: number
   onayli_tarih: string | null
   ufuk_gun: number
+  ag: SulamaAgi
+  parsel: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
   gecici_gun: number
   gecici_ilk: string | null
   olculen_gun: number
@@ -115,9 +142,13 @@ export interface SimulasyonYaniti {
   yil: number | null
   mod: 'plan' | 'aliskanlik'
   sistem: SulamaSistemi | null
-  yillar: { yil: number; tip: 'kuru' | 'normal' | 'islak' | null; yagis_mm: number }[]
-  gunler: { tarih: string; yagis_mm: number; et0_mm: number; sulama: boolean }[]
-  sektorler: { ad: string; doluluk_pct: (number | null)[]; brut_mm: number[]; stres: boolean[] }[]
+  yillar: { yil: number; tip: 'kuru' | 'normal' | 'islak' | null; yagis_mm: number; guncel?: boolean }[]
+  gunler: { tarih: string; yagis_mm: number; et0_mm: number; sulama: boolean; gecici: boolean; olculen: boolean; tahmin: boolean }[]
+  sektorler: { ad: string; doluluk_pct: (number | null)[]; brut_mm: number[]; stres: boolean[]; ks: (number | null)[]; bosa_mm: number[]; etc_mm: (number | null)[]; eta_mm: (number | null)[]; kc: KcKaynagi | null }[]
+  bugun_idx: number | null
+  tetik_pct: number | null
+  taw_mm: number | null
+  raw_mm: number | null
   vardiyalar: Vardiya[]
   sayac: SimSayac | null
   karsilastirma: { plan: SimSayac; aliskanlik: SimSayac } | null
@@ -150,6 +181,24 @@ export interface SektorKaydi {
   agac_aralik_m: number | null
   vana_debi_m3h: number | null
 }
+export interface SektorlerYaniti {
+  tanimli: boolean
+  sektorler: SektorKaydi[]
+  not: string | null
+  pompa: GeoJSON.Point | null
+  ana_boru: GeoJSON.LineString | null
+  sira_yonu_derece: number | null
+  varsayilan_sira_aralik_m: number | null
+  varsayilan_agac_aralik_m: number | null
+}
+export interface SektorGirdisi {
+  ad: string
+  geometry: GeoJSON.Polygon
+  agac_sayisi?: number | null
+  sira_aralik_m?: number | null
+  agac_aralik_m?: number | null
+  vana_debi_m3h?: number | null
+}
 
 export function useSulamaPanel(gardenId: string | null) {
   return useQuery({ queryKey: ['sulama-panel', gardenId], queryFn: () => apiRequest<PanelYaniti>(`/gardens/${gardenId}/sulama-panel`), enabled: gardenId !== null, staleTime: 2 * 60_000 })
@@ -166,7 +215,7 @@ export function useSulamaSimulasyon(gardenId: string | null, g: SimGirdisi, etki
   return useQuery({ queryKey: ['sulama-sim', gardenId, q.toString()], queryFn: () => apiRequest<SimulasyonYaniti>(`/gardens/${gardenId}/sulama-simulasyon?${q}`), enabled: gardenId !== null && etkin, staleTime: 10 * 60_000, placeholderData: (onceki) => onceki })
 }
 export function useSulamaSektorleri(gardenId: string | null) {
-  return useQuery({ queryKey: ['sulama-sektor', gardenId], queryFn: () => apiRequest<{ tanimli: boolean; sektorler: SektorKaydi[]; not: string | null }>(`/gardens/${gardenId}/sulama-sektorleri`), enabled: gardenId !== null, staleTime: 60_000 })
+  return useQuery({ queryKey: ['sulama-sektor', gardenId], queryFn: () => apiRequest<SektorlerYaniti>(`/gardens/${gardenId}/sulama-sektorleri`), enabled: gardenId !== null, staleTime: 60_000 })
 }
 
 function useYenile(gardenId: string) {
@@ -182,5 +231,18 @@ export function useSulamaOnayla(gardenId: string) {
 }
 export function useSulamaIsle(gardenId: string) {
   const yenile = useYenile(gardenId)
-  return useMutation({ mutationFn: (tarih: string) => apiRequest<{ yazilan: number }>(`/gardens/${gardenId}/sulama-isle`, { method: 'POST', body: JSON.stringify({ tarih }) }), onSuccess: yenile })
+  return useMutation({ mutationFn: (g: string | { tarih: string; sektor?: string }) => { const b = typeof g === 'string' ? { tarih: g } : g; return apiRequest<{ yazilan: number }>(`/gardens/${gardenId}/sulama-isle`, { method: 'POST', body: JSON.stringify(b) }) }, onSuccess: yenile })
+}
+
+export function useSulamaProgramEkle(gardenId: string) {
+  const yenile = useYenile(gardenId)
+  return useMutation({ mutationFn: (g: { sektor: string; tarih?: string }) => apiRequest<PanelYaniti>(`/gardens/${gardenId}/sulama-program-ekle`, { method: 'POST', body: JSON.stringify(g) }), onSuccess: yenile })
+}
+/** Vana çizim aracı: vanalar + isteğe bağlı pompa/ana boru/sıra yönü. Hepsi boşsa sunucu ağı siler (tek sektör). */
+export function useSulamaSektorKaydet(gardenId: string) {
+  const yenile = useYenile(gardenId)
+  return useMutation({
+    mutationFn: (g: { sektorler: SektorGirdisi[]; pompa?: GeoJSON.Point | null; ana_boru?: GeoJSON.LineString | null; sira_yonu_derece?: number | null }) => apiRequest<SektorlerYaniti>(`/gardens/${gardenId}/sulama-sektorleri`, { method: 'PUT', body: JSON.stringify(g) }),
+    onSuccess: yenile,
+  })
 }
