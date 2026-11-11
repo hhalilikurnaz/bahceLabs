@@ -58,6 +58,8 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Kısıntılı sulama dönemleri | çiçeklenme–tutum ve hızlı meyve büyümesi **kilitli**; olgunlaşma onaylı, oran 0,75, verim riski düşük | ön değer; mühendis onayı olmadan genişletilmez | doğrulanmadı |
 | Bildirim eşikleri | sulama günü 1 gün önce · sapma > 20 mm (14 gün) | ön değer | doğrulanmadı |
 | Ağaç sayısı tutarlılığı | beyan ↔ alan/(sıra×ağaç) farkı > %15 uyarı | ön değer | doğrulanmadı |
+| Vana başına taç örtüsü (Kc) — asgari temiz piksel | `kc_vana_min_piksel`: **20** piksel (10 m) | Vana çokgeninin Sentinel-2 NDVI ortalaması birkaç pikselle gürültülü olur; 20 piksel ≈ 0,2 ha. Mühendis gözden geçirmeli | ön değer · mühendis onayı bekliyor |
+| Vana başına taç örtüsü (Kc) — asgari geçerli oran | `kc_vana_min_gecerli_oran`: **0,5** (çokgen piksellerinin en az yarısı bulutsuz/geçerli) | Bulut maskesi oranı > %50 olan sahne vana için kullanılmaz; sonraki eski sahne denenir (60 gün geri), yoksa bahçe değeri | ön değer · mühendis onayı bekliyor |
 | EPDK tarımsal sulama tarifesi | **fiyat ve geçerlilik tarihi boş** (doğrulanamadı) | kaynak: epdk.gov.tr tarife tabloları; doğrulanınca fiyat + tarih + kaynak ile doldurulur | **doğrulanamadı** |
 | Kısıntıda verim riski yükselmesi | kısıntının eklediği stres günü ≥ 10 → en az «orta»; ≥ 30 → «yüksek» | ön değer; dönem riski tabanda kalır | doğrulanmadı |
 | Güven etiketi eşikleri | uydu ≤ 14 gün · hava ≤ 3 gün · 5 koşuldan ≥ 3 orta, 5 yüksek | ön değer (ADR 0024) | doğrulanmadı |
