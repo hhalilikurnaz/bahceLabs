@@ -184,7 +184,7 @@ export function VanaCizimAraci({ gardenId, panel }: { gardenId: string; panel: P
     else { setYon(null); setYonNokta(null) }
   }
   return (
-    <section className="glass absolute bottom-[176px] right-3.5 z-30 flex max-h-[calc(100%-320px)] w-[min(360px,calc(100%-28px))] flex-col gap-2 overflow-y-auto px-3 py-3 @max-[759px]:bottom-[96px] @max-[759px]:max-h-[48%]" aria-label="Vana çizim aracı" data-testid="vana-cizim-araci">
+    <section className="glass absolute bottom-[176px] right-3.5 z-30 flex max-h-[calc(100%-320px)] w-[min(360px,calc(100%-28px))] flex-col gap-2 overflow-y-auto px-3 py-3 max-[899px]:bottom-[252px] max-[899px]:max-h-[calc(100%-300px)]" aria-label="Vana çizim aracı" data-testid="vana-cizim-araci">
       <div className="flex items-center justify-between gap-2"><h3 className="text-lead font-semibold">Vana çizimi</h3><button type="button" className="min-h-11 min-w-11 text-small font-semibold underline" onClick={() => setCizim(false)} data-testid="vana-cizim-kapat">Kapat</button></div>
       <div role="tablist" aria-label="Çizim adımı" className="flex flex-wrap gap-1">
         {(Object.keys(ADIM_AD) as Adim[]).map((a) => <button key={a} role="tab" type="button" aria-selected={adim === a} onClick={() => { setAdim(a); setBekleyen(null); setYonNokta(null) }} data-testid={`cizim-adim-${a}`} className={`min-h-11 rounded-md border px-2 text-small font-semibold ${adim === a ? 'border-app-text bg-app-text text-app-canvas' : 'border-app-border-strong'}`}>{ADIM_AD[a]}</button>)}
