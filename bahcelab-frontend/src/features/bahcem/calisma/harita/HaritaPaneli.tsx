@@ -35,7 +35,7 @@ export function HaritaPaneli({ garden, gardens, sulama = false }: { garden: Gard
   const drawing = useBahcemStore((s) => s.mode !== 'idle')
   if (!user) return null
   return (
-    <div className="relative h-full w-full overflow-hidden" data-testid="harita-paneli">
+    <div className="@container relative h-full w-full overflow-hidden" data-testid="harita-paneli">
       <MapProvider userId={user.id}>
         <BahceSiniri garden={garden} others={others} />
         <GorunumKatmani garden={garden} view={view} />

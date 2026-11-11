@@ -226,7 +226,7 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
     const sinir = sinirKutusu(model.parsel)
     ilkBearing.current = true
     camSusun(600)
-    map.fitBounds([[sinir[0], sinir[1]], [sinir[2], sinir[3]]], { bearing: hedef, padding: { top: dar ? 56 : 70, bottom: (dar ? MOBIL_BAR_PX + altSayfaPx : 176) + 24, left: dar ? 20 : 60, right: dar ? 20 : 60 }, duration: reducedMotion() ? 0 : 250, maxZoom: 19.5, pitch: 0 })
+    map.fitBounds([[sinir[0], sinir[1]], [sinir[2], sinir[3]]], { bearing: hedef, padding: { top: w < 760 ? 120 : 70, bottom: (dar ? MOBIL_BAR_PX + altSayfaPx : 176) + 24, left: w < 760 ? 20 : 60, right: w < 760 ? 20 : 60 }, duration: reducedMotion() ? 0 : 250, maxZoom: 19.5, pitch: 0 })
     return () => {
       if (!ilkBearing.current) return
       try { map.easeTo({ bearing: 0, duration: reducedMotion() ? 0 : 250 }) } catch { /* harita kapanmış olabilir */ }

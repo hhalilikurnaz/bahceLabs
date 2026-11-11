@@ -25,13 +25,13 @@ Referans: `docs/design/prototip/sulama/` (6 PNG + 2 statik HTML; 1440×900). Kar
 ## B. Harita (hepsi Dilim 2)
 | # | Prototip | Dilim 1 | Karar / iş |
 |---|---|---|---|
-| B1 | Parsel dışı karartma/blur; bearing parsel uzun eksenine döner | Yok | → D2 |
-| B2 | Sektör dolgusu rengi (3 gösterge) + dik etiket «V3 · %86 / sulanıyor · %58» | Yok | → D2 (dolgu rengi + etiket birlikte; ayrı ışık simgesi **yok**, karar) |
-| B3 | Ağaç sıraları, damla hatları, ıslanan şerit, ana boru, vana halkaları (V1–V3), pompa | Yok | → D2: sıralar dikim aralığı + sıra yönünden («dikim aralığından çizildi · varsayım»); pompa ve ana boru **yalnız çizilmişse** (karar) |
-| B4 | Cam kartlar: sol üst durum, sağ üst gösterge+lejant+katmanlar, sağ alt ölçek+kuzey, sol alt not | Yok | → D2 |
-| B5 | Alt çubuk: ▶/❚❚, 1×/3×/8×, önceki/sonraki sulama, Bugün, sezon şeridi | Yok | → D2 |
-| B6 | Animasyon: vana halkası, hat/boru akışı, ıslanan şerit, yağmur, sararan taç | Yok | → D2 (reduced-motion'da kapalı) |
-| B7 | Haritadan aksiyon | Yok | → D2: sektöre tıkla → panel o vanaya odaklanır; [Bu vanaya kayıt işle] [Bu vanayı programa ekle] |
+| B1 | Parsel dışı karartma/blur; bearing parsel uzun eksenine döner | Yok | ✓ **D2 yapıldı**: kb-dim %50 + `backdrop-filter` blur (hareket sırasında kapanır), bearing 250 ms, çıkışta 0 |
+| B2 | Sektör dolgusu rengi (3 gösterge) + dik etiket «V3 · %86 / sulanıyor · %58» | Yok | ✓ **D2 yapıldı** —  (dolgu rengi + etiket birlikte; ayrı ışık simgesi **yok**, karar) |
+| B3 | Ağaç sıraları, damla hatları, ıslanan şerit, ana boru, vana halkaları (V1–V3), pompa | Yok | ✓ **D2 yapıldı** (pompa/boru yalnız çizildiyse) — : sıralar dikim aralığı + sıra yönünden («dikim aralığından çizildi · varsayım»); pompa ve ana boru **yalnız çizilmişse** (karar) |
+| B4 | Cam kartlar: sol üst durum, sağ üst gösterge+lejant+katmanlar, sağ alt ölçek+kuzey, sol alt not | Yok | ✓ **D2 yapıldı** |
+| B5 | Alt çubuk: ▶/❚❚, 1×/3×/8×, önceki/sonraki sulama, Bugün, sezon şeridi | Yok | ✓ **D2 yapıldı**: `AltCubuk.tsx` (tıkla-git, ← → Shift Boşluk, mobil kompakt) |
+| B6 | Animasyon: vana halkası, hat/boru akışı, ıslanan şerit, yağmur, sararan taç | Yok | ✓ **D2 yapıldı** (hareketi azalt: kapalı) —  (reduced-motion'da kapalı) |
+| B7 | Haritadan aksiyon | Yok | ✓ **D2 yapıldı** — : sektöre tıkla → panel o vanaya odaklanır; [Bu vanaya kayıt işle] [Bu vanayı programa ekle] |
 | B8 | «Doldur» bandı (CropX) | — | **karar:** gerekmez, sulama eşiği çizgisi yeterli |
 | B9 | Trafik ışığı simgesi (IriWatch) | — | **karar:** dolgu rengi + etiket metni yeterli, ışık simgesi yok |
 
@@ -39,3 +39,6 @@ Referans: `docs/design/prototip/sulama/` (6 PNG + 2 statik HTML; 1440×900). Kar
 Vana çizim aracı (bölme çizgileri, ad, debi, isteğe bağlı pompa noktası ve ana boru); vana başına Sentinel-2 taç örtüsü → Kc (10 m piksel ortalaması, piksel sayısı ve bulut maskesi oranı panelde); mobil yerleşim (harita %45, sabit alt çubuk).
 
 **Not:** prototipte «Kısıntı olgunlaşmada %75 · çiçek/tutumda kilitli» ve tek sayı yerine «tasarruf + stres + risk» ilkesi (Dilim 1 düzeltmesi) birlikte korunur: kısıntı açıkken su farkı hiçbir yerde stres günü farkı ve verim riski olmadan gösterilmez.
+
+
+**D2 durumu (2026-11-11):** B1–B7 yapıldı; B8/B9 karar gereği yok. Ekranlar ve ilke tablosu: [u9h4-d2-ekranlar.pdf](u9h4-d2-ekranlar.pdf), [u9h4-d2-ilkeler-tablosu.md](u9h4-d2-ilkeler-tablosu.md).

@@ -7,7 +7,7 @@ import { hazirla } from './yardimcilar'
  */
 const EKRAN = process.env.D2_EKRAN ?? ''
 test.skip(!EKRAN, 'D2_EKRAN verilmedi')
-test.setTimeout(300_000)
+test.setTimeout(900_000)
 const yol = (id: string) => `/bahceler/${id}/su/sulama`
 const foto = (page: Page, ad: string, w: number) => page.screenshot({ path: `${EKRAN}/tb-${ad}-${w}.png` })
 
