@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { VanaOdagi } from './VanaOdagi'
+import { useSulamaHaritaStore } from '../harita/sulamaHaritaStore'
 import { Link } from 'react-router-dom'
 import { ChartFrame, ChartState, SuDengesiGrafigi, TimeDomainProvider, ToprakSuyuGrafigi } from '@/components/chart'
 import { Button, ErrorState } from '@/components/ui'
@@ -16,7 +18,6 @@ import { BugunSekmesi } from './BugunSekmesi'
 import { KpiSatiri } from './KpiSatiri'
 import { SimulasyonSekmesi } from './SimulasyonSekmesi'
 
-type Sekme = 'bugun' | 'simulasyon'
 
 function ToprakSuyuBlogu({ panel }: { panel: PanelYaniti }) {
   const [ref, w] = useElementWidth<HTMLDivElement>()
@@ -101,7 +102,11 @@ function EksikBilgi({ uyarilar, tamamla }: { uyarilar: { kod: string; mesaj: str
 export function SulamaPaneli({ garden }: { garden: Garden }) {
   const q = useSulamaPanel(garden.id)
   const profil = useSulamaProfili(garden.id)
-  const [sekme, setSekme] = useState<Sekme>('bugun')
+  const sekme = useSulamaHaritaStore((x) => x.sekme)
+  const setSekme = useSulamaHaritaStore((x) => x.setSekme)
+  const cizim = useSulamaHaritaStore((x) => x.cizim)
+  const setCizim = useSulamaHaritaStore((x) => x.setCizim)
+  useEffect(() => () => useSulamaHaritaStore.getState().sifirla(), [])
   const [sihirbaz, setSihirbaz] = useState(false)
   const p = q.data
   const girdi = p ? { ...p, sektor_sayisi: p.sektorler.length } : null
@@ -112,7 +117,10 @@ export function SulamaPaneli({ garden }: { garden: Garden }) {
         <div className="min-w-0">
           <Link to={gardenPath(garden.id, 'su')} data-testid="sulamadan-cik" className="inline-flex min-h-6 items-center text-caption font-semibold text-app-text-muted hover:text-app-text">← Su</Link>
           <h2 className="text-h1 font-semibold leading-tight text-app-text">Sulama</h2>
+          <div className="flex flex-wrap gap-x-4">
+          {p?.durum === 'hazir' && <button type="button" onClick={() => setCizim(!cizim)} aria-pressed={cizim} data-testid="vana-ciz-ac" className="min-h-9 text-small font-semibold text-app-text-muted underline">{p.sektor_tanimli ? 'Vanaları düzenle' : 'Vanaları çiz'}</button>}
           <button type="button" onClick={() => setSihirbaz(true)} data-testid="sulama-bilgileri" className="min-h-9 text-small font-semibold text-app-text-muted underline hover:text-app-text">{profil.data?.profil ? 'Sulama bilgileri' : 'Bilgileri gir'}</button>
+          </div>
         </div>
         {p?.durum === 'hazir' && (
           <div role="tablist" aria-label="Sulama sekmeleri" className="inline-flex shrink-0 rounded-md bg-app-text/8 p-0.5" data-testid="sulama-sekmeleri">
@@ -133,6 +141,7 @@ export function SulamaPaneli({ garden }: { garden: Garden }) {
         : (
           <>
             <KpiSatiri panel={p} />
+            <VanaOdagi gardenId={garden.id} panel={p} />
             {sekme === 'bugun' && <KararBlogu karar={karar ?? ''} alt={girdi ? sulamaNeden(girdi) : undefined} testId="sulama-karar-blogu" />}
             <EksikBilgi uyarilar={p.uyarilar} tamamla={() => setSihirbaz(true)} />
             {p.uyarilar.some((u) => !EKSIK_KODLAR.has(u.kod)) && <ul className="space-y-1" data-testid="sulama-uyarilar">{p.uyarilar.filter((u) => !EKSIK_KODLAR.has(u.kod)).map((u) => <li key={u.kod} data-testid={`uyari-${u.kod}`} className="rounded-md border border-app-border bg-app-card px-3 py-2 text-small text-app-text-muted"><b className="text-app-text">Not · </b>{u.mesaj}</li>)}</ul>}

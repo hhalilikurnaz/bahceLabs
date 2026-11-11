@@ -150,8 +150,11 @@ test('simülasyon: yıl düğmeleri (kuru/normal/ıslak), 4 sayaç, sistem ve k�
   await expect(sim.getByTestId('sayac-kwh')).toContainText('kWh')
   // çizelge: sulama günleri arasında gezinme
   await expect(sim.getByTestId('sim-cizelge')).toBeVisible()
+  // gün seçimi alt çubukta (eski kaydırıcının yerine): sonraki sulama → panelin vana programı o güne geçer
+  await page.getByTestId('alt-sonraki-sulama').click()
+  await expect(sim.getByTestId('sim-gun')).toBeVisible()
   const gun1 = await sim.getByTestId('sim-gun').textContent()
-  await sim.getByTestId('sim-sonraki').click()
+  await page.getByTestId('alt-sonraki-sulama').click()
   await expect(sim.getByTestId('sim-gun')).not.toHaveText(gun1 ?? '')
   // alışkanlık: kayıt yok → neden; elle gün + süre → karşılaştırma cümlesi
   await sim.getByTestId('sim-mod-aliskanlik').click()

@@ -11,15 +11,26 @@ const KAPALI_PX = 132 // tutamak + karar cümlesi görünür kalır
  * Mobil alt sayfa (≤ 899 px): harita üstte tam ekran, panel alttan. ÜÇ DURAK (kapalı / yarım / tam); sürüklemede parmağı izler,
  * bırakınca hız ve yakınlığa göre en yakın durağa ağır sönümlü (zıplamasız) yayla oturur. Tutamak bölgesi CAM. Klavye: ↑ ↓ ya da Enter.
  */
-export function AltSayfa({ children, baslangic = 'yarim' }: { children: ReactNode; baslangic?: Durak }) {
+export function AltSayfa({ children, baslangic = 'yarim', altOfsetPx = 0, yarimOran = 0.5, zorlaKapali = false }: { children: ReactNode; baslangic?: Durak; altOfsetPx?: number; yarimOran?: number; zorlaKapali?: boolean }) {
   const kap = useRef<HTMLDivElement>(null)
   const sayfa = useRef<HTMLDivElement>(null)
   const [durak, setDurak] = useState<Durak>(baslangic)
   const [canli, setCanli] = useState<number | null>(null)
+  // Yükseklik ölçümü: ilk çizimde kap henüz yok (yedek 700 px kullanılırdı); bağlanınca ve boyut değişince yeniden hesapla
+  const [, olc] = useState(0)
+  useEffect(() => {
+    const el = kap.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => olc((n) => n + 1))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  // çizim aracı açıkken sayfa kapanır (harita görünür kalsın); kapanınca önceki durağa dönmez, kullanıcı açar
+  useEffect(() => { if (zorlaKapali) setDurak('kapali') }, [zorlaKapali])
   const sur = useRef<{ y0: number; ofs0: number; t0: number; son: number; vel: number } | null>(null)
   const yuk = () => (kap.current?.clientHeight ?? 700)
   const tamPx = () => Math.round(yuk() * 0.7) // tam durakta bile haritada bahçe için şerit kalır
-  const gorunur = (d: Durak) => (d === 'kapali' ? KAPALI_PX : d === 'yarim' ? Math.round(yuk() * 0.5) : tamPx())
+  const gorunur = (d: Durak) => (d === 'kapali' ? KAPALI_PX : d === 'yarim' ? Math.round(yuk() * yarimOran) : tamPx())
   const ofset = (d: Durak) => tamPx() - gorunur(d)
   const setAltSayfaPx = useCalismaStore((s) => s.setAltSayfaPx)
   useEffect(() => () => void (sur.current = null), [])
@@ -28,7 +39,7 @@ export function AltSayfa({ children, baslangic = 'yarim' }: { children: ReactNod
     setAltSayfaPx(gorunur(durak))
     return () => setAltSayfaPx(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [durak, setAltSayfaPx])
+  }, [durak, setAltSayfaPx, altOfsetPx])
   const bas = (e: PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId)
     sur.current = { y0: e.clientY, ofs0: ofset(durak), t0: e.timeStamp, son: e.clientY, vel: 0 }
@@ -58,7 +69,7 @@ export function AltSayfa({ children, baslangic = 'yarim' }: { children: ReactNod
   }
   const ty = canli ?? ofset(durak)
   return (
-    <div ref={kap} className="pointer-events-none absolute inset-0 z-30" data-testid="alt-sayfa-kap">
+    <div ref={kap} className="pointer-events-none absolute inset-x-0 top-0 z-30" style={{ bottom: altOfsetPx }} data-testid="alt-sayfa-kap">
       <div
         ref={sayfa}
         data-testid="alt-sayfa"

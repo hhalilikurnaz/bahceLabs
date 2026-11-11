@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { ChartState } from '@/components/chart'
 import { useSulamaSimulasyon, type SimSayac, type SimulasyonYaniti } from '../../../api/sulamaPanelApi'
 import type { SulamaSistemi } from '../../../api/sulamaApi'
 import { sayi } from '../../../lib/format'
 import { VardiyaGantt } from './VardiyaGantt'
+import { vardiyaAraligi } from './vardiyaAraligi'
+import { simSorgu, useSulamaHaritaStore } from '../harita/sulamaHaritaStore'
 
 const TIP_AD = { kuru: 'kuru', normal: 'normal', islak: 'ıslak' } as const
 const TIP_RENK = { kuru: 'var(--color-app-warn)', normal: 'var(--color-app-border-strong)', islak: 'var(--color-app-water)' } as const
@@ -58,28 +59,33 @@ function Cubuk({ ad, plan, alis, birim, testId }: { ad: string; plan: number | n
 
 /** Simülasyon: yıl sütunları · Plan | Alışkanlığım · sistem · kısıntı anahtarı · kWh adımlayıcı · vana çizelgesi (Gantt) · 4 sayaç · plan–alışkanlık çubukları. */
 export function SimulasyonSekmesi({ gardenId, mevcutSistem }: { gardenId: string; mevcutSistem: SulamaSistemi }) {
-  const [yil, setYil] = useState<number | undefined>()
-  const [mod, setMod] = useState<'plan' | 'aliskanlik'>('plan')
-  const [sistem, setSistem] = useState<SulamaSistemi>(mevcutSistem)
-  const [kisinti, setKisinti] = useState(false)
-  const [fiyat, setFiyat] = useState('')
-  const [elleGun, setElleGun] = useState<number[]>([])
-  const [elleSaat, setElleSaat] = useState('')
-  const [gunIdx, setGunIdx] = useState(0)
+  const st = useSulamaHaritaStore()
+  const { mod, kisinti, fiyat, elleGun, elleSaat } = st.sim
+  const sistem = st.sim.sistem ?? mevcutSistem
+  const setYil = (y: number | undefined) => st.setSim({ yil: y })
+  const setMod = (m: 'plan' | 'aliskanlik') => st.setSim({ mod: m })
+  const setSistem = (x: SulamaSistemi) => st.setSim({ sistem: x })
+  const setKisinti = (k: boolean) => st.setSim({ kisinti: k })
+  const setFiyat = (f: string) => st.setSim({ fiyat: f })
+  const setElleGun = (g: number[]) => st.setSim({ elleGun: g })
+  const setElleSaat = (x: string) => st.setSim({ elleSaat: x })
   const f = Number(fiyat.replace(',', '.'))
-  const s = Number(elleSaat.replace(',', '.'))
-  const q = useSulamaSimulasyon(gardenId, { yil, mod, sistem, kisinti, kwh_fiyat: fiyat.trim() !== '' && Number.isFinite(f) && f >= 0 ? f : undefined, gunler: elleGun.length && s > 0 ? elleGun : undefined, saat: elleGun.length && s > 0 ? s : undefined })
+  const q = useSulamaSimulasyon(gardenId, simSorgu(st.sim, mevcutSistem))
   const d: SimulasyonYaniti | undefined = q.data
   const adim = (yon: number) => setFiyat((Math.max(0, Math.round(((Number.isFinite(f) ? f : 0) + yon * 0.1) * 100) / 100)).toFixed(2).replace('.', ','))
   if (q.isLoading) return <ChartState tur="yukleniyor" yukseklik={240} />
   if (q.isError || !d) return <ChartState tur="hata" error={q.error} onRetry={() => void q.refetch()} retrying={q.isFetching} />
   if (d.durum !== 'hazir') return <ChartState tur="yok" neden={d.neden ?? 'Simülasyon için veri yok.'} />
-  const sulamaGunleri = d.vardiyalar
-  const secili = sulamaGunleri[Math.min(gunIdx, Math.max(0, sulamaGunleri.length - 1))]
+  const gunIdx = st.gun ?? d.bugun_idx ?? 0
+  const gunTarih = d.gunler[gunIdx]?.tarih
+  const secili = d.vardiyalar.find((v) => v.tarih === gunTarih)
+  const sulamaSayisi = d.vardiyalar.length
+  const aralik = secili ? vardiyaAraligi(secili) : null
+  const simdiDk = aralik && st.dilim > 0 ? Math.round(aralik.bas + st.dilim * (aralik.bit - aralik.bas)) : null // oynatma sırasında canlı «şu an»
   return (
     <div className="grid gap-3" data-testid="sulama-simulasyon">
       <section className="rounded-md border border-app-border bg-app-card p-3" aria-label="Simülasyon ayarları">
-        <YilSutunlari yillar={d.yillar} secili={d.yil} sec={(y) => { setYil(y); setGunIdx(0) }} />
+        <YilSutunlari yillar={d.yillar} secili={d.yil} sec={(y) => setYil(y)} />
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
           <div role="radiogroup" aria-label="Mod" className="inline-flex rounded-md bg-app-text/8 p-0.5">
             {(['plan', 'aliskanlik'] as const).map((m) => <button key={m} type="button" role="radio" aria-checked={mod === m} onClick={() => setMod(m)} data-testid={`sim-mod-${m}`} className={`min-h-11 rounded-sm px-3 text-small font-semibold ${mod === m ? 'bg-app-card shadow-e1' : 'text-app-text-muted'}`}>{m === 'plan' ? 'Plan' : 'Alışkanlığım'}</button>)}
@@ -117,18 +123,11 @@ export function SimulasyonSekmesi({ gardenId, mevcutSistem }: { gardenId: string
         {d.aliskanlik && <p className="mt-2 text-caption text-app-text-dim" data-testid="sim-aliskanlik-kaynak">Alışkanlık: {d.aliskanlik.kaynak === 'kayit' ? `Saha Defteri'ndeki ${d.aliskanlik.kayit_sayisi} sulama gününden öğrenildi` : 'elle girdiğiniz gün ve süre'} · haftada {d.aliskanlik.gunler.map((g) => GUN[g]).join(', ')} · her seferde ≈ {sayi(d.aliskanlik.brut_mm, 1)} mm.</p>}
       </section>
       <section className="rounded-md border border-app-border bg-app-card p-4" aria-label="Vana çizelgesi" data-testid="sim-cizelge">
-        <h3 className="text-lead font-semibold">Vana programı{secili ? ` · ${gunAy(secili.tarih)} ${d.yil}` : ''} <span className="text-small font-normal text-app-text-dim">{sulamaGunleri.length} sulama günü</span></h3>
+        <h3 className="text-lead font-semibold">Vana programı{gunTarih ? ` · ${gunAy(gunTarih)} ${d.yil}` : ''} <span className="text-small font-normal text-app-text-dim">{sulamaSayisi} sulama günü</span></h3>
+        <p className="mt-1 text-caption text-app-text-dim">Gün seçimi ve oynatma haritanın alt çubuğunda (← → Boşluk).</p>
         {secili ? (
-          <>
-            <div className="mt-2 flex items-center gap-2">
-              <button type="button" onClick={() => setGunIdx(Math.max(0, gunIdx - 1))} disabled={gunIdx <= 0} className="min-h-11 min-w-11 rounded-md border border-app-border-strong disabled:opacity-40" aria-label="Önceki sulama" data-testid="sim-onceki">←</button>
-              <input type="range" min={0} max={sulamaGunleri.length - 1} value={Math.min(gunIdx, sulamaGunleri.length - 1)} onChange={(e) => setGunIdx(Number(e.target.value))} aria-label="Sulama günü" className="min-h-11 flex-1" data-testid="sim-gun-slider" />
-              <button type="button" onClick={() => setGunIdx(Math.min(sulamaGunleri.length - 1, gunIdx + 1))} disabled={gunIdx >= sulamaGunleri.length - 1} className="min-h-11 min-w-11 rounded-md border border-app-border-strong disabled:opacity-40" aria-label="Sonraki sulama" data-testid="sim-sonraki">→</button>
-            </div>
-            <p className="mt-1 text-body font-semibold" data-testid="sim-gun">{gunAy(secili.tarih)} {d.yil} · {gunIdx + 1}/{sulamaGunleri.length}</p>
-            <div className="mt-1"><VardiyaGantt v={secili} testId="sim-vardiya" />{secili.zaman_notu && <p className="mt-1 text-caption text-app-text-dim" data-testid="vardiya-notu">{secili.zaman_notu}</p>}</div>
-          </>
-        ) : <p className="mt-2 text-small text-app-text-muted" data-testid="sim-cizelge-bos">{d.mod === 'aliskanlik' ? 'Alışkanlık modunda vardiya çizelgesi yok (saatler plana özgü).' : 'Bu yıl plan sulama önermedi.'}</p>}
+          <div className="mt-1" data-testid="sim-gun-bolumu"><p className="text-body font-semibold" data-testid="sim-gun">{gunAy(secili.tarih)} {d.yil} sulama günü</p><VardiyaGantt v={secili} simdiDk={simdiDk} testId="sim-vardiya" />{secili.zaman_notu && <p className="mt-1 text-caption text-app-text-dim" data-testid="vardiya-notu">{secili.zaman_notu}</p>}</div>
+        ) : <p className="mt-2 text-small text-app-text-muted" data-testid="sim-cizelge-bos">{d.mod === 'aliskanlik' ? 'Alışkanlık modunda vardiya çizelgesi yok (saatler plana özgü).' : sulamaSayisi === 0 ? 'Bu yıl plan sulama önermedi.' : `${gunAy(gunTarih ?? '')} günü sulama yok — alt çubuktaki ← önceki / sonraki sulama → ile sulama gününe geçin.`}</p>}
       </section>
       {d.sayac && <section className="rounded-md border border-app-border bg-app-card p-4" aria-label="Sezon sayaçları"><Sayaclar s={d.sayac} />{d.sayac.eksik && <p className="mt-2 text-small text-app-warn" data-testid="sim-tl-eksik">{d.sayac.eksik}</p>}</section>}
       {d.karsilastirma ? (

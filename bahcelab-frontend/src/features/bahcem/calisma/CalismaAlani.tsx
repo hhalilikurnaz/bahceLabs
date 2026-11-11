@@ -8,6 +8,8 @@ import { HaritaPaneli } from './harita/HaritaPaneli'
 import { AltSayfa } from './panel/AltSayfa'
 import { SagPanel } from './panel/SagPanel'
 import { useUrlGorunumu } from './useUrlGorunumu'
+import { useSulamaHaritaStore } from './sulama/harita/sulamaHaritaStore'
+import { MOBIL_BAR_PX } from './sulama/harita/oynatma'
 
 /** Bölünmüş çalışma alanı: solda harita, sağda sabit genişlikli panel (420–640 px, sürüklenebilir ayraç; tercih hatırlanır). ≤ 899 px: harita tam ekran, panel üç duraklı alt sayfa. */
 export function CalismaAlani({ garden, gardens, tab, sulama = false }: { garden: Garden; gardens: Garden[]; tab: GardenTab; sulama?: boolean }) {
@@ -24,15 +26,17 @@ export function CalismaAlani({ garden, gardens, tab, sulama = false }: { garden:
     setSekme(tab)
     if (tab === 'durum') setKatman('canlilik')
     else if (tab === 'analiz') setKatman('bolgeler')
-    else if (tab === 'su') setKatman('yaprakSuyu')
+    else if (tab === 'su') { setKatman('yaprakSuyu'); if (sulama) setSade(true) } // sulama simülatörü: raster katman kapalı, vana renkleri okunur
     else if (tab === 'hava') setSade(true)
-  }, [tab, garden.id, setKatman, setSade, setSekme])
+  }, [tab, sulama, garden.id, setKatman, setSade, setSekme])
   useUrlGorunumu(garden.id)
+  const sulamaHarita = sulama && tab === 'su'
+  const cizimAcik = useSulamaHaritaStore((x) => x.cizim)
   if (dar) {
     return (
       <div ref={box} className="relative min-h-0 flex-1 overflow-hidden" data-testid="calisma-alani" data-yerlesim="alt-sayfa">
-        <div className="absolute inset-0"><HaritaPaneli garden={garden} gardens={gardens} /></div>
-        <AltSayfa>
+        <div className="absolute inset-0"><HaritaPaneli garden={garden} gardens={gardens} sulama={sulama && tab === 'su'} /></div>
+        <AltSayfa zorlaKapali={sulamaHarita && cizimAcik} altOfsetPx={sulamaHarita ? MOBIL_BAR_PX : 0} yarimOran={sulamaHarita ? 0.55 : 0.5}>
           <aside aria-label="Bahçe paneli" className="flex min-h-0 flex-1 flex-col"><SagPanel garden={garden} tab={tab} sulama={sulama} /></aside>
         </AltSayfa>
       </div>
@@ -41,7 +45,7 @@ export function CalismaAlani({ garden, gardens, tab, sulama = false }: { garden:
   return (
     <div ref={box} className="flex min-h-0 flex-1" data-testid="calisma-alani" data-yerlesim="yan-yana">
       <div className="min-w-[320px] flex-1 border-r border-app-border">
-        <HaritaPaneli garden={garden} gardens={gardens} />
+        <HaritaPaneli garden={garden} gardens={gardens} sulama={sulama && tab === 'su'} />
       </div>
       <Bolucu container={box} />
       <aside aria-label="Bahçe paneli" className="flex min-h-0 shrink-0 flex-col border-l border-app-border bg-app-canvas" style={{ width: panelPx, maxWidth: 'calc(100% - 360px)' }} data-testid="sag-panel">

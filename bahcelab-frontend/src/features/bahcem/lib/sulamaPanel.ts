@@ -1,4 +1,4 @@
-import type { SektorDurumu } from '../api/sulamaPanelApi'
+import type { KcKaynagi, SektorDurumu } from '../api/sulamaPanelApi'
 
 /** Vana ortalaması (alan ağırlıklı) günlük su dengesi: ihtiyaç (ETc), gerçek tüketim (ETa), sulama (net), yağmur (ham), karşılanmayan (ETc − ETa). Veri eksik günler atlanır (uydurulmaz). */
 export interface DengeGunu {
@@ -54,3 +54,15 @@ export function vanaEtiketi(s: SektorDurumu): { baslik: string; alt: string } {
   const sonraki = s.sonraki_sulama ? `sonraki ${Number(s.sonraki_sulama.slice(8, 10))} ${ay[Number(s.sonraki_sulama.slice(5, 7)) - 1]}` : 'sulama gerekmiyor'
   return { baslik: `${s.ad} · ${pct}`, alt: `${s.etiket ? ETIKET_AD[s.etiket] : 'veri yok'} · ${sonraki}` }
 }
+
+/** Kc'nin KAYNAĞI (ekranda): vana çokgeninin Sentinel-2 pikselleri (piksel sayısı + bulut maskesi) ya da bahçe değeri ve nedeni. */
+export function kcCumlesi(k: KcKaynagi): string {
+  if (k.kaynak === 'vana' && k.piksel !== null && k.toplam_piksel !== null) {
+    return `Taç örtüsü %${sayiTr(k.orten_yuzde)} · Kc ${sayiTr(k.kc_bugun, 2)} — bu vananın ${k.piksel} Sentinel-2 pikselinin ortalaması (${k.tarih ? gunAyTr(k.tarih) : '—'} görüntüsü${k.maske_orani !== null ? `, bulut maskesi %${sayiTr(k.maske_orani * 100)}` : ''}; toplam ${k.toplam_piksel} piksel).`
+  }
+  return `Taç örtüsü %${sayiTr(k.orten_yuzde)} · Kc ${sayiTr(k.kc_bugun, 2)} — bahçe değeri${k.neden ? `: ${k.neden}` : ''}.`
+}
+
+
+const sayiTr = (x: number, n = 0): string => x.toLocaleString('tr-TR', { minimumFractionDigits: n, maximumFractionDigits: n })
+const gunAyTr = (iso: string): string => `${Number(iso.slice(8, 10))} ${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(iso.slice(5, 7)) - 1]}`
