@@ -1,5 +1,6 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { createGarden, newUser, seedScenes, seedWater } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedScenes, seedWater } from './yardimcilar'
 
 /** Sulama simülatörü (9H-S4 dilim 2): harita katmanları, göstergeler, alt çubuk, vana eylemleri, çizim aracı. GERÇEK arka uçla. */
 const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
@@ -180,4 +181,53 @@ test('çizim aracı doğrulama: tekrar eden vana adı kaydı engeller (sunucuya 
   await page.getByTestId('cizim-kaydet').click()
   await expect(page.getByTestId('cizim-uyari')).toContainText('tekrar etmemeli')
   expect(((await (await page.request.get(`/api/gardens/${g.id}/sulama-sektorleri`)).json()) as { tanimli: boolean }).tanimli).toBe(false) // kaydedilmedi
+})
+
+test('hareketi azalt: oynatma ve animasyon kapalı, durum metinle; axe temiz', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const g = await kurulum(page, 'Harita Azalt', 27.88, { vanalar: true, ag: true })
+  await page.goto(yol(g.id))
+  await expect(page.getByTestId('harita-vana-etiketi')).toHaveCount(2, { timeout: 40_000 })
+  await expect(page.getByTestId('alt-oynat')).toBeDisabled()
+  await expect(page.getByTestId('yagmur')).toHaveCount(0) // yağmur parçacığı yok
+  await page.getByTestId('alt-sonraki-sulama').click()
+  await expect(page.getByTestId('durum-neden')).toContainText('sulanıyor') // durum yazıyla
+  await expect(page.locator('[data-testid="harita-vana-alt"]').filter({ hasText: /^(sulandı|sulanacak|sulanıyor) · %\d+$/ }).first()).toBeVisible()
+  const hareket = await page.evaluate(() => getComputedStyle(document.querySelector('[data-sulaniyor="true"]')!, '::after').animationName)
+  expect(hareket).toBe('none') // halka animasyonu kapalı
+  await animasyonlarBitsin(page)
+  const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).exclude('.maplibregl-ctrl-attrib').exclude('.maplibregl-canvas').analyze()
+  expect(sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([])
+})
+
+test('performans: sulama günü oynatılırken kare hızı ve render sayısı', async ({ page }, testInfo) => {
+  test.skip(process.env.CI === 'true' && process.env.E2E_PERF_CI !== '1', 'performans eşikleri yerel donanımda doğrulanır')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const g = await kurulum(page, 'Harita Perf', 27.89, { vanalar: true, ag: true })
+  await page.goto(yol(g.id))
+  await expect(page.getByTestId('harita-vana-etiketi')).toHaveCount(2, { timeout: 40_000 })
+  await page.getByTestId('alt-sonraki-sulama').click() // bir sulama gününde dur
+  await page.getByTestId('alt-onceki-sulama').click().catch(() => undefined)
+  await page.getByTestId('alt-sonraki-sulama').click()
+  await page.waitForTimeout(500)
+  await page.getByTestId('alt-hiz-1').click()
+  const olcum = page.evaluate(() => new Promise<{ fps: number; kareP95: number; kare: number }>((coz) => {
+    const dt: number[] = []
+    let son = performance.now()
+    const bas = son
+    const f = (t: number) => {
+      dt.push(t - son)
+      son = t
+      if (t - bas < 4000) requestAnimationFrame(f)
+      else { const s = [...dt].sort((a, b) => a - b); coz({ fps: (dt.length / (t - bas)) * 1000, kareP95: s[Math.min(s.length - 1, Math.ceil(0.95 * s.length) - 1)]!, kare: dt.length }) }
+    }
+    requestAnimationFrame(f)
+  }))
+  await page.getByTestId('alt-oynat').click() // sulama gününde: gün içi ilerleme, boru akışı, şerit genişlemesi
+  const o = await olcum
+  await page.getByTestId('alt-oynat').click()
+  testInfo.annotations.push({ type: 'sulama-oynatma-fps', description: `fps ${o.fps.toFixed(1)} · kare p95 ${o.kareP95.toFixed(1)} ms · ${o.kare} kare` })
+  console.log(`SULAMA_FPS ${JSON.stringify(o)}`)
+  expect(o.fps).toBeGreaterThanOrEqual(Number(process.env.E2E_FPS_MIN ?? 30))
 })

@@ -54,6 +54,12 @@ export function SulamaHaritasi({ gardenId }: { gardenId: string }) {
   const dar = useDarEkran(599)
   const [model, setModel] = useState<HaritaModeli | null>(null)
   useEffect(() => { st.sifirla() }, [gardenId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Oynatırken cam bulanıklığı kapanır (her karede yeniden bulanıklaştırma 60 fps'i bozar; lib/cam.ts ile aynı kural), durunca geri gelir
+  useEffect(() => {
+    if (!st.oynuyor) return
+    document.documentElement.setAttribute('data-harita-hareket', '')
+    return () => document.documentElement.removeAttribute('data-harita-hareket')
+  }, [st.oynuyor])
   if (yukleniyor && !panel) return null
   if (!panel || panel.durum !== 'hazir' || !sim || sim.durum !== 'hazir') {
     return <div role="status" className="glass absolute left-3.5 top-3.5 z-20 max-w-[320px] px-3 py-2 text-small" data-testid="harita-sulama-yok">{panel?.neden ?? sim?.neden ?? 'Sulama simülatörü için sulama bilgileri gerekli.'}</div>

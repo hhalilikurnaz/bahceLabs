@@ -30,7 +30,7 @@ export function useOynatma(sim: SimulasyonYaniti | undefined): void {
       if (sul.has(i)) {
         const yeni = st.dilim + (dt * st.hiz) / SUL_MS
         if (yeni >= 1) ileri()
-        else if (t - sonYazim > 60) { st.setDilim(yeni); sonYazim = t }
+        else if (t - sonYazim > 100) { st.setDilim(yeni); sonYazim = t }
       } else {
         birikim += dt * st.hiz
         if (birikim >= GUN_MS) { birikim = 0; ileri() }
