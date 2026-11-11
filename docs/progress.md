@@ -285,6 +285,19 @@ Tamamlandı: NDVI/MSAVI/NDRE/NDMI/CIgreen/gerçek renk, kontrastlı mod, değiş
 
 Tamamlandı: Open-Meteo (sağlayıcı arayüzü), 1 saat önbellek, 13 aylık geçmiş, ilaçlama penceresi, don/sıcak uyarıları, su dengesi, grafikte hava katmanı, hava özeti paneli. Ayrıntı: `docs/PLAN-FAZ1.md`.
 
+## Faz 1 — 9H-S4 Dilim 2 (sulama haritası simülatörü) — DEVAM NOTU
+
+Durum (2026-11-11): backend + harita ön yüzü tamam ve `feature/faz1`'de; teslimat çıktıları kalan.
+
+Yapıldı: migration 038, vana başına Kc (ADR 0027), ağ (pompa/boru/sıra yönü), bu yıl serisi, vana eylemleri; geometri (`lib/geometri.ts`), `lib/sulamaHarita.ts`, `calisma/sulama/harita/*` (motor, kartlar, alt çubuk + klavye, çizim aracı, yağmur, parsel dışı blur), `panel/VanaOdagi.tsx`, mobil (alt sayfa `altOfsetPx`, `MOBIL_BAR_PX`). e2e: `e2e/sulama-harita.spec.ts` (oynatma fps ≈ 65, axe, hareketi azalt).
+
+Kalan (sırayla):
+1. CI + Tam paket sonucunu kontrol et (push: abf0743); kırmızıysa kök nedenini bul.
+2. Ekranlar: test bahçesi (çok vanalı) + jlnnlk (tek vana; örnek profil GEÇİCİ girilir, sonra silinir; pg_dump önce) — 1440/1024/390; Bugün, Simülasyon, 3 gösterge, çizim aracı, ≥4 sulama günü karesi. Çıktı: `docs/design/u9h4-d2-ekranlar.pdf` (+ klasör). Betik: `D2_EKRAN=<klasör> npx playwright test e2e/sulama-harita.spec.ts` (PW_CHROME_PATH gerekir).
+3. webm (sulama günü oynatma, 10–15 sn); ilkeler tablosu; `docs/design/u9h4-prototip-farklari.md` durumlarını güncelle.
+4. Bilinen eksikler: tam sezon oynatmada boru akışı yalnız ana boru çizildiyse; ıslanan şerit genişliği 1 m ve taç çapı 3 m GÖSTERİM varsayımı (ekranda etiketli); fazla su sınıf eşikleri (2/8 mm) gösterim sınıfı, katalogda değil.
+5. Seri `pytest` koşusunda `tests/test_multiyear_api.py::test_start_processes_every_year_and_returns_zones` takılıyor (eski commit'te de; `-n 4` altında geçiyor) — ayrıca incelenmeli.
+
 ---
 
 ## Notlar
