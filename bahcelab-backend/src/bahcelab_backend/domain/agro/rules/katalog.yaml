@@ -213,6 +213,11 @@ sulama_plani:
   yagis_olcer_oran_ust: 2.0
   kc_vana_min_piksel: 20
   kc_vana_min_gecerli_oran: 0.5
+  # Harita gösterimi (hesaba girmez): ön değer · mühendis onayı bekliyor
+  fazla_su_az_mm: 2.0
+  fazla_su_cok_mm: 8.0
+  gosterim_serit_genislik_m: 1.0
+  gosterim_tac_cap_m: 3.0
   kisinti_stres_orta_gun: 10
   kisinti_stres_yuksek_gun: 30
   aliskanlik_min_kayit: 4

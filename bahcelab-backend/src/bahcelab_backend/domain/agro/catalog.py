@@ -254,6 +254,11 @@ class SulamaPlaniKurali(KuralBlok):
     # Vana başına taç örtüsü → Kc (Sentinel-2 NDVI, 10 m piksel ortalaması): vana çokgeninde en az bu kadar TEMİZ piksel ve geçerli oran yoksa bahçe değerine düşülür
     kc_vana_min_piksel: int = Field(default=20, ge=1)
     kc_vana_min_gecerli_oran: float = Field(default=0.5, gt=0, le=1)
+    # HARİTA GÖSTERİMİ (hesaba GİRMEZ; yalnız çizim/renk sınıfı): «fazla su» (kökün altına sızan + sistem kaybı, 7 gün, mm) sınıf eşikleri; ıslanan şerit ve taç çizim ölçüleri (m)
+    fazla_su_az_mm: float = Field(default=2.0, ge=0)
+    fazla_su_cok_mm: float = Field(default=8.0, gt=0)
+    gosterim_serit_genislik_m: float = Field(default=1.0, gt=0, le=10)
+    gosterim_tac_cap_m: float = Field(default=3.0, gt=0, le=20)
     # Kısıntıda verim riski: dönemin katalog riski, kısıntının EKLEDİĞİ stres günü bu eşikleri aşarsa bir kademe (orta) ya da en yüksek kademeye (yüksek) çıkar
     kisinti_stres_orta_gun: int = Field(default=10, ge=1)
     kisinti_stres_yuksek_gun: int = Field(default=30, ge=1)
@@ -283,6 +288,8 @@ class SulamaPlaniKurali(KuralBlok):
         for ad, prog in self.sistem_programi.items():
             if prog.tetik_orani < self.tetik_alt_siniri:
                 raise ValueError(f"{ad}: tetik oranı {prog.tetik_orani}, alt sınır {self.tetik_alt_siniri}'in altında (kova RAW'a yaklaşmadan sulama önerilmez).")
+        if self.fazla_su_cok_mm <= self.fazla_su_az_mm:
+            raise ValueError("Fazla su sınıf eşikleri artan olmalı (az < çok).")
         if set(self.sistem_programi) != set(self.sistem_verimi):
             raise ValueError("Sistem programı ve sistem verimi aynı sistemleri içermeli.")
         if len(self.kc_ay_agirliklari) != 12 or any(abs(sum(w) - 1) > 1e-6 for w in self.kc_ay_agirliklari):

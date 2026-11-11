@@ -290,10 +290,10 @@ Tamamlandı: Open-Meteo (sağlayıcı arayüzü), 1 saat önbellek, 13 aylık ge
 Backend (migration 038, vana Kc, ağ, bu yıl serisi, vana eylemleri), harita ön yüzü, çizim aracı, mobil, e2e/axe/fps ve teslim çıktıları (`docs/design/u9h4-d2-ekranlar.pdf`, klasör, webm, `u9h4-d2-ilkeler-tablosu.md`) hazır. Rapor kullanıcıya verildi; yeni iş beklenir.
 
 Bilinen eksikler / sonraki turlar:
-- Gösterim varsayımları ekranda etiketli: ağaç sırası «dikim aralığından çizildi · varsayım», ıslanan şerit 1 m, taç çapı 3 m; fazla su sınıf eşikleri (2/8 mm) `lib/sulamaHarita.ts` içinde, katalogda değil.
+- Gösterim varsayımları ekranda etiketli: ağaç sırası «dikim aralığından çizildi · varsayım», ıslanan şerit 1 m, taç çapı 3 m; fazla su sınıf eşikleri (2/8 mm), ıslanan şerit (1 m) ve taç çapı (3 m) artık KATALOGDA (`sulama_plani`, `panel.gosterim`; hesaba girmez; KURAL-DURUMU).
 - Boru akışı animasyonu yalnız ana boru çizildiyse; pompa/boru yoksa haritada gösterilmez.
 - Bölme çizgisi yarım-düzlem kırpmasıyla çalışır; içbükey parselde bir taraf birden çok parçaya ayrılırsa tek halka döner (sunucu doğrulaması korur).
-- Seri `pytest` koşusunda `tests/test_multiyear_api.py::test_start_processes_every_year_and_returns_zones` takılıyor (eski commit'te de; `-n 4` altında geçiyor) — ayrıca incelenmeli.
+- ÇÖZÜLDÜ (2026-11-11) «seri pytest takılıyor»: takılma yoktu. `test_multiyear_api.py` (ve `slow` işaretli 33 test) tek tek 60–130 sn sürer (bu Mac'te 47 sn'si Docker/Postgres gidiş-dönüş beklemesi: CPU 16 sn, duvar saati 64 sn); serisi koşuda toplam ≈ 20–30 dk olduğundan «takılmış» göründü, ben de erken öldürdüm (öldürülen koşu test DB kilidini tuttuğunda sonraki koşu «başka bir pytest oturumu kullanıyor» hatası verir). Önlem: `pytest-timeout` (test başına 60 sn; `slow` 300 sn — `tests/conftest.py`), iş parçacığı yöntemi (takılırsa tüm döküm). Doğrulama: `pytest -n 4 -m slow` 33 geçti (6 dk 58 sn, en uzun 131 sn); `-m "not slow"` 663 geçti.
 - Ekran betikleri: `D2_EKRAN=<klasör> npx playwright test e2e/ekran-d2.spec.ts e2e/ekran-d2-video.spec.ts` (PW_CHROME_PATH gerekir); jlnnlk için geliştirme sunucusu + geçici profil (sonra silinir).
 
 ---

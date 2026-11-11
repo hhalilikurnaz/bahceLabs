@@ -724,7 +724,7 @@ class IrrigationService:
             durum="hazir", neden=None, bugun=today, taw_mm=c.taw, raw_mm=c.raw, stres_pct=rule.durum_stres_alt, yakin_pct=rule.durum_yakin_ust, yeterli_pct=rule.durum_yeterli_ust,
             tetik_pct=self._pct(c.taw, prog.tetik_orani * c.raw), sektorler=durumlar, sektor_tanimli=tanimli, kpi=kpi, hafta=hafta, vardiya=vardiya,
             en_dusuk=None if dusuk is None else {"ad": dusuk.ad, "pct": dusuk.doluluk_pct}, esik_alti_sektorler=[d.ad for d in durumlar if d.esik_alti_7gun], uyarilar=plan.uyarilar, guven=guven,
-            kaynaklar=plan.kaynaklar, yagis_vurgu_mm=rule.yagis_vurgu_mm, katalog_surum=plan.katalog_surum, onayli_tarih=onayli_tarih,
+            kaynaklar=plan.kaynaklar, yagis_vurgu_mm=rule.yagis_vurgu_mm, gosterim=sc.HaritaGosterim(fazla_su_az_mm=rule.fazla_su_az_mm, fazla_su_cok_mm=rule.fazla_su_cok_mm, serit_genislik_m=rule.gosterim_serit_genislik_m, tac_cap_m=rule.gosterim_tac_cap_m), katalog_surum=plan.katalog_surum, onayli_tarih=onayli_tarih,
             ag=await self._ag(garden_id), parsel=json.loads((await self.session.execute(text("SELECT ST_AsGeoJSON(geom) FROM gardens WHERE id = :g"), {"g": garden_id})).scalar_one()),
             ufuk_gun=rule.planlama_gun, gecici_gun=len(c.gecici), gecici_ilk=min(c.gecici, default=None), olculen_gun=len(c.olculen), yagis_yanlilik=yan,
         )

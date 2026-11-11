@@ -126,3 +126,10 @@ async def register(client: AsyncClient, email: str | None = None, name: str = "T
         "/auth/register", json={"name": name, "email": email, "password": TEST_PASSWORD}
     )
     return email, response
+
+
+def pytest_collection_modifyitems(config, items):  # noqa: ANN001
+    """`slow` işaretli testlere (çok yıllık hat) 300 sn süre tanır; diğerleri pyproject'teki 60 sn'de kalır. Açık `@pytest.mark.timeout(...)` ezilmez."""
+    for item in items:
+        if item.get_closest_marker("slow") and not item.get_closest_marker("timeout"):
+            item.add_marker(pytest.mark.timeout(300))

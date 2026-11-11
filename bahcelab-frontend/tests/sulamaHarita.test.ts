@@ -3,6 +3,7 @@ import type { SimulasyonYaniti } from '@/features/bahcem/api/sulamaPanelApi'
 import { etiketle, gostergeSinifi, hedefBearing, oncekiSonraki, sulamaGunleri, vanaGunu } from '@/features/bahcem/lib/sulamaHarita'
 
 const B = { stres: 50, yakin: 70, yeterli: 97 }
+const E = { fazla_su_az_mm: 2, fazla_su_cok_mm: 8 } // katalogdan (backend) gelir; testte örnek
 const sim = {
   gunler: Array.from({ length: 10 }, (_, i) => ({ tarih: `2026-07-${String(i + 1).padStart(2, '0')}`, yagis_mm: 0, et0_mm: 5, sulama: i === 3, gecici: i > 7, olculen: false, tahmin: false })),
   sektorler: [
@@ -34,10 +35,10 @@ describe('vana günü', () => {
     expect(vanaGunu(sim, 0, 2, B).gecici).toBe(false)
   })
   it('gösterge sınıfı renk + yazı birlikte', () => {
-    const s = gostergeSinifi('toprak', vanaGunu(sim, 0, 8, B))
+    const s = gostergeSinifi('toprak', vanaGunu(sim, 0, 8, B), E)
     expect(s.metin).toBe('stres')
-    expect(gostergeSinifi('stres', vanaGunu(sim, 0, 8, B)).metin).toBe('3 gün stres')
-    expect(gostergeSinifi('toprak', vanaGunu(sim, 1, 9, B)).metin).toBe('veri yok')
+    expect(gostergeSinifi('stres', vanaGunu(sim, 0, 8, B), E).metin).toBe('3 gün stres')
+    expect(gostergeSinifi('toprak', vanaGunu(sim, 1, 9, B), E).metin).toBe('veri yok')
   })
 })
 describe('sulama günleri ve bearing', () => {

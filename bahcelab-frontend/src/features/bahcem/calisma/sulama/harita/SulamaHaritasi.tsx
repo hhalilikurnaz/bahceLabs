@@ -59,7 +59,7 @@ export function SulamaHaritasi({ gardenId }: { gardenId: string }) {
     return () => document.documentElement.removeAttribute('data-harita-hareket')
   }, [st.oynuyor])
   if (yukleniyor && !panel) return null
-  if (!panel || panel.durum !== 'hazir' || !sim || sim.durum !== 'hazir') {
+  if (!panel || panel.durum !== 'hazir' || !panel.gosterim || !sim || sim.durum !== 'hazir') {
     return <div role="status" className="glass absolute left-3.5 top-3.5 z-20 max-w-[320px] px-3 py-2 text-small" data-testid="harita-sulama-yok">{panel?.neden ?? sim?.neden ?? 'Sulama simülatörü için sulama bilgileri gerekli.'}</div>
   }
   const gun = Math.min(sim.gunler.length - 1, Math.max(0, st.gun ?? sim.bugun_idx ?? 0))
@@ -107,7 +107,7 @@ export function SulamaHaritasi({ gardenId }: { gardenId: string }) {
           {ETIKETLER.map((e) => <button key={e} type="button" role="radio" aria-checked={st.gosterge === e} onClick={() => st.setGosterge(e)} data-testid={`gosterge-${e}`} className={`min-h-11 rounded-md px-2 text-left text-small font-semibold @max-[759px]:justify-center @max-[759px]:px-1 @max-[759px]:text-center @max-[759px]:text-[12px] ${st.gosterge === e ? 'bg-app-text text-app-canvas' : 'text-app-text'}`}>{GOSTERGE_AD[e]}</button>)}
         </div>
         <ul className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[12px] @max-[759px]:hidden" data-testid="gosterge-lejant">
-          {lejant(st.gosterge).map((l) => <li key={l.ad} className="flex items-center gap-1"><span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border border-app-border-strong" style={{ background: l.renk }} />{l.ad}</li>)}
+          {lejant(st.gosterge, panel.gosterim ?? { fazla_su_az_mm: 0, fazla_su_cok_mm: 0 }).map((l) => <li key={l.ad} className="flex items-center gap-1"><span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border border-app-border-strong" style={{ background: l.renk }} />{l.ad}</li>)}
         </ul>
         <div className="mt-1.5 flex flex-wrap gap-1 @max-[759px]:hidden" role="group" aria-label="Katmanlar">
           {([['tac', 'Taç'], ['hat', 'Hat'], ['serit', 'Islanan şerit']] as const).map(([k, ad]) => <button key={k} type="button" aria-pressed={st.katman[k]} disabled={k === 'hat' && !hatVar} title={k === 'hat' && !hatVar ? 'Boru/pompa çizilmedi (vana çizim aracı)' : undefined} onClick={() => st.toggleKatman(k)} data-testid={`katman-${k}`} className={`min-h-11 rounded-md border px-2 text-small font-semibold disabled:opacity-40 ${st.katman[k] ? 'border-app-text bg-app-text text-app-canvas' : 'border-app-border-strong'}`}>{ad}</button>)}
@@ -116,7 +116,7 @@ export function SulamaHaritasi({ gardenId }: { gardenId: string }) {
       <OlcekVeKuzey />
       <div className="glass absolute bottom-[176px] left-3.5 z-10 max-w-[min(340px,calc(100%-28px))] px-3 py-2 text-caption @max-[759px]:hidden" data-testid="harita-notu">
         {model?.siraYok ? <p>Dikim aralığı girilmediği için ağaç sırası çizilmedi.</p> : (
-          <p>Ağaç sırası {aralik} · yön {Math.round(model?.siraYonu ?? 0)}° ({model?.yonKaynak === 'kullanici' ? 'sizin seçiminiz' : 'parsel uzun ekseni'}) · <b>dikim aralığından çizildi · varsayım</b>{st.katman.serit && (st.sim.sistem ?? 'damla') === 'damla' ? ' · ıslanan şerit genişliği 1 m varsayım' : ''}</p>
+          <p>Ağaç sırası {aralik} · yön {Math.round(model?.siraYonu ?? 0)}° ({model?.yonKaynak === 'kullanici' ? 'sizin seçiminiz' : 'parsel uzun ekseni'}) · <b>dikim aralığından çizildi · varsayım</b>{st.katman.serit && (st.sim.sistem ?? 'damla') === 'damla' ? ` · ıslanan şerit genişliği ${String(panel.gosterim?.serit_genislik_m ?? '').replace('.', ',')} m varsayım` : ''}</p>
         )}
         {!hatVar && <p className="mt-0.5 text-app-text-dim">Boru ve pompa çizilmedi, haritada gösterilmiyor.</p>}
       </div>

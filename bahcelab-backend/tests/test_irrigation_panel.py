@@ -415,3 +415,20 @@ async def test_vana_eylemleri_kayit_isle_ve_programa_ekle(user_client, factory):
     assert v1["sonraki_sulama"] is not None and v1["sonraki_sulama"] <= yarin
     assert (await user_client.post(f"/gardens/{gid}/sulama-program-ekle", json={"sektor": "V7"})).status_code == 404
     assert (await user_client.post(f"/gardens/{gid}/sulama-program-ekle", json={"sektor": "V1", "tarih": str(TODAY + timedelta(days=60))})).status_code == 422
+
+
+async def test_panel_harita_gosterim_degerleri_katalogdan_gelir(user_client, factory):
+    gid = await kur(user_client, factory)
+    g = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["gosterim"]
+    assert g == {"fazla_su_az_mm": 2.0, "fazla_su_cok_mm": 8.0, "serit_genislik_m": 1.0, "tac_cap_m": 3.0}  # katalog (ön değer · mühendis onayı bekliyor); hesaba girmez
+
+
+def test_katalog_fazla_su_esikleri_artan_olmali():
+    import pytest as _pt
+    from pydantic import ValidationError
+
+    from bahcelab_backend.domain.agro.catalog import SulamaPlaniKurali, load_catalog
+
+    kural = load_catalog().sulama_plani
+    with _pt.raises(ValidationError, match="artan"):
+        SulamaPlaniKurali.model_validate({**kural.model_dump(), "fazla_su_az_mm": 9.0, "fazla_su_cok_mm": 8.0})

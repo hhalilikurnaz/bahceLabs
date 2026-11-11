@@ -43,6 +43,13 @@ export interface SulamaAgi {
   varsayilan_sira_aralik_m: number | null
   varsayilan_agac_aralik_m: number | null
 }
+/** Harita çizim/renk sınıfı değerleri (katalog; ön değer · mühendis onayı bekliyor). Hesaba girmez, yalnız gösterim. */
+export interface HaritaGosterim {
+  fazla_su_az_mm: number
+  fazla_su_cok_mm: number
+  serit_genislik_m: number
+  tac_cap_m: number
+}
 export interface SektorDurumu {
   id: string | null
   ad: string
@@ -116,6 +123,7 @@ export interface PanelYaniti {
   guven: Guven | null
   kaynaklar: { ad: string; not: string | null }[]
   yagis_vurgu_mm: number
+  gosterim: HaritaGosterim | null
   katalog_surum: number
   onayli_tarih: string | null
   ufuk_gun: number

@@ -110,11 +110,28 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: bahcelab-frontend/package-lock.json
-      - name: Frontend bağımlılıkları ve Chromium
+      - name: Frontend bağımlılıkları
+        working-directory: bahcelab-frontend
+        run: npm ci
+      # Tarayıcı önbelleği: indirme ağ kesintisinden etkilenmesin (anahtar: kilit dosyası = Playwright sürümü)
+      - name: Playwright tarayıcı önbelleği
+        id: pw-onbellek
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('bahcelab-frontend/package-lock.json') }}
+      # apt/CDN geçici ağ hatası (örn. «Temporary failure resolving security.ubuntu.com») kurulumu düşürmesin: 4 deneme, artan bekleme, apt kendi içinde de yeniden dener
+      - name: Chromium ve sistem bağımlılıkları (yeniden denemeli)
         working-directory: bahcelab-frontend
         run: |
-          npm ci
-          npx playwright install --with-deps chromium
+          echo 'Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80retries >/dev/null
+          for deneme in 1 2 3 4; do
+            if npx playwright install --with-deps chromium; then exit 0; fi
+            echo "::warning::Chromium kurulumu başarısız (deneme $deneme/4); $((deneme * 30)) sn sonra yeniden denenecek"
+            sleep $((deneme * 30))
+          done
+          echo "::error::Chromium kurulumu 4 denemede de başarısız (ağ?)"
+          exit 1
       - name: Playwright
         working-directory: bahcelab-frontend
         run: npx playwright test --reporter=line,html

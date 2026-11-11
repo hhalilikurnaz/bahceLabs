@@ -292,6 +292,15 @@ class SektorlerYaniti(BaseModel):
     not_: str | None = Field(default=None, serialization_alias="not")
 
 
+class HaritaGosterim(BaseModel):
+    """Harita çizim/renk sınıfı değerleri (katalog; ön değer · mühendis onayı bekliyor). HESABA GİRMEZ: yalnız gösterim (fazla su sınıfı, ıslanan şerit ve taç çizim ölçüsü)."""
+
+    fazla_su_az_mm: float
+    fazla_su_cok_mm: float
+    serit_genislik_m: float
+    tac_cap_m: float
+
+
 class KcKaynagi(BaseModel):
     """Taç örtüsü → Kc'nin KAYNAĞI: vana çokgeninin 10 m Sentinel-2 piksel ortalaması (kaynak «vana») ya da bahçe değeri (kaynak «bahçe»; neden yazılır). Toprak vana başına ayrışmaz (SoilGrids 250 m; ADR 0024)."""
 
@@ -441,6 +450,7 @@ class PanelYaniti(BaseModel):
     guven: Guven | None = None
     kaynaklar: list[Kaynak] = []
     yagis_vurgu_mm: float = 12.0
+    gosterim: HaritaGosterim | None = None
     katalog_surum: int = 0
     onayli_tarih: date | None = None
     ufuk_gun: int = 10  # plan ufku (gün)

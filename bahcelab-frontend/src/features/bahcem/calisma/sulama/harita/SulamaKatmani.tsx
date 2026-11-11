@@ -19,10 +19,7 @@ import { uzunEksenYonu, duzlem, halkaMerkezi } from '../../../lib/geometri'
 const AY = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
 const gunAy = (iso: string) => `${Number(iso.slice(8, 10))} ${AY[Number(iso.slice(5, 7)) - 1]}`
 const MPP0 = 78271.517 // zoom 0, ekvator, 512 px döşeme: metre/piksel
-/** Damla şeridinin tam genişliği (m) — ÖN DEĞER/varsayım: ekranda «varsayım» etiketiyle gösterilir (kartın alt notu). */
-export const SERIT_GENISLIK_M = 1.0
-/** Taç çapı (m) — yalnız çizim büyüklüğü; ölçüm değildir (varsayım). */
-const TAC_CAP_M = 3.0
+/** Islanan şerit genişliği ve taç çapı KATALOGDAN gelir (`panel.gosterim`; ön değer · mühendis onayı bekliyor; yalnız çizim ölçüsü, hesaba girmez). */
 
 const metrePx = (m: number, enlem: number): unknown => {
   const f = (z: number) => m / ((MPP0 * Math.cos((enlem * Math.PI) / 180)) / 2 ** z)
@@ -49,7 +46,8 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
 
   // ------------------------------------------------------------ yapı (kaynaklar + katmanlar + etiketler)
   useEffect(() => {
-    if (!map || styleVersion === 0 || !model) return
+    const gs = veri.current.panel.gosterim
+    if (!map || styleVersion === 0 || !model || !gs) return
     let iptal = false
     const n = model.vanalar.length
     const enlem = model.vanalar[0]!.merkez[1]
@@ -71,8 +69,8 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
     for (const i of IDS(n)) map.addLayer({ id: `sl-fill-${i}`, type: 'fill', source: 'sl-poly', filter: ['==', ['get', 'v'], i], paint: { 'fill-color': HARITA.rcccccc, 'fill-opacity': 0.34, 'fill-color-transition': tr(200), 'fill-opacity-transition': tr(200) } })
     if (sag) map.addLayer({ id: 'sl-sira', type: 'line', source: 'sl-sira', paint: { 'line-color': HARITA.rffffff, 'line-opacity': 0.28, 'line-width': 0.8 } })
     for (const i of IDS(n)) {
-      if (sag) map.addLayer({ id: `sl-serit-${i}`, type: 'line', source: 'sl-sira', filter: ['==', ['get', 'v'], i], layout: { 'line-cap': 'butt' }, paint: { 'line-color': HARITA.r2a78d6, 'line-opacity': 0, 'line-width': metrePx(SERIT_GENISLIK_M, enlem) as number, 'line-opacity-transition': tr(200) } })
-      if (sag) map.addLayer({ id: `sl-agac-${i}`, type: 'circle', source: 'sl-agac', filter: ['==', ['get', 'v'], i], paint: { 'circle-color': HARITA.r357a43, 'circle-radius': metrePx(TAC_CAP_M / 2, enlem) as number, 'circle-opacity': 0.88, 'circle-stroke-width': 0, 'circle-color-transition': tr(250) } })
+      if (sag) map.addLayer({ id: `sl-serit-${i}`, type: 'line', source: 'sl-sira', filter: ['==', ['get', 'v'], i], layout: { 'line-cap': 'butt' }, paint: { 'line-color': HARITA.r2a78d6, 'line-opacity': 0, 'line-width': metrePx(gs.serit_genislik_m, enlem) as number, 'line-opacity-transition': tr(200) } })
+      if (sag) map.addLayer({ id: `sl-agac-${i}`, type: 'circle', source: 'sl-agac', filter: ['==', ['get', 'v'], i], paint: { 'circle-color': HARITA.r357a43, 'circle-radius': metrePx(gs.tac_cap_m / 2, enlem) as number, 'circle-opacity': 0.88, 'circle-stroke-width': 0, 'circle-color-transition': tr(250) } })
     }
     for (const i of IDS(n)) {
       map.addLayer({ id: `sl-cizgi-${i}`, type: 'line', source: 'sl-poly', filter: ['==', ['get', 'v'], i], layout: { 'line-join': 'round' }, paint: { 'line-color': HARITA.rffffff, 'line-width': 1.6, 'line-opacity': 0.95 } })
@@ -140,7 +138,8 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
   function uygula() { uygulaRef.current() }
   uygulaRef.current = () => {
     const { panel: p, sim: s, gunIdx: i, model: m } = veri.current
-    if (!map || !m) return
+    const gs = p.gosterim
+    if (!map || !m || !gs) return
     const st = useSulamaHaritaStore.getState()
     const n = m.vanalar.length
     // Vana eşlemesi AD ile (simülasyon ve panel sırası aynı olmak zorunda değil); tek sektörlü bahçede tek satır
@@ -148,7 +147,7 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
     const gunler: VanaGunu[] = m.vanalar.map((_, k) => vanaGunu(s, si(k), i, bantlar))
     const onceki = (k: number) => (i > 0 ? s.sektorler[si(k)]!.doluluk_pct[i - 1] ?? null : null)
     gunler.forEach((v, k) => {
-      const sinif = gostergeSinifi(st.gosterge, v)
+      const sinif = gostergeSinifi(st.gosterge, v, gs)
       if (map.getLayer(`sl-fill-${k}`)) {
         map.setPaintProperty(`sl-fill-${k}`, 'fill-color', sinif.renk)
         map.setPaintProperty(`sl-fill-${k}`, 'fill-opacity', v.sulaniyor ? 0.5 : 0.34)
@@ -160,7 +159,7 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
         map.setPaintProperty(`sl-serit-${k}`, 'line-opacity', goster ? 0.6 : 0)
         const enlem = m.vanalar[0]!.merkez[1]
         const oran = reducedMotion() ? 1 : Math.max(0.15, st.dilim)
-        map.setPaintProperty(`sl-serit-${k}`, 'line-width', metrePx(SERIT_GENISLIK_M * oran, enlem) as number)
+        map.setPaintProperty(`sl-serit-${k}`, 'line-width', metrePx(gs.serit_genislik_m * oran, enlem) as number)
       }
       if (map.getLayer(`sl-sec-${k}`)) map.setPaintProperty(`sl-sec-${k}`, 'line-opacity', st.secili === v.ad ? 1 : 0)
       const mk = markerlar.current[k]
@@ -175,7 +174,7 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
           const kelime = st.dilim > 0 ? 'sulanıyor' : s.bugun_idx !== null && i >= s.bugun_idx ? 'sulanacak' : 'sulandı'
           mk.alt.textContent = `${kelime} · ${aradaki === null ? '—' : `%${Math.round(st.dilim > 0 ? aradaki : v.pct ?? aradaki)}`}`
         } else {
-          const e = gostergeSinifi(st.gosterge, v)
+          const e = gostergeSinifi(st.gosterge, v, gs)
           mk.baslik.textContent = st.gosterge === 'toprak' ? `${v.ad} · ${pct}` : `${v.ad} · ${e.metin}`
           mk.alt.textContent = `${e.metin === 'veri yok' ? 'veri yok' : st.gosterge === 'toprak' ? e.metin : (v.etiket ? { stres: 'stres', yakin: 'yakın', yeterli: 'yeterli', dolu: 'dolu' }[v.etiket] : 'veri yok')} · ${gelecek ? `sonraki ${gelecek}` : 'sulama gerekmiyor'}`
         }
@@ -192,7 +191,6 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
       if (map.getLayer(`sl-agac-${k}`)) map.setLayoutProperty(`sl-agac-${k}`, 'visibility', st.katman.tac ? 'visible' : 'none')
     }
     for (const id of ['sl-boru', 'sl-boru-akis', 'sl-pompa', 'sl-pompa-halka']) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', st.katman.hat ? 'visible' : 'none')
-    void p
   }
   useEffect(() => {
     uygula()
