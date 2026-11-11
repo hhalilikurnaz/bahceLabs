@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { animasyonlarBitsin, createGarden, newUser, seedScenes, seedWater } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, hazirla, newUser, seedScenes, seedWater } from './yardimcilar'
 
 /** Sulama simülatörü (9H-S4 dilim 2): harita katmanları, göstergeler, alt çubuk, vana eylemleri, çizim aracı. GERÇEK arka uçla. */
 const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
@@ -53,9 +53,9 @@ test('harita simülatörü: vana etiketleri, 3 gösterge, kartlar, alt çubuk', 
 
 test('alt çubuk: sonraki sulama günü, oynat/duraklat, klavye; sulama gününde vana «sulanıyor»', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  const g = await kurulum(page, 'Harita Oynat', 27.82, { vanalar: true, ag: true })
+  const g = await hazirla(page, 'Harita Oynat', 27.82) // 4 vana
   await page.goto(yol(g.id))
-  await expect(page.getByTestId('harita-vana-etiketi')).toHaveCount(2, { timeout: 40_000 })
+  await expect(page.getByTestId('harita-vana-etiketi')).toHaveCount(4, { timeout: 40_000 })
   const tarih0 = await page.getByTestId('alt-tarih').textContent()
   // sezon şeridinde bugün işareti var (bu yıl kipi)
   await expect(page.getByTestId('sezon-seridi')).toBeVisible()
@@ -64,6 +64,10 @@ test('alt çubuk: sonraki sulama günü, oynat/duraklat, klavye; sulama gününd
   await expect(page.getByTestId('durum-chip')).toHaveText(/Sulama günü|Bugün|Tahmin/)
   await expect(page.locator('[data-testid="harita-vana-etiketi"][data-sulaniyor="true"]').first()).toBeVisible()
   await expect(page.locator('[data-testid="harita-vana-alt"]').filter({ hasText: /^(sulandı|sulanacak|sulanıyor) · %\d+$/ }).first()).toBeVisible()
+  // tutarlılık: durum kartındaki «sulanıyor» vanaları ile haritada halkası olan vana etiketleri AYNI küme (sim sırası ≠ panel sırası olabilir)
+  const kartVanalari = ((await page.getByTestId('durum-neden').textContent()) ?? '').split(' sulanıyor')[0]!.split(',').map((x) => x.trim()).sort()
+  const etiketVanalari = (await page.locator('[data-testid="harita-vana-etiketi"][data-sulaniyor="true"]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.vana ?? ''))).sort()
+  expect(etiketVanalari).toEqual(kartVanalari)
   await page.waitForTimeout(800)
   await ekran(page, 'sulama-gunu-1440')
   // klavye: → bir gün ileri, ← geri

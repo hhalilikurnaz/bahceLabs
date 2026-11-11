@@ -73,7 +73,7 @@ export function AltCubuk({ sim, gun, tetik }: { sim: SimulasyonYaniti; gun: numb
           <line x1={X(gun)} x2={X(gun)} y1={0} y2={H} stroke="var(--color-app-canvas)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" data-testid="oynatma-imleci" />
         </svg>
         {aylar.map((a) => <span key={a.i} aria-hidden className="pointer-events-none absolute bottom-0 text-[12px] leading-none text-app-canvas/80" style={{ left: `${(a.i / Math.max(1, n - 1)) * 100}%` }}>{a.ad}</span>)}
-        {bugun !== null && <span aria-hidden className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-sm bg-app-danger px-1 text-[12px] leading-4 text-app-canvas" style={{ left: `${(bugun / Math.max(1, n - 1)) * 100}%` }}>bugün</span>}
+        {bugun !== null && <span aria-hidden className={`pointer-events-none absolute top-0 rounded-sm bg-app-danger px-1 text-[12px] leading-4 text-app-canvas ${bugun / Math.max(1, n - 1) > 0.9 ? '-translate-x-full' : '-translate-x-1/2'}`} style={{ left: `${(bugun / Math.max(1, n - 1)) * 100}%` }}>bugün</span>}
       </div>
       <p className="mt-0.5 flex flex-wrap gap-x-3 max-[899px]:hidden text-[12px] leading-4 text-app-canvas/80" data-testid="alt-aciklama">
         <span>— kova (ortalama)</span><span>┄ sulama eşiği{tetik !== null ? ` %${Math.round(tetik)}` : ''}</span><span>▮ sulama</span><span>▮ yağış</span><span>■ stres</span><span>| bugün</span>

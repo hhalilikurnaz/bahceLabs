@@ -39,10 +39,10 @@ export function HaritaPaneli({ garden, gardens, sulama = false }: { garden: Gard
       <MapProvider userId={user.id}>
         <BahceSiniri garden={garden} others={others} />
         <GorunumKatmani garden={garden} view={view} />
-        <KomsuEtiketleri others={others} />
+        {!sulama && <KomsuEtiketleri others={others} />}
         <BolgeKatmani gardenId={garden.id} visible={katman === 'bolgeler' && !sade} />
         <UcusVeVurgu gardenId={garden.id} />
-        <CartoNotlari garden={garden} />
+        {!sulama && <CartoNotlari garden={garden} />}
         {!sulama && <div className="absolute left-3.5 top-3.5 z-20 max-w-[calc(100%-28px)]"><MapRail gardenId={garden.id} view={view} /></div>}
         {!sulama && <div className="absolute bottom-3.5 left-3.5 z-10 max-w-[calc(100%-28px)] max-[899px]:bottom-auto max-[899px]:top-[74px]">{sade ? null : katman === 'bolgeler' ? <BolgeLejanti gardenId={garden.id} /> : <HistogramLejant view={view} />}</div>}
         {!sulama && <div className="absolute bottom-9 right-3.5 z-10 max-[900px]:hidden"><HaritaKosesi garden={garden} /></div>}

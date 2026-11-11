@@ -143,8 +143,10 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
     if (!map || !m) return
     const st = useSulamaHaritaStore.getState()
     const n = m.vanalar.length
-    const gunler: VanaGunu[] = m.vanalar.map((_, k) => vanaGunu(s, Math.min(k, s.sektorler.length - 1), i, bantlar))
-    const onceki = (k: number) => (i > 0 ? s.sektorler[Math.min(k, s.sektorler.length - 1)]!.doluluk_pct[i - 1] ?? null : null)
+    // Vana eşlemesi AD ile (simülasyon ve panel sırası aynı olmak zorunda değil); tek sektörlü bahçede tek satır
+    const si = (k: number) => { const j = s.sektorler.findIndex((x) => x.ad === m.vanalar[k]!.ad); return j >= 0 ? j : Math.min(k, s.sektorler.length - 1) }
+    const gunler: VanaGunu[] = m.vanalar.map((_, k) => vanaGunu(s, si(k), i, bantlar))
+    const onceki = (k: number) => (i > 0 ? s.sektorler[si(k)]!.doluluk_pct[i - 1] ?? null : null)
     gunler.forEach((v, k) => {
       const sinif = gostergeSinifi(st.gosterge, v)
       if (map.getLayer(`sl-fill-${k}`)) {
@@ -163,7 +165,7 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
       if (map.getLayer(`sl-sec-${k}`)) map.setPaintProperty(`sl-sec-${k}`, 'line-opacity', st.secili === v.ad ? 1 : 0)
       const mk = markerlar.current[k]
       if (mk) {
-        const gelecek = (() => { const sek = s.sektorler[Math.min(k, s.sektorler.length - 1)]!; for (let j = i + 1; j < sek.brut_mm.length; j++) if ((sek.brut_mm[j] ?? 0) > 0) return gunAy(s.gunler[j]!.tarih); return null })()
+        const gelecek = (() => { const sek = s.sektorler[si(k)]!; for (let j = i + 1; j < sek.brut_mm.length; j++) if ((sek.brut_mm[j] ?? 0) > 0) return gunAy(s.gunler[j]!.tarih); return null })()
         const pct = v.pct === null ? '—' : `%${Math.round(v.pct)}`
         if (v.sulaniyor) {
           const once = onceki(k)

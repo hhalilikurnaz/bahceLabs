@@ -122,3 +122,32 @@ export async function mapPoint(page: Page, dx: number, dy: number): Promise<{ x:
   if (!box) throw new Error('Harita tuvali bulunamadı')
   return { x: box.x + box.width / 2 + dx, y: box.y + box.height / 2 + dy }
 }
+
+/** 9H-S4 D2 teslim ekranları: 4 vanalı, pompa + ana boru çizili, profilli test bahçesi. */
+const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
+
+export async function hazirla(page: Page, ad: string, lng: number) {
+  await newUser(page)
+  const garden = await createGarden(page.request, { ad, lng, lat: 38.7, sideM: 200 })
+  seedScenes(garden.id)
+  seedWater(garden.id)
+  await page.request.patch(`/api/gardens/${garden.id}`, { data: { agac_sayisi: 1800 } })
+  await page.request.put(`/api/gardens/${garden.id}/sulama-profili`, { data: { ...PROFIL, kwh_fiyat_tl: null } })
+  const g = (await (await page.request.get(`/api/gardens/${garden.id}`)).json()) as { geometry: GeoJSON.Polygon }
+  const xs = g.geometry.coordinates[0].map((c) => c[0])
+  const ys = g.geometry.coordinates[0].map((c) => c[1])
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+  const xm = (x0 + x1) / 2
+  const ym = (y0 + y1) / 2
+  const kutu = (a: number, b: number, c: number, d: number) => ({ type: 'Polygon', coordinates: [[[a, c], [b, c], [b, d], [a, d], [a, c]]] })
+  const r = await page.request.put(`/api/gardens/${garden.id}/sulama-sektorleri`, {
+    data: {
+      sektorler: [{ ad: 'V1', geometry: kutu(x0, xm, y0, ym), vana_debi_m3h: 20 }, { ad: 'V2', geometry: kutu(xm, x1, y0, ym), vana_debi_m3h: 20 }, { ad: 'V3', geometry: kutu(x0, xm, ym, y1), vana_debi_m3h: 25 }, { ad: 'V4', geometry: kutu(xm, x1, ym, y1), vana_debi_m3h: 25 }],
+      pompa: { type: 'Point', coordinates: [x0 - 0.00025, ym] },
+      ana_boru: { type: 'LineString', coordinates: [[x0 - 0.00025, ym], [xm, ym], [x1, ym]] },
+      sira_yonu_derece: null,
+    },
+  })
+  expect(r.ok(), await r.text()).toBeTruthy()
+  return garden
+}
