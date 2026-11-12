@@ -52,9 +52,9 @@ packages = ["src/bahcelab_backend"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-# Test başına 60 sn (takılan test koşuyu sonsuza dek bekletmesin); `slow` işaretliler tests/conftest.py'de 300 sn alır. İş parçacığı yöntemi: asyncio'da takılan testte tüm iş parçacığı dökümünü verir.
-timeout = 60
-timeout_method = "thread"
+# Test başına 120 sn; `slow` işaretliler tests/conftest.py'de 300 sn alır. Yöntem «signal»: süre aşılırsa o test NORMAL başarısızlık olur (xdist işçisi çökmez; «thread» yöntemi işçiyi öldürüp «worker crashed» veriyordu — CI'da 21 sn'lik bir test yüklü çalıştırıcıda 60 sn'yi aşınca görüldü).
+timeout = 120
+timeout_method = "signal"
 markers = [
     "integration: tests requiring a running PostgreSQL database",
     "slow: tests that take more than ~15 s alone (multi-year pipelines); the fast suite deselects them (-m \"not slow\")",
