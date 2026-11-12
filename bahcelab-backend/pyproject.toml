@@ -70,6 +70,7 @@ select = ["E", "F", "I", "UP"]
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
+"scripts/eta_dilim0_*.py" = ["E702"]  # 9I Dilim 0 tek seferlik spike betikleri (okuma amaçlı kısa satırlar)
 "tests/conftest.py" = ["E402", "I001"]  # test veritabanı, bahcelab_backend içe aktarılmadan ÖNCE hazırlanır
 
 [tool.mypy]

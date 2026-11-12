@@ -1,0 +1,209 @@
+{
+ "jlnnlk_alan_m2": 15142.423932365567,
+ "boyutlar": {
+  "jlnnlk (gerçek)": {
+   "alan_m2": 15142.423932365567,
+   "30 m": {
+    "tam_ic_ort": 7.18,
+    "tam_ic_en_az_1_olasilik": 1.0,
+    "kesisen_ort": 29.2,
+    "kesisen_aralik": [
+     21,
+     33
+    ],
+    "saflik_ort": 0.5781444523062654,
+    "saflik_p10": 0.5427392090449352,
+    "saflik_p90": 0.6231450177916046
+   },
+   "70 m": {
+    "tam_ic_ort": 0.03375,
+    "tam_ic_en_az_1_olasilik": 0.0325,
+    "kesisen_ort": 8.9425,
+    "kesisen_aralik": [
+     6,
+     12
+    ],
+    "saflik_ort": 0.35275271418891535,
+    "saflik_p10": 0.30902905984334195,
+    "saflik_p90": 0.44147008549060796
+   },
+   "100 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 5.91375,
+    "kesisen_aralik": [
+     3,
+     8
+    ],
+    "saflik_ort": 0.26157636008404184,
+    "saflik_p10": 0.2163203418909457,
+    "saflik_p90": 0.30284847864765474
+   },
+   "300 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 2.2625,
+    "kesisen_aralik": [
+     1,
+     4
+    ],
+    "saflik_ort": 0.08913700013888633,
+    "saflik_p10": 0.04206228870104641,
+    "saflik_p90": 0.16824915480403352
+   }
+  },
+  "5 dekar (örnek)": {
+   "alan_m2": 4999.999999984189,
+   "30 m": {
+    "tam_ic_ort": 0.7675,
+    "tam_ic_en_az_1_olasilik": 0.575,
+    "kesisen_ort": 13.02375,
+    "kesisen_aralik": [
+     8,
+     17
+    ],
+    "saflik_ort": 0.4321526677057851,
+    "saflik_p10": 0.37037037037111314,
+    "saflik_p90": 0.5050505050435304
+   },
+   "70 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 4.78625,
+    "kesisen_aralik": [
+     2,
+     7
+    ],
+    "saflik_ort": 0.22455053449878,
+    "saflik_p10": 0.17006802721009517,
+    "saflik_p90": 0.25510204081707033
+   },
+   "100 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 3.45375,
+    "kesisen_aralik": [
+     2,
+     6
+    ],
+    "saflik_ort": 0.15570833333286216,
+    "saflik_p10": 0.12499999999900344,
+    "saflik_p90": 0.24999999999897013
+   },
+   "300 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 1.74,
+    "kesisen_aralik": [
+     1,
+     4
+    ],
+    "saflik_ort": 0.03858796296283185,
+    "saflik_p10": 0.018518518518489208,
+    "saflik_p90": 0.055555555555521004
+   }
+  },
+  "40 dekar (örnek)": {
+   "alan_m2": 40000.000000079934,
+   "30 m": {
+    "tam_ic_ort": 27.70375,
+    "tam_ic_en_az_1_olasilik": 1.0,
+    "kesisen_ort": 63.80375,
+    "kesisen_aralik": [
+     53,
+     72
+    ],
+    "saflik_ort": 0.6976203581191797,
+    "saflik_p10": 0.6734006734011743,
+    "saflik_p90": 0.7285974499098827
+   },
+   "70 m": {
+    "tam_ic_ort": 1.96625,
+    "tam_ic_en_az_1_olasilik": 0.9725,
+    "kesisen_ort": 17.02375,
+    "kesisen_aralik": [
+     13,
+     21
+    ],
+    "saflik_ort": 0.482195701686323,
+    "saflik_p10": 0.4296455424290935,
+    "saflik_p90": 0.544217687075272
+   },
+   "100 m": {
+    "tam_ic_ort": 0.18875,
+    "tam_ic_en_az_1_olasilik": 0.15,
+    "kesisen_ort": 10.5,
+    "kesisen_aralik": [
+     7,
+     14
+    ],
+    "saflik_ort": 0.3863511904769674,
+    "saflik_p10": 0.3333333333339261,
+    "saflik_p90": 0.444444444446167
+   },
+   "300 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 3.2875,
+    "kesisen_aralik": [
+     2,
+     5
+    ],
+    "saflik_ort": 0.14611111111141184,
+    "saflik_p10": 0.1111111111112068,
+    "saflik_p90": 0.22222222222271193
+   }
+  },
+  "100 dekar (örnek)": {
+   "alan_m2": 99999.99999991502,
+   "30 m": {
+    "tam_ic_ort": 83.74125,
+    "tam_ic_en_az_1_olasilik": 1.0,
+    "kesisen_ort": 141.10375,
+    "kesisen_aralik": [
+     131,
+     149
+    ],
+    "saflik_ort": 0.7878525486990404,
+    "saflik_p10": 0.766283524903878,
+    "saflik_p90": 0.8110300081098488
+   },
+   "70 m": {
+    "tam_ic_ort": 9.575,
+    "tam_ic_en_az_1_olasilik": 1.0,
+    "kesisen_ort": 33.88125,
+    "kesisen_aralik": [
+     29,
+     40
+    ],
+    "saflik_ort": 0.6038061351246411,
+    "saflik_p10": 0.5668934240359547,
+    "saflik_p90": 0.6377551020408058
+   },
+   "100 m": {
+    "tam_ic_ort": 2.91875,
+    "tam_ic_en_az_1_olasilik": 1.0,
+    "kesisen_ort": 19.665,
+    "kesisen_aralik": [
+     15,
+     23
+    ],
+    "saflik_ort": 0.5113754189002472,
+    "saflik_p10": 0.476190476189569,
+    "saflik_p90": 0.5555555555556014
+   },
+   "300 m": {
+    "tam_ic_ort": 0.0,
+    "tam_ic_en_az_1_olasilik": 0.0,
+    "kesisen_ort": 4.9225,
+    "kesisen_aralik": [
+     2,
+     7
+    ],
+    "saflik_ort": 0.23579365079342537,
+    "saflik_p10": 0.1851851851849322,
+    "saflik_p90": 0.2777777777777343
+   }
+  }
+ }
+}
