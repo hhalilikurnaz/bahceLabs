@@ -487,3 +487,8 @@ sistem_kontrol:
   diger_vana_esik: -1.0
   hepsi_dusuyor_orani: 0.5
   tekrar_bekleme_gun: 14
+  halka_ic_m: 100.0
+  halka_dis_m: 300.0
+  halka_min_piksel: 30
+  halka_ndvi_min: 0.5
+  halka_z_normal: -0.5

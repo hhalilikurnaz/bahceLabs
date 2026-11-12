@@ -261,6 +261,12 @@ class SistemKontrolKurali(KuralBlok):
     diger_vana_esik: float = Field(default=-1.0, lt=0)  # diğer vanalar bu z'nin ÜSTÜNDEyse «düşmüyor» sayılır
     hepsi_dusuyor_orani: float = Field(default=0.5, gt=0, le=1)  # vanaların bu payı da düşüyorsa (hava/fenoloji) işaret üretilmez
     tekrar_bekleme_gun: int = Field(default=14, ge=1)  # aynı vana için yeniden bildirim aralığı (yanıt gelmediyse)
+    # KOMŞU HALKA referansı (ek kontrol; tek sektör ve «vanaların hepsi birlikte düşüyor» için ZORUNLU): bahçe sınırından iç–dış metre halka, yalnız ağaçlık pikseller
+    halka_ic_m: float = Field(default=100.0, ge=0)
+    halka_dis_m: float = Field(default=300.0, gt=0)
+    halka_min_piksel: int = Field(default=30, ge=1)  # halkada en az bu kadar geçerli ağaçlık piksel; yoksa işaret üretilmez, nedeni yazılır
+    halka_ndvi_min: float = Field(default=0.5, gt=0, lt=1)  # ağaçlık/narenciye: NDVI eşiği (yollar, çıplak toprak, su dışarıda; SCL bulut/gölge/kar maskesi)
+    halka_z_normal: float = Field(default=-0.5, lt=0)  # halka z'si bunun ÜSTÜNDEyse «düşmüyor» (yalnız bahçe/vana düşüyor)
 
 
 class SulamaPlaniKurali(KuralBlok):

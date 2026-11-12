@@ -33,6 +33,7 @@ async def main() -> None:
                 await svc.save_profile(gid, sc.ProfilGiris.model_validate(PROFIL))
             sks = SkServis(s)
             seri = (await sks.seriler(gid, [("Bahçe", None)], bugun, urun, cesit))["Bahçe"]
+            halka = await sks.halka_serisi(gid, bugun, urun, cesit)
             await s.commit()
             kova: dict[date, bool] = {}
             for yil in range(2015, bugun.year + 1):
@@ -55,7 +56,7 @@ async def main() -> None:
     ateslenen: list[tuple[date, sk.Karar]] = []
     sezon_sahne: Counter[int] = Counter()
     for g in temiz:
-        k = sk.degerlendir("Bahçe", [x for x in seri if x.tarih <= g.tarih], {}, g.tarih, kural, kova)
+        k = sk.degerlendir("Bahçe", [x for x in seri if x.tarih <= g.tarih], {}, g.tarih, kural, kova, [h for h in halka if h.tarih <= g.tarih])
         sezon_sahne[g.sezon] += 1
         if k.durum == "isaret":
             ateslenen.append((g.tarih, k))
@@ -76,10 +77,22 @@ async def main() -> None:
             tek_z.append((g, sk.z_skor(g.ndmi, taban)))
     dus = [z for _, z in tek_z if z <= kural.z_esik]
     kovali = [g for g, z in tek_z if z <= kural.z_esik and kova.get(g.tarih, False)]
+    # halka (komşu referans) istatistikleri: tek-sahne z'ler ve bahçe z ≤ eşik iken halka durumu
+    halka_gec = [x for x in halka if x.ndmi is not None]
+    halka_goz = [sk.Gozlem(x.tarih, x.ndmi, x.sezon, x.evre, 1.0, x.piksel) for x in halka_gec if x.ndmi is not None]
+    halka_z: dict[date, float] = {}
+    for g in halka_goz:
+        taban, _ = sk.taban_hesapla([y for y in halka_goz if y.tarih <= g.tarih], g, kural)
+        if taban is not None:
+            halka_z[g.tarih] = sk.z_skor(g.ndmi, taban)
+    dus_tarih = [g.tarih for g, z in tek_z if z <= kural.z_esik]
+    halka_normal_dus = [t for t in dus_tarih if t in halka_z and halka_z[t] > kural.halka_z_normal]
+    halka_dusuk_dus = [t for t in dus_tarih if t in halka_z and halka_z[t] <= kural.halka_z_normal]
+    halka_yok_dus = [t for t in dus_tarih if t not in halka_z]
     satir = []
     satir.append(f"# Sulama sistemi kontrol işareti — geriye dönük koşu (jlnnlk)\n\nÜretim: `scripts/sk_geriye_donuk.py` · tarih {bugun} · bahçe **{ad}** ({alan:.1f} da; tek sektör) · kural ADR 0029 (ön değer · mühendis onayı bekliyor). Kural her sahne tarihinde **yalnız o güne kadarki veriyi** görür; taban yalnız önceki sezonlardır.\n")
     satir.append("**Önemli:** jlnnlk'in gerçek sulama profili/kaydı yok; kova durumu **geçici örnek profille** (damla, 5×4 m) planın günlük kovasından gelir (profil iş sonunda silindi). Tek sektör olduğundan diğer vanalarla karşılaştırma yoktur (güven «orta»). Yer gerçeği (gerçek tıkanma kaydı) yok: tablo «kaç işaret üretilirdi»yi gösterir, doğruluğu DEĞİL.\n")
-    satir.append(f"## Özet\n\n- Değerlendirilen bulutsuz Sentinel-2 sahnesi: **{len(temiz)}** ({temiz[0].tarih} → {temiz[-1].tarih})\n- Tabanı olan (≥ {kural.min_sezon} önceki sezon, ≥ {kural.min_taban_sahne} sahne) tek-sahne gözlemi: **{len(tek_z)}**; bunların **{len(dus)}**'ı z ≤ {kural.z_esik} (%{100 * len(dus) / max(1, len(tek_z)):.1f}); kova yeterliyken **{len(kovali)}**\n- İşareti ateşleyen sahne tarihi (art arda {kural.art_arda_sahne} sahne + kova): **{len(ateslenen)}**\n- **Üretilecek bildirim (olay; ≥ {kural.tekrar_bekleme_gun} gün arayla): {len(olaylar)}** — yaklaşık yılda **{len(olaylar) / max(1.0, (temiz[-1].tarih - temiz[0].tarih).days / 365):.1f}**\n")
+    satir.append(f"## Özet\n\n- Değerlendirilen bulutsuz Sentinel-2 sahnesi: **{len(temiz)}** ({temiz[0].tarih} → {temiz[-1].tarih})\n- Tabanı olan (≥ {kural.min_sezon} önceki sezon, ≥ {kural.min_taban_sahne} sahne) tek-sahne gözlemi: **{len(tek_z)}**; bunların **{len(dus)}**'ı z ≤ {kural.z_esik} (%{100 * len(dus) / max(1, len(tek_z)):.1f}); kova yeterliyken **{len(kovali)}**\n- Komşu halka (bahçe sınırından {kural.halka_ic_m:.0f}–{kural.halka_dis_m:.0f} m, ağaçlık NDVI ≥ {kural.halka_ndvi_min}) ölçümü olan sahne: **{len(halka_gec)}** / {len(temiz)}; halka z-skoru hesaplanabilen: **{len(halka_z)}**\n- Bahçe tek-sahne z ≤ {kural.z_esik} olan {len(dus_tarih)} sahnede halka: **normal (z > {kural.halka_z_normal}) {len(halka_normal_dus)}**, **düşük {len(halka_dusuk_dus)}** (hava/fenoloji), **referans yok {len(halka_yok_dus)}**\n- İşareti ateşleyen sahne tarihi (art arda {kural.art_arda_sahne} sahne + kova): **{len(ateslenen)}**\n- **Üretilecek bildirim (olay; ≥ {kural.tekrar_bekleme_gun} gün arayla): {len(olaylar)}** — yaklaşık yılda **{len(olaylar) / max(1.0, (temiz[-1].tarih - temiz[0].tarih).days / 365):.1f}**\n")
     satir.append("## İşaret olayları\n\n| Olay başlangıcı | Bitiş | Ateşleyen sahne | z (son 2 sahne) | NDMI | Evre | Taban (ort ± std, n/sezon) |\n|---|---|---:|---|---|---|---|")
     for o in olaylar:
         t0, k0 = o[0]
@@ -98,6 +111,7 @@ async def main() -> None:
             dz[g.sezon] += 1
     for sez in sorted(sezon_sahne):
         satir.append(f"| {sez}/{sez + 1} | {sezon_sahne[sez]} | {ate.get(sez, 0)} | {dz.get(sez, 0)} |")
+    satir.append(f"\n## Yorum (halka kuralı)\n\nBahçe tek-sahne z ≤ {kural.z_esik} olan **{len(dus_tarih)}** sahnenin **{len(halka_dusuk_dus)}**'inde komşu halka da düşüktü (z ≤ {kural.halka_z_normal}) → bu düşüşler bahçeye özgü değil, **hava/fenolojiyle ortak**; halka kuralı onları işaret olmaktan çıkarır. Yalnız **{len(halka_normal_dus)}** sahnede halka normaldi (bahçeye özgü düşüş adayı); o da art arda 2 sahne + kova koşulunu sağlamadığından **olay üretilmedi**. Yani halka referansı yanlış alarm riskini daha da azaltıyor; **duyarlılık (gerçek tıkanmayı yakalama) hâlâ ölçülemedi** — jlnnlk'te bilinen tıkanma kaydı yok. Doğruluk kullanıcı yanıtlarıyla (Saha Defteri) ölçülecek.\n")
     open(cikti, "w").write("\n".join(satir) + "\n")
     print("\n".join(satir[2:8]))
 

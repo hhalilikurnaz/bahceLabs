@@ -21,11 +21,12 @@ export function SistemKontrolIsareti({ gardenId, vana, sk }: { gardenId: string;
     <div className="mt-2 basis-full rounded-md border border-app-warn bg-app-warn/10 p-3" role="note" data-testid="sistem-kontrol" data-vana={vana} data-guven={sk.guven ?? ''}>
       <p className="text-small font-semibold" data-testid="sistem-kontrol-cumle"><span aria-hidden>⚠ </span>{sk.cumle}</p>
       <p className="mt-0.5 text-caption text-app-text-muted" data-testid="sistem-kontrol-guven">
-        Güven: {sk.guven === 'yuksek' ? 'yüksek' : 'orta'}{sk.karsilastirma ? ` · ${sk.karsilastirma}` : ''}
+        Güven: {sk.guven === 'yuksek' ? 'yüksek' : sk.guven === 'orta_yuksek' ? 'orta-yüksek' : 'orta'}{sk.karsilastirma ? ` · ${sk.karsilastirma}` : ''}
       </p>
       <details className="mt-1 text-caption" data-testid="sistem-kontrol-nasil">
         <summary className="min-h-6 cursor-pointer font-semibold underline">Nasıl hesaplandı?</summary>
         <p className="mt-1 text-app-text-muted">{sk.nasil}</p>
+        {sk.halka && sk.halka.durum !== 'yok' && <p className="mt-1 text-app-text-muted" data-testid="sistem-kontrol-halka">Komşu halka (bahçe sınırından 100–300 m, ağaçlık pikseller): {sk.halka.neden}{sk.halka.piksel.length ? ` · ${Math.min(...sk.halka.piksel)}+ piksel` : ''}</p>}
         <ul className="mt-1 list-disc pl-5 text-app-text-muted">{sk.sahneler.map((s) => <li key={s.tarih} className="tabular-nums">{s.tarih}: NDMI {s.ndmi.toFixed(2).replace('.', ',')} · z {s.z.toFixed(1).replace('.', ',')}</li>)}</ul>
       </details>
       {sk.yanit ? (

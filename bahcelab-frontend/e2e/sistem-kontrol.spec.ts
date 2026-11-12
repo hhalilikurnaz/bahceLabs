@@ -60,14 +60,17 @@ test('vana bazında: yalnız V2 düşük → V2 satırında işaret (güven yük
   expect(bil.toplam).toBe(1)
 })
 
-test('tek sektör: işaret orta güvenle gelir; «sorun yoktu» işareti kapatır', async ({ page }) => {
+test('tek sektör: komşu halka normalken işaret orta-yüksek güvenle gelir; «sorun yoktu» işareti kapatır', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const g = await kur(page, 'SK Tek', 28.12, false)
   seedSistemKontrol(g.id, 'tek')
   await page.goto(yol(g.id))
   const satir = page.getByTestId('vana-satiri').first()
-  await expect(satir.getByTestId('sistem-kontrol-guven')).toContainText('Güven: orta', { timeout: 40_000 })
+  await expect(satir.getByTestId('sistem-kontrol-guven')).toContainText('Güven: orta-yüksek', { timeout: 40_000 })
   await expect(satir.getByTestId('sistem-kontrol-guven')).toContainText('tek sektör')
+  await expect(satir.getByTestId('sistem-kontrol-guven')).toContainText('komşu halka')
+  await satir.getByTestId('sistem-kontrol-nasil').locator('summary').click()
+  await expect(satir.getByTestId('sistem-kontrol-halka')).toContainText('100–300 m')
   await satir.getByTestId('sk-yanit-sorun_yok').click()
   await expect(page.getByTestId('sistem-kontrol')).toHaveCount(0, { timeout: 30_000 })
 })

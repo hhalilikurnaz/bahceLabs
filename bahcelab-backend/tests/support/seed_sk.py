@@ -42,6 +42,10 @@ async def main() -> None:
     async with async_session_factory() as s:
         if mod == "tek":
             await yaz(s, gid, "Bahçe", None, dusuk)
+            # komşu halka (tek sektörde işaret için ZORUNLU): önceki sezonlar ≈ 0,40, güncel sahneler normal; 80 ağaçlık piksel
+            await s.execute(text("DELETE FROM sk_halka WHERE garden_id = :g"), {"g": gid})
+            for t, n in [(t, v + 0.10) for t, v in gecmis()] + [(TODAY - timedelta(days=5), 0.40), (TODAY - timedelta(days=2), 0.41)]:
+                await s.execute(text("INSERT INTO sk_halka (garden_id, tarih, geom_hash, ndmi, ndvi, piksel, halka_piksel) VALUES (:g, :t, 'x', :n, 0.7, 80, 3000)"), {"g": gid, "t": t, "n": n})
         else:
             for ad, son in (("V1", normal), ("V2", dusuk)):
                 geo = json.loads((await s.execute(text("SELECT ST_AsGeoJSON(geom) FROM irrigation_sectors WHERE garden_id = :g AND ad = :a"), {"g": gid, "a": ad})).scalar_one())

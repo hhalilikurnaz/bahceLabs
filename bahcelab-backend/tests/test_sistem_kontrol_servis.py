@@ -37,6 +37,15 @@ async def _seri_yaz(fab, gid: uuid.UUID, ad: str, geo: dict | None, noktalar: li
         await s.commit()
 
 
+async def _halka_yaz(fab, gid: uuid.UUID, son: list[tuple[date, float | None]], piksel_son: int = 80) -> None:  # noqa: F811
+    """Komşu halka serisi (sk_halka): önceki 3 sezonda aynı evrede ≈ 0,40; güncel sezonda `son` (None → eşik altı piksel)."""
+    async with fab() as s:
+        await s.execute(text("DELETE FROM sk_halka WHERE garden_id = :g"), {"g": gid})
+        for t, n in [(t, v + 0.10) for t, v in _gecmis()] + son:
+            await s.execute(text("INSERT INTO sk_halka (garden_id, tarih, geom_hash, ndmi, ndvi, piksel, halka_piksel) VALUES (:g, :t, 'x', :n, 0.7, :p, 3000)"), {"g": gid, "t": t, "n": n, "p": (piksel_son if (n is not None and (t, n) in [(a, b) for a, b in son]) else (80 if n is not None else 12))})
+        await s.commit()
+
+
 async def _kovayi_doldur(client, gid: uuid.UUID) -> None:
     """Son 10 gün içinde iki büyük uygulanan sulama (160 da bahçede 40 000 m³ ≈ 250 mm: kova dolar): kova «yeterli/dolu» ve Ks = 1 (sahne tarihlerinde)."""
     for gun in (10, 4):
@@ -53,11 +62,13 @@ async def test_isaret_uretir_bildirim_dedupe_ve_yanit_akisi(user_client, factory
     await _kovayi_doldur(user_client, gid)
     sahne = [(TODAY - timedelta(days=SIK + 3), 0.12), (TODAY - timedelta(days=SIK + 2 - 2), 0.10)]
     await _seri_yaz(factory, gid, "Bahçe", None, _gecmis() + sahne)
+    await _halka_yaz(factory, gid, [(t, 0.40) for t, _ in sahne])  # komşu halka normal (tek sektörde işaret için ZORUNLU)
     p = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()
     k = _sc(p)
     assert k["durum"] == "isaret", k["cumle"] + " | " + k["nasil"]
     assert "Bahçe'de sulama sistemini kontrol edin" in k["cumle"] and "tıkalı damlatıcı, arızalı vana ya da basınç sorunu" in k["cumle"]
-    assert k["guven"] == "orta" and "tek sektör" in k["karsilastirma"]  # karşılaştırılacak vana yok
+    assert k["guven"] == "orta_yuksek" and "tek sektör" in k["karsilastirma"] and "komşu halka" in k["karsilastirma"]
+    assert k["halka"]["durum"] == "normal" and len(k["halka"]["z"]) == 2 and all(z > -0.5 for z in k["halka"]["z"]) and "komşu halka" in k["nasil"]
     assert len(k["sahneler"]) == 2 and all(s["z"] <= -1.5 for s in k["sahneler"]) and k["taban"]["sezon_sayisi"] == 3
     assert "ön değer" in k["nasil"] and "z ≤ -1.5" in k["nasil"]
     # bildirim: aynı sahne için tek kayıt (ikinci panel çağrısı yenisini üretmez)
@@ -77,6 +88,23 @@ async def test_isaret_uretir_bildirim_dedupe_ve_yanit_akisi(user_client, factory
     assert _sc(r2.json())["durum"] == "yok"
     assert (await user_client.post(f"/gardens/{gid}/sulama-sistem-kontrol-yanit", json={"sektor": "V9", "sahne_tarihi": k["sahne_tarihi"], "yanit": "sorun_yok"})).status_code == 404
     assert (await user_client.post(f"/gardens/{gid}/sulama-sistem-kontrol-yanit", json={"sektor": "Bahçe", "sahne_tarihi": k["sahne_tarihi"], "yanit": "uydurma"})).status_code == 422
+
+
+async def test_tek_sektor_halka_yok_ya_da_dusukse_isaret_yok(user_client, factory):  # noqa: F811
+    gid = await kur(user_client, factory)
+    await _kovayi_doldur(user_client, gid)
+    sahne = [(TODAY - timedelta(days=5), 0.12), (TODAY - timedelta(days=2), 0.10)]
+    await _seri_yaz(factory, gid, "Bahçe", None, _gecmis() + sahne)
+    yok = _sc((await user_client.get(f"/gardens/{gid}/sulama-panel")).json())  # halka hiç doldurulmamış
+    assert yok["durum"] == "yok" and "halka referansı yok" in yok["cumle"] and yok["halka"]["durum"] == "yok"
+    await _halka_yaz(factory, gid, [(sahne[0][0], 0.40), (sahne[1][0], None)])  # son sahnede 12 ağaçlık piksel < 30
+    az = _sc((await user_client.get(f"/gardens/{gid}/sulama-panel")).json())
+    assert az["durum"] == "yok" and "12 geçerli ağaçlık piksel" in az["cumle"] and "en az 30" in az["cumle"]
+    await _halka_yaz(factory, gid, [(sahne[0][0], 0.22), (sahne[1][0], 0.20)])  # halka da düşüyor
+    dus = _sc((await user_client.get(f"/gardens/{gid}/sulama-panel")).json())
+    assert dus["durum"] == "yok" and "halka da düşüyor" in dus["cumle"] and dus["halka"]["durum"] == "dusuk"
+    async with factory() as s:
+        assert (await s.execute(text("SELECT count(*) FROM notifications WHERE garden_id = :g AND tur = 'sulama_sistem_kontrol'"), {"g": gid})).scalar_one() == 0
 
 
 async def test_taban_yoksa_isaret_yok_ve_nedeni_yazilir(user_client, factory):  # noqa: F811

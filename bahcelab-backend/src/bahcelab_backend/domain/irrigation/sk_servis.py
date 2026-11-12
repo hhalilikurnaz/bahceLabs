@@ -79,6 +79,11 @@ class SkServis:
             out[ad] = [sk.Gozlem(t, n, cat.season_start_year(t), stage_on(urun, cesit, t)[0], o, p) for t, n, o, p in rows]
         return out
 
+    async def halka_serisi(self, garden_id: uuid.UUID, bitis: date, urun: str, cesit: str | None) -> list[sk.HalkaSatir]:
+        """Komşu halka NDMI serisi (önbellek `sk_halka`; doldurma betik/arka plan işiyle — panel isteği ağ kullanmaz)."""
+        rows = (await self.session.execute(text("SELECT tarih, ndmi, piksel FROM sk_halka WHERE garden_id = :g AND tarih <= :b ORDER BY tarih"), {"g": garden_id, "b": bitis})).all()
+        return [sk.HalkaSatir(t, n, p, cat.season_start_year(t), stage_on(urun, cesit, t)[0]) for t, n, p in rows]
+
     async def yanitlar(self, garden_id: uuid.UUID) -> dict[tuple[str, date], tuple[str, date]]:
         r = (await self.session.execute(text("SELECT sektor_ad, sahne_tarihi, yanit, created_at::date FROM sk_yanit WHERE garden_id = :g"), {"g": garden_id})).all()
         return {(a, t): (y, c) for a, t, y, c in r}
@@ -86,17 +91,19 @@ class SkServis:
     async def kararlar(self, garden_id: uuid.UUID, vanalar: list[tuple[str, dict[str, Any] | None]], bugun: date, urun: str, cesit: str | None, kova_ok: dict[str, dict[date, bool]]) -> dict[str, sc.SistemKontrol]:
         k = self.kural
         seri = await self.seriler(garden_id, vanalar, bugun, urun, cesit)
+        halka = await self.halka_serisi(garden_id, bugun, urun, cesit)
         yan = await self.yanitlar(garden_id)
         out: dict[str, sc.SistemKontrol] = {}
         for ad, _ in vanalar:
             diger = {d: s for d, s in seri.items() if d != ad}
-            karar = sk.degerlendir(ad, seri[ad], diger, bugun, k, kova_ok.get(ad, {}))
+            karar = sk.degerlendir(ad, seri[ad], diger, bugun, k, kova_ok.get(ad, {}), halka)
             son = karar.sahneler[-1].tarih if karar.sahneler else None
             y = yan.get((ad, son)) if son else None
             # «sorun yoktu» yanıtı aynı sahne için işareti kapatır; daha yeni sahnede yeniden değerlendirilir
             durum = "isaret" if (karar.durum == "isaret" and (y is None or y[0] != "sorun_yok")) else "yok"
             out[ad] = sc.SistemKontrol(
-                durum=cast(Any, durum), cumle=karar.neden if karar.durum == "isaret" else karar.neden, guven=karar.guven, karsilastirma=karar.karsilastirma, sahne_tarihi=son,
+                durum=cast(Any, durum), cumle=karar.neden, guven=karar.guven, karsilastirma=karar.karsilastirma, sahne_tarihi=son,
+                halka=None if karar.halka is None else sc.SkHalka(durum=karar.halka.durum, neden=karar.halka.neden, z=list(karar.halka.z), piksel=list(karar.halka.piksel)),
                 sahneler=[sc.SkSahne(tarih=s.tarih, ndmi=s.ndmi, z=s.z) for s in karar.sahneler],
                 taban=None if karar.taban is None else sc.SkTaban(ort=karar.taban.ort, std=karar.taban.std, n=karar.taban.n, sezon_sayisi=karar.taban.sezon_sayisi, evre=karar.taban.evre),
                 yanit=None if y is None else y[0], yanit_ad=None if y is None else YANIT_AD[y[0]], kural=sc.SkKural(z_esik=k.z_esik, art_arda=k.art_arda_sahne, min_sezon=k.min_sezon),
@@ -120,7 +127,9 @@ def _nasil(karar: sk.Karar, k: cat.SistemKontrolKurali) -> str:
     t = karar.taban
     z = ", ".join(f"{s.tarih:%d.%m}: {s.ndmi:.2f} (z {s.z:.1f})" for s in karar.sahneler)
     return (f"Sentinel-2 NDMI (yaprak suyu), bu vananın önceki {t.sezon_sayisi} sezonda aynı dönemde ({t.evre}) ölçülen {t.n} gözleminin ortalaması {t.ort:.2f} ± {t.std:.2f}. "
-            f"Son {len(karar.sahneler)} bulutsuz sahne: {z}. Eşik z ≤ {k.z_esik} ve art arda {k.art_arda_sahne} sahne, kova yeterliyken. Önceki veriye dayalı ön değerdir; mühendis onayı bekliyor.")
+            f"Son {len(karar.sahneler)} bulutsuz sahne: {z}. Eşik z ≤ {k.z_esik} ve art arda {k.art_arda_sahne} sahne, kova yeterliyken. "
+            + (f"Komşu halka (bahçe sınırından {k.halka_ic_m:.0f}–{k.halka_dis_m:.0f} m, ağaçlık): {karar.halka.neden}. " if karar.halka else "")
+            + "Önceki veriye dayalı ön değerdir; mühendis onayı bekliyor.")
 
 
 def kova_ok_haritasi(rows_by_vana: dict[str, list[Any]], taw: float, kural: cat.SulamaPlaniKurali, kova: cat.SistemKontrolKurali, pct_fn: Any, etiket_fn: Any) -> dict[str, dict[date, bool]]:

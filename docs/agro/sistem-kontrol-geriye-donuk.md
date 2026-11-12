@@ -8,6 +8,8 @@
 
 - Değerlendirilen bulutsuz Sentinel-2 sahnesi: **247** (2015-08-13 → 2026-10-09)
 - Tabanı olan (≥ 2 önceki sezon, ≥ 6 sahne) tek-sahne gözlemi: **206**; bunların **9**'ı z ≤ -1.5 (%4.4); kova yeterliyken **1**
+- Komşu halka (bahçe sınırından 100–300 m, ağaçlık NDVI ≥ 0.5) ölçümü olan sahne: **246** / 247; halka z-skoru hesaplanabilen: **205**
+- Bahçe tek-sahne z ≤ -1.5 olan 9 sahnede halka: **normal (z > -0.5) 1**, **düşük 8** (hava/fenoloji), **referans yok 0**
 - İşareti ateşleyen sahne tarihi (art arda 2 sahne + kova): **0**
 - **Üretilecek bildirim (olay; ≥ 14 gün arayla): 0** — yaklaşık yılda **0.0**
 
@@ -51,3 +53,8 @@
 | 2024/2025 | 24 | 0 | 3 |
 | 2025/2026 | 22 | 0 | 0 |
 | 2026/2027 | 1 | 0 | 0 |
+
+## Yorum (halka kuralı)
+
+Bahçe tek-sahne z ≤ -1.5 olan **9** sahnenin **8**'inde komşu halka da düşüktü (z ≤ -0.5) → bu düşüşler bahçeye özgü değil, **hava/fenolojiyle ortak**; halka kuralı onları işaret olmaktan çıkarır. Yalnız **1** sahnede halka normaldi (bahçeye özgü düşüş adayı); o da art arda 2 sahne + kova koşulunu sağlamadığından **olay üretilmedi**. Yani halka referansı yanlış alarm riskini daha da azaltıyor; **duyarlılık (gerçek tıkanmayı yakalama) hâlâ ölçülemedi** — jlnnlk'te bilinen tıkanma kaydı yok. Doğruluk kullanıcı yanıtlarıyla (Saha Defteri) ölçülecek.
+

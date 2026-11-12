@@ -3,7 +3,9 @@
 Girdi: vananın (yoksa bahçenin) Sentinel-2 NDMI gözlemleri (bulutsuz), her gözlemin fenolojik evresi ve sezonu, o günlerin kova durumu.
 Taban: AYNI fenolojik evrede, ÖNCEKİ sezonlardaki gözlemler (en az `min_sezon` farklı sezon ve `min_taban_sahne` sahne; yoksa işaret üretilmez, nedeni yazılır).
 Kural: kova «yeterli/dolu» (Ks = 1) iken ardışık `art_arda_sahne` bulutsuz sahnede z ≤ `z_esik` → «V2'de sulama sistemini kontrol edin».
-Karşılaştırma: aynı tarihlerde diğer vanalardan yalnız biri düşüyorsa güven YÜKSEK; vanaların `hepsi_dusuyor_orani`'ı düşüyorsa (hava/fenoloji) işaret ÜRETİLMEZ; karşılaştırılacak vana yoksa güven ORTA.
+Karşılaştırma: aynı tarihlerde diğer vanalardan yalnız biri düşüyorsa güven YÜKSEK; vanaların `hepsi_dusuyor_orani`'ı düşüyorsa (hava/fenoloji) işaret ÜRETİLMEZ — ANCAK komşu halka (bahçe sınırından 100–300 m ağaçlık) normalse işaret üretilir;
+karşılaştırılacak vana yoksa (tek sektör) işaret YALNIZ komşu halka normalken üretilir (güven ORTA-YÜKSEK). Halka da düşüyorsa ya da referansı yoksa (≥ 30 ağaçlık piksel / taban) işaret yok, nedeni yazılır.
+Çok vanalı bahçede vana-arası kural aynen geçerlidir; halka ek kontrol olarak güveni yükseltir (orta → orta-yüksek).
 Kova zaten eşik altındaysa bu işaret değildir: normal stres mesajı geçerlidir.
 """
 
@@ -25,6 +27,25 @@ class Gozlem:
     evre: str | None  # fenolojik evre kodu; yoksa None
     gecerli_oran: float = 1.0
     piksel: int = 0
+
+
+@dataclass(frozen=True)
+class HalkaSatir:
+    """Komşu halkanın bir sahnedeki ölçümü; ndmi None ise geçerli ağaçlık piksel eşiğin altındaydı (referans yok)."""
+
+    tarih: date
+    ndmi: float | None
+    piksel: int
+    sezon: int
+    evre: str | None
+
+
+@dataclass(frozen=True)
+class HalkaKarar:
+    durum: Literal["normal", "dusuk", "yok"]
+    neden: str
+    z: tuple[float, ...] = ()
+    piksel: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -50,9 +71,10 @@ class Karar:
     neden: str  # «yok» ise NEDEN (kullanıcıya/iç ekrana yazılır); «isaret» ise tek cümle gerekçe
     sahneler: tuple[SahneZ, ...] = ()
     taban: Taban | None = None
-    guven: Literal["yuksek", "orta"] | None = None
+    guven: Literal["yuksek", "orta_yuksek", "orta"] | None = None
     karsilastirma: str | None = None
     diger_z: dict[str, float] = field(default_factory=dict)
+    halka: HalkaKarar | None = None
 
 
 def taban_hesapla(gecmis: list[Gozlem], hedef: Gozlem, kural: SistemKontrolKurali) -> tuple[Taban | None, str | None]:
@@ -111,7 +133,32 @@ def z_tarihlerde(seri: list[Gozlem], tarihler: list[date], kural: SistemKontrolK
     return out
 
 
-def degerlendir(ad: str, seri: list[Gozlem], digerleri: dict[str, list[Gozlem]], bugun: date, kural: SistemKontrolKurali, kova_ok: dict[date, bool]) -> Karar:
+def halka_degerlendir(halka: list[HalkaSatir] | None, tarihler: list[date], kural: SistemKontrolKurali) -> HalkaKarar:
+    """Halkanın aynı sahnelerdeki z-skoru (taban: halkanın KENDİ önceki sezonları, aynı evre). Her sahnede referans gerekir; eksikse nedeniyle `yok`."""
+    if not halka:
+        return HalkaKarar("yok", "komşu halka referansı hesaplanmamış")
+    by = {h.tarih: h for h in halka}
+    gec = [Gozlem(h.tarih, h.ndmi, h.sezon, h.evre, 1.0, h.piksel) for h in halka if h.ndmi is not None]
+    zler: list[float] = []
+    pik: list[int] = []
+    for t in tarihler:
+        h = by.get(t)
+        if h is None:
+            return HalkaKarar("yok", f"komşu halka {t:%d.%m.%Y} sahnesinde ölçülmemiş")
+        if h.ndmi is None:
+            return HalkaKarar("yok", f"komşu halkada {t:%d.%m.%Y} sahnesinde {h.piksel} geçerli ağaçlık piksel var, en az {kural.halka_min_piksel} gerekir")
+        g = next(x for x in gec if x.tarih == t)
+        taban, neden = taban_hesapla(gec, g, kural)
+        if taban is None:
+            return HalkaKarar("yok", f"komşu halka {neden}")
+        zler.append(z_skor(g.ndmi, taban))
+        pik.append(h.piksel)
+    normal = all(z > kural.halka_z_normal for z in zler)
+    z_metin = ", ".join(f"{z:.1f}" for z in zler)
+    return HalkaKarar("normal" if normal else "dusuk", f"komşu halka z: {z_metin} (eşik > {kural.halka_z_normal})", tuple(zler), tuple(pik))
+
+
+def degerlendir(ad: str, seri: list[Gozlem], digerleri: dict[str, list[Gozlem]], bugun: date, kural: SistemKontrolKurali, kova_ok: dict[date, bool], halka: list[HalkaSatir] | None = None) -> Karar:
     """Tek vana için karar. `digerleri`: öbür vanaların serileri (aynı tarihlerde karşılaştırma için)."""
     sahneler, taban, neden = vana_z(seri, bugun, kural, kova_ok)
     if not sahneler:
@@ -132,15 +179,26 @@ def degerlendir(ad: str, seri: list[Gozlem], digerleri: dict[str, list[Gozlem]],
         diger_z[d_ad] = zort
         if zort <= kural.z_esik:
             dusen += 1
-    if diger_z and (dusen + 1) / (len(diger_z) + 1) >= kural.hepsi_dusuyor_orani and dusen >= 1:
-        return Karar("yok", f"vanaların çoğu birlikte düşüyor ({dusen + 1}/{len(diger_z) + 1}): hava ya da fenoloji kaynaklı olabilir, işaret üretilmedi", tuple(sahneler), taban, diger_z=diger_z)
-    if not diger_z:
-        guven: Literal["yuksek", "orta"] = "orta"
-        karsi = "karşılaştırılacak başka vana yok (bahçe tek sektör)"
-    elif all(z > kural.diger_vana_esik for z in diger_z.values()):
-        guven = "yuksek"
+    hepsi = bool(diger_z) and (dusen + 1) / (len(diger_z) + 1) >= kural.hepsi_dusuyor_orani and dusen >= 1
+    tek = not diger_z
+    hk = halka_degerlendir(halka, tarihler, kural)
+    if tek or hepsi:
+        sebep = "bahçe tek sektör" if tek else f"vanaların çoğu birlikte düşüyor ({dusen + 1}/{len(diger_z) + 1})"
+        if hk.durum == "yok":
+            return Karar("yok", f"{sebep}: ek kontrol olan komşu halka referansı yok — {hk.neden}; işaret üretilmedi", tuple(sahneler), taban, diger_z=diger_z, halka=hk)
+        if hk.durum == "dusuk":
+            return Karar("yok", f"{sebep}; komşu halka da düşüyor ({hk.neden}): hava ya da fenoloji kaynaklı olabilir, işaret üretilmedi", tuple(sahneler), taban, diger_z=diger_z, halka=hk)
+        return Karar("isaret", f"{ad}'de sulama sistemini kontrol edin — tıkalı damlatıcı, arızalı vana ya da basınç sorunu olabilir.", tuple(sahneler), taban, "orta_yuksek", f"{sebep}; komşu halka (100–300 m ağaçlık) normal: {hk.neden}", diger_z, hk)
+    if all(z > kural.diger_vana_esik for z in diger_z.values()):
+        guven: Literal["yuksek", "orta_yuksek", "orta"] = "yuksek"
         karsi = "aynı tarihte diğer vanalar normal: yalnız bu vana düşüyor"
     else:
         guven = "orta"
         karsi = "diğer vanalardan biri de belirgin düşük (ama çoğunluk değil)"
-    return Karar("isaret", f"{ad}'de sulama sistemini kontrol edin — tıkalı damlatıcı, arızalı vana ya da basınç sorunu olabilir.", tuple(sahneler), taban, guven, karsi, diger_z)
+    if hk.durum == "normal":
+        karsi += f"; komşu halka normal ({hk.neden})"
+        if guven == "orta":
+            guven = "orta_yuksek"
+    elif hk.durum == "dusuk":
+        karsi += f"; ancak komşu halka da düşük ({hk.neden}) — hava/fenoloji etkisi olabilir"
+    return Karar("isaret", f"{ad}'de sulama sistemini kontrol edin — tıkalı damlatıcı, arızalı vana ya da basınç sorunu olabilir.", tuple(sahneler), taban, guven, karsi, diger_z, hk)

@@ -121,6 +121,8 @@ class Settings(BaseSettings):
     job_notifications_interval_minutes: int = 60
     job_acquisitions_interval_minutes: int = 1440  # günlük artımlı sahne çekimi (arq: her gün job_acquisitions_hour saatinde)
     job_acquisitions_hour: int = 3
+    job_sk_halka_interval_minutes: int = 1440  # komşu halka NDMI serisi (sulama sistemi kontrol işareti): günlük, sulama profili olan bahçeler
+    job_sk_halka_hour: int = 4
     # Su ve sıcaklık besleme (ADR 0017/0018): bahçe eklenince ERA5 geçmişi (2015→) ve doğrulama doldurması; her gün artımlı çekim
     era5_auto_feed: bool = True
     era5_client: str = ""  # YALNIZ API_DEBUG=true iken: «modül:ad» ile test istemcisi (ağsız e2e); boşsa Open-Meteo

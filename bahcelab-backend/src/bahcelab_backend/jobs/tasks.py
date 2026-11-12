@@ -63,6 +63,32 @@ async def refresh_acquisitions(factory: SessionFactory, provider: WeatherProvide
     return result
 
 
+async def refresh_sk_halka(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
+    """Günlük: sulama profili olan bahçeler için komşu halka NDMI serisini (bahçe sınırından 100–300 m ağaçlık) tamamlar; bahçe başına en yeni 60 eksik sahne (geçmiş birkaç günde dolar).
+    Panel isteği AĞ KULLANMAZ: halka referansı bu işle hazırlanır (ADR 0029 eki). Hata bir bahçede diğerlerini durdurmaz."""
+    import uuid
+
+    from sqlalchemy import text
+
+    from bahcelab_backend.domain.agro.catalog import load_catalog
+    from bahcelab_backend.domain.irrigation.sk_halka import SkHalkaServis
+
+    result = JobResult()
+    kural = load_catalog().sistem_kontrol
+    async with factory() as s:
+        ids = [r[0] for r in (await s.execute(text("SELECT garden_id FROM irrigation_profiles"))).all()]
+    for gid in ids:
+        try:
+            async with factory() as s:
+                n = await SkHalkaServis(s, kural).doldur(uuid.UUID(str(gid)), en_cok=60)
+                await s.commit()
+            result.isler += 1 if n else 0
+        except Exception:  # noqa: BLE001
+            logger.exception("Komşu halka serisi güncellenemedi (bahçe %s)", gid)
+            result.hata += 1
+    return result
+
+
 async def refresh_era5(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
     """Günlük ERA5 artımlı çekimi (ADR 0018): her hava hücresi bir kez; son ERA5-Land gününden 10 gün geriden + model tahmini. İdempotent."""
     from bahcelab_backend.domain.water.feed import feed_all

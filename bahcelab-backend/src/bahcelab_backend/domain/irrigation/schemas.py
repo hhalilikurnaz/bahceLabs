@@ -343,6 +343,15 @@ class SkSahne(BaseModel):
     z: float
 
 
+class SkHalka(BaseModel):
+    """Komşu halka referansı (bahçe sınırından 100–300 m, ağaçlık pikseller): aynı sahnelerde halka NDMI z-skoru."""
+
+    durum: Literal["normal", "dusuk", "yok"]
+    neden: str
+    z: list[float] = []
+    piksel: list[int] = []
+
+
 class SkTaban(BaseModel):
     ort: float
     std: float
@@ -362,8 +371,9 @@ class SistemKontrol(BaseModel):
 
     durum: Literal["isaret", "yok"]
     cumle: str
-    guven: Literal["yuksek", "orta"] | None = None
+    guven: Literal["yuksek", "orta_yuksek", "orta"] | None = None
     karsilastirma: str | None = None
+    halka: SkHalka | None = None
     sahne_tarihi: date | None = None
     sahneler: list[SkSahne] = []
     taban: SkTaban | None = None

@@ -30,3 +30,14 @@ class SkYanitModel(Base):
     sahne_tarihi: Mapped[date] = mapped_column(Date)
     yanit: Mapped[str] = mapped_column(String(24))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SkHalkaModel(Base):
+    __tablename__ = "sk_halka"
+    garden_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("gardens.id", ondelete="CASCADE"), primary_key=True)
+    tarih: Mapped[date] = mapped_column(Date, primary_key=True)
+    geom_hash: Mapped[str] = mapped_column(String(32))
+    ndmi: Mapped[float | None] = mapped_column(Float)
+    ndvi: Mapped[float | None] = mapped_column(Float)
+    piksel: Mapped[int] = mapped_column(Integer)
+    halka_piksel: Mapped[int] = mapped_column(Integer)

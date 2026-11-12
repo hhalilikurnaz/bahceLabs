@@ -54,8 +54,9 @@ export interface HaritaGosterim {
 export interface SistemKontrol {
   durum: 'isaret' | 'yok'
   cumle: string
-  guven: 'yuksek' | 'orta' | null
+  guven: 'yuksek' | 'orta_yuksek' | 'orta' | null
   karsilastirma: string | null
+  halka: { durum: 'normal' | 'dusuk' | 'yok'; neden: string; z: number[]; piksel: number[] } | null
   sahne_tarihi: string | null
   sahneler: { tarih: string; ndmi: number; z: number }[]
   taban: { ort: number; std: number; n: number; sezon_sayisi: number; evre: string } | null
