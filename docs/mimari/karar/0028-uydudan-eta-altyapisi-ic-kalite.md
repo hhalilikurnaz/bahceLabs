@@ -28,7 +28,22 @@ Kapı kapalıyken hiçbir kullanıcı ekranına ETa/ETf taşınmaz (e2e: sulama 
 - **Erişim:** `/ic/eta/*` yalnız `INTERNAL_EMAILS` listesindeki kullanıcılar (boşsa kimse; `*@alan` deseni yalnız test için), aksi 403.
 
 ## Sonuç — jlnnlk 24 ay (gerçek veri)
-(koşu bitince doldurulur)
+`scripts/eta_calistir.py` jlnnlk (15,1 da) için 2024-11-12 → 2026-11-12 koştu (≈ 1 saat; 6 paralel okuma). Kaynak: `eta_*` tabloları (dev veritabanı).
+
+| Sonuç | Değer |
+|---|---|
+| Geçiş (tarih başına en iyi kare) | 173 |
+| Hesaplanan / elenen | **133 / 40** (elenen: 35'i bahçe %0 geçerli (bulut/maske), 2'si %11–22 geçerli, 3'ü soğuk referans piksel yetersiz) |
+| **c-faktörü (uzun dönem, ay penceresi ±1)** | **0,995 – 1,013** (aylık medyan; yayılım MAD 0,003–0,019; her ay 25–44 sahne). Çok kararlı: kalibrasyon çalışıyor |
+| ERA5 Tmax sapması (Meteostat 17340 − ERA5) | **+4,2 … +5,3 °C**, tüm aylarda sistematik (aylık 60–93 eşleşen gün) — düzeltme uygulandı |
+| Ortalama ETf belirsizliği (σ, ST_QA + c yayılımı) | 0,34 |
+| Aylık ETf medyanı | Oca–Şub ≈ 1,0 (tavan 1,05; dT 4–5 K, belirsiz), Haz 0,67, Tem 0,53, Ağu 0,51, Eyl 0,39 (aralık 0,17–0,78) |
+| **Tutarlılık: p90 \|ΔETf\|** | **0,284** (38 çift; kuru mevsim, ≤ 10 gün, yağışsız) → eşik 0,15 **GEÇMEDİ** |
+| **Kapı** | **KAPALI** (ayrıca bahçe 15,1 da < 40 da) |
+
+Tanı (gerçek veri): *tekrarlanabilirlik* tabanı kapı eşiğinin üstünde. Yağışsız yazda **1 gün arayla** çiftlerde bile (27 çift, aynı hava) |ΔETf| medyanı **0,138**, p90 **0,183**; 5–10 gün arayla medyan 0,139, p90 0,328. Yani aynı bahçenin yan yana iki geçişi arasında yöntemin kendi gürültüsü ≈ 0,14. WRS-2 karesine göre sistematik fark da var (176/034 yazı ort. ETf 0,55 ↔ 175/035 0,49): termal pikselin bahçe üzerindeki yerleşimi/karışımı. Bu, Dilim 0 §6'daki çözünürlük gerçeğiyle uyumludur (15 da'da tam içeride 100 m piksel yok). **c-faktörü sahne içi Tc kararsızlığını giderdi (aylık c sabit), kalan gürültü çözünürlük/karışık piksel kaynaklı.**
+
+**Karar:** durdurma kuralı uygulandı — ETa/ETf kullanıcıya AÇILMAZ; yalnız `/ic/kalite`. Kapı, ≥ 40 da bahçelerde (daha çok saf piksel) yeniden sınanmalıdır; jlnnlk için çözüm yazılımla bulunamaz (fiziksel çözünürlük).
 
 ## Sınırlar
 - SSEBop burada literatür formülünün Python uygulamasıdır; OpenET ile birebir doğrulanmadı. Yer gerçeği (akı kulesi, damla sayacı) yok: «doğruluk» değil, **iç tutarlılık** ölçülür. Kapı geçse bile bu bir doğruluk kanıtı değildir.
