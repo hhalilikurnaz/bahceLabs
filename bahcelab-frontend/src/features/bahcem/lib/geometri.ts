@@ -164,27 +164,55 @@ export function siraUret(xy: readonly Xy[], derece: number, siraAralik: number, 
 }
 
 /**
- * Poligonu bir DOĞRUYLA (iki nokta, sonsuza uzatılmış) iki parçaya böler (yarım-düzlem kırpma). Dışbükey/yaklaşık dışbükey bahçelerde doğru sonuç verir;
- * içbükey parselde bir taraf birden çok parçaya ayrılırsa tek halka olarak döner (çağıran alan toplamını doğrular).
+ * Basit (kendini kesmeyen) poligonu bir DOĞRUYLA (iki nokta, sonsuza uzatılmış) parçalara böler; içbükey parselde de doğrudur.
+ * Doğrunun sınırla kesişimleri doğru boyunca sıralanır, ardışık ikililer çokgenin İÇİNDEKİ kirişlerdir (çift-tek kuralı);
+ * her kiriş, onu içeren halkayı ikiye ayırır. Doğru üstündeki köşeler «+» tarafta sayılır (dejenerelik yok).
  */
-export function dogruylaBol(xy: readonly Xy[], a: Xy, b: Xy): [Xy[], Xy[]] {
-  const yan = (p: Xy) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
-  const kirp = (isaret: 1 | -1): Xy[] => {
-    const out: Xy[] = []
-    for (let i = 0; i < xy.length; i++) {
-      const p = xy[i]!
-      const q = xy[(i + 1) % xy.length]!
-      const sp = yan(p) * isaret
-      const sq = yan(q) * isaret
-      if (sp >= 0) out.push(p)
-      if ((sp > 0 && sq < 0) || (sp < 0 && sq > 0)) {
-        const t = sp / (sp - sq)
-        out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t])
-      }
-    }
-    return out
+export function dogruylaBol(xy: readonly Xy[], a: Xy, b: Xy): Xy[][] {
+  const dx = b[0] - a[0]
+  const dy = b[1] - a[1]
+  const L = Math.hypot(dx, dy) || 1
+  const EPS = 1e-9
+  const yan = (p: Xy) => {
+    const v = (dx * (p[1] - a[1]) - dy * (p[0] - a[0])) / L
+    return Math.abs(v) < EPS ? EPS : v
   }
-  return [kirp(1), kirp(-1)]
+  const halka: Xy[] = []
+  const kes: { p: Xy; u: number }[] = []
+  for (let i = 0; i < xy.length; i++) {
+    const p = xy[i]!
+    const q = xy[(i + 1) % xy.length]!
+    const sp = yan(p)
+    const sq = yan(q)
+    halka.push(p)
+    if (sp > 0 !== sq > 0) {
+      const t = sp / (sp - sq)
+      const ip: Xy = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]
+      halka.push(ip)
+      kes.push({ p: ip, u: ((ip[0] - a[0]) * dx + (ip[1] - a[1]) * dy) / L })
+    }
+  }
+  kes.sort((x, y) => x.u - y.u)
+  let parcalar: Xy[][] = [halka]
+  for (let k = 0; k + 1 < kes.length; k += 2) {
+    const c1 = kes[k]!.p
+    const c2 = kes[k + 1]!.p
+    const j = parcalar.findIndex((h) => h.includes(c1) && h.includes(c2))
+    if (j < 0) continue
+    const h = parcalar[j]!
+    const i1 = h.indexOf(c1)
+    const i2 = h.indexOf(c2)
+    const yol = (bas: number, son: number): Xy[] => {
+      const out: Xy[] = []
+      for (let i = bas; ; i = (i + 1) % h.length) {
+        out.push(h[i]!)
+        if (i === son) break
+      }
+      return out
+    }
+    parcalar = [...parcalar.slice(0, j), yol(i1, i2), yol(i2, i1), ...parcalar.slice(j + 1)]
+  }
+  return parcalar
 }
 /** Parseli sıralı kesme doğrularıyla vanalara böler; ≤ 2 köşeli parçalar atılır. */
 export function parcaliBol(xy: Xy[], kesimler: readonly [Xy, Xy][]): Xy[][] {
@@ -192,8 +220,8 @@ export function parcaliBol(xy: Xy[], kesimler: readonly [Xy, Xy][]): Xy[][] {
   for (const [a, b] of kesimler) {
     const yeni: Xy[][] = []
     for (const p of parcalar) {
-      const [x, y] = dogruylaBol(p, a, b)
-      if (x.length >= 3 && alanM2(x) > 1 && y.length >= 3 && alanM2(y) > 1) yeni.push(x, y)
+      const bol = dogruylaBol(p, a, b).filter((q) => q.length >= 3 && alanM2(q) > 1)
+      if (bol.length >= 2) yeni.push(...bol)
       else yeni.push(p)
     }
     parcalar = yeni

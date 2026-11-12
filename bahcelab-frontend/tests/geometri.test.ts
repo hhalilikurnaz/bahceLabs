@@ -55,3 +55,24 @@ describe('bölme', () => {
   })
   it('parseli kesmeyen doğru parçayı bölmez', () => expect(parcaliBol(dik(50, 50), [[[200, -5], [200, 80]]]).length).toBe(1))
 })
+
+describe('içbükey parselde bölme', () => {
+  // L biçimi: 100×100 kareden sağ-üst 60×60 çıkarılmış (alan 6400)
+  const L: Xy[] = [[0, 0], [100, 0], [100, 40], [40, 40], [40, 100], [0, 100]]
+  it('L biçiminde tek koldan geçen doğru 2 parça verir; alanlar toplamı korunur', () => {
+    const p = parcaliBol(L, [[[70, -10], [70, 110]]]) // x=70: alt koldan geçer; üst kola girmez → 2 parça
+    expect(p.length).toBe(2)
+    expect(p.reduce((s, q) => s + alanM2(q), 0)).toBeCloseTo(6400, 6)
+    const c = parcaliBol(L, [[[-10, 70], [110, 70]]]) // y=70: yalnız üst koldan geçer → 2 parça
+    expect(c.length).toBe(2)
+    expect(c.reduce((s, q) => s + alanM2(q), 0)).toBeCloseTo(6400, 6)
+  })
+  it('çentik boşluğunun iki yanında kalan iki kolu ayıran doğru: ayrık parçalar karışmaz', () => {
+    // U biçimi: iki kol arasında boşluk; yatay doğru her iki koldan da geçer → 3 parça (alt taban + 2 kol ucu)
+    const U: Xy[] = [[0, 0], [90, 0], [90, 100], [60, 100], [60, 30], [30, 30], [30, 100], [0, 100]]
+    const p = parcaliBol(U, [[[-10, 60], [100, 60]]])
+    expect(p.length).toBe(3)
+    expect(p.reduce((s, q) => s + alanM2(q), 0)).toBeCloseTo(alanM2(U), 6)
+    expect(Math.min(...p.map((q) => alanM2(q)))).toBeCloseTo(30 * 40, 6) // her kol ucu 30×40
+  })
+})
