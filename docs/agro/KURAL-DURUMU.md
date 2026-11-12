@@ -82,3 +82,16 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Durum bantları / ihtiyaç renkleri | stres < %50 · yakın 50–70 · yeterli 70–97 · dolu ≥ 97; ihtiyaç ≥ %95 yeşil, 85–95 sarı | ön değer | doğrulanmadı |
 | Yağış serisi | `era5_daily` (IMERG yalnız sistematik farkta); Hava sekmesi dahil TEK seri | ADR 0025; `docs/agro/yagis-kaynak-karsilastirma.md` | karar verildi (istasyon referansı zayıf: 26 km) |
 | Bahçe yağış ölçeri düzeltme önerisi | ayda ≥ 5 eşleşen gün · seri toplamı ≥ 10 mm · |ölçüm/seri − 1| ≥ 0,20 · çarpan [0,5; 2,0]; **otomatik uygulanmaz** | ADR 0026 | doğrulanmadı |
+
+## Adım 9I-1B — vana bazında «sulama sistemi kontrol» işareti (`sistem_kontrol` bloğu; hepsi «ön değer · mühendis onayı bekliyor», ADR 0029; KULLANICIYA GÖSTERİLİR)
+
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| Tetik | kova «yeterli/dolu» (Ks = 1) iken NDMI z-skoru **≤ −1,5** ve **art arda 2 bulutsuz sahne** (aralarında ≤ 21 gün) | NDMI (B8A/B11) yaprak suyu göstergesi; Sentinel-2 L2A, SCL bulut/gölge/kar maskeli | ön değer · mühendis onayı bekliyor |
+| Taban | AYNI fenolojik evrede, YALNIZ önceki sezonlar; en az **2 farklı sezon** ve **6 sahne**; yoksa işaret üretilmez, nedeni yazılır; std alt sınırı 0,02 | bahçenin (vananın) kendi geçmişi | ön değer · mühendis onayı bekliyor |
+| Veri kalitesi | vana pikselinin ≥ %80'i temiz, en az 4 temiz piksel | Sentinel-2 SWIR 20 m yeniden örnekli | ön değer · mühendis onayı bekliyor |
+| Vanalar arası karşılaştırma | yalnız bu vana düşüyorsa (diğerleri z > −1,0) güven YÜKSEK; vanaların ≥ %50'si birlikte düşüyorsa (hava/fenoloji) işaret ÜRETİLMEZ; karşılaştırılacak vana yoksa güven ORTA | aynı tarihli z karşılaştırması | ön değer · mühendis onayı bekliyor |
+| Kova eşik altındaysa | işaret değil; normal stres mesajı geçerli | plan kovası (Ks) | ön değer · mühendis onayı bekliyor |
+| Bildirim | güven yüksek → anında (kritik), orta → günlük özet; aynı vana için yeniden bildirim ≥ 14 gün | ADR 0018 öncelikler | ön değer · mühendis onayı bekliyor |
+| Doğruluk ölçümü | kullanıcı yanıtları (`sorun_yok` / `damlatici_tikali` / `baska_sorun`) Saha Defteri'ne «gozlem» kaydı olarak düşer (`sk_yanit`) | kural doğruluğu bununla ölçülür | — |
+

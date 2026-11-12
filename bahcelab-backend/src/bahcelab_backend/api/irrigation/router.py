@@ -89,3 +89,9 @@ async def post_isle(garden_id: UUID, body: sc.IsleGirdisi, service: Service, use
 async def post_program_ekle(garden_id: UUID, body: sc.ProgramEkleGirdisi, service: Service) -> sc.PanelYaniti:
     """[Bu vanayı programa ekle]: planın önermediği vana en yakın program gününe elle eklenir."""
     return await service.program_ekle(garden_id, body.sektor, body.tarih)
+
+
+@router.post("/gardens/{garden_id}/sulama-sistem-kontrol-yanit", response_model=sc.PanelYaniti)
+async def post_sistem_kontrol_yanit(garden_id: UUID, body: sc.SkYanitGirdisi, service: Service, user: User) -> sc.PanelYaniti:
+    """«Kontrol ettim: sorun yoktu / damlatıcı tıkalıydı / başka sorun»: Saha Defteri'ne düşer; kural doğruluğu bu yanıtlarla ölçülür."""
+    return await service.sistem_kontrol_yanit(garden_id, user.id, body)

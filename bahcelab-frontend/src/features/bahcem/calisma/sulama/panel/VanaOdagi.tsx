@@ -2,6 +2,7 @@ import { Button } from '@/components/ui'
 import { useToast } from '../../../components/layout/toastContext'
 import { useSulamaIsle, useSulamaProgramEkle, type PanelYaniti } from '../../../api/sulamaPanelApi'
 import { kcCumlesi, vanaEtiketi } from '../../../lib/sulamaPanel'
+import { SistemKontrolIsareti } from './SistemKontrolIsareti'
 import { useSulamaHaritaStore } from '../harita/sulamaHaritaStore'
 
 const f = (x: number, n = 0) => x.toLocaleString('tr-TR', { minimumFractionDigits: n, maximumFractionDigits: n })
@@ -31,6 +32,7 @@ export function VanaOdagi({ gardenId, panel }: { gardenId: string; panel: PanelY
         {s.vana_debi_m3h !== null && (<><dt className="text-app-text-muted">Debi</dt><dd className="text-right tabular-nums">{f(s.vana_debi_m3h, 1)} m³/sa</dd></>)}
       </dl>
       {s.kc && <p className="mt-2 text-small" data-testid="vana-kc">{kcCumlesi(s.kc)}</p>}
+      {s.sistem_kontrol?.durum === 'isaret' && <div className="flex"><SistemKontrolIsareti gardenId={gardenId} vana={s.ad} sk={s.sistem_kontrol} /></div>}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="primary" disabled={isle.isPending || !panel.vardiya || !bugunSulama} title={!bugunSulama ? 'Bu vana sonraki programda yok' : undefined} onClick={() => isle.mutate({ tarih: panel.vardiya!.tarih, sektor: s.ad }, { onSuccess: () => toast.show(`${s.ad} için sulama kaydı Saha Defteri'ne işlendi.`), onError: hata('Kayıt işlenemedi.') })} data-testid="vana-kayit-isle">Bu vanaya kayıt işle</Button>
         <Button variant="secondary" disabled={ekle.isPending} onClick={() => ekle.mutate({ sektor: s.ad }, { onSuccess: () => toast.show(`${s.ad} programa eklendi.`), onError: hata('Programa eklenemedi.') })} data-testid="vana-programa-ekle">Bu vanayı programa ekle</Button>

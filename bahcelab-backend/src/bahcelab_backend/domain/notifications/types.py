@@ -18,6 +18,7 @@ TYPES: dict[str, dict[str, str]] = {
     "sulama": {"ad": "Sulama", "aciklama": "Önümüzdeki günlerde belirgin su ihtiyacı görünüyorsa."},
     "sulama_plani": {"ad": "Sulama günü yaklaştı", "aciklama": "Sulama planındaki bir sulama günü yaklaştığında."},
     "sulama_revize": {"ad": "Plan kesinleşen veriyle değişti", "aciklama": "Geçici (model) yağış günleri kesinleşince sulama programı değiştiyse."},
+    "sulama_sistem_kontrol": {"ad": "Sulama sistemi kontrol", "aciklama": "Kova yeterliyken bir vananın yaprak suyu (NDMI) kendi geçmişinin belirgin altına inerse (tıkalı damlatıcı, arızalı vana, basınç)."},
     "sulama_sapma": {"ad": "Plandan ciddi sapma", "aciklama": "Uyguladığınız sulama plandan belirgin farklıysa."},
     "olay": {"ad": "Olay", "aciklama": "Don, aşırı yağış, kuvvetli rüzgâr ya da uydu ile doğrulanan ani değişim olayı."},
     "kademe_dususu": {"ad": "Durum kademesi düşüşü", "aciklama": "Bahçe durumu kademesi (İyi · İzle · Dikkat · Sorun) kötüleşirse."},

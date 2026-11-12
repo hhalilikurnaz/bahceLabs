@@ -162,6 +162,12 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
         map.setPaintProperty(`sl-serit-${k}`, 'line-width', metrePx(gs.serit_genislik_m * oran, enlem) as number)
       }
       if (map.getLayer(`sl-sec-${k}`)) map.setPaintProperty(`sl-sec-${k}`, 'line-opacity', st.secili === v.ad ? 1 : 0)
+      // sulama sistemi kontrol işareti: vana sınırı uyarı rengi (renk tek başına değil: etiket ve panel de yazıyla söyler)
+      const skIsaret = p.sektorler.find((x) => x.ad === v.ad)?.sistem_kontrol?.durum === 'isaret'
+      if (map.getLayer(`sl-cizgi-${k}`)) {
+        map.setPaintProperty(`sl-cizgi-${k}`, 'line-color', skIsaret ? HARITA.ra24f1b : HARITA.rffffff)
+        map.setPaintProperty(`sl-cizgi-${k}`, 'line-width', skIsaret ? 3.4 : 1.6)
+      }
       const mk = markerlar.current[k]
       if (mk) {
         const gelecek = (() => { const sek = s.sektorler[si(k)]!; for (let j = i + 1; j < sek.brut_mm.length; j++) if ((sek.brut_mm[j] ?? 0) > 0) return gunAy(s.gunler[j]!.tarih); return null })()
@@ -179,6 +185,8 @@ export function SulamaKatmani({ panel, sim, gunIdx, hazirDurum }: MotorGirdisi &
           mk.alt.textContent = `${e.metin === 'veri yok' ? 'veri yok' : st.gosterge === 'toprak' ? e.metin : (v.etiket ? { stres: 'stres', yakin: 'yakın', yeterli: 'yeterli', dolu: 'dolu' }[v.etiket] : 'veri yok')} · ${gelecek ? `sonraki ${gelecek}` : 'sulama gerekmiyor'}`
         }
         mk.el.dataset.sulaniyor = String(v.sulaniyor)
+        mk.el.dataset.sk = String(skIsaret)
+        if (skIsaret) mk.alt.textContent = `${mk.alt.textContent} · sistemi kontrol edin`
         mk.el.dataset.secili = String(st.secili === v.ad)
         mk.el.setAttribute('aria-label', `${v.ad}: ${mk.baslik.textContent}, ${mk.alt.textContent}`)
       }

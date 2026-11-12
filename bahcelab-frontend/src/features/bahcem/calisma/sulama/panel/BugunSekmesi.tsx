@@ -6,6 +6,7 @@ import { sayi } from '../../../lib/format'
 import { geciciNotu, sureMetni } from '../../../lib/karar'
 import { vanaEtiketi } from '../../../lib/sulamaPanel'
 import { VardiyaGantt } from './VardiyaGantt'
+import { SistemKontrolIsareti } from './SistemKontrolIsareti'
 
 const GUN = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 const gunKisa = (iso: string): string => GUN[new Date(`${iso}T12:00:00Z`).getUTCDay()]
@@ -59,9 +60,10 @@ export function BugunSekmesi({ gardenId, panel }: { gardenId: string; panel: Pan
           {panel.sektorler.map((s) => {
             const e = vanaEtiketi(s)
             return (
-              <li key={s.ad} className="flex flex-wrap items-baseline justify-between gap-x-3 py-2" data-testid="vana-satiri" data-vana={s.ad} data-etiket={s.etiket ?? ''}>
+              <li key={s.ad} className="flex flex-wrap items-baseline justify-between gap-x-3 py-2" data-testid="vana-satiri" data-vana={s.ad} data-etiket={s.etiket ?? ''} data-sistem-kontrol={s.sistem_kontrol?.durum === 'isaret' ? 'isaret' : ''}>
                 <b className="text-body" data-testid="vana-baslik">{e.baslik}</b>
                 <span className="text-small text-app-text-muted" data-testid="vana-alt">{e.alt}</span>
+                {s.sistem_kontrol?.durum === 'isaret' && <SistemKontrolIsareti gardenId={gardenId} vana={s.ad} sk={s.sistem_kontrol} />}
                 <span className="basis-full text-caption text-app-text-dim">{sayi(s.alan_dekar, 1)} da{s.agac_sayisi != null ? ` · ${s.agac_sayisi} ağaç${s.agac_kaynak === 'orantili' ? ' (alana orantılı)' : ''}` : ''}</span>
               </li>
             )

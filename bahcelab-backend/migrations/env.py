@@ -20,6 +20,7 @@ from bahcelab_backend.domain.weather import models as weather_models  # noqa: F4
 from bahcelab_backend.domain.events import models as event_models  # noqa: F401
 from bahcelab_backend.domain.irrigation import models as irrigation_models  # noqa: F401
 from bahcelab_backend.domain.eta import models as eta_models  # noqa: F401
+from bahcelab_backend.domain.irrigation import sk_models  # noqa: F401
 from bahcelab_backend.domain.feedruns import models as feedrun_models  # noqa: F401
 from bahcelab_backend.domain.fieldbook import models as fieldbook_models  # noqa: F401
 from bahcelab_backend.domain.series import models as series_models  # noqa: F401

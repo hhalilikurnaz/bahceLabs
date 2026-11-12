@@ -337,6 +337,48 @@ class SektorGunu(BaseModel):
     yagis_olculdu: bool = False  # yağış bahçede ölçüldü (Saha Defteri)
 
 
+class SkSahne(BaseModel):
+    tarih: date
+    ndmi: float
+    z: float
+
+
+class SkTaban(BaseModel):
+    ort: float
+    std: float
+    n: int
+    sezon_sayisi: int
+    evre: str
+
+
+class SkKural(BaseModel):
+    z_esik: float
+    art_arda: int
+    min_sezon: int
+
+
+class SistemKontrol(BaseModel):
+    """Vana bazında «sulama sistemini kontrol edin» işareti (ADR 0029). `durum` = isaret → kullanıcıya gösterilir; yok → neden iç/«nasıl hesaplandı» içindir."""
+
+    durum: Literal["isaret", "yok"]
+    cumle: str
+    guven: Literal["yuksek", "orta"] | None = None
+    karsilastirma: str | None = None
+    sahne_tarihi: date | None = None
+    sahneler: list[SkSahne] = []
+    taban: SkTaban | None = None
+    yanit: str | None = None  # kullanıcının yanıtı (sorun_yok | damlatici_tikali | baska_sorun)
+    yanit_ad: str | None = None
+    kural: SkKural | None = None
+    nasil: str = ""
+
+
+class SkYanitGirdisi(BaseModel):
+    sektor: str
+    sahne_tarihi: date
+    yanit: Literal["sorun_yok", "damlatici_tikali", "baska_sorun"]
+
+
 class SektorDurumu(BaseModel):
     id: UUID | None
     ad: str
@@ -352,6 +394,7 @@ class SektorDurumu(BaseModel):
     stres_7g: int = 0  # son 7 günde Ks < 1 gün sayısı (bugün dahil)
     fazla_su_7g_mm: float = 0.0  # son 7 günde kökün altına sızan + sistem kaybı (mm)
     kc: KcKaynagi | None = None
+    sistem_kontrol: SistemKontrol | None = None
     geometry: dict[str, object] | None = None
     sira_aralik_m: float | None = None
     agac_aralik_m: float | None = None

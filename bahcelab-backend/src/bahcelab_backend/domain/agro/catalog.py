@@ -245,6 +245,24 @@ class EtaIcKurali(KuralBlok):
     min_bahce_gecerli_oran: float = Field(default=0.8, gt=0, le=1)
 
 
+class SistemKontrolKurali(KuralBlok):
+    """9I Dilim 1B — vana bazında «sulama sistemi kontrol» işareti (Sentinel-2 NDMI, ADR 0029). Hepsi ön değer · mühendis onayı bekliyor.
+    Kova «yeterli/dolu» (Ks = 1) iken NDMI, aynı fenolojik dönemde bahçenin (vananın) KENDİ geçmişine göre z ≤ eşik ve art arda N bulutsuz sahnede → işaret."""
+
+    z_esik: float = Field(default=-1.5, lt=0)
+    art_arda_sahne: int = Field(default=2, ge=2)
+    min_sezon: int = Field(default=2, ge=2)  # tabanda en az bu kadar FARKLI önceki yıl (sezon); yoksa işaret üretilmez, nedeni yazılır
+    min_taban_sahne: int = Field(default=6, ge=3)
+    min_gecerli_oran: float = Field(default=0.8, gt=0, le=1)  # vana pikselinin temiz (SCL: bulut/gölge/kar değil) payı
+    min_piksel: int = Field(default=4, ge=1)  # vana çokgeninde en az bu kadar temiz piksel
+    max_gun_arasi: int = Field(default=21, ge=5)  # art arda sahneler arası en çok gün
+    std_taban: float = Field(default=0.02, gt=0)  # NDMI standart sapma alt sınırı (z'nin şişmesini önler)
+    kova_etiketleri: list[str] = Field(default_factory=lambda: ["yeterli", "dolu"])
+    diger_vana_esik: float = Field(default=-1.0, lt=0)  # diğer vanalar bu z'nin ÜSTÜNDEyse «düşmüyor» sayılır
+    hepsi_dusuyor_orani: float = Field(default=0.5, gt=0, le=1)  # vanaların bu payı da düşüyorsa (hava/fenoloji) işaret üretilmez
+    tekrar_bekleme_gun: int = Field(default=14, ge=1)  # aynı vana için yeniden bildirim aralığı (yanıt gelmediyse)
+
+
 class SulamaPlaniKurali(KuralBlok):
     """Sulama planı (ADR 0023): FAO-56 günlük su dengesi katsayıları. Hepsi ön değer · mühendis onayı bekliyor."""
 
@@ -494,6 +512,7 @@ class Katalog(BaseModel):
     su: SuKurali
     sulama_plani: SulamaPlaniKurali
     eta_ic: EtaIcKurali
+    sistem_kontrol: SistemKontrolKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali

@@ -4,6 +4,7 @@ Sentinel-2 NDVI (taç örtüsü), Saha Defteri sulama kayıtları. Katsayıları
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, replace
@@ -30,6 +31,8 @@ from bahcelab_backend.domain.water.service import WaterService
 from bahcelab_backend.domain.weather.provider import TIMEZONE
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import get_storage
+
+logger = logging.getLogger(__name__)
 
 SOURCES = [
     sc.Kaynak(ad="ERA5-Land (Open-Meteo) · ET₀ FAO-56 Penman-Monteith, geçmiş", not_="günlük; önümüzdeki günler Open-Meteo tahmini"),
@@ -488,6 +491,30 @@ class IrrigationService:
             out.append(SekRow(r[0], r[1], r[2], json.loads(r[3]), float(r[4]), trees, kaynak, r[6], r[7], r[8]))
         return out
 
+
+    async def _sk_bildir(self, garden_id: uuid.UUID, ad: str, kararlar: dict[str, sc.SistemKontrol], bekleme_gun: int) -> None:
+        """Yeni işaret için bildirim (dedupe: bahçe+vana+sahne tarihi); yanıtlanmış işaret bildirilmez. Güven YÜKSEK (yalnız bu vana düşüyor) → anında (kritik); ORTA → günlük özet (önemli). Hata sulama panelini bozmaz."""
+        from bahcelab_backend.domain.notifications.repository import NotificationRepository
+        from bahcelab_backend.domain.notifications.service import NotificationService
+        from bahcelab_backend.domain.notifications.types import Candidate
+
+        adaylar = [
+            Candidate(garden_id, "sulama_sistem_kontrol", "kritik" if v.guven == "yuksek" else "onemli", f"{ad}: {v_ad}'de sulama sistemini kontrol edin", v.cumle, "su/sulama", f"sistemkontrol:{garden_id}:{v_ad}:{v.sahne_tarihi}", {"vana": v_ad, "guven": v.guven or ""})
+            for v_ad, v in kararlar.items() if v.durum == "isaret" and v.yanit is None and v.sahne_tarihi is not None
+        ]
+        if adaylar:
+            await NotificationService(NotificationRepository(self.session, self.workspace_id)).publish(adaylar)
+
+    async def sistem_kontrol_yanit(self, garden_id: uuid.UUID, user_id: uuid.UUID, body: sc.SkYanitGirdisi) -> sc.PanelYaniti:
+        from bahcelab_backend.domain.irrigation.sk_servis import SkServis
+
+        await self._garden(garden_id)
+        seks = await self._sektor_satirlari(garden_id, (await self._garden(garden_id)), 1.0)
+        if body.sektor not in {x.ad for x in seks}:
+            raise AppError(404, AppErrorCode.NOT_FOUND, "Vana bulunamadı.")
+        await SkServis(self.session).yanit_yaz(garden_id, user_id, body.sektor, body.sahne_tarihi, body.yanit)
+        return await self.panel(garden_id, user_id)
+
     async def sektorleri_kaydet(self, garden_id: uuid.UUID, body: sc.SektorlerGirdisi) -> sc.SektorlerYaniti:
         """Sektörleri TOPLU değiştirir. Doğrulama: geçerli çokgen, bahçenin içinde (el çiziminde %2 taşma payı), sektörler birbirine binmez (%2), adlar tekil. Boş liste = sektörleri sil (bahçe tek sektör)."""
         await self._garden(garden_id)
@@ -670,6 +697,18 @@ class IrrigationService:
                     sira_aralik_m=x.sira_aralik_m if x.sira_aralik_m is not None else c.profile.sira_aralik_m, agac_aralik_m=x.agac_aralik_m if x.agac_aralik_m is not None else c.profile.agac_aralik_m,
                 )
             )
+        # ---- sulama sistemi kontrol işareti (ADR 0029): vana/bahçe NDMI'sı kendi geçmişine göre; panel hatasını ASLA düşürmez
+        try:
+            from bahcelab_backend.domain.irrigation.sk_servis import SkServis, kova_ok_haritasi
+
+            sks = SkServis(self.session)
+            kova_ok = kova_ok_haritasi({x.ad: rows for (x, _, rows) in policy_runs}, c.taw, rule, sks.kural, self._pct, lambda p, r: self._etiket(p, r))
+            kararlar = await sks.kararlar(garden_id, [(x.ad, x.geometry if x.id is not None else None) for x in seks], today, g.urun, g.cesit_kodu, kova_ok)
+            for dd in durumlar:
+                dd.sistem_kontrol = kararlar.get(dd.ad)
+            await self._sk_bildir(garden_id, g.ad, kararlar, sks.kural.tekrar_bekleme_gun)
+        except Exception:  # noqa: BLE001
+            logger.exception("Sistem kontrol işareti hesaplanamadı (bahçe %s)", garden_id)
         ekler = (await self.session.execute(text("SELECT tarih, sektor_ad FROM irrigation_extras WHERE garden_id = :g AND tarih >= :t"), {"g": garden_id, "t": today})).all()
         for d_, ad_ in ekler:  # elle eklenen vana programa girer: «sonraki sulama» o gündür
             for dd in durumlar:

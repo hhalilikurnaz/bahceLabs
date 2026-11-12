@@ -470,3 +470,20 @@ eta_ic:
   tutarlilik_mevsim_aylari: [6, 7, 8, 9]
   kullanici_min_alan_dekar: 40.0
   min_bahce_gecerli_oran: 0.8
+
+# 9I Dilim 1B — vana bazında sulama sistemi kontrol işareti (Sentinel-2 NDMI z-skoru; kova yeterliyken): ADR 0029
+sistem_kontrol:
+  durum: dogrulanmadi
+  kaynak: "Ön değer · mühendis onayı bekliyor. NDMI (B8A/B11) yaprak suyu göstergesi; z-skor bahçenin kendi aynı-fenoloji geçmişine göre (ADR 0029). Doğruluk, kullanıcı yanıtlarıyla ölçülür."
+  z_esik: -1.5
+  art_arda_sahne: 2
+  min_sezon: 2
+  min_taban_sahne: 6
+  min_gecerli_oran: 0.8
+  min_piksel: 4
+  max_gun_arasi: 21
+  std_taban: 0.02
+  kova_etiketleri: [yeterli, dolu]
+  diger_vana_esik: -1.0
+  hepsi_dusuyor_orani: 0.5
+  tekrar_bekleme_gun: 14

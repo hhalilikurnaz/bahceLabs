@@ -156,3 +156,8 @@ export async function hazirla(page: Page, ad: string, lng: number) {
 export function seedEta(gardenId: string, tur: 'tutarli' | 'tutarsiz'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_eta', gardenId, tur], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
 }
+
+/** Test aracı: sulama sistemi kontrol işareti için NDMI serisini yazar (önceki 3 sezon ≈ 0,30; son iki sahne düşük). `vana`: V1 normal, V2 düşük. */
+export function seedSistemKontrol(gardenId: string, mod: 'tek' | 'vana'): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_sk', gardenId, mod], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+}

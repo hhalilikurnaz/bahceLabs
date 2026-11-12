@@ -50,6 +50,21 @@ export interface HaritaGosterim {
   serit_genislik_m: number
   tac_cap_m: number
 }
+/** Vana bazında «sulama sistemini kontrol edin» işareti (9I Dilim 1B, ADR 0029): Sentinel-2 NDMI'nın bahçenin KENDİ geçmişine göre z-skoru, kova yeterliyken. */
+export interface SistemKontrol {
+  durum: 'isaret' | 'yok'
+  cumle: string
+  guven: 'yuksek' | 'orta' | null
+  karsilastirma: string | null
+  sahne_tarihi: string | null
+  sahneler: { tarih: string; ndmi: number; z: number }[]
+  taban: { ort: number; std: number; n: number; sezon_sayisi: number; evre: string } | null
+  yanit: 'sorun_yok' | 'damlatici_tikali' | 'baska_sorun' | null
+  yanit_ad: string | null
+  kural: { z_esik: number; art_arda: number; min_sezon: number } | null
+  nasil: string
+}
+export type SistemKontrolYaniti = 'sorun_yok' | 'damlatici_tikali' | 'baska_sorun'
 export interface SektorDurumu {
   id: string | null
   ad: string
@@ -64,6 +79,7 @@ export interface SektorDurumu {
   stres_7g: number
   fazla_su_7g_mm: number
   kc: KcKaynagi | null
+  sistem_kontrol: SistemKontrol | null
   geometry: GeoJSON.Polygon | null
   sira_aralik_m: number | null
   agac_aralik_m: number | null
@@ -251,6 +267,15 @@ export function useSulamaSektorKaydet(gardenId: string) {
   const yenile = useYenile(gardenId)
   return useMutation({
     mutationFn: (g: { sektorler: SektorGirdisi[]; pompa?: GeoJSON.Point | null; ana_boru?: GeoJSON.LineString | null; sira_yonu_derece?: number | null }) => apiRequest<SektorlerYaniti>(`/gardens/${gardenId}/sulama-sektorleri`, { method: 'PUT', body: JSON.stringify(g) }),
+    onSuccess: yenile,
+  })
+}
+
+/** «Kontrol ettim: sorun yoktu / damlatıcı tıkalıydı / başka sorun»: Saha Defteri'ne düşer; kural doğruluğu bu yanıtlarla ölçülür. */
+export function useSistemKontrolYanit(gardenId: string) {
+  const yenile = useYenile(gardenId)
+  return useMutation({
+    mutationFn: (g: { sektor: string; sahne_tarihi: string; yanit: SistemKontrolYaniti }) => apiRequest<PanelYaniti>(`/gardens/${gardenId}/sulama-sistem-kontrol-yanit`, { method: 'POST', body: JSON.stringify(g) }),
     onSuccess: yenile,
   })
 }
