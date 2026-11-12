@@ -212,6 +212,39 @@ class SistemProgrami(BaseModel):
     en_az_net_mm: float = Field(gt=0)
 
 
+class EtaIcKurali(KuralBlok):
+    """9I Dilim 1A — Landsat/SSEBop ETa ALTYAPISI (iç kalite; kullanıcıya açılma kapısı). Hepsi ön değer · mühendis onayı bekliyor (ADR 0028).
+    ETf = (Th − Ts)/dT, Th = Tc + dT, Tc = c·Ta(düzeltilmiş), dT = (Rn − G)·rah/(ρ·cp); ETa = ETf × ET0 (ERA5)."""
+
+    rah_s_m: float = Field(default=110.0, gt=0)
+    albedo_sicak: float = Field(default=0.23, gt=0, lt=1)
+    cp_j_kg_k: float = Field(default=1013.0, gt=0)
+    etf_ust: float = Field(default=1.05, gt=0)
+    ic_tampon_m: float = Field(default=15.0, ge=0)
+    lapse_k_km: float = Field(default=6.5, ge=0)  # Ta rakım düzeltmesi
+    # Soğuk referans (c-faktörü KALİBRASYONU için sahne tanılaması): yoğun yeşil, bahçeyle benzer rakımda, bahçe dışı
+    soguk_ndvi_min: float = Field(default=0.7, gt=0, lt=1)
+    soguk_rakim_tolerans_m: float = Field(default=150.0, gt=0)
+    soguk_min_piksel: int = Field(default=200, ge=1)
+    pencere_yari_m: float = Field(default=6000.0, gt=0)
+    # Uzun dönem c-faktörü: aynı mevsimde (±ay) en az bu kadar sahnenin medyanı; yayılım (MAD) belirsizliğe girer
+    c_min_sahne: int = Field(default=8, ge=3)
+    c_mevsim_pencere_ay: int = Field(default=1, ge=0, le=3)
+    # ERA5 sıcaklık sapması: Meteostat istasyonuna göre aylık Tmax sapması (en az bu kadar eşleşen gün)
+    ta_istasyon: str = "17340"
+    ta_sapma_min_gun: int = Field(default=20, ge=5)
+    # Çok sahneli tutarlılık: kuru mevsimde (yağışsız), ≤ N gün arayla ardışık temiz geçişlerde |ΔETf| dağılımı; p90 ≤ eşik değilse KULLANICIYA AÇILMAZ
+    tutarlilik_esik: float = Field(default=0.15, gt=0)
+    tutarlilik_max_gun_arasi: int = Field(default=10, ge=1)
+    tutarlilik_min_cift: int = Field(default=8, ge=3)
+    tutarlilik_yagis_mm: float = Field(default=5.0, ge=0)  # çift arasında bu kadar yağış varsa çift sayılmaz
+    tutarlilik_mevsim_aylari: list[int] = Field(default_factory=lambda: [6, 7, 8, 9])
+    # Kullanıcıya açılma (İLERİDE; kapı kapalıyken uygulanmaz): bahçe alanı ve etiket
+    kullanici_min_alan_dekar: float = Field(default=40.0, gt=0)
+    # Geçiş kalitesi
+    min_bahce_gecerli_oran: float = Field(default=0.8, gt=0, le=1)
+
+
 class SulamaPlaniKurali(KuralBlok):
     """Sulama planı (ADR 0023): FAO-56 günlük su dengesi katsayıları. Hepsi ön değer · mühendis onayı bekliyor."""
 
@@ -460,6 +493,7 @@ class Katalog(BaseModel):
     gorsel: GorselKurali
     su: SuKurali
     sulama_plani: SulamaPlaniKurali
+    eta_ic: EtaIcKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali

@@ -46,5 +46,6 @@ export const backendEnv = (): NodeJS.ProcessEnv => ({
   WEATHER_TIMEOUT_SECONDS: '1.5', // e2e gerçek hava servisine güvenmez: erişilemezse hızla düşer (CI'da ağ yavaş/kapalı olabilir; Bugün kartı 30 sn'yi aşan bekleyişe girmesin)
   SOILGRIDS_ENABLED: 'false', // e2e dış servise çıkmaz; toprak profili test aracıyla yazılır
   REGISTRATION_ENABLED: 'true',
+  INTERNAL_EMAILS: '*@example.test', // iç ekranlar (/ic/*): e2e kullanıcıları example.test alan adında
   CORS_ORIGINS: E2E.webUrl,
 })

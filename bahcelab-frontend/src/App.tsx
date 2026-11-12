@@ -16,6 +16,7 @@ const IslerimSayfasi = lazy(() => uygulama().then((m) => ({ default: m.IslerimSa
 const HizmetlerSayfasi = lazy(() => uygulama().then((m) => ({ default: m.HizmetlerSayfasi })))
 const PazarSayfasi = lazy(() => uygulama().then((m) => ({ default: m.PazarSayfasi })))
 const AyarlarSayfasi = lazy(() => uygulama().then((m) => ({ default: m.AyarlarSayfasi })))
+const KalitePage = lazy(() => import('@/features/ic/KalitePage').then((m) => ({ default: m.KalitePage })))
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const BlogPage = lazy(() => import('@/features/marketing/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/hizmetler" element={<HizmetlerSayfasi />} />
         <Route path="/pazar" element={<PazarSayfasi />} />
         <Route path="/ayarlar" element={<AyarlarSayfasi />} />
+        <Route path="/ic/kalite" element={<KalitePage />} /> {/* iç kalite ekranı: kullanıcı menüsünde yok; sunucu INTERNAL_EMAILS ile sınırlar */}
       </Route>
       {/* Planlama simülasyonu arayüzden kaldırıldı (kod duruyor): docs/mimari/karar/0004 */}
       <Route path="/planning/*" element={<Navigate to="/bahceler" replace />} />

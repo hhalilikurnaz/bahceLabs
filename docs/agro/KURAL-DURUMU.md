@@ -62,6 +62,20 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Vana başına taç örtüsü (Kc) — asgari geçerli oran | `kc_vana_min_gecerli_oran`: **0,5** (çokgen piksellerinin en az yarısı bulutsuz/geçerli) | Bulut maskesi oranı > %50 olan sahne vana için kullanılmaz; sonraki eski sahne denenir (60 gün geri), yoksa bahçe değeri | ön değer · mühendis onayı bekliyor |
 | Harita gösterimi — «fazla su» sınıfı (**hesaba girmez**) | `fazla_su_az_mm`: **2** mm · `fazla_su_cok_mm`: **8** mm (7 günde kökün altına sızan + sistem kaybı; < 2 yeşil, 2–8 sarı, ≥ 8 mavi) | Yalnız harita rengi/yazı sınıfı; plan ve kova hesabını etkilemez. Backend `panel.gosterim` ile ön yüze gelir | ön değer · mühendis onayı bekliyor |
 | Harita gösterimi — ıslanan şerit ve taç çizim ölçüsü (**hesaba girmez**) | `gosterim_serit_genislik_m`: **1,0** m (damla) · `gosterim_tac_cap_m`: **3,0** m | Yalnız çizim büyüklüğü; ölçüm değildir, ekranda «varsayım» yazar. Islanan alan/ağaç hesabı yapılmaz | ön değer · mühendis onayı bekliyor |
+
+## Adım 9I — uydudan ETa altyapısı, Landsat/SSEBop (`eta_ic` bloğu; hepsi «ön değer · mühendis onayı bekliyor», ADR 0028; KULLANICIYA AÇILMAZ)
+
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| SSEBop sabitleri | rah 110 s/m · sıcak koşul albedosu 0,23 · cp 1013 J/kg/K · ETf üst sınırı 1,05 · G = 0 (günlük) | Senay ve ark. 2013 (SSEBop); Dilim 0 spike | ön değer · mühendis onayı bekliyor |
+| Soğuk referans (c-faktörü tanılaması) | NDVI ≥ 0,7 · bahçeyle ±150 m rakım · bahçe dışı · en az 200 piksel · pencere 12×12 km | Dilim 0: sahne içi Tc kararsız → yalnız c tanısı olarak kullanılır | ön değer · mühendis onayı bekliyor |
+| Uzun dönem c-faktörü | c = Tc/Ta; aynı mevsimde (±1 ay) en az 8 sahnenin MEDYANI; yayılım MAD×1,4826 belirsizliğe girer; yeterli sahne yoksa c uydurulmaz (sahne elenir) | SSEBop'un kalibre c yaklaşımı | ön değer · mühendis onayı bekliyor |
+| Hava sıcaklığı düzeltmesi | ERA5 Tmax aylık sapması = Meteostat 17340 gözlemi − ERA5 (≥ 20 eşleşen gün; yoksa düzeltme yok) + rakım düzeltmesi 6,5 K/km | ERA5 hücresi kıyı/deniz karışımı (Dilim 0: Haziran Tmax 24,7 °C ↔ LST 37 °C) | ön değer · mühendis onayı bekliyor |
+| İç tampon | −15 m (karışık/kenar pikselleri ayrı raporlanır) | 30 m yeniden örneklenmiş, fiziksel 100 m termal | ön değer · mühendis onayı bekliyor |
+| Geçiş kalitesi | bahçe pikselinin ≥ %80'i QA-geçerli (bulut/gölge/kar/dolgu hariç) | QA_PIXEL bit 0–5 | ön değer · mühendis onayı bekliyor |
+| **Tutarlılık kapısı** | kuru mevsim (Haz–Eyl), ≤ 10 gün arayla ardışık temiz geçişlerde, araya ≥ 5 mm yağış girmeyen çiftlerde **p90 \|ΔETf\| ≤ 0,15**; en az 8 çift. Geçmezse kapı KAPALI: ETa/ETf hiçbir kullanıcı ekranına taşınmaz | Dilim 0 kararı (sahne tutarsızlığı ±0,15 altına inmezse açılmaz) | ön değer · mühendis onayı bekliyor |
+| Kullanıcıya açılma (İLERİDE; kapı kapalıyken uygulanmaz) | bahçe ≥ 40 da; «bahçe + çevresi» etiketi + belirsizlik aralığı | Dilim 0 §6 çözünürlük gerçeği (15 da → 0 tam 100 m piksel) | ön değer · mühendis onayı bekliyor |
+
 | EPDK tarımsal sulama tarifesi | **fiyat ve geçerlilik tarihi boş** (doğrulanamadı) | kaynak: epdk.gov.tr tarife tabloları; doğrulanınca fiyat + tarih + kaynak ile doldurulur | **doğrulanamadı** |
 | Kısıntıda verim riski yükselmesi | kısıntının eklediği stres günü ≥ 10 → en az «orta»; ≥ 30 → «yüksek» | ön değer; dönem riski tabanda kalır | doğrulanmadı |
 | Güven etiketi eşikleri | uydu ≤ 14 gün · hava ≤ 3 gün · 5 koşuldan ≥ 3 orta, 5 yüksek | ön değer (ADR 0024) | doğrulanmadı |

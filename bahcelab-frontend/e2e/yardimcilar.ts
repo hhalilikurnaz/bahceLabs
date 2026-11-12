@@ -151,3 +151,8 @@ export async function hazirla(page: Page, ad: string, lng: number) {
   expect(r.ok(), await r.text()).toBeTruthy()
   return garden
 }
+
+/** Test aracı: sentetik Landsat sahneleriyle GERÇEK ETa hattını koşturur (iç kalite ekranı; kullanıcıya gösterilmez). */
+export function seedEta(gardenId: string, tur: 'tutarli' | 'tutarsiz'): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_eta', gardenId, tur], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
+}

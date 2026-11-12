@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bahcelab_backend.api.acquisitions.router import router as acquisitions_router
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
+from bahcelab_backend.api.eta.router import router as eta_ic_router
 from bahcelab_backend.api.events.router import router as events_router
 from bahcelab_backend.api.fieldbook.router import router as fieldbook_router
 from bahcelab_backend.api.gardens.router import router as gardens_router
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
     app.include_router(acquisitions_router)
     app.include_router(water_router)
     app.include_router(irrigation_router)
+    app.include_router(eta_ic_router)
     app.include_router(series_router)
     app.include_router(events_router)
     app.include_router(gecmis_router)

@@ -444,3 +444,29 @@ urunler:
     gdd: null
     cesitler:
       - {kod: diger, ad: "Diğer (kendim yazacağım)", aliaslar: []}
+
+# 9I Dilim 1A — uydudan ETa (Landsat/SSEBop) ALTYAPISI: iç kalite ekranı; tutarlılık kapısı geçmedikçe kullanıcıya AÇILMAZ (ADR 0028)
+eta_ic:
+  durum: dogrulanmadi
+  kaynak: "Senay ve ark. 2013 (SSEBop); FAO-56 (Rn, ρ); ön değer · mühendis onayı bekliyor. rah=110 s/m, albedo 0,23, NDVI ≥ 0,7 soğuk referans: spike (docs/agro/eta-kaynak-dogrulama.md)"
+  rah_s_m: 110.0
+  albedo_sicak: 0.23
+  cp_j_kg_k: 1013.0
+  etf_ust: 1.05
+  ic_tampon_m: 15.0
+  lapse_k_km: 6.5
+  soguk_ndvi_min: 0.7
+  soguk_rakim_tolerans_m: 150.0
+  soguk_min_piksel: 200
+  pencere_yari_m: 6000.0
+  c_min_sahne: 8
+  c_mevsim_pencere_ay: 1
+  ta_istasyon: "17340"
+  ta_sapma_min_gun: 20
+  tutarlilik_esik: 0.15
+  tutarlilik_max_gun_arasi: 10
+  tutarlilik_min_cift: 8
+  tutarlilik_yagis_mm: 5.0
+  tutarlilik_mevsim_aylari: [6, 7, 8, 9]
+  kullanici_min_alan_dekar: 40.0
+  min_bahce_gecerli_oran: 0.8

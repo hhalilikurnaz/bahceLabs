@@ -143,6 +143,8 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 14
     registration_enabled: bool = False
+    # İç ekranlar (/ic/*): virgülle ayrılmış e-posta listesi; boşsa HİÇ KİMSE erişemez (403). Üretimde yalnız ekip adresleri.
+    internal_emails: str = ""
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
     cookie_domain: str | None = None
