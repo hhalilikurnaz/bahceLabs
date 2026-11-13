@@ -25,7 +25,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await page.getByText('Nasıl hesaplandı?').click()
     const nasil = page.getByTestId('nasil-hesaplandi')
     await expect(nasil).toContainText('ön değer · v2')
-    expect(await nasil.getByTestId('nasil-cumleler').locator('li').count()).toBeLessThanOrEqual(3) // en çok 3 cümle
+    expect(await nasil.getByTestId('nasil-cumleler').locator('li').count()).toBeLessThanOrEqual(4) // en çok 3 cümle + tek güven servisinin «Güven nasıl hesaplandı?» satırı (ADR 0030)
     await expect(page.getByTestId('kademe-nedeni')).not.toBeEmpty()
     await expect(page.getByTestId('sezon-egrisi')).toBeVisible()
   })

@@ -28,7 +28,6 @@ def test_degerlendir_olculemiyor_kurallari():
 async def test_kural_performansi_gercek_kayitlardan(user_client, factory):  # noqa: F811
     gid = await kur(user_client, factory)
     ws = (await user_client.get("/auth/me")).json()["workspace_id"]
-    ay = date(TODAY.year, TODAY.month, 1)
     async with factory() as s:
         # sistem kontrol: 6 bildirim + 6 yanıt (4 isabetli) ; don: 2 uyarı, 0 doğrulama ; sulama: 3 bildirim, 1'i ardından sulama kaydı
         for i in range(6):
