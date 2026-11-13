@@ -89,6 +89,26 @@ async def refresh_sk_halka(factory: SessionFactory, provider: WeatherProvider) -
     return result
 
 
+async def refresh_izleme(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
+    """9J günlük izleme: akış durumu + iç uyarı + veri taraması; haftada bir (pazartesi) kaynaklar arası tutarlılık (ağ gerektirir). ADR 0030."""
+    from datetime import UTC, datetime
+
+    from bahcelab_backend.domain.izleme import isler
+
+    result = JobResult()
+    try:
+        g = await isler.gunluk(factory)
+        result.isler, result.uretilen, result.hata = g["akis"], g["uyari"], g["hata"]
+        if datetime.now(UTC).weekday() == 0:
+            h = await isler.haftalik(factory)
+            result.uretilen += h["drift"]
+            result.hata += h["hata"]
+    except Exception:  # noqa: BLE001
+        logger.exception("İzleme işi başarısız")
+        result.hata += 1
+    return result
+
+
 async def refresh_era5(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
     """Günlük ERA5 artımlı çekimi (ADR 0018): her hava hücresi bir kez; son ERA5-Land gününden 10 gün geriden + model tahmini. İdempotent."""
     from bahcelab_backend.domain.water.feed import feed_all

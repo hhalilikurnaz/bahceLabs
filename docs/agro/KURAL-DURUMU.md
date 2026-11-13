@@ -96,3 +96,14 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Doğruluk ölçümü | kullanıcı yanıtları (`sorun_yok` / `damlatici_tikali` / `baska_sorun`) Saha Defteri'ne «gozlem» kaydı olarak düşer (`sk_yanit`) | kural doğruluğu bununla ölçülür | — |
 | **Komşu halka referansı** (tek sektör: ZORUNLU; «vanaların hepsi birlikte düşüyor»: ek kontrol; çok vanalı bahçede güveni yükseltir) | bahçe sınırından **100–300 m** halka; yalnız ağaçlık pikseller (SCL geçerli + **NDVI ≥ 0,5**; bahçenin kendisi, yollar, çıplak toprak, su dışarıda); **en az 30 geçerli ağaçlık piksel** (yoksa işaret üretilmez, nedeni yazılır); halka z (halkanın KENDİ önceki-sezon tabanına göre, aynı evre) **> −0,5** → «düşmüyor». Bahçe/vana z ≤ −1,5 (2 ardışık sahne, kova yeterli) + halka normal → işaret, güven **orta-yüksek**; halka da düşüyorsa ya da referans yoksa işaret yok | ADR 0029 eki; halka ölçümü `sk_halka` (günlük iş `refresh_sk_halka`, panel ağ kullanmaz) | ön değer · mühendis onayı bekliyor |
 
+## Adım 9J — veri ve model kalitesi izleme (`izleme` bloğu; hepsi «ön değer · mühendis onayı bekliyor», ADR 0030)
+
+| Kural | Değer (ön) | Kaynak notu | Durum |
+|---|---|---|---|
+| Akış tazeliği (beklenen sıklık / kabul gecikme / kopuk, gün) | ERA5 1/7/14 · Open-Meteo tahmin 1/2/5 · IMERG 1/7/14 · Meteostat 30/270/400 · Sentinel-2 5/14/30 · Sentinel-1 6/14/30 · Landsat 8/20/45 · SMAP 2/7/14 · WaPOR L1 10/30/60 · ECOSTRESS 30/90/180 · tarife 90/120/240 | kaynakların yayın takvimi (ERA5-Land ≈ 5–6 gün, Meteostat bulk ≈ 8 ay gecikmeli) | ön değer · mühendis onayı bekliyor |
+| İç uyarı | KOPUK → hemen; GECİKMELİ → 2 ardışık gün (INTERNAL_EMAILS) | ADR 0030 | ön değer · mühendis onayı bekliyor |
+| Veri kontrolü aralıkları | yağış 0–300 mm/gün (sıçrama 150) · ET₀ 0–12 (8) · Tmax −30..55 (20) · Tmin −40..40 (20) · toprak nemi 0–0,8 (0,3) · NDVI/NDMI −1..1 (0,5) | fiziksel sınırlar; SERT (aralık dışı) bayraklı yağış/ET₀ kovaya GİRMEZ, YUMUŞAK (sıçrama/eksik gün) girer | ön değer · mühendis onayı bekliyor |
+| Kaynak uyumu (drift) eşikleri | ERA5↔Meteostat Tmax 1,0 °C (1A tabanına göre) · ERA5↔IMERG aylık oran %35 · ölçer↔ERA5 %35 · model ETc↔WaPOR L1 %40 · en az 20 gün | haftalık iş; yetersiz veride «yetersiz» | ön değer · mühendis onayı bekliyor |
+| Güven servisi | ≥ %85 yüksek · ≥ %55 orta · altı düşük (sağlanan/ölçülebilen koşul); geçici gün ≤ 8 (30 günde); uydu ≤ 14 gün; hava ≤ 3 gün | tek servis; ölçülemeyen koşul paydada yok | ön değer · mühendis onayı bekliyor |
+| Kural performansı | yanıtlı örnek < 5 → «ölçülemiyor» (isabet uydurulmaz) | aylık seri | ön değer · mühendis onayı bekliyor |
+

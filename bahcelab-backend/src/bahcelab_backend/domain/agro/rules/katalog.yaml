@@ -492,3 +492,41 @@ sistem_kontrol:
   halka_min_piksel: 30
   halka_ndvi_min: 0.5
   halka_z_normal: -0.5
+
+# 9J — veri ve model kalitesi izleme: akış tazeliği, veri kontrolleri, kaynaklar arası tutarlılık, güven servisi (ADR 0030)
+izleme:
+  durum: dogrulanmadi
+  kaynak: "Ön değer · mühendis onayı bekliyor. Sıklık/gecikme değerleri her kaynağın yayın takvimine göre (ERA5-Land ≈ 5–6 gün, IMERG ≈ 4 gün, Meteostat bulk ≈ 8 ay, Sentinel-2 5 gün, Landsat 8 gün, WaPOR L1 dekadal ≈ 2–3 hafta, ECOSTRESS seyrek)."
+  uyari_ardisik_gun: 2
+  akislar:
+    era5:             {ad: "ERA5 / ERA5-Land (hava, yağış, ET₀, toprak)", beklenen_gun: 1, kabul_gecikme_gun: 7, kopuk_gun: 14, bosluk_penceresi_gun: 60}
+    openmeteo_tahmin: {ad: "Open-Meteo hava tahmini", beklenen_gun: 1, kabul_gecikme_gun: 2, kopuk_gun: 5}
+    imerg:            {ad: "IMERG yağış (doğrulama)", beklenen_gun: 1, kabul_gecikme_gun: 7, kopuk_gun: 14, bosluk_penceresi_gun: 60}
+    meteostat:        {ad: "Meteostat istasyon gözlemi", beklenen_gun: 30, kabul_gecikme_gun: 270, kopuk_gun: 400}
+    sentinel2:        {ad: "Sentinel-2 L2A (net sahne)", beklenen_gun: 5, kabul_gecikme_gun: 14, kopuk_gun: 30}
+    sentinel1:        {ad: "Sentinel-1 RTC (radar)", beklenen_gun: 6, kabul_gecikme_gun: 14, kopuk_gun: 30}
+    landsat:          {ad: "Landsat 8/9 (yüzey sıcaklığı)", beklenen_gun: 8, kabul_gecikme_gun: 20, kopuk_gun: 45}
+    smap:             {ad: "SMAP toprak nemi (doğrulama)", beklenen_gun: 2, kabul_gecikme_gun: 7, kopuk_gun: 14, bosluk_penceresi_gun: 60}
+    wapor:            {ad: "WaPOR L1 ET bağlamı (dekadal)", beklenen_gun: 10, kabul_gecikme_gun: 30, kopuk_gun: 60}
+    ecostress:        {ad: "ECOSTRESS V003 ET (doğrulama)", beklenen_gun: 30, kabul_gecikme_gun: 90, kopuk_gun: 180}
+    tarife:           {ad: "EPDK tarım sulama tarifesi (fiyat akışı)", beklenen_gun: 90, kabul_gecikme_gun: 120, kopuk_gun: 240}
+  kontroller:
+    yagis_mm:   {min: 0, max: 300, sicrama: 150, birim: mm/gün}
+    et0_mm:     {min: 0, max: 12, sicrama: 8, birim: mm/gün}
+    t_max_c:    {min: -30, max: 55, sicrama: 20, birim: °C}
+    t_min_c:    {min: -40, max: 40, sicrama: 20, birim: °C}
+    toprak_nemi: {min: 0, max: 0.8, sicrama: 0.3, birim: m³/m³}
+    ndvi:       {min: -1, max: 1, sicrama: 0.5}
+    ndmi:       {min: -1, max: 1, sicrama: 0.5}
+  drift_ta_c: 1.0
+  drift_yagis_oran: 0.35
+  drift_yagis_olcer_oran: 0.35
+  drift_etc_wapor_oran: 0.40
+  drift_min_gun: 20
+  guven_yuksek_oran: 0.85
+  guven_orta_oran: 0.55
+  guven_gecici_gun_en_cok: 8
+  guven_ndvi_taze_gun: 14
+  guven_hava_taze_gun: 3
+  kural_min_yanit: 5
+

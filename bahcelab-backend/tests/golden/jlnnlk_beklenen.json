@@ -1,0 +1,84 @@
+{
+ "guven": {
+  "etiket": "yuksek",
+  "kosullar": [
+   {
+    "ad": "Uydu görüntüsü taze",
+    "ok": true
+   },
+   {
+    "ad": "Hava verisi güncel",
+    "ok": true
+   },
+   {
+    "ad": "Veri akışları kopuk değil",
+    "ok": true
+   },
+   {
+    "ad": "Geçici (kesinleşmemiş) gün sayısı az",
+    "ok": true
+   },
+   {
+    "ad": "Ağaç sayısı beyan edilmiş",
+    "ok": true
+   },
+   {
+    "ad": "Sulama sistemi ve pompa bilgisi tam",
+    "ok": true
+   },
+   {
+    "ad": "Kaynaklar birbiriyle uyumlu",
+    "ok": null
+   },
+   {
+    "ad": "Şüpheli (imkânsız) ölçüm yok",
+    "ok": true
+   },
+   {
+    "ad": "Kural geri bildirimi olumlu",
+    "ok": null
+   }
+  ],
+  "puan": 7,
+  "toplam": 7
+ },
+ "kc": {
+  "kaynak": "bahce",
+  "kc_bugun": 0.6651450229461113,
+  "orten_yuzde": 66.05800917844452
+ },
+ "kova": {
+  "doluluk_pct": 39.34744351263434,
+  "etiket": "stres",
+  "fazla_su_7g_mm": 0.0,
+  "raw_mm": 59.10699985679105,
+  "sonraki_sulama": "2026-10-09",
+  "stres_7g": 6,
+  "taw_mm": 118.2139997135821,
+  "tetik_pct": 60.0
+ },
+ "panel_kpi": {
+  "ihtiyac_karsilandi_pct": 91.54866936452328,
+  "sonraki": "2026-10-09"
+ },
+ "plan": {
+  "durum": "hazir",
+  "ilk_sulamalar": [
+   {
+    "brut_mm": 8.88888888888889,
+    "tarih": "2026-10-09"
+   }
+  ],
+  "sezon_planlanan_m3": 4578.364444444444
+ },
+ "sistem_kontrol": {
+  "cumle": "kova bu sahnelerde «yeterli/dolu» değil: normal stres mesajı geçerli (bu işaret değil)",
+  "durum": "yok",
+  "guven": null,
+  "halka_durum": null,
+  "z": [
+   1.97,
+   -0.37
+  ]
+ }
+}

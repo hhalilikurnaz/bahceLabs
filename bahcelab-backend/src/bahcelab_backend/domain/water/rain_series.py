@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bahcelab_backend.domain.agro.catalog import SuKurali, SulamaPlaniKurali
+from bahcelab_backend.domain.agro.catalog import SuKurali, SulamaPlaniKurali, load_catalog
 from bahcelab_backend.domain.water import balance as wb
 
 
@@ -70,12 +70,15 @@ async def gecmis_hava(session: AsyncSession, garden_id: uuid.UUID, cell_id: uuid
     kaynak, karar = wb.choose_rain_source(wb.monthly_rain(era5, imerg, su_rule.kucuk_yagis_esigi_mm))
     yagis: dict[date, float | None] = {}
     et0: dict[date, float | None] = {}
+    # veri kontrolü (9J, ADR 0030): fiziksel aralık DIŞI (SERT bayraklı) yağış/ET₀ kovaya GİRMEZ (veri eksik gibi); şüpheli (yumuşak) girer
+    izle = load_catalog().izleme.kontroller
+    dis = lambda v, kk: v is not None and ((kk.min is not None and v < kk.min) or (kk.max is not None and v > kk.max))  # noqa: E731
     for d, rain, e, _ in rows:
-        r = None if rain is None else float(rain)
+        r = None if rain is None or dis(float(rain), izle["yagis_mm"]) else float(rain)
         if kaynak == "imerg" and d < today and d in imerg:
             r = imerg[d]
         yagis[d] = r
-        et0[d] = None if e is None else float(e)
+        et0[d] = None if e is None or dis(float(e), izle["et0_mm"]) else float(e)
     seri = dict(yagis)
     olculen = await _olculen(session, garden_id, today)
     for d, mm in olculen.items():  # bahçede ölçülen gün: kova ölçümü seriden ÖNCE kullanır

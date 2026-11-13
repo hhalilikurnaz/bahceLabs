@@ -447,7 +447,8 @@ class Guven(BaseModel):
     etiket: Literal["dusuk", "orta", "yuksek"]
     puan: int
     toplam: int
-    kosullar: list[dict[str, object]]  # {ad, ok, not}
+    kosullar: list[dict[str, object]]  # {ad, ok (true/false/null = ölçülemiyor), not}
+    nasil: str = ""  # «Güven nasıl hesaplandı?» — TÜM ekranlarda aynı metin (tek güven servisi)
 
 
 class YagisYanlilik(BaseModel):

@@ -114,6 +114,10 @@ async def cleanup_users(test_engine):
             params,
         )
         await conn.execute(text("DELETE FROM users WHERE email LIKE :pattern"), params)
+        # izleme tabloları bahçeye bağlı değil (hücre/kaynak anahtarlı): test bayrakları ve anlık görüntüler sonraki testleri etkilemesin
+        await conn.execute(text("DELETE FROM veri_bayrak"))
+        await conn.execute(text("DELETE FROM izleme_akis"))
+        await conn.execute(text("DELETE FROM izleme_uyum WHERE garden_id IS NULL"))
 
 
 def unique_email() -> str:

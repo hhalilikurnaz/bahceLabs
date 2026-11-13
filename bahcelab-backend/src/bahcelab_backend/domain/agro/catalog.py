@@ -269,6 +269,51 @@ class SistemKontrolKurali(KuralBlok):
     halka_z_normal: float = Field(default=-0.5, lt=0)  # halka z'si bunun ÜSTÜNDEyse «düşmüyor» (yalnız bahçe/vana düşüyor)
 
 
+class AkisKurali(BaseModel):
+    ad: str
+    beklenen_gun: float = Field(gt=0)  # veri ortalama kaç günde bir yenilenir (sıklık)
+    kabul_gecikme_gun: float = Field(ge=0)  # son verinin bugünden bu kadar geri olması TAZE sayılır
+    kopuk_gun: float = Field(gt=0)  # bundan geriyse KOPUK (kabul ile kopuk arası: gecikmeli)
+    bosluk_penceresi_gun: int = Field(default=0, ge=0)  # günlük seriler için eksik gün sayımı penceresi (0: sayılmaz)
+
+    @model_validator(mode="after")
+    def _sirali(self) -> AkisKurali:
+        if self.kopuk_gun <= self.kabul_gecikme_gun:
+            raise ValueError("kopuk_gun, kabul_gecikme_gun'dan büyük olmalı.")
+        return self
+
+
+class VeriKontrolKurali(BaseModel):
+    """Veri kontrolü (9J): fiziksel aralık (SERT: imkânsız değer) ve ani sıçrama (YUMUŞAK: şüpheli). Şüpheli değer SİLİNMEZ, bayraklanır (ADR 0030)."""
+
+    min: float | None = None
+    max: float | None = None
+    sicrama: float | None = None  # ardışık günler arası mutlak fark bunu aşarsa şüpheli
+    birim: str = ""
+
+
+class IzlemeKurali(KuralBlok):
+    """9J — veri ve model kalitesi izleme (ADR 0030). Hepsi ön değer · mühendis onayı bekliyor."""
+
+    akislar: dict[str, AkisKurali]
+    uyari_ardisik_gun: int = Field(default=2, ge=1)  # gecikmeli/kopuk durum bu kadar ardışık günse iç uyarı (kopuk ise hemen)
+    kontroller: dict[str, VeriKontrolKurali]
+    # kaynaklar arası tutarlılık (haftalık): kayan sapma (drift) eşikleri
+    drift_ta_c: float = Field(default=1.0, gt=0)  # ERA5↔Meteostat Tmax sapmasının son 90 günü ↔ 1A taban sapma (°C)
+    drift_yagis_oran: float = Field(default=0.35, gt=0)  # ERA5↔IMERG aylık yağış oranı, geçmiş medyandan göreli sapma
+    drift_yagis_olcer_oran: float = Field(default=0.35, gt=0)
+    drift_etc_wapor_oran: float = Field(default=0.40, gt=0)  # model ETc ↔ WaPOR L1 dekad oranı, geçmiş medyandan göreli sapma
+    drift_min_gun: int = Field(default=20, ge=5)
+    # güven servisi (tek): koşul sayısına göre etiket; geçici gün ve kaynak durumu eşikleri
+    guven_yuksek_oran: float = Field(default=0.85, gt=0, le=1)
+    guven_orta_oran: float = Field(default=0.55, gt=0, le=1)
+    guven_gecici_gun_en_cok: int = Field(default=8, ge=0)
+    guven_ndvi_taze_gun: int = Field(default=14, ge=1)
+    guven_hava_taze_gun: int = Field(default=3, ge=1)
+    # kural performansı: yanıt/isabet için asgari yanıt sayısı (altında «ölçülemiyor»)
+    kural_min_yanit: int = Field(default=5, ge=1)
+
+
 class SulamaPlaniKurali(KuralBlok):
     """Sulama planı (ADR 0023): FAO-56 günlük su dengesi katsayıları. Hepsi ön değer · mühendis onayı bekliyor."""
 
@@ -519,6 +564,7 @@ class Katalog(BaseModel):
     sulama_plani: SulamaPlaniKurali
     eta_ic: EtaIcKurali
     sistem_kontrol: SistemKontrolKurali
+    izleme: IzlemeKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali

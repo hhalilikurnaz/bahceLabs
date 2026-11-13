@@ -78,7 +78,7 @@ async def test_status_without_images_has_no_tier_and_no_numbers(user_client, pro
     data = (await user_client.get(f"/gardens/{garden['id']}/durum")).json()
     assert data["durum"] == "veri_yok" and [c["kod"] for c in data["bilesenler"]] == ["agac_gucu", "su", "beslenme", "ani_degisim", "isi"]
     assert not any(c["kullanilabilir"] for c in data["bilesenler"] if c["kod"] in ("agac_gucu", "beslenme", "isi")) and data["guven"] == "dusuk"
-    assert "skor" not in data and "ic_puan" not in data and all("puan" not in c for c in data["bilesenler"]) and len(data["nasil"]) <= 3
+    assert "skor" not in data and "ic_puan" not in data and all("puan" not in c for c in data["bilesenler"]) and len(data["nasil"]) <= 4  # +1: tek güven servisinin «nasıl hesaplandı» satırı
 
 
 async def test_status_scores_against_the_gardens_own_same_month_history(user_client, factory, provider, monkeypatch):

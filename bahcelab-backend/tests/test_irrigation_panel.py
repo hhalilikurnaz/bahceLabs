@@ -63,14 +63,16 @@ async def test_panel_tek_sektor_kpi_hafta_guven(user_client, factory):
     assert len(p["hafta"]) == 7 and p["hafta"][0]["tarih"] == str(TODAY) and p["tetik_pct"] == pytest.approx(60.0, abs=0.01)  # damla tetiği: %60 kullanılabilir su
     assert p["kpi"]["ihtiyac_renk"] in ("yesil", "sari", "kirmizi") and 0 <= p["kpi"]["ihtiyac_karsilandi_pct"] <= 100
     assert p["en_dusuk"]["ad"] == "Bahçe"
-    # güven: uydu taze, hava taze, ağaç beyanlı, damlatıcı tam, pompa tam → yüksek
-    assert p["guven"]["etiket"] == "yuksek" and p["guven"]["puan"] == 5
+    # güven (TEK GÜVEN SERVİSİ, ADR 0030): ölçülebilen tüm koşullar sağlanıyor → yüksek; ölçülemeyen koşul (null) paydada yok
+    g = p["guven"]
+    assert g["etiket"] == "yuksek" and g["puan"] == g["toplam"] >= 5 and "ölçülebilen koşul" in g["nasil"] and f"{g['puan']}" != ""
+    assert {k["ad"] for k in g["kosullar"]} >= {"Uydu görüntüsü taze", "Hava verisi güncel", "Veri akışları kopuk değil", "Ağaç sayısı beyan edilmiş", "Sulama sistemi ve pompa bilgisi tam", "Kaynaklar birbiriyle uyumlu"}
 
 
 async def test_guven_eksik_beyanla_duser(user_client, factory):
     gid = await kur(user_client, factory, agac=None, profil={**PROFIL, "pompa_kw": None, "pompa_debi_m3h": None})
     g = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["guven"]
-    assert g["puan"] == 3 and g["etiket"] == "orta" and [k["ad"] for k in g["kosullar"] if not k["ok"]] == ["Ağaç sayısı beyan edilmiş", "Pompa bilgisi tam"]
+    assert g["puan"] == g["toplam"] - 2 and g["etiket"] == "orta" and [k["ad"] for k in g["kosullar"] if k["ok"] is False] == ["Ağaç sayısı beyan edilmiş", "Sulama sistemi ve pompa bilgisi tam"]
 
 
 async def test_bugun_su_karti_kpi_vardiya_ayni_kovadan_ve_ayni_gun(user_client, factory):

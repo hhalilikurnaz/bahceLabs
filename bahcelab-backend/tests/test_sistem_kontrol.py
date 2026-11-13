@@ -86,6 +86,13 @@ def test_yalniz_bir_vana_dusuyorsa_guven_yuksek_halka_gerekmez():
     assert k2.guven == "yuksek" and "komşu halka normal" in (k2.karsilastirma or "")
 
 
+def test_yalniz_bu_vana_dusuyor_halka_da_dusukse_isaret_kalir_guven_orta():
+    v2 = _gecmis() + _guncel([0.12, 0.10])
+    v1 = _gecmis() + _guncel([0.30, 0.31])
+    k = sk.degerlendir("V2", v2, {"V1": v1}, date(2026, 7, 6), K, _kova(v2), _halka([0.20, 0.18]))  # halka da düşük
+    assert k.durum == "isaret" and k.guven == "orta" and "komşu halka da düşük" in (k.karsilastirma or "") and "yalnız bu vana" in (k.karsilastirma or "")
+
+
 def test_cok_vanali_orta_guven_halka_normalse_orta_yuksek():
     v2 = _gecmis() + _guncel([0.12, 0.10])
     v1 = _gecmis() + _guncel([0.20, 0.18])  # biri de belirgin düşük ama çoğunluk değil (2 vana: %50 → hepsi_dusuyor değil z eşiği üstünde değil)

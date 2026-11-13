@@ -43,6 +43,8 @@ class Candidate:
 
     def link(self) -> str:
         """Uygulama rotası (9B): Durum bahçenin kök adresidir; eski `/bahcem/...` kayıtları ön yüzde yönlenir."""
+        if self.garden_id is None:  # bahçeye bağlı olmayan (iç izleme) bildirim: sekme doğrudan uygulama yoludur
+            return f"/{self.sekme}"
         base = f"/bahceler/{self.garden_id}"
         path = base if self.sekme == "durum" else f"{base}/{self.sekme}"
         return f"{path}?{self.harita}" if self.harita else path

@@ -201,4 +201,5 @@ def degerlendir(ad: str, seri: list[Gozlem], digerleri: dict[str, list[Gozlem]],
             guven = "orta_yuksek"
     elif hk.durum == "dusuk":
         karsi += f"; ancak komşu halka da düşük ({hk.neden}) — hava/fenoloji etkisi olabilir"
+        guven = "orta"  # işaret KALIR (diğer vanalar normal) ama güven «orta»ya iner
     return Karar("isaret", f"{ad}'de sulama sistemini kontrol edin — tıkalı damlatıcı, arızalı vana ya da basınç sorunu olabilir.", tuple(sahneler), taban, guven, karsi, diger_z, hk)

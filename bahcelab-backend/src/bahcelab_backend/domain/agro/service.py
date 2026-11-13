@@ -454,10 +454,14 @@ class AgroService:
         weather = await self._weather_or_none(garden_id)
         garden = await self._garden(garden_id)
         risks = active_risks_of(await self._compute_risks(garden, await self._history(garden_id, today), weather, today))
+        # TEK GÜVEN SERVİSİ (9J-5, ADR 0030): Durum paneli ile Sulama paneli aynı hesabı ve aynı «nasıl hesaplandı» metnini kullanır; durum bileşenlerinin veri yeterliliği ek koşul
+        from bahcelab_backend.domain.izleme import guven as gv
+
+        g = await gv.topla(self.ndvi.session, garden_id, today, "durum", agac_beyan=garden.agac_sayisi is not None, ek=[gv.Kosul("Durum bileşenlerinin verisi yeterli", result.guven == "yuksek" if result.kademe != "veri_yok" else None, None if result.guven == "yuksek" else result.guven_nedeni)])
         return DurumV2Yanit(
             durum=result.kademe, etiket=KADEME_ADLARI[result.kademe], ozet=summary_sentence(result.kademe),
             bilesenler=[BilesenV2Yanit(kod=c.kod, ad=c.ad, seviye=c.seviye, kullanilabilir=c.kullanilabilir, bayat=c.bayat, neden=c.neden, veri_tarihi=c.veri_tarihi) for c in result.bilesenler],  # type: ignore[arg-type]
-            riskler=[r.metin for r in risks], guven=result.guven, guven_nedeni=result.guven_nedeni, nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
+            riskler=[r.metin for r in risks], guven=g.etiket, guven_nedeni=g.nedeni, nasil=[*result.nasil, g.nasil], dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
             esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
         )
 

@@ -751,7 +751,7 @@ class IrrigationService:
             vardiya = await self._vardiya(c, policy_runs, kpi_sonraki.tarih, garden_id)
             onayli_tarih = kpi_sonraki.tarih if vardiya.onayli else None
         dusuk = min((d for d in durumlar if d.doluluk_pct is not None), key=lambda d: cast(float, d.doluluk_pct), default=None)
-        guven = self._guven(c)
+        guven = await self._guven(c)
         yan = [
             sc.YagisYanlilik(
                 ay=a.ay, gun=a.gun, olculen_mm=a.olculen_mm, seri_mm=a.seri_mm, oran=a.oran, oneri=a.oneri,
@@ -768,20 +768,14 @@ class IrrigationService:
             ufuk_gun=rule.planlama_gun, gecici_gun=len(c.gecici), gecici_ilk=min(c.gecici, default=None), olculen_gun=len(c.olculen), yagis_yanlilik=yan,
         )
 
-    def _guven(self, c: Ctx) -> sc.Guven:
-        """Güven etiketi (ADR 0024): 5 koşuldan kaçı sağlanıyor → düşük / orta / yüksek; eşikler katalogda."""
-        rule, p = c.rule, c.profile
-        son_gozlem = max((d for d, (r, _) in c.weather.items() if d <= c.today and r is not None), default=None)
-        kos = [
-            ("Uydu görüntüsü taze", c.ndvi_tarih is not None and (c.today - c.ndvi_tarih).days <= rule.guven_ndvi_taze_gun, None if c.ndvi_tarih is None else f"son net görüntü {(c.today - c.ndvi_tarih).days} gün önce"),
-            ("Hava verisi taze", son_gozlem is not None and (c.today - son_gozlem).days <= rule.guven_hava_taze_gun, None if son_gozlem is None else f"son gün {son_gozlem}"),
-            ("Ağaç sayısı beyan edilmiş", c.garden.agac_sayisi is not None, None),
-            ("Sulama sistemi bilgisi tam", p.sistem != "damla" or bool(p.damlatici_sayisi and p.damlatici_debi_lh), None),
-            ("Pompa bilgisi tam", bool(p.pompa_kw and p.pompa_debi_m3h), None),
-        ]
-        puan = sum(1 for _, ok, _ in kos if ok)
-        etiket = "yuksek" if puan >= rule.guven_yuksek_min else "orta" if puan >= rule.guven_orta_min else "dusuk"
-        return sc.Guven(etiket=cast(Any, etiket), puan=puan, toplam=len(kos), kosullar=[{"ad": a, "ok": ok, "not": n} for a, ok, n in kos])
+    async def _guven(self, c: Ctx) -> sc.Guven:
+        """TEK GÜVEN SERVİSİ (9J-5, ADR 0030): aynı hesap Durum panelinde de kullanılır; burada yalnız sulamaya özgü profil eksikliği geçirilir."""
+        from bahcelab_backend.domain.izleme import guven as gv
+
+        p = c.profile
+        profil_tam = (p.sistem != "damla" or bool(p.damlatici_sayisi and p.damlatici_debi_lh)) and bool(p.pompa_kw and p.pompa_debi_m3h)
+        r = await gv.topla(self.session, c.garden.id, c.today, "sulama", ndvi_tarih=c.ndvi_tarih, agac_beyan=c.garden.agac_sayisi is not None, profil_tam=profil_tam)
+        return sc.Guven(etiket=cast(Any, r.etiket), puan=r.puan, toplam=r.toplam, kosullar=[{"ad": k.ad, "ok": k.ok, "not": k.ek} for k in r.kosullar], nasil=r.nasil)
 
     async def _vardiya(self, c: Ctx, runs: list[tuple[SekRow, Ctx, list[en.DayOut]]], gun: date, garden_id: uuid.UUID, onay_ara: bool = True) -> sc.Vardiya:
         """Sulama günü vardiya çizelgesi: en kuru vana önce; süre = brüt m³ ÷ debi (vana debisi varsa onun ve pompanın küçüğü, yoksa pompa). Başlangıç profildeki saat (varsayılan 05:00). Debi yoksa saat/süre YOK."""

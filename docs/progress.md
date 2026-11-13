@@ -297,6 +297,10 @@ Bilinen eksikler / sonraki turlar:
 - Seri tam koşu (2026-11-11, öldürmeden, `-p no:randomly --durations=40 -rA`): **696 geçti, 0 başarısız, 31 dk 0 sn** (çıktı: `docs/development/pytest-seri-kosu.txt`). Daha önce görülen tek `F` TEKRARLANMADI. O koşu yarıda kesilmiş/üst üste binen oturumlarla (test veritabanı kilidi, `-x`'siz yarım bırakılmış koşu) yapılmıştı ve hangi test olduğu kaydedilmemişti; bu yüzden kök neden bulunamadı. Flaky diye işaretlenmedi (kanıt yok). Yeniden görülürse: pytest-timeout dökümü + `-rA` çıktısı alınıp o test izole edilecek.
 - Ekran betikleri: `D2_EKRAN=<klasör> npx playwright test e2e/ekran-d2.spec.ts e2e/ekran-d2-video.spec.ts` (PW_CHROME_PATH gerekir); jlnnlk için geliştirme sunucusu + geçici profil (sonra silinir).
 
+## Faz 1 — 9J Dilim 1 (veri/model kalitesi izleme, backend) — TAMAM (2026-11-13)
+
+Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET₀ kovaya girmez), haftalık kaynak uyumu (drift), kural performansı, tek güven servisi (Sulama + Durum), altın bahçe snapshot testi (CI'da kırmızı kural), ADR 0030, migration 042, günlük iş `refresh_izleme`. **Dilim 2 (arayüz: /ic/kalite sekmeleri + kullanıcıya tek satır «Veri durumu» + ekranlar) onay bekliyor.** Not: 9I-1B küçük düzeltme — halka da düşükken «yalnız bu vana düşüyor» işareti kalır, güven «orta»ya iner.
+
 ---
 
 ## Notlar
