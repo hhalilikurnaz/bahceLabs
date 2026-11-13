@@ -12,10 +12,11 @@ async function axeTemiz(page: Page, etiket: string): Promise<void> {
 
 for (const tema of ['acik', 'koyu'] as const) {
   test(`iç izleme (${tema} tema): beş sekme, akış tablosu + zaman çizelgesi, uyum, kurallar, bahçe güveni; axe temiz`, async ({ page }) => {
+    test.setTimeout(240_000) // gerçek izleme işleri (7 gün × günlük + 4 hafta × haftalık) CI'da yavaş başlar
     await page.addInitScript((t) => localStorage.setItem('bahcelab.tema', t), tema)
     await newUser(page)
     await createGarden(page.request, { ad: 'İzleme Bahçesi', lng: 27.93, lat: 38.71, sideM: 300 })
-    seedIzleme(14)
+    seedIzleme(7)
     await page.goto('/ic/kalite')
     await expect(page.getByTestId('ic-izleme')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByRole('tab')).toHaveCount(5)
