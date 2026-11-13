@@ -94,6 +94,7 @@ export interface ApiDurum {
   riskler: string[]
   guven: 'yuksek' | 'orta' | 'dusuk'
   guven_nedeni: string
+  guven_nasil?: string
   nasil: string[]
   dusuren: string[]
   risk_sinirladi: boolean

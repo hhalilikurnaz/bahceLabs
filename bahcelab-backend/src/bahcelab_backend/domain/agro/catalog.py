@@ -308,6 +308,7 @@ class IzlemeKurali(KuralBlok):
     guven_yuksek_oran: float = Field(default=0.85, gt=0, le=1)
     guven_orta_oran: float = Field(default=0.55, gt=0, le=1)
     guven_gecici_gun_en_cok: int = Field(default=8, ge=0)
+    guven_min_olculen: int = Field(default=4, ge=1)  # ölçülen (sağlandı/sağlanmadı) koşul bunun altındaysa güven EN ÇOK «orta»; nasıl hesaplandı'da «X koşul ölçülemedi»
     guven_ndvi_taze_gun: int = Field(default=14, ge=1)
     guven_hava_taze_gun: int = Field(default=3, ge=1)
     # kural performansı: yanıt/isabet için asgari yanıt sayısı (altında «ölçülemiyor»)

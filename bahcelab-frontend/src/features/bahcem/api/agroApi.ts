@@ -80,6 +80,8 @@ export interface GardenStatus {
   riskler: string[]
   guven: 'yuksek' | 'orta' | 'dusuk'
   guvenNedeni: string
+  /** «Güven nasıl hesaplandı?» — tek güven servisi metni (Sulama panelindekiyle AYNI); nasil cümle listesine karışmaz */
+  guvenNasil: string
   /** «Nasıl hesaplandı?»: en fazla 3 kısa cümle (kademeyi en çok düşüren bileşen(ler) · veri tarihleri · güven) */
   nasil: string[]
   dusuren: string[]
@@ -161,7 +163,7 @@ export const agroApi = {
   async status(gardenId: string): Promise<GardenStatus> {
     const raw = await apiRequest<ApiDurum>(`/gardens/${gardenId}/durum`)
     return {
-      durum: raw.durum, etiket: raw.etiket, ozet: raw.ozet, riskler: raw.riskler, guven: raw.guven, guvenNedeni: raw.guven_nedeni, nasil: raw.nasil, dusuren: raw.dusuren,
+      durum: raw.durum, etiket: raw.etiket, ozet: raw.ozet, riskler: raw.riskler, guven: raw.guven, guvenNedeni: raw.guven_nedeni, guvenNasil: raw.guven_nasil ?? '', nasil: raw.nasil, dusuren: raw.dusuren,
       riskSinirladi: raw.risk_sinirladi, esikDurumu: raw.esik_durumu,
       bilesenler: raw.bilesenler.map((b) => ({ kod: b.kod, ad: b.ad, seviye: b.seviye, kullanilabilir: b.kullanilabilir, bayat: b.bayat, neden: b.neden, veriTarihi: b.veri_tarihi })),
     }

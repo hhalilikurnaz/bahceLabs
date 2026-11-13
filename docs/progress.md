@@ -301,6 +301,14 @@ Bilinen eksikler / sonraki turlar:
 
 Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET₀ kovaya girmez), haftalık kaynak uyumu (drift), kural performansı, tek güven servisi (Sulama + Durum), altın bahçe snapshot testi (CI'da kırmızı kural), ADR 0030, migration 042, günlük iş `refresh_izleme`. **Dilim 2 (arayüz: /ic/kalite sekmeleri + kullanıcıya tek satır «Veri durumu» + ekranlar) onay bekliyor.** Not: 9I-1B küçük düzeltme — halka da düşükken «yalnız bu vana düşüyor» işareti kalır, güven «orta»ya iner.
 
+### 9J Dilim 1 sonrası düzeltmeler (2026-11-13)
+
+- Güven servisi: katalog `guven_min_olculen: 4`; ölçülen koşul bunun altındaysa güven en çok «orta», «nasıl hesaplandı»da «X koşul ölçülemedi». Durum «Nasıl hesaplandı» 3 cümleye geri döndü; güven açıklaması ayrı alan (`guven_nasil`, ayrı etiketli satır).
+- Veri kontrol taraması: tarih penceresi yerine DB'deki `guncelleme` damgası (migration 043, tetikleyici `clock_timestamp()`) — son taramadan beri değişen satırlar taranır; ERA5 kesinleşmesi ve WaPOR NRT→final yakalanır.
+- Altın girdi `tests/golden/jlnnlk_girdi.json.gz` (1,3 MB → 166 KB); üretici betik ve test gz okur/yazar.
+- **IMERG kopukluğu (dev) — token sorunu DEĞİL**: dev `EARTHDATA_TOKEN` ile CMR araması 4 granül döndürdü, GES DISC `Range` isteği HTTP 206 (401/403 yok). Dev'de worker/zamanlayıcı çalışmıyor; `dogrulama_gozlem` son gün: IMERG 2026-10-28, SMAP 2026-10-28 (son yazım 30 Eki). `refresh_validation` günlük işi koşmadığı için kopukluk. Dev'de worker açılınca kendiliğinden kapanır; iç uyarı (akış tazeliği) bunu zaten gösterir.
+- **bildirimler/defter e2e aralıklı hata — kök neden**: `--repeat-each=20` (defter+bildirimler, 4 işçi, trace+video) 1/260; bildirimler ×60: 8/300 (Vite dev sunucusu). İzde hata anında Vite istemcisi «server connection lost. Polling for restart…» yazıp sayfayı TAM yeniden yüklüyor (sunucu yeniden başlamadı; uygulamada `location.reload` yok) → açık bildirim paneli/durum kayboluyor. `hmr:false` istemciyi kapatmadı (etkisiz, geri alındı). Çözüm: e2e artık `vite build` + `vite preview` ile sunuluyor (HMR WebSocket'i/anlık dönüşüm yok): ×60 → bu türden hata 0/300. Kalan 1/300 farklı: `browserContext.newPage` 90 sn'de açılamadı (4 işçi + SwiftShader yük altında tarayıcı başlatma takılması); uygulama hatası değil, izlenecek. Yeniden deneme (retry) eklenmedi.
+
 ---
 
 ## Notlar

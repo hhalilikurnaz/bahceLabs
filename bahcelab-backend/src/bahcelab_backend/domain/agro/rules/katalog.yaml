@@ -516,6 +516,7 @@ izleme:
     t_max_c:    {min: -30, max: 55, sicrama: 20, birim: °C}
     t_min_c:    {min: -40, max: 40, sicrama: 20, birim: °C}
     toprak_nemi: {min: 0, max: 0.8, sicrama: 0.3, birim: m³/m³}
+    et_mm:      {min: 0, max: 12, sicrama: 8, birim: mm/gün}
     ndvi:       {min: -1, max: 1, sicrama: 0.5}
     ndmi:       {min: -1, max: 1, sicrama: 0.5}
   drift_ta_c: 1.0
@@ -526,6 +527,7 @@ izleme:
   guven_yuksek_oran: 0.85
   guven_orta_oran: 0.55
   guven_gecici_gun_en_cok: 8
+  guven_min_olculen: 4
   guven_ndvi_taze_gun: 14
   guven_hava_taze_gun: 3
   kural_min_yanit: 5

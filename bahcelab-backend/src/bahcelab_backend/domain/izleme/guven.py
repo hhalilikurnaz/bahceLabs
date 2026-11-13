@@ -50,10 +50,16 @@ def olustur(kosullar: list[Kosul], k: IzlemeKurali) -> GuvenSonuc:
     olculen = [c for c in kosullar if c.ok is not None]
     puan = sum(1 for c in olculen if c.ok)
     et = etiketle(puan, len(olculen), k)
+    olculemedi = len(kosullar) - len(olculen)
+    yetersiz = len(olculen) < k.guven_min_olculen
+    if yetersiz and et == "yuksek":
+        et = "orta"  # yeterince koşul ölçülemediyse «yüksek» iddia edilmez
     eksik = [c.ad for c in olculen if not c.ok]
     nasil = (f"Güven = sağlanan koşul / ölçülebilen koşul; ≥ %{k.guven_yuksek_oran * 100:.0f} yüksek, ≥ %{k.guven_orta_oran * 100:.0f} orta, altı düşük. «Ölçülemiyor» koşullar paydaya girmez (uydurulmaz). "
              "Koşullar: uydu görüntüsü taze, hava verisi güncel, veri akışları kopuk değil, geçici gün sayısı az, beyan/profil eksiksiz, kaynaklar uyumlu, şüpheli ölçüm yok, kural geri bildirimi olumlu. Eşikler ön değerdir.")  # TÜM ekranlarda AYNI metin (sayılar `nedeni`nde)
-    nedeni = f"{puan}/{len(olculen)} koşul sağlanıyor" + (f"; eksik: {', '.join(eksik)}" if eksik else "") + "."
+    nedeni = f"{puan}/{len(olculen)} koşul sağlanıyor" + (f"; eksik: {', '.join(eksik)}" if eksik else "") + (f"; {olculemedi} koşul ölçülemedi" if olculemedi else "") + (f" (en az {k.guven_min_olculen} koşul ölçülmeden güven en çok «orta»)" if yetersiz else "") + "."
+    if yetersiz:
+        nasil += f" Bu bahçede yalnız {len(olculen)} koşul ölçülebildi ({olculemedi} koşul ölçülemedi); en az {k.guven_min_olculen} koşul ölçülmeden güven en çok «orta» olur."
     return GuvenSonuc(et, puan, len(olculen), kosullar, nasil, nedeni)
 
 

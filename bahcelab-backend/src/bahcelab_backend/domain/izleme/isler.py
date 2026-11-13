@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -38,7 +38,7 @@ async def gunluk(factory: SessionFactory, bugun: date | None = None) -> dict[str
         sonuc["hata"] += 1
     try:
         async with factory() as s:
-            sonuc["bayrak"] = await veri_kontrol.tara(s, bugun - timedelta(days=3), bugun)
+            sonuc["bayrak"] = await veri_kontrol.tara(s, bugun)
             await s.commit()
     except Exception:  # noqa: BLE001
         logger.exception("İzleme: veri taraması başarısız")

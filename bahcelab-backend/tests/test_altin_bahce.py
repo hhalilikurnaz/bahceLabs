@@ -3,6 +3,7 @@ snapshot'ı. Çıktı eşikten fazla değişirse test KIRMIZI olur: model kaymas
     ALTIN_GUNCELLE=1 PYTHONPATH=src .venv/bin/python -m pytest tests/test_altin_bahce.py -q
 (commit mesajı: «golden: <ne değişti ve neden>»). Girdi dosyasını yenilemek için scripts/altin_bahce_uret.py."""
 
+import gzip
 import json
 import os
 import uuid
@@ -20,7 +21,7 @@ from bahcelab_backend.domain.water.era5_sync import garden_cell
 from .test_gardens_api import garden_body
 from .test_water_api import factory, user_client  # noqa: F401
 
-GIRDI = Path(__file__).parent / "golden" / "jlnnlk_girdi.json"
+GIRDI = Path(__file__).parent / "golden" / "jlnnlk_girdi.json.gz"
 BEKLENEN = Path(__file__).parent / "golden" / "jlnnlk_beklenen.json"
 PROFIL = {"sistem": "damla", "damlatici_sayisi": 4, "damlatici_debi_lh": 4.0, "sira_aralik_m": 5.0, "agac_aralik_m": 4.0, "pompa_kw": 7.5, "pompa_debi_m3h": 40.0, "enerji": "sebeke"}
 TOL_PCT = 0.6  # % birimli değerler (doluluk, ihtiyaç karşılandı) için mutlak tolerans
@@ -28,7 +29,7 @@ TOL_REL = 0.02  # diğer sayılar için göreli tolerans (≥ 1 değer) ya da 0,
 
 
 async def _yukle(client, fab) -> tuple[uuid.UUID, uuid.UUID, dict]:  # noqa: ANN001
-    v = json.loads(GIRDI.read_text())
+    v = json.loads(gzip.decompress(GIRDI.read_bytes()))
     b = v["bahce"]
     r = await client.post("/gardens", json=garden_body(ad=b["ad"], geometry=b["geometry"], il=b["il"], ilce=b["ilce"], urun=b["urun"], cesit=b["cesit"]))
     assert r.status_code == 201, r.text

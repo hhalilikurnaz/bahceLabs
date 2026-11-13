@@ -30,11 +30,11 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: `npx vite --port ${E2E.webPort} --strictPort`,
+      command: `npx vite build && npx vite preview --port ${E2E.webPort} --strictPort`,
       env: { API_PROXY_TARGET: E2E.apiUrl },
       url: E2E.webUrl,
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 240_000,
     },
   ],
   use: {

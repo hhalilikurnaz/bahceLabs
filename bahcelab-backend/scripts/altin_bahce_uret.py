@@ -1,6 +1,7 @@
-"""9J-6: ALTIN BAHÇE girdisini dosyaya yazar (donmuş girdi: jlnnlk, sabit tarih aralığı). Yalnız okur; çıktı tests/golden/jlnnlk_girdi.json (test sürümlenir, veritabanından bağımsız çalışır).
+"""9J-6: ALTIN BAHÇE girdisini dosyaya yazar (donmuş girdi: jlnnlk, sabit tarih aralığı). Yalnız okur; çıktı tests/golden/jlnnlk_girdi.json.gz (test sürümlenir, veritabanından bağımsız çalışır).
 Kullanım: PYTHONPATH=src .venv/bin/python scripts/altin_bahce_uret.py [garden_id]"""
 import asyncio
+import gzip
 import json
 import sys
 import uuid
@@ -14,7 +15,7 @@ from bahcelab_backend.domain.water.era5_sync import garden_cell
 
 GID = "47fcf918-996b-4146-9f0a-2ac82330ae83"
 BAS, BIT = date(2024, 10, 1), date(2026, 10, 9)  # donmuş pencere (BUGÜN = BIT)
-CIKTI = Path(__file__).resolve().parents[1] / "tests" / "golden" / "jlnnlk_girdi.json"
+CIKTI = Path(__file__).resolve().parents[1] / "tests" / "golden" / "jlnnlk_girdi.json.gz"
 
 
 def js(v):  # noqa: ANN001, ANN201
@@ -37,7 +38,7 @@ async def main() -> None:
         halka = [dict(r._mapping) for r in (await s.execute(text("SELECT tarih, ndmi, ndvi, piksel, halka_piksel FROM sk_halka WHERE garden_id = :g AND tarih <= :b ORDER BY tarih"), {"g": gid, "b": BIT})).all()]
         imerg = [dict(r._mapping) for r in (await s.execute(text("SELECT tarih, deger FROM dogrulama_gozlem WHERE garden_id = :g AND source_id = 'imerg-daily' AND tarih <= :b ORDER BY tarih"), {"g": gid, "b": BIT})).all()]
     veri = {"bas": BAS.isoformat(), "bugun": BIT.isoformat(), "bahce": {"ad": g[0], "urun": g[1], "cesit_kodu": g[2], "cesit": g[3], "il": g[4], "ilce": g[5], "dikim_yili": g[6], "geometry": json.loads(g[7])}, "soil": soil, "era5": era5, "acquisitions": acq, "sk_ndmi": sk_ndmi, "sk_halka": halka, "imerg": imerg}
-    CIKTI.write_text(json.dumps(veri, default=js, ensure_ascii=False, separators=(",", ":")))
+    CIKTI.write_bytes(gzip.compress(json.dumps(veri, default=js, ensure_ascii=False, separators=(",", ":")).encode(), mtime=0))
     print(CIKTI, CIKTI.stat().st_size, {k: len(v) for k, v in veri.items() if isinstance(v, list)})
 
 

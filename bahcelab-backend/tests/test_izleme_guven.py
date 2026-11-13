@@ -21,18 +21,29 @@ def test_etiket_oran_ve_olculemeyen_kosul_paydada_yok():
     assert gv.olustur([], K).etiket == "dusuk"
 
 
+def test_olculen_kosul_alt_siniri_guveni_en_cok_orta_yapar_ve_nedenini_yazar():
+    ok, bilinmez = gv.Kosul("a", True), gv.Kosul("b", None)
+    az = gv.olustur([ok, ok, ok, bilinmez, bilinmez, bilinmez], K)  # 3 ölçülen < 4: 3/3 = %100 olsa da «yüksek» DEĞİL
+    assert K.guven_min_olculen == 4 and az.etiket == "orta" and (az.puan, az.toplam) == (3, 3)
+    assert "3 koşul ölçülemedi" in az.nedeni and "3 koşul ölçülemedi" in az.nasil and "en çok «orta»" in az.nasil
+    yeter = gv.olustur([ok] * 4 + [bilinmez], K)  # 4 ölçülen: alt sınır sağlandı → yüksek mümkün
+    assert yeter.etiket == "yuksek" and "ölçülemedi" not in yeter.nasil  # genel metin sabit (ekranlar arası aynı)
+    dusuk = gv.olustur([gv.Kosul("a", False), gv.Kosul("b", False), bilinmez], K)  # alt sınır etiketi YÜKSELTMEZ
+    assert dusuk.etiket == "dusuk"
+
+
 async def test_kosullar_gercek_veriden_ve_iki_panel_ayni_metin(user_client, factory):  # noqa: F811
     gid = await kur(user_client, factory)
     sul = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["guven"]
     durum = (await user_client.get(f"/gardens/{gid}/durum")).json()
-    assert sul["nasil"] in durum["nasil"]  # «Güven nasıl hesaplandı?» iki ekranda aynı metinle başlar
+    assert sul["nasil"] == durum["guven_nasil"] and sul["nasil"] not in durum["nasil"]  # «Güven nasıl hesaplandı?» iki ekranda AYNI metin; Durum cümle listesine karışmaz
     assert "ölçülebilen koşul" in sul["nasil"]
     # şüpheli (sert) ölçüm bayrağı güveni düşürür ve nedeni yazar
     async with factory() as s:
         from bahcelab_backend.domain.water.era5_sync import garden_cell
 
         cell, _, _ = await garden_cell(s, gid)
-        await s.execute(text("INSERT INTO veri_bayrak (kaynak, anahtar, tarih, degisken, deger, kural, siddet, ayrinti) VALUES ('era5', :c, :t, 'yagis_mm', 400, 'aralik', 'sert', 'x')"), {"c": str(cell), "t": TODAY})
+        await s.execute(text("INSERT INTO veri_bayrak (kaynak, anahtar, tarih, degisken, deger, kural, siddet, ayrinti) VALUES ('era5', :c, :t, 'yagis_mm', 400, 'aralik', 'sert', 'x') ON CONFLICT DO NOTHING"), {"c": str(cell), "t": TODAY})
         await s.commit()
     g2 = (await user_client.get(f"/gardens/{gid}/sulama-panel")).json()["guven"]
     bayrak = next(k for k in g2["kosullar"] if k["ad"] == "Şüpheli (imkânsız) ölçüm yok")
