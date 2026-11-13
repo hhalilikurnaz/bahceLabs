@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { todayIstanbul } from '../../lib/dates'
 import { BandLine, ChartFrame, ChartState, TimeDomainProvider, type BandAy, type EgriNoktasi, type Gozlem } from '@/components/chart'
 import { useCanlilikEgrisi } from '../../api/egriApi'
 import { useEdinimler, type GostergeId } from '../../api/edinimApi'
@@ -31,7 +32,7 @@ export function SezonEgrisi({ gardenId, gostergeler = SECENEKLER, onAy, baslik =
   const setTarih = useCalismaStore((s) => s.setTarih)
   const secili = useCalismaStore((s) => s.tarih)
   const yil = new Date().getFullYear()
-  const bugun = new Date().toISOString().slice(0, 10)
+  const bugun = todayIstanbul()
   const kesintisiz = gosterge === 'ndvi' && egri.data?.yeterli ? egri.data : null
   const bant = useMemo(() => {
     const r: Record<number, BandAy> = {}

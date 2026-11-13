@@ -9,7 +9,7 @@ import argparse
 import asyncio
 import statistics
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +25,7 @@ from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events import rules as er
 from bahcelab_backend.domain.events import service as events
 from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F401
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import get_storage
 
 
@@ -114,7 +115,7 @@ async def main() -> None:
     ap.add_argument("--ad", action="append", required=True, help="Bahçe adı (alt dize, büyük/küçük harf duyarsız)")
     ap.add_argument("--cikti", help="Markdown çıktı dosyası (verilmezse ekrana)")
     args = ap.parse_args()
-    today = datetime.now(UTC).date()
+    today = bugun()
     rule = cat.load_catalog().olay
     storage = get_storage()
     body = [

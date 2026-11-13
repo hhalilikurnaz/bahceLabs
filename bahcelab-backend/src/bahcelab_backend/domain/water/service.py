@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any, Literal, cast
-from zoneinfo import ZoneInfo
 
 import httpx
 import numpy as np
@@ -38,7 +37,7 @@ from bahcelab_backend.domain.water.schemas import (
     ToprakOzeti,
     YuzeyHava,
 )
-from bahcelab_backend.domain.weather.provider import TIMEZONE
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 logger = logging.getLogger(__name__)
@@ -140,7 +139,7 @@ class WaterService:
         if row is None:
             raise AppError(404, AppErrorCode.NOT_FOUND, "Bahçe bulunamadı.")
         rule = cat.load_catalog().su
-        today = today or datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).date()
+        today = today or bugun(row)
         cell, _, _ = await garden_cell(self.session, garden_id)
         centroid = (await self.session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).one()
         soil = await self.ensure_soil(garden_id, float(centroid[0]), float(centroid[1]))  # toprak BAHÇE noktasında (hücre merkezi kıyıda boş olabilir)

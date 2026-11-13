@@ -8,12 +8,13 @@ from datetime import date, timedelta
 
 from bahcelab_backend.database import async_session_factory
 from bahcelab_backend.domain.eta.service import EtaService
+from bahcelab_backend.shared.clock import bugun
 
 
 async def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     gid = uuid.UUID(args[0])
-    bit = date.fromisoformat(args[2]) if len(args) > 2 else date.today()
+    bit = date.fromisoformat(args[2]) if len(args) > 2 else bugun()
     bas = date.fromisoformat(args[1]) if len(args) > 1 else bit - timedelta(days=730)
     async with async_session_factory() as session:
         svc = EtaService(session)

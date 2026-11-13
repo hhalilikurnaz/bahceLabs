@@ -136,3 +136,9 @@ def veri_durumu(g: GuvenSonuc) -> str | None:
         if c is not None and c.ok is False:
             return f"{baslik} — {c.ek}" if c.ek else yok
     return None
+
+
+def veri_kosullari(g: GuvenSonuc) -> list[dict[str, object]]:
+    """Veri tarafındaki koşulların hepsi (✓/✗/ölçülemiyor): «Veri uyarısı» satırının «Ayrıntı →» hedefi (Durum'daki «Veri durumu» akordeonu)."""
+    by = {c.ad: c for c in g.kosullar}
+    return [{"ad": ad, "ok": by[ad].ok, "not": by[ad].ek} for ad, _, _ in _VERI_DURUMU if ad in by]

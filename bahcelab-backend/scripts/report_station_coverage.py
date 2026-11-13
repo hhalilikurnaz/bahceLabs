@@ -10,7 +10,7 @@ import csv
 import gzip
 import io
 import json
-from datetime import UTC, date, datetime
+from datetime import date
 
 import httpx
 
@@ -20,6 +20,7 @@ from bahcelab_backend.domain.evidence.providers import (
     OBSERVED_SOURCES,
     haversine_km,
 )
+from bahcelab_backend.shared.clock import bugun
 
 START = date(2015, 1, 1)
 
@@ -61,7 +62,7 @@ def row_of(km: float, s: dict, st: dict, today: date) -> str:
 
 
 async def main(lat: float, lng: float, km: float, ek_km: float, out: str | None) -> None:
-    today = datetime.now(UTC).date()
+    today = bugun()
     async with httpx.AsyncClient() as client:
         lite = await client.get(f"{BULK}/stations/lite.json.gz", timeout=60)
         lite.raise_for_status()

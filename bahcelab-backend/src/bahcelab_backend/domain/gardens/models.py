@@ -35,6 +35,8 @@ class GardenModel(Base):
         Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False), nullable=False
     )
     alan_dekar: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    # Bahçenin yerel saat dilimi («bugün» buna göre; shared/clock.bugun). Koordinattan türetilir.
+    zaman_dilimi: Mapped[str] = mapped_column(String(40), nullable=False, default="Europe/Istanbul", server_default="Europe/Istanbul")
     il: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ilce: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -18,6 +18,7 @@ from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F4
 from bahcelab_backend.domain.water.era5 import Era5Client
 from bahcelab_backend.domain.water.era5_sync import ERA5_START, garden_cell, sync_cell
 from bahcelab_backend.domain.water.validation_sync import CHIRPS, IMERG, SMAP, sync_validation
+from bahcelab_backend.shared.clock import bugun
 
 SCOPE_SQL = "SELECT g.id, g.ad FROM gardens g JOIN workspace_members m ON m.workspace_id = g.workspace_id JOIN users u ON u.id = m.user_id WHERE u.email = :e"
 
@@ -56,7 +57,7 @@ async def run_era5(targets: list[tuple[uuid.UUID, str]], start: date) -> None:
             cell, lat, lng = await garden_cell(s, gid)
             await s.commit()
             if cell not in done:
-                result = await sync_cell(s, client, cell, lat, lng, start, datetime.now(UTC).date())
+                result = await sync_cell(s, client, cell, lat, lng, start, bugun())
                 await s.commit()
                 done.add(cell)
                 log("hucre", bahce=name, hucre=[lat, lng], **result)
@@ -105,7 +106,7 @@ async def main() -> None:
     if args.kaynak == "era5":
         await run_era5(targets, start)
     else:
-        await run_validation(targets, args.kaynak, start, date.fromisoformat(args.bitis) if args.bitis else datetime.now(UTC).date() - timedelta(days=1), args.adim)
+        await run_validation(targets, args.kaynak, start, date.fromisoformat(args.bitis) if args.bitis else bugun() - timedelta(days=1), args.adim)
     log("bitti", saat=datetime.now(UTC).isoformat(timespec="seconds"))
     await engine.dispose()
 

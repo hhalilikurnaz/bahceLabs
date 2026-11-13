@@ -96,6 +96,7 @@ export interface ApiDurum {
   guven_nedeni: string
   guven_nasil?: string
   veri_durumu?: string | null
+  veri_kosullari?: { ad: string; ok: boolean | null; not: string | null }[]
   nasil: string[]
   dusuren: string[]
   risk_sinirladi: boolean

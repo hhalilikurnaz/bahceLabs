@@ -49,6 +49,7 @@ from bahcelab_backend.domain.multiyear.zoning import (
 )
 from bahcelab_backend.domain.ndvi.indices import INDICES
 from bahcelab_backend.domain.ndvi.processing import colorize, image_corners, render_clipped_png
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -150,7 +151,7 @@ class MultiyearService:
             first = await asyncio.to_thread(self.provider.first_scene_date, geometry)
         except ImageryError as exc:
             raise AppError(502, AppErrorCode.INTERNAL_ERROR, str(exc)) from exc
-        today = datetime.now(UTC).date()
+        today = bugun(garden)
         if first is None:
             raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bu konum için uydu arşivinde görüntü bulunamadı.")
         first_year, last_year = first.year, last_complete_year(today, rule.ay_bitis)

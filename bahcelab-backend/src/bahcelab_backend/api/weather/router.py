@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -33,6 +33,4 @@ async def get_weather_history(
     to: date | None = None,
 ) -> GecmisYanit:
     """Günlük geçmiş (min/max sıcaklık, yağış, ET₀). Varsayılan: son 13 ay."""
-    end = to or date.today() - timedelta(days=1)
-    start = from_ or end - timedelta(days=395)
-    return await service.history(garden_id, start, end)
+    return await service.history(garden_id, from_, to)  # varsayılanlar bahçenin yerel gününe göre serviste

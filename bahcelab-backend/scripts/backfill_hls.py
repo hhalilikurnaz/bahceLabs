@@ -5,7 +5,7 @@ Varsayılan dry-run (mevcut kayıt sayısı). Uygulamak için --apply (pg_dump y
 """
 
 import asyncio
-from datetime import UTC, date, datetime
+from datetime import date
 
 from guard import backup, confirm, log, parser  # type: ignore[import-not-found]
 from sqlalchemy import text
@@ -15,6 +15,7 @@ from bahcelab_backend.database import async_session_factory, engine
 from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F401
 from bahcelab_backend.domain.imagery.registry import get_hls_provider
 from bahcelab_backend.domain.series.service import sync_hls
+from bahcelab_backend.shared.clock import bugun
 
 SCOPE_SQL = "SELECT g.id, g.ad FROM gardens g JOIN workspace_members m ON m.workspace_id = g.workspace_id JOIN users u ON u.id = m.user_id WHERE u.email = :e"
 
@@ -38,7 +39,7 @@ async def main() -> None:
     if not confirm({**summary, "yedek": str(path)}, assume_yes=args.yes):
         log("iptal")
         return
-    today = datetime.now(UTC).date()
+    today = bugun()
     for gid, name in ((r[0], r[1]) for r in rows):
         async with async_session_factory() as s:
             result = await sync_hls(s, gid, date.fromisoformat(args.baslangic), today, get_hls_provider())

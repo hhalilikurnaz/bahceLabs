@@ -42,6 +42,7 @@ from bahcelab_backend.domain.imagery import radar_math
 from bahcelab_backend.domain.imagery.formulas import FORMULA_VERSION, INDICATORS
 from bahcelab_backend.domain.imagery.provider import ImageryProvider
 from bahcelab_backend.domain.multiyear.repository import MultiyearRepository
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import StorageBackend
 
 logger = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ class BackfillService:
 
     def month_range(self, today: date | None = None, source: str = SOURCE_ID) -> list[date]:
         start = {RADAR_SOURCE: self.settings.acq_radar_start, LANDSAT_SOURCE: self.settings.acq_landsat_start}.get(source, self.settings.acq_start)
-        return months_between(date.fromisoformat(start), today or datetime.now(UTC).date())
+        return months_between(date.fromisoformat(start), today or bugun())
 
     async def start(self, garden_id: uuid.UUID, today: date | None = None, source: str = SOURCE_ID) -> dict[str, Any]:
         """Eksik ayları açar ve sıraya koyar (tamam aylar atlanır). Sınır özeti değişmişse eski edinimler silinip baştan başlanır."""
@@ -180,7 +181,7 @@ class BackfillService:
         if source == RADAR_SOURCE and self.radar_provider is not None:
             geometry = await self.repo.geometry_geojson(garden_id)
             if geometry is not None:
-                await ensure_orbits(self.session, self.radar_provider, garden_id, geometry, date.fromisoformat(self.settings.acq_radar_start), today or datetime.now(UTC).date(), refresh=True)
+                await ensure_orbits(self.session, self.radar_provider, garden_id, geometry, date.fromisoformat(self.settings.acq_radar_start), today or bugun(), refresh=True)
         await self.repo.ensure_months(garden_id, source, self.month_range(today, source), ghash)
         pending = await self.repo.pending_months(garden_id, source)
         await self.session.commit()
@@ -280,7 +281,7 @@ async def refresh_recent(factory: SessionFactory, runner: BackfillRunner, garden
 
     from bahcelab_backend.domain.gardens.models import GardenModel
 
-    today = datetime.now(UTC).date()
+    today = bugun()
     months = months_between(today - timedelta(days=runner.settings.acq_incremental_days), today)
     sources = [SOURCE_ID, *([RADAR_SOURCE] if runner.radar_provider is not None else []), *([LANDSAT_SOURCE] if runner.landsat_provider is not None else [])]
     async with factory() as session:

@@ -7,7 +7,6 @@ Her olay için tarih, tür, güven ve kaynaklar yazılır; «Çiftçi doğrulama
 import argparse
 import asyncio
 import uuid
-from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import select, text
@@ -19,6 +18,7 @@ from bahcelab_backend.domain.events.models import EventModel, EventSourceModel
 from bahcelab_backend.domain.fieldbook import rules as fieldbook_rules
 from bahcelab_backend.domain.fieldbook.models import EventVerificationModel
 from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F401
+from bahcelab_backend.shared.clock import bugun
 
 TUR = {"don": "Don", "asiri_yagis": "Aşırı yağış", "ruzgar": "Kuvvetli rüzgâr", "s2_dusus": "Ani düşüş (optik)", "radar_degisim": "Radar değişimi", "s2_suphe": "Atmosfer şüphesi (olay DEĞİL)"}
 GUVEN = {"yuksek": "yüksek", "orta": "orta", "dusuk": "düşük"}
@@ -99,7 +99,7 @@ async def main() -> None:
     args = ap.parse_args()
     out = [
         "# Olay doğrulama listesi (çiftçi için)", "",
-        f"Oluşturma: {datetime.now(UTC).date().isoformat()} · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşikler ön değerdir; mühendis onayı bekliyor.", "",
+        f"Oluşturma: {bugun().isoformat()} · Kaynak: olay motoru (ADR 0018, formül olay-v2). Eşikler ön değerdir; mühendis onayı bekliyor.", "",
         "**Nasıl kullanılır:** Bu dosya Saha Defteri'ndeki «Uydu haklı mıydı?» yanıtlarından ÜRETİLİR (elle düzenlemeyin; `scripts/export_event_validation.py`). Yanıtlanmamış olaylarda «Çiftçi doğrulaması» sütununda **gerçekleşti / gerçekleşmedi / bilinmiyor** seçenekleri durur; defterde ya da kâğıt üzerinde işaretleyebilirsiniz. Tarihler uydu geçiş ve ERA5 günlük tarihleridir; "
         "gerçek olay birkaç gün önce/sonra olabilir. Don, yağış ve rüzgâr olayları 9–31 km ERA5 ızgarasından gelir (bahçeye birebir ölçüm değildir); rüzgâr hamlesi ERA5'te düşük çıkar, bu yüzden güven düşüktür.", "",
         "**Güven:** yüksek = birden çok kaynak ailesi (ör. hava + uydu) aynı pencerede; orta = tek güvenilir kaynak; düşük = tek kaynak ve zayıf (geçmiş rüzgâr).", "",

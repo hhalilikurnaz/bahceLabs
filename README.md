@@ -30,6 +30,7 @@ cp bahcelab-backend/.env.example bahcelab-backend/.env
 make db-migrate
 make db-seed              # yalnız test@bahcelab.com / test1234 (bahçe/veri oluşturmaz)
 make backend-dev          # port: .env → API_PORT
+# ya da hepsi birden (API + zamanlanmış işleri koşturan arq işçisi + Vite): make dev
 
 # Frontend (ayrı terminal)
 npm install
@@ -54,6 +55,9 @@ Frontend varsayılan olarak **real API modunda** çalışır (`VITE_PLANNING_API
 | `make docker-up` | PostgreSQL + PostGIS başlat |
 | `make db-migrate` | Alembic migration'larını uygula |
 | `make db-seed` | Geliştirme kullanıcısı (test@bahcelab.com / test1234) |
+| `make dev` | **Tam yığın:** DB + Redis + migration + API + arq işçisi (zamanlanmış işler) + Vite — [docs/development/dev-ortami.md](docs/development/dev-ortami.md) |
+| `make worker` | Yalnız arq işçisi (`JOB_BACKEND=arq`) |
+| `make job ad=<iş>` | Zamanlanmış bir işi şimdi bir kez koştur |
 | `make backend-dev` | FastAPI dev server (`API_PORT`) |
 | `make e2e-test` | Uçtan uca testler — ayrı veritabanında (aşağıya bakın) |
 | `make e2e-db-remove` | e2e veritabanı konteynerini ve hacmini kaldırır |

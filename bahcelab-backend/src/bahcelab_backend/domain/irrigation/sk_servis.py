@@ -19,6 +19,7 @@ from bahcelab_backend.domain.agro.simulation import stage_on
 from bahcelab_backend.domain.irrigation import schemas as sc
 from bahcelab_backend.domain.irrigation import sistem_kontrol as sk
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
+from bahcelab_backend.shared.clock import bahce_bugunu
 from bahcelab_backend.shared.storage import get_storage
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,7 @@ class SkServis:
         # Saha Defteri'ne düşer (kural doğruluğu bu kayıtlarla ölçülür)
         await self.session.execute(
             text("INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti, created_by) VALUES (gen_random_uuid(), :g, 'gozlem', :d, :a, CAST(:y AS jsonb), :u)"),
-            {"g": garden_id, "d": date.today(), "a": f"Sulama sistemi kontrolü ({ad}): {YANIT_AD[yanit]}", "y": json.dumps({"konu": "sistem_kontrol", "sektor": ad, "yanit": yanit, "sahne_tarihi": sahne_tarihi.isoformat()}), "u": user_id},
+            {"g": garden_id, "d": await bahce_bugunu(self.session, garden_id), "a": f"Sulama sistemi kontrolü ({ad}): {YANIT_AD[yanit]}", "y": json.dumps({"konu": "sistem_kontrol", "sektor": ad, "yanit": yanit, "sahne_tarihi": sahne_tarihi.isoformat()}), "u": user_id},
         )
         await self.session.flush()
 

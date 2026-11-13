@@ -36,6 +36,7 @@ from bahcelab_backend.domain.weather.schemas import (
     SuDengesi,
     YagisToplami,
 )
+from bahcelab_backend.shared.clock import zaman_dilimi_adi
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 logger = logging.getLogger(__name__)
@@ -99,8 +100,10 @@ class WeatherService:
     def _now_utc(self) -> datetime:
         return self._clock().astimezone(UTC)
 
-    def _local_now(self) -> datetime:
-        return self._clock().astimezone(ZoneInfo(TIMEZONE))
+    def _local_now(self, point: dict[str, Any] | None = None) -> datetime:
+        """Bahçenin (noktanın) yerel saati; nokta yoksa varsayılan dilim (shared/clock)."""
+        ad = zaman_dilimi_adi(float(point["enlem"]), float(point["boylam"])) if point else TIMEZONE
+        return self._clock().astimezone(ZoneInfo(ad))
 
     # ------------------------------------------------------------------ bahçe ve hücre
     async def _point(self, garden_id: uuid.UUID) -> dict[str, Any]:
@@ -205,7 +208,7 @@ class WeatherService:
         lat, lng = self._cell_key(point)
         cell = await self.repo.cell(lat, lng)
         data = await self._forecast(cell)
-        local = self._local_now()
+        local = self._local_now(point)
         today = local.date()
         await self._sync_history(cell, today)
         history_days = self.settings.weather_history_days
@@ -314,7 +317,11 @@ class WeatherService:
             sezon_baslangici=season,
         )
 
-    async def history(self, garden_id: uuid.UUID, start: date, end: date) -> GecmisYanit:
+    async def history(self, garden_id: uuid.UUID, start: date | None, end: date | None) -> GecmisYanit:
+        point = await self._point(garden_id)
+        today = self._local_now(point).date()  # bahçenin yerel günü
+        end = end or today - timedelta(days=1)
+        start = start or end - timedelta(days=395)
         if start > end:
             raise AppError(
                 422, AppErrorCode.VALIDATION_ERROR, "Başlangıç tarihi bitişten sonra olamaz."
@@ -324,10 +331,8 @@ class WeatherService:
             raise AppError(
                 422, AppErrorCode.VALIDATION_ERROR, f"En fazla {limit} günlük aralık istenebilir."
             )
-        point = await self._point(garden_id)
         lat, lng = self._cell_key(point)
         cell = await self.repo.cell(lat, lng)
-        today = self._local_now().date()
         await self._sync_history(cell, today)
         rows, yagis_kaynagi, tek = await self._tek_seri(garden_id, cell.id, today, await self._daily_rows(cell, start, end))
         return GecmisYanit(

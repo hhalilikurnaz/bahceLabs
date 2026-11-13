@@ -18,6 +18,7 @@ from bahcelab_backend.config import get_settings
 from bahcelab_backend.database import async_session_factory, engine
 from bahcelab_backend.domain.feedruns.service import tracked
 from bahcelab_backend.domain.water import feed
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.concurrency import advisory_lock, retry_on_deadlock
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,7 @@ async def _run_garden_feed(garden_id: uuid.UUID, out: dict[str, Any]) -> dict[st
 
 
 async def _feed_hls_unlocked(garden_id: uuid.UUID, days: int | None = None) -> Any:
-    from datetime import UTC, date, datetime, timedelta
+    from datetime import date, timedelta
 
     from bahcelab_backend.domain.imagery.registry import get_hls_provider
     from bahcelab_backend.domain.series.service import sync_hls
@@ -92,7 +93,7 @@ async def _feed_hls_unlocked(garden_id: uuid.UUID, days: int | None = None) -> A
     settings = get_settings()
     if not settings.hls_enabled:
         return "kapali"
-    today = datetime.now(UTC).date()
+    today = bugun()
     start = date.fromisoformat(settings.hls_start) if days is None else today - timedelta(days=days)
 
     async def run() -> dict[str, int]:

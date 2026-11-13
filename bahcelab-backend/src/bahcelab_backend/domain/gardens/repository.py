@@ -12,6 +12,7 @@ from sqlalchemy.sql.functions import FunctionElement
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.ndvi.models import IndexObservationModel
 from bahcelab_backend.domain.planning.models import SimulationPlanModel
+from bahcelab_backend.shared.clock import geojson_zaman_dilimi
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,7 @@ class GardenRepository:
             workspace_id=self.workspace_id,
             geom=_geom_expr(geojson),
             alan_dekar=round(area_dekar, 3),
+            zaman_dilimi=geojson_zaman_dilimi(geojson),
             **values,
         )
         self.session.add(garden)
@@ -118,6 +120,7 @@ class GardenRepository:
         if geojson is not None and area_dekar is not None:
             garden.geom = _geom_expr(geojson)
             garden.alan_dekar = Decimal(str(round(area_dekar, 3)))
+            garden.zaman_dilimi = geojson_zaman_dilimi(geojson)
         await self.session.flush()
 
     async def delete(self, garden: GardenModel) -> None:

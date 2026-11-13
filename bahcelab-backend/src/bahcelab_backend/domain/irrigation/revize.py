@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -17,6 +17,7 @@ from bahcelab_backend.domain.notifications.repository import NotificationReposit
 from bahcelab_backend.domain.notifications.service import NotificationService
 from bahcelab_backend.domain.notifications.types import Candidate
 from bahcelab_backend.domain.water.era5_sync import garden_cell
+from bahcelab_backend.shared.clock import bugun
 
 logger = logging.getLogger(__name__)
 SessionFactory = async_sessionmaker[AsyncSession]
@@ -51,7 +52,7 @@ async def gecici_gunler(session: AsyncSession, cell_id: uuid.UUID, today: date) 
 
 async def once_al(factory: SessionFactory, cell_id: uuid.UUID, today: date | None = None) -> Once:
     """Besleme ÖNCESİ: bu hücredeki sulama profilli bahçelerin kararı ve geçici günler."""
-    today = today or datetime.now(UTC).date()
+    today = today or bugun()
     out: dict[uuid.UUID, tuple[uuid.UUID, str, Imza]] = {}
     async with factory() as s:
         gec = await gecici_gunler(s, cell_id, today)
@@ -73,7 +74,7 @@ def gun_metni(d: date | None) -> str:
 
 async def sonra_bildir(factory: SessionFactory, cell_id: uuid.UUID, once: Once, today: date | None = None) -> int:
     """Besleme SONRASI: geçici günlerden en az biri kesinleştiyse ve bir bahçenin sulama kararı değiştiyse «plan değişti» bildirimi (bahçe başına, kararın yeni hâli için tekil)."""
-    today = today or datetime.now(UTC).date()
+    today = today or bugun()
     uretilen = 0
     async with factory() as s:
         kesinlesen = once.gecici - await gecici_gunler(s, cell_id, today)

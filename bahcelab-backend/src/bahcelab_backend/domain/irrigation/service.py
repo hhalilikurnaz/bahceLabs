@@ -8,9 +8,8 @@ import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any, cast
-from zoneinfo import ZoneInfo
 
 import numpy as np
 from sqlalchemy import text
@@ -28,7 +27,7 @@ from bahcelab_backend.domain.water import balance as wb
 from bahcelab_backend.domain.water.era5_sync import garden_cell
 from bahcelab_backend.domain.water.rain_series import gecmis_hava
 from bahcelab_backend.domain.water.service import WaterService
-from bahcelab_backend.domain.weather.provider import TIMEZONE
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import get_storage
 
@@ -110,8 +109,8 @@ class IrrigationService:
         self.workspace_id = workspace_id
         self.gardens = GardenRepository(session, workspace_id)
 
-    def _today(self) -> date:
-        return self.today or datetime.now(UTC).astimezone(ZoneInfo(TIMEZONE)).date()
+    def _today(self, garden: object | None = None) -> date:
+        return self.today or bugun(garden)  # bahçenin yerel günü (shared/clock)
 
     async def _garden(self, garden_id: uuid.UUID) -> Any:
         row = await self.gardens.get(garden_id)
@@ -138,7 +137,7 @@ class IrrigationService:
             msg = f"Beyan edilen {g.agac_sayisi} ağaç, alan ve dikim aralığına göre beklenen ≈ {expected} ağaçtan %{round(rule.agac_sayisi_tolerans * 100)}'ten fazla farklı. Beyanı ya da aralığı kontrol edin."
         elif p is not None and expected is not None and ok is None:
             msg = f"Alan ve aralığa göre beklenen ≈ {expected} ağaç; ağaç sayısı beyan edilmemiş."
-        tarife = _tarife(rule, self._today())
+        tarife = _tarife(rule, self._today(g))
         source = "yok" if p is None else "kullanici" if p.kwh_fiyat_tl is not None else "katalog" if tarife.guncel else "yok"
         return sc.ProfilYaniti(
             profil=None if p is None else sc.ProfilGiris.model_validate(p, from_attributes=True), alan_m2=area, agac_sayisi=g.agac_sayisi,
@@ -164,7 +163,7 @@ class IrrigationService:
             p = IrrigationProfileModel(garden_id=garden_id, sistem="damla", enerji="sebeke")  # kaydedilmeyen geçici: yalnız kova (Su sekmesi); sistem verimi/TL kullanılmaz
         rule = cat.load_catalog().sulama_plani
         su_rule = cat.load_catalog().su
-        today = self._today()
+        today = self._today(g)
         area = float(g.alan_dekar) * 1000.0
         cell, _, _ = await garden_cell(self.session, garden_id)
         centroid = (await self.session.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": garden_id})).one()
@@ -266,7 +265,7 @@ class IrrigationService:
 
     # ------------------------------------------------------------------ plan
     async def plan(self, garden_id: uuid.UUID, hafif: bool = False) -> sc.PlanYaniti:
-        today = self._today()
+        today = self._today(await self.gardens.get(garden_id))
         try:
             c = await self._ctx(garden_id)
         except Veri as v:

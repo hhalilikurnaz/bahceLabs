@@ -29,6 +29,7 @@ from bahcelab_backend.domain.ndvi.persist import missing_outputs, persist_analys
 from bahcelab_backend.domain.ndvi.processing import analyze_scene
 from bahcelab_backend.domain.ndvi.repository import NdviRepository
 from bahcelab_backend.domain.ndvi.rules import months_back
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import StorageBackend, get_storage
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ async def run_job(
             storage or get_storage(),
             search or get_imagery_provider().search_scenes,
             read or get_imagery_provider().read_scene,
-            today or datetime.now(UTC).date(),
+            today or bugun(),
         )
     except Exception:  # noqa: BLE001
         logger.exception("İşleme işi beklenmedik şekilde başarısız oldu: %s", job_id)

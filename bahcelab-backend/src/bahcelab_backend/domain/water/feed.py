@@ -18,6 +18,7 @@ from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.water.era5 import Era5Client, Era5Source
 from bahcelab_backend.domain.water.era5_sync import ERA5_START, garden_cell, sync_cell
 from bahcelab_backend.domain.water.validation_sync import IMERG, SMAP, sync_validation
+from bahcelab_backend.shared.clock import bugun
 
 logger = logging.getLogger(__name__)
 SessionFactory = async_sessionmaker[AsyncSession]
@@ -45,7 +46,7 @@ async def feed_cell(factory: SessionFactory, cell_id: uuid.UUID, lat: float, lng
     """Hücre için ERA5 satırlarını tamamlar: veri yoksa 2015'ten, varsa son ERA5-Land gününden 10 gün geriden."""
     from bahcelab_backend.domain.irrigation.revize import once_al, sonra_bildir
 
-    today = today or datetime.now(UTC).date()
+    today = today or bugun()
     try:
         once = await once_al(factory, cell_id, today)  # geçici günler kesinleşince plan değişirse bildirim için (ADR 0026)
     except Exception:  # noqa: BLE001 - izleme besleme işini düşürmemeli
@@ -114,7 +115,7 @@ async def feed_validation(factory: SessionFactory, garden_id: uuid.UUID, today: 
         for kaynak in ("imerg", "smap"):
             await mark_skipped(factory, garden_id, kaynak, "EARTHDATA_TOKEN tanımlı değil (bahcelab-backend/.env.local)")
         return {"durum": "atlandi: EARTHDATA_TOKEN tanımlı değil"}
-    end = (today or datetime.now(UTC).date()) - timedelta(days=1)
+    end = (today or bugun()) - timedelta(days=1)
     start = date.fromisoformat(settings.validation_start)
     out: dict[str, dict[str, int] | str] = {}
     for source, kaynak, step in ((IMERG, "imerg", 1), (SMAP, "smap", SMAP_STEP)):

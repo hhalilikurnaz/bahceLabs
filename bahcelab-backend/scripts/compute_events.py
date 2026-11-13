@@ -7,7 +7,6 @@ Varsayılan dry-run: kayıtları YAZMAZ, kurulacak olayları sayar ve listeler. 
 import asyncio
 import json
 from collections import Counter
-from datetime import UTC, datetime
 
 from guard import backup, confirm, log, parser  # type: ignore[import-not-found]
 from sqlalchemy import text
@@ -17,6 +16,7 @@ from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.events import rules as er
 from bahcelab_backend.domain.events import service as events
 from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F401
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import get_storage
 
 SCOPE_SQL = "SELECT g.id, g.ad FROM gardens g JOIN workspace_members m ON m.workspace_id = g.workspace_id JOIN users u ON u.id = m.user_id WHERE u.email = :e"
@@ -36,7 +36,7 @@ async def main() -> None:
     found = await targets(args.user, args.garden)
     if not found:
         raise SystemExit("Kapsamda bahçe yok.")
-    today = datetime.now(UTC).date()
+    today = bugun()
     rule = cat.load_catalog().olay
     plans = {}
     async with async_session_factory() as s:

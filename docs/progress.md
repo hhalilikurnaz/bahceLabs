@@ -320,6 +320,13 @@ Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET
 
 - **Gece yarısı penceresi (00:00–03:00 İstanbul) e2e hatası — kök neden**: test tohum betikleri (`seed_water`, `seed_acquisitions`, `seed_gecici`, `seed_radar`, `fake_era5`) «bugün»ü UTC'den alıyordu; sunucu İstanbul takvim gününü kullanır (`shared/clock.today_istanbul`). Pencerede tohumlar bir gün geride kalıp sulama/sistem-kontrol e2e'leri düşüyordu (Tam paket 4 hata; yerelde 00:18'de aynen yeniden üretildi, düzeltmeden sonra 00:21'de geçti). Betikler ve 9J izleme kodu (`isler`, `veri_kontrol`, `/ic/izleme`) `today_istanbul()`'a çevrildi. Üretimde hâlâ UTC günü kullanan modüller var (ör. `revize`, `events`, `water/feed`, `acquisitions/*`): pencerede bir gün kayabilir — ayrı iş olarak onayınıza bırakıldı.
 
+### UTC günü → bahçenin yerel günü, dev işçisi (2026-11-14)
+
+- **Tek yardımcı** `shared/clock`: `bugun(bahce)` (bahçenin `zaman_dilimi` alanı; varsayılan Europe/Istanbul), `bahce_bugunu(session, id)`, `zaman_dilimi_adi(lat, lng)` (Türkiye kutusu → İstanbul; dışı → boylamdan `Etc/GMT∓n`, yaz saati yok: yaklaşık). Migration 044 `gardens.zaman_dilimi`; bahçe eklenirken/sınır değişince koordinattan türetilir. Servis/iş/betik kodunda `date.today()` / `datetime.now(UTC).date()` yasak: `tests/test_tarih_yasagi.py` (AST). Web: `todayIstanbul()` + `tests/bugunYasagi.test.ts`. Dönüştürülenler: agro (Durum), irrigation (plan, sk_servis), water (service, feed), events, series, multiyear, weather (geçmiş varsayılanları bahçe gününe göre), acquisitions/*, ndvi runner, revize, eta, izleme, betikler. Sınır testleri: `tests/test_bahce_gunu.py` (İstanbul 00:30 / 23:30, ay sınırı, Türkiye dışı bahçe; `time_machine`, projede freezegun yerine bu kullanılıyor).
+- Tam paketteki ikinci gece-yarısı hatası (radar e2e, 00:40): `BulutAltindaGorus`/`SezonEgrisi`/`DurumPaneli` «bugün»ü UTC'den alıyordu → `todayIstanbul()`; yerelde 00:53'te yeniden üretilip düzeltildi.
+- **Veri uyarısı**: kullanıcı satırı «Veri uyarısı» (önce «Veri durumu»ydu); «Ayrıntı →» Durum'daki «Veri durumu» akordeonunu açıp ilk bozuk veri koşulu satırına kaydırır ve odaklar (iki seviye, tek kavram). Sulama panelinde aynı satır güven ayrıntısını açar.
+- **Dev işçisi**: `make dev` (DB+Redis+migration+API+arq işçisi+Vite), `make worker`, `make job ad=<iş>`; belge `docs/development/dev-ortami.md`. IMERG doğrulaması: `make job ad=refresh_validation` sonrası dev'de IMERG ve SMAP son gün **2026-11-12** (önce 2026-10-28; IMERG Late ≈ 1 gün gecikmeli).
+
 ---
 
 ## Notlar

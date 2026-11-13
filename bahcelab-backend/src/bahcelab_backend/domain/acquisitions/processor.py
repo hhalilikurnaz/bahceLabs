@@ -10,7 +10,7 @@ import asyncio
 import logging
 import time
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any
 
 import numpy as np
@@ -40,6 +40,7 @@ from bahcelab_backend.domain.imagery.formulas import (
 from bahcelab_backend.domain.imagery.provider import ImageryError, ImageryProvider, SceneRef
 from bahcelab_backend.domain.multiyear.grid import align_to_grid, canonical_grid, garden_mask
 from bahcelab_backend.domain.ndvi.processing import MIN_VALID_RATIO
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import StorageBackend
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ async def process_month(
     """Dönüş: 'tamam' | 'hata' | 'atlandi' (başka işçi aldı / zaten tamam)."""
     cfg = settings or get_settings()
     started = time.monotonic()
-    today = today or datetime.now(UTC).date()
+    today = today or bugun()
     async with factory() as session:
         repo = AcquisitionRepository(session)
         if not await repo.claim_month(garden_id, SOURCE_ID, month, force=force):

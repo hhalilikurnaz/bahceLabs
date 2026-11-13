@@ -1,10 +1,10 @@
-# 9J Dilim 2 · İç izleme ekranı + kullanıcıya «Veri durumu» satırı: ilkeler 1–11, ekran bazında
+# 9J Dilim 2 · İç izleme ekranı + kullanıcıya «Veri uyarısı» satırı: ilkeler 1–11, ekran bazında
 
 ✓ = karşılanıyor · ◐ = kısmen · — = geçerli değil. Kaynak: [gorsellestirme-ilkeleri.md](gorsellestirme-ilkeleri.md). Ekranlar (jlnnlk + soğuk hava, geliştirme verisi, 1440/1024/390): `docs/design/u9j-d2-ekranlar-jlnnlk/`. İç ekran `/ic/kalite` (yalnız INTERNAL_EMAILS, sunucu 403); kullanıcıya yalnız bahçe panelinde tek satır.
 
 **Veri notu (dürüstlük):** geliştirme ortamında worker/zamanlayıcı çalışmadığı için günlük anlık görüntü geçmişi YOK; ekranlardaki zaman çizelgesi bugünün tek kaydını gösterir (geçmişe dönük uydurma anlık görüntü yazılmadı). Akış durumları, uyum noktaları ve güven etiketleri o günün GERÇEK verisinden hesaplandı. e2e'de çizelge, gerçek işlerin 14 gün için koşturulmasıyla dolar.
 
-| İlke | Akışlar | Kaynak uyumu | Kurallar | Bahçeler | Bahçe paneli · «Veri durumu» satırı | Not |
+| İlke | Akışlar | Kaynak uyumu | Kurallar | Bahçeler | Bahçe paneli · «Veri uyarısı» satırı | Not |
 |---|---|---|---|---|---|---|
 | 1 Tek soru, başlık cevap | ✓ «hangi veri akışı bozuk?» (tablo + zaman çizelgesi) | ✓ «kaynaklar birbirinden kayıyor mu?» | ✓ «kurallarımız işe yarıyor mu?» | ✓ «hangi bahçelerde güven düşük, neden?» | ✓ tek cümle: ne bozuk + ölçülen tarih | sekme başlığı = soru |
 | 2 Karar → sayı → kanıt → ayrıntı | ✓ durum → gecikme/kabul/kopuk eşikleri → neden | ✓ durum → son değer/taban/sapma/n → grafik | ✓ özet tablo → aylık döküm (açılır) | ✓ dağılım → bahçe satırı → eksik koşul listesi | ✓ satır → «Güven etiketi neye dayanıyor?» açılır | |
@@ -20,4 +20,4 @@
 
 **Tek güven servisi:** iç «Bahçeler» etiketi `guven.topla` çıktısıdır (Sulama ve Durum aynı fonksiyon). Fark: Durum ekranı kendi «bileşen verisi yeterli» koşulunu ekler; iç ekranda bu koşul yok ve ekranda yazılı. Test: `tests/test_izleme_ic.py` (iç etiket = doğrudan servis çıktısı).
 
-**Kalan borçlar / dürüst notlar:** (1) geçmiş akış zaman çizelgesi, günlük iş gerçekten koşmaya başladıkça dolar; (2) uyum noktaları haftalık: ilk haftalarda tek nokta; (3) iç ekran çalışma alanı kapsamlı (ETa ekranıyla aynı), tüm sistem bahçeleri değil; (4) kullanıcı satırındaki «Veri durumu» adı, Durum panelindeki mevcut «Veri durumu» akordeonuyla (bileşen listesi) aynı; ikisi farklı şey — ad onayınıza bağlı.
+**Kalan borçlar / dürüst notlar:** (1) geçmiş akış zaman çizelgesi, günlük iş gerçekten koşmaya başladıkça dolar; (2) uyum noktaları haftalık: ilk haftalarda tek nokta; (3) iç ekran çalışma alanı kapsamlı (ETa ekranıyla aynı), tüm sistem bahçeleri değil; (4) kullanıcı satırı «Veri uyarısı», Durum'daki «Veri durumu» akordeonunun ÖZETİDİR: iki ayrı kavram değil iki seviye. «Ayrıntı →» akordeonu açar ve ilk bozuk veri koşulu satırına kaydırıp odaklar (e2e: `ic-izleme.spec.ts`).

@@ -10,7 +10,7 @@ import asyncio
 import logging
 import time
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any, Protocol
 
 import numpy as np
@@ -35,6 +35,7 @@ from bahcelab_backend.domain.imagery.landsat import LandsatPiece, LandsatRef
 from bahcelab_backend.domain.imagery.provider import ImageryError
 from bahcelab_backend.domain.multiyear.grid import CanonicalGrid, canonical_grid, garden_mask
 from bahcelab_backend.domain.ndvi.processing import MIN_VALID_RATIO
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.storage import StorageBackend
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,7 @@ async def process_landsat_month(
     today: date | None = None,
 ) -> str:
     started = time.monotonic()
-    today = today or datetime.now(UTC).date()
+    today = today or bugun()
     async with factory() as session:
         repo = AcquisitionRepository(session)
         if not await repo.claim_month(garden_id, LANDSAT_SOURCE, month, force=force):

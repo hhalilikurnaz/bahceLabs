@@ -4,7 +4,7 @@ export
 # DİKKAT: kök .env'deki BOŞ `EARTHDATA_TOKEN=` satırı export edilince bahcelab-backend/.env.local'daki gerçek belirteci EZER (ortam değişkeni dosyadan önceliklidir).
 # Bu yüzden sunucu/işçi hedefleri `env -u EARTHDATA_TOKEN` ile başlar: belirteç yalnız .env.local'dan okunur. (Bu hata yüzünden SMAP/IMERG çekimi sessizce atlanıyordu.)
 
-.PHONY: e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test backend-test-fast frontend-install frontend-dev
+.PHONY: dev worker job e2e-test e2e-db-remove backend-typecheck help docker-up docker-down db-seed db-migrate db-revision backend-install backend-dev backend-test backend-test-fast frontend-install frontend-dev
 
 help:
 	@echo "BahçeLab — bahcelab-web monorepo"
@@ -14,6 +14,9 @@ help:
 	@echo "  make backend-install    Install Python dependencies"
 	@echo "  make db-migrate         Run Alembic migrations"
 	@echo "  make db-seed            Create dev user test@bahcelab.com / test1234"
+	@echo "  make dev                TAM geliştirme yığını: DB + Redis + migration + API + arq işçisi (zamanlanmış işler) + Vite"
+	@echo "  make worker             Yalnız arq işçisi (JOB_BACKEND=arq; Redis gerekir)"
+	@echo "  make job ad=<iş>        Zamanlanmış bir işi şimdi bir kez koştur (ad vermezsen liste)"
 	@echo "  make backend-dev        Start FastAPI dev server (port $$API_PORT)"
 	@echo "  make backend-test       Run full backend tests (parallel, per-worker test DB)"
 	@echo "  make backend-test-fast  Run fast backend tests (-m 'not slow')"
@@ -41,8 +44,23 @@ db-revision:
 backend-dev:
 	cd bahcelab-backend && env -u EARTHDATA_TOKEN PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port $(API_PORT)
 
-worker:
-	cd bahcelab-backend && env -u EARTHDATA_TOKEN PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
+# Geliştirme yığını: API + arq işçisi AYNI kuyruğu (Redis) kullanır; zamanlanmış işler (besleme, izleme, IMERG/SMAP doğrulama) işçide koşar.
+# Not: JOB_BACKEND=arq iken API işleri kendi içinde zamanlamaz; işçi yoksa HİÇBİR zamanlanmış iş koşmaz
+DEV_ORTAM = JOB_BACKEND=arq REDIS_URL=$(or $(REDIS_URL),redis://localhost:6379/0)
+
+dev:  ## docker (db + redis) + migration + API (--reload) + arq işçisi + Vite; Ctrl+C hepsini durdurur
+	@$(MAKE) docker-up db-migrate
+	@trap 'kill 0' INT TERM EXIT; \
+	  (cd bahcelab-backend && env -u EARTHDATA_TOKEN $(DEV_ORTAM) PYTHONPATH=src .venv/bin/uvicorn bahcelab_backend.main:app --reload --host 0.0.0.0 --port $(API_PORT)) & \
+	  (cd bahcelab-backend && env -u EARTHDATA_TOKEN $(DEV_ORTAM) PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings) & \
+	  (npm run dev) & \
+	  wait
+
+worker:  ## yalnız işçi (API'yi başka terminalde `make backend-dev` ile açtıysanız; ikisi de JOB_BACKEND=arq olmalı)
+	cd bahcelab-backend && env -u EARTHDATA_TOKEN $(DEV_ORTAM) PYTHONPATH=src .venv/bin/arq bahcelab_backend.jobs.arq_worker.WorkerSettings
+
+job:  ## bir zamanlanmış işi şimdi bir kez koştur: make job ad=refresh_validation
+	cd bahcelab-backend && env -u EARTHDATA_TOKEN PYTHONPATH=src .venv/bin/python scripts/is_calistir.py $(ad)
 
 backend-test:  ## TAM paket (yavaş testler dahil), işçi başına ayrı test veritabanı, paralel
 	cd bahcelab-backend && PYTHONPATH=src:. .venv/bin/pytest -q -n 8

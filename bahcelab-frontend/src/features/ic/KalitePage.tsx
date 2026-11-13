@@ -27,7 +27,7 @@ export function KalitePage() {
   return (
     <main className="mx-auto w-full max-w-[1280px] p-4 text-small" data-testid="ic-izleme">
       <h1 className="text-h1 font-semibold">İç kalite · veri ve model izleme</h1>
-      <p className="mt-1 text-app-text-muted">Kullanıcıya gösterilmez. Kullanıcıya yalnız bir şey bozukken bahçe panelinde tek satır «Veri durumu» çıkar (ADR 0030).</p>
+      <p className="mt-1 text-app-text-muted">Kullanıcıya gösterilmez. Kullanıcıya yalnız bir şey bozukken bahçe panelinde tek satır «Veri uyarısı» çıkar (Ayrıntı → Durum'daki «Veri durumu» akordeonu) (ADR 0030).</p>
       <div ref={liste} role="tablist" aria-label="İzleme bölümleri" className="mt-3 flex flex-wrap gap-1 border-b border-app-border">
         {SEKMELER.map((s, i) => (
           <button

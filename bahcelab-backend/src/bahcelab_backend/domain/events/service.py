@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import cast
 
 import numpy as np
@@ -28,6 +28,7 @@ from bahcelab_backend.domain.events.models import EventModel, EventSourceModel
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, pixel_center_lnglat
 from bahcelab_backend.domain.notifications.templates import EVENT_TITLES
 from bahcelab_backend.domain.water.era5_sync import garden_cell
+from bahcelab_backend.shared.clock import bahce_bugunu
 from bahcelab_backend.shared.storage import StorageBackend
 
 logger = logging.getLogger(__name__)
@@ -198,7 +199,7 @@ async def collect_signals(session: AsyncSession, storage: StorageBackend, garden
 
 async def compute_events_for(session: AsyncSession, storage: StorageBackend, garden_id: uuid.UUID, today: date | None = None) -> dict[str, int]:
     """Bahçenin tüm olaylarını yeniden kurar (idempotent). Dönüş: olay sayısı, eklenen, güncellenen, silinen."""
-    today = today or datetime.now(UTC).date()
+    today = today or await bahce_bugunu(session, garden_id)
     rule = cat.load_catalog().olay
     events = er.build_events(await collect_signals(session, storage, garden_id, today), rule)
     existing = {e.anahtar: e for e in (await session.execute(select(EventModel).where(EventModel.garden_id == garden_id))).scalars().all()}

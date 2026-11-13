@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from sqlalchemy import select, text
@@ -24,6 +24,7 @@ from bahcelab_backend.domain.agro import catalog as cat
 from bahcelab_backend.domain.imagery.hls import PlanetaryHlsProvider, summarize
 from bahcelab_backend.domain.series import curve as cv
 from bahcelab_backend.domain.series.models import HlsObservationModel
+from bahcelab_backend.shared.clock import bahce_bugunu
 
 logger = logging.getLogger(__name__)
 CHUNK_DAYS = 31
@@ -98,7 +99,7 @@ async def observations_for(session: AsyncSession, garden_id: uuid.UUID, rule: ca
 
 async def curve_for(session: AsyncSession, garden_id: uuid.UUID, start: date, end: date | None = None) -> dict[str, Any]:
     rule = cat.load_catalog().egri
-    end = end or datetime.now(UTC).date()
+    end = end or await bahce_bugunu(session, garden_id)
     observations, radar_days = await observations_for(session, garden_id, rule)
     points, sigma = await asyncio.to_thread(cv.build_curve, observations, start, end, rule)  # Whittaker çözümü CPU işidir: olay döngüsünü (ve açık oturumları) bloke etmesin
     change_days = {r[0] for r in (await session.execute(select(ChangeEventModel.tarih).where(ChangeEventModel.garden_id == garden_id, ChangeEventModel.source_id == RADAR_SOURCE, ChangeEventModel.durum == "aday", ChangeEventModel.guven != "dusuk"))).all()}

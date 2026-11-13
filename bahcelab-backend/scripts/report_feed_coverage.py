@@ -7,7 +7,7 @@ HLS sahne tabanlıdır (3–8 günde bir geçiş): eksik gün yerine en uzun bo�
 
 import argparse
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import select, text
 
@@ -18,6 +18,7 @@ from bahcelab_backend.domain.gardens import models as _garden_models  # noqa: F4
 from bahcelab_backend.domain.water.era5_sync import ERA5_START, garden_cell
 from bahcelab_backend.domain.water.feed import SMAP_STEP
 from bahcelab_backend.domain.water.validation import days_between
+from bahcelab_backend.shared.clock import bugun
 
 
 def span(have: set[date], expected: list[date]) -> tuple[str, int, str]:
@@ -33,7 +34,7 @@ async def main() -> None:
     ap.add_argument("--ad", action="append", required=True)
     ap.add_argument("--cikti")
     args = ap.parse_args()
-    today = datetime.now(UTC).date()
+    today = bugun()
     yesterday = today - timedelta(days=1)
     settings = get_settings()
     lines = [

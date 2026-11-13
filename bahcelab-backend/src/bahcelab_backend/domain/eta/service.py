@@ -40,6 +40,7 @@ from bahcelab_backend.domain.eta.provider import (
     TermalSahne,
     TermalSahneSaglayici,
 )
+from bahcelab_backend.shared.clock import bugun
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ class EtaService:
         geo, _alan, lat, lon = await self._bahce(garden_id)
         k = self.kural
         # 1) ERA5 (Open-Meteo) + Meteostat sapması
-        era = await asyncio.to_thread(meteo.era5_gunluk, lat, lon, bas - timedelta(days=1), min(bit, date.today() - timedelta(days=6)))
+        era = await asyncio.to_thread(meteo.era5_gunluk, lat, lon, bas - timedelta(days=1), min(bit, bugun() - timedelta(days=6)))
         await self.session.execute(delete(EtaMeteoModel).where(EtaMeteoModel.garden_id == garden_id))
         for t, v in era.gun.items():
             await self.session.execute(insert(EtaMeteoModel).values(garden_id=garden_id, tarih=t, rs_mj=v["shortwave_radiation_sum"], tmax_c=v["temperature_2m_max"], tmin_c=v["temperature_2m_min"], tmean_c=v["temperature_2m_mean"], cig_c=v["dew_point_2m_mean"], et0_mm=v["et0_fao_evapotranspiration"], yagis_mm=v["precipitation_sum"]))
@@ -155,7 +156,7 @@ class EtaService:
             return
         obs = await asyncio.to_thread(meteo.meteostat_gunluk, k.ta_istasyon)
         son = max(obs) if obs else bas
-        e = await asyncio.to_thread(meteo.era5_gunluk, float(st[0]), float(st[1]), min(bas, son) - timedelta(days=366), min(son, date.today() - timedelta(days=6)))
+        e = await asyncio.to_thread(meteo.era5_gunluk, float(st[0]), float(st[1]), min(bas, son) - timedelta(days=366), min(son, bugun() - timedelta(days=6)))
         sap = meteo.aylik_ta_sapma({t: v["temperature_2m_max"] for t, v in e.gun.items()}, {t: v["tmax"] for t, v in obs.items()}, k.ta_sapma_min_gun)
         for ay, (ort, std, n) in sap.items():
             await self._kal_yaz(garden_id, "ta_sapma", f"{ay:02d}", ort, std, n)

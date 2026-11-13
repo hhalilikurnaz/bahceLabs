@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 from bahcelab_backend.domain.eta import meteo
+from bahcelab_backend.shared.clock import bugun
 
 
 def son_sapmalar(lat: float, lon: float, min_gun: int, istasyon: str = "17340", pencere_gun: int = 90) -> list[float]:
@@ -15,6 +16,6 @@ def son_sapmalar(lat: float, lon: float, min_gun: int, istasyon: str = "17340", 
         return []
     son = gunler[-1]
     bas = son - timedelta(days=pencere_gun)
-    e = meteo.era5_gunluk(lat, lon, bas, min(son, date.today() - timedelta(days=6)))
+    e = meteo.era5_gunluk(lat, lon, bas, min(son, bugun() - timedelta(days=6)))
     fark = [float(o) - float(m) for t, v in e.gun.items() if t in obs and (o := obs[t].get("tmax")) is not None and (m := v.get("temperature_2m_max")) is not None]
     return fark if len(fark) >= min_gun else []

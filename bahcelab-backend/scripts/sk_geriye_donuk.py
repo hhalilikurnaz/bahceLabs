@@ -15,6 +15,7 @@ from bahcelab_backend.domain.irrigation import schemas as sc
 from bahcelab_backend.domain.irrigation import sistem_kontrol as sk
 from bahcelab_backend.domain.irrigation.service import IrrigationService
 from bahcelab_backend.domain.irrigation.sk_servis import SkServis
+from bahcelab_backend.shared.clock import bugun as bugun_gunu
 
 PROFIL = {"sistem": "damla", "damlatici_sayisi": 4, "damlatici_debi_lh": 4.0, "sira_aralik_m": 5.0, "agac_aralik_m": 4.0, "pompa_kw": 7.5, "pompa_debi_m3h": 40.0, "enerji": "sebeke"}
 
@@ -22,7 +23,7 @@ PROFIL = {"sistem": "damla", "damlatici_sayisi": 4, "damlatici_debi_lh": 4.0, "s
 async def main() -> None:
     gid, cikti = uuid.UUID(sys.argv[1]), sys.argv[2]
     kural = cat.load_catalog().sistem_kontrol
-    bugun = date.today()
+    bugun = bugun_gunu()
     async with async_session_factory() as s:
         r = (await s.execute(text("SELECT workspace_id, urun, cesit_kodu, ad, alan_dekar FROM gardens WHERE id = :g"), {"g": gid})).one()
         ws, urun, cesit, ad, alan = r

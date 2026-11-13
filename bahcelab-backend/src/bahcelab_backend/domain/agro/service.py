@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import date, timedelta
 
 from bahcelab_backend.config import get_settings
 from bahcelab_backend.domain.agro import catalog as cat
@@ -62,9 +61,9 @@ from bahcelab_backend.domain.ndvi.rules import build_alerts
 from bahcelab_backend.domain.notifications.repository import StatusSnapshotRepository
 from bahcelab_backend.domain.water.schemas import SulamaKarari
 from bahcelab_backend.domain.water.service import WaterService
-from bahcelab_backend.domain.weather.provider import TIMEZONE
 from bahcelab_backend.domain.weather.schemas import HavaYanit
 from bahcelab_backend.domain.weather.service import WeatherService
+from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 
@@ -107,11 +106,11 @@ class AgroService:
         self.settings = get_settings()
         self.catalog = cat.load_catalog()
 
-    def _today(self) -> date:
-        return datetime.now(ZoneInfo(TIMEZONE)).date()
+    def _today(self, garden: object | None = None) -> date:
+        return bugun(garden)  # bahçenin yerel günü (shared/clock)
 
-    def current_date(self) -> date:
-        return self._today()
+    def current_date(self, garden: object | None = None) -> date:
+        return self._today(garden)
 
     async def _garden(self, garden_id: uuid.UUID) -> GardenModel:
         row = await self.gardens.get(garden_id)
@@ -153,7 +152,7 @@ class AgroService:
 
     async def phenology(self, garden_id: uuid.UUID, season: int | None) -> FenolojiYanit:
         garden = await self._garden(garden_id)
-        year = self._season_year(season, self._today())
+        year = self._season_year(season, self._today(garden))
         rules = cat.effective_rules(self.catalog, garden.urun, garden.cesit_kodu)
         if rules.fenoloji is None:
             return FenolojiYanit(sezon=year, urun=garden.urun, cesit_kodu=garden.cesit_kodu, kural=None, kc_kural=None, kural_yok=True, evreler=[])
@@ -192,7 +191,7 @@ class AgroService:
     # ------------------------------------------------------------------ seriler
     async def series(self, garden_id: uuid.UUID, season: int | None) -> SerilerYanit:
         garden = await self._garden(garden_id)
-        today = self._today()
+        today = self._today(garden)
         year = self._season_year(season, today)
         start = date(year, 10, 1)
         season_end = date(year + 1, 9, 30)
@@ -314,7 +313,7 @@ class AgroService:
 
     async def risks(self, garden_id: uuid.UUID) -> RiskleriYanit:
         garden = await self._garden(garden_id)
-        today = self._today()
+        today = self._today(garden)
         weather = await self._weather_or_none(garden_id)
         history = await self._history(garden_id, today)
         book = load_risk_rules()
@@ -380,7 +379,7 @@ class AgroService:
 
     async def irrigation(self, garden_id: uuid.UUID) -> SulamaYanit:
         garden = await self._garden(garden_id)
-        today = self._today()
+        today = self._today(garden)
         rules = load_irrigation_rules()
         weather = await self._weather_or_none(garden_id)
         history = await self._history(garden_id, today)
@@ -423,7 +422,7 @@ class AgroService:
     ]:
         """Bugün listesi ve bildirim işi için ortak girdiler: sahneler, hava, riskler ve sulama sonucu (Durum v2 kademesi `status_v2_result`'tan gelir)."""
         garden = await self._garden(garden_id)
-        today = self._today()
+        today = self._today(garden)
         scenes = await self.ndvi.list_scenes(garden_id)
         weather = await self._weather_or_none(garden_id)
         history = await self._history(garden_id, today)
@@ -436,7 +435,7 @@ class AgroService:
     async def status_v2_result(self, garden_id: uuid.UUID, today: date | None = None) -> sv.DurumV2:
         """Durum v2 (alan sonucu; iç puan dahil — yalnız karşılaştırma ve testler için). API `status_v2` iç puanı yanıta koymaz."""
         garden = await self._garden(garden_id)
-        today = today or self._today()
+        today = today or self._today(garden)
         weather = await self._weather_or_none(garden_id)
         history = await self._history(garden_id, today)
         risks = await self._compute_risks(garden, history, weather, today)
@@ -446,7 +445,7 @@ class AgroService:
 
     async def status(self, garden_id: uuid.UUID) -> DurumV2Yanit:
         """Durum (v2, ADR 0018): kademe + 5 bileşen. Son kademe bahçe listesi ve kademe düşüşü bildirimi için kaydedilir (liste ile Durum sekmesi TEK kademe)."""
-        today = self._today()
+        today = self._today(await self._garden(garden_id))
         result = await self.status_v2_result(garden_id, today)
         if result.kademe != "veri_yok":
             await StatusSnapshotRepository(self.ndvi.session).save(garden_id, result.kademe)
@@ -461,7 +460,7 @@ class AgroService:
         return DurumV2Yanit(
             durum=result.kademe, etiket=KADEME_ADLARI[result.kademe], ozet=summary_sentence(result.kademe),
             bilesenler=[BilesenV2Yanit(kod=c.kod, ad=c.ad, seviye=c.seviye, kullanilabilir=c.kullanilabilir, bayat=c.bayat, neden=c.neden, veri_tarihi=c.veri_tarihi) for c in result.bilesenler],  # type: ignore[arg-type]
-            riskler=[r.metin for r in risks], guven=g.etiket, guven_nedeni=g.nedeni, guven_nasil=g.nasil, veri_durumu=gv.veri_durumu(g), nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
+            riskler=[r.metin for r in risks], guven=g.etiket, guven_nedeni=g.nedeni, guven_nasil=g.nasil, veri_durumu=gv.veri_durumu(g), veri_kosullari=gv.veri_kosullari(g), nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
             esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
         )
 
@@ -490,7 +489,7 @@ class AgroService:
     # ------------------------------------------------------------------ bugün
     async def today(self, garden_id: uuid.UUID) -> BugunYanit:
         scenes, weather, risks, irrigation = await self.collect(garden_id)
-        today = self._today()
+        today = self._today(await self._garden(garden_id))
         _, sat = satellite_severities(scenes)
         spray = []
         if weather:

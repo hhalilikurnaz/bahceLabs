@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { todayIstanbul } from '../../lib/dates'
 import type { Garden } from '../../api/types'
 import { useGardenStatus, type StatusBilesen } from '../../api/agroApi'
 import { StaleBadge } from '@/components/chart'
@@ -37,6 +38,17 @@ const EYLEM: Record<StatusBilesen['kod'], string> = {
 }
 
 /** Durum sekmesi (Yön C): karar cümlesi → tek büyük sayı («Normal» ya da «−%8») → sezon çizgisi → Yapılacaklar (AÇIK) → diğer göstergeler → ayrıntı akordeonları. */
+/** «Veri uyarısı → Ayrıntı»: Durum'daki «Veri durumu» akordeonunu açar ve ilk bozuk veri koşulu satırına kaydırır (iki ayrı kavram değil, iki seviye). */
+function veriAyrintisiniAc(): void {
+  const akordeon = document.querySelector<HTMLDetailsElement>('details[data-testid="veri-durumu"]')
+  if (!akordeon) return
+  akordeon.open = true
+  const satir = akordeon.querySelector<HTMLElement>('[data-testid="veri-kosul-satiri"][data-ok="false"]') ?? akordeon
+  satir.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  satir.setAttribute('tabindex', '-1')
+  satir.focus({ preventScroll: true })
+}
+
 export function DurumPaneli({ garden }: { garden: Garden }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useGardenStatus(garden.id)
   const kademe: Kademe | null = data && data.durum !== 'veri_yok' ? data.durum : null
@@ -48,7 +60,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
   const radar = useRadarEdinimler(garden.id).data
   const olaylar = useRadarDegisimler(garden.id).data
   const sonOptik = edinim?.edinimler[edinim.edinimler.length - 1]?.tarih ?? null
-  const eskiOptik = eskiOptikSatiri(new Date().toISOString().slice(0, 10), sonOptik, radar?.edinimler, olaylar?.degisimler)
+  const eskiOptik = eskiOptikSatiri(todayIstanbul(), sonOptik, radar?.edinimler, olaylar?.degisimler)
   const ac = (kod: StatusBilesen['kod']) => {
     const hedef = HEDEF[kod]
     if (hedef.sekme) {
@@ -82,7 +94,12 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
               <div className="mt-4"><KademeSeridi kademe={kademe} /></div>
               {kademe ? <p className="mt-3 flex items-baseline gap-2 text-body" data-testid="kademe-ad"><b style={{ color: KADEME_META[kademe].renk }}><span aria-hidden>{KADEME_META[kademe].isaret}</span> {KADEME_META[kademe].ad}</b><span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p> : <p className="mt-3 text-body" data-testid="kademe-satiri"><b data-testid="kademe-ad">Veri yetersiz</b> <span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p>}
               <p className="mt-1 text-small text-app-text-muted" data-testid="durum-guven"><b className={data.guven === 'dusuk' ? 'text-app-warn' : ''}>Güven {{ dusuk: 'düşük', orta: 'orta', yuksek: 'yüksek' }[data.guven]}</b> · {data.guvenNedeni.replace(/veri bayat/g, 'veri eski')}</p>
-              {data.veriDurumu && <p className="mt-1 text-small text-app-warn" data-testid="veri-durumu-satiri"><b>Veri durumu:</b> {data.veriDurumu}</p>}
+              {data.veriDurumu && (
+                <p className="mt-1 text-small text-app-warn" data-testid="veri-uyarisi-satiri">
+                  <b>Veri uyarısı:</b> {data.veriDurumu}{' '}
+                  <button type="button" className="min-h-6 font-semibold underline" onClick={veriAyrintisiniAc} data-testid="veri-uyarisi-ayrinti">Ayrıntı →</button>
+                </p>
+              )}
               {data.guvenNasil && <details className="mt-1 text-caption text-app-text-muted" data-testid="durum-guven-nasil"><summary className="min-h-6 cursor-pointer font-semibold underline">Güven etiketi neye dayanıyor?</summary><p className="mt-1">{data.guvenNasil}</p></details>}
             </KararBlogu>
           </div>
@@ -91,6 +108,15 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
           <IkincilKart baslik="Diğer göstergeler" testId="diger-gostergeler"><GostergeCubuklari gardenId={garden.id} /></IkincilKart>
           <Akordeonlar>
             <Akordeon baslik="Veri durumu" ozet={`${data.bilesenler.filter((b) => b.bayat).length ? `${data.bilesenler.filter((b) => b.bayat).length} bileşende veri eski` : 'veriler güncel'}`} testId="veri-durumu">
+              {data.veriKosullari.length > 0 && (
+                <ul className="mb-3 grid gap-1 text-small" aria-label="Veri kaynakları" data-testid="veri-kosullari">
+                  {data.veriKosullari.map((k) => (
+                    <li key={k.ad} data-testid="veri-kosul-satiri" data-ok={k.ok === null ? 'olculemiyor' : String(k.ok)} className={k.ok === false ? 'font-semibold text-app-warn' : 'text-app-text-muted'}>
+                      <span aria-hidden>{k.ok === null ? '–' : k.ok ? '✓' : '✕'} </span>{k.ad}{k.not ? ` — ${k.not}` : ''}{k.ok === null ? ' (ölçülemiyor)' : ''}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <ul className="grid gap-2" aria-label="Bileşenler">
                 {data.bilesenler.map((b) => {
                   const meta = seviyeMeta(b.kod, b.seviye)

@@ -65,11 +65,24 @@ function KaynakSatiri({ panel }: { panel: PanelYaniti }) {
           </ul>
         </div>
       )}
-      {g?.veri_durumu && <p className="mt-1 text-small text-app-warn" data-testid="veri-durumu-satiri"><b>Veri durumu:</b> {g.veri_durumu}</p>}
+      {g?.veri_durumu && (
+        <p className="mt-1 text-small text-app-warn" data-testid="veri-uyarisi-satiri">
+          <b>Veri uyarısı:</b> {g.veri_durumu}{' '}
+          <button type="button" className="min-h-6 font-semibold underline" data-testid="veri-uyarisi-ayrinti" onClick={() => {
+            const d = document.querySelector<HTMLDetailsElement>('details[data-testid="guven-ayrinti"]')
+            if (!d) return
+            d.open = true
+            const satir = d.querySelector<HTMLElement>('li[data-ok="false"]') ?? d
+            satir.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+            satir.setAttribute('tabindex', '-1')
+            satir.focus({ preventScroll: true })
+          }}>Ayrıntı →</button>
+        </p>
+      )}
       {g && (
-        <details className="mt-1">
+        <details className="mt-1" data-testid="guven-ayrinti">
           <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-app-text">Güven nasıl hesaplandı?</summary>
-          <ul className="list-disc pl-5" data-testid="guven-kosullari">{g.kosullar.map((k) => <li key={k.ad}>{k.ok === null ? '–' : k.ok ? '✓' : '✗'} {k.ad}{k.ok === null ? ' (ölçülemiyor)' : ''}{k.not ? ` (${k.not})` : ''}</li>)}</ul>
+          <ul className="list-disc pl-5" data-testid="guven-kosullari">{g.kosullar.map((k) => <li key={k.ad} data-ok={k.ok === null ? 'olculemiyor' : String(k.ok)}>{k.ok === null ? '–' : k.ok ? '✓' : '✗'} {k.ad}{k.ok === null ? ' (ölçülemiyor)' : ''}{k.not ? ` (${k.not})` : ''}</li>)}</ul>
         </details>
       )}
     </section>

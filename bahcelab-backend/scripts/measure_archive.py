@@ -1,10 +1,11 @@
 """Sentinel-2 L2A arşivinin bir bahçe için gerçek başlangıcını ve yıl başına sahne sayısını ölçer (rapor için).
 Kullanım: python scripts/measure_archive.py <boylam> <enlem>   (ağ gerekir; Planetary Computer STAC)"""
-
 import sys
 from datetime import date
 
 from pystac_client import Client
+
+from bahcelab_backend.shared.clock import bugun
 
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 
@@ -15,7 +16,7 @@ def main(lng: float, lat: float) -> None:
     client = Client.open(STAC_URL)
     first = None
     print("| Yıl | Tarih sayısı | Bulut ≤ %30 | Bulut ≤ %10 | Analiz penceresi (Haz–Eyl) bulut ≤ %30 |\n|---|---|---|---|---|")
-    for year in range(2015, date.today().year + 1):
+    for year in range(2015, bugun().year + 1):
         items = list(client.search(collections=["sentinel-2-l2a"], intersects=geometry, datetime=f"{year}-01-01/{year}-12-31", max_items=800).items())
         by_day: dict[date, float] = {}
         for item in items:
