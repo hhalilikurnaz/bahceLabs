@@ -141,7 +141,8 @@ class DurumV2Yanit(BaseModel):
     riskler: list[str]
     guven: GuvenSeviyesi
     guven_nedeni: str
-    guven_nasil: str = ""  # «Güven nasıl hesaplandı?»: cümle listesine KARIŞMAZ, ayrı etiketli satır (tek güven servisi metni; ADR 0030)
+    guven_nasil: str = ""
+    veri_durumu: str | None = None  # yalnız veri tarafında bir şey bozuksa tek satır (tek güven servisinden); yolundaysa None  # «Güven nasıl hesaplandı?»: cümle listesine KARIŞMAZ, ayrı etiketli satır (tek güven servisi metni; ADR 0030)
     nasil: list[str]  # «Nasıl hesaplandı?»: en çok 3 cümle
     dusuren: list[str]
     risk_sinirladi: bool

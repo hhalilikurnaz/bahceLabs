@@ -95,6 +95,7 @@ export interface ApiDurum {
   guven: 'yuksek' | 'orta' | 'dusuk'
   guven_nedeni: string
   guven_nasil?: string
+  veri_durumu?: string | null
   nasil: string[]
   dusuren: string[]
   risk_sinirladi: boolean

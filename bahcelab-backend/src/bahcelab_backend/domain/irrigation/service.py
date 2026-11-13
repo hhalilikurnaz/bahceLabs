@@ -775,7 +775,7 @@ class IrrigationService:
         p = c.profile
         profil_tam = (p.sistem != "damla" or bool(p.damlatici_sayisi and p.damlatici_debi_lh)) and bool(p.pompa_kw and p.pompa_debi_m3h)
         r = await gv.topla(self.session, c.garden.id, c.today, "sulama", ndvi_tarih=c.ndvi_tarih, agac_beyan=c.garden.agac_sayisi is not None, profil_tam=profil_tam)
-        return sc.Guven(etiket=cast(Any, r.etiket), puan=r.puan, toplam=r.toplam, kosullar=[{"ad": k.ad, "ok": k.ok, "not": k.ek} for k in r.kosullar], nasil=r.nasil)
+        return sc.Guven(etiket=cast(Any, r.etiket), puan=r.puan, toplam=r.toplam, kosullar=[{"ad": k.ad, "ok": k.ok, "not": k.ek} for k in r.kosullar], nasil=r.nasil, veri_durumu=gv.veri_durumu(r))
 
     async def _vardiya(self, c: Ctx, runs: list[tuple[SekRow, Ctx, list[en.DayOut]]], gun: date, garden_id: uuid.UUID, onay_ara: bool = True) -> sc.Vardiya:
         """Sulama günü vardiya çizelgesi: en kuru vana önce; süre = brüt m³ ÷ debi (vana debisi varsa onun ve pompanın küçüğü, yoksa pompa). Başlangıç profildeki saat (varsayılan 05:00). Debi yoksa saat/süre YOK."""

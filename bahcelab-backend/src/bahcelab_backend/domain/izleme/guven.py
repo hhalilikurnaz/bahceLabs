@@ -75,7 +75,7 @@ async def topla(session: AsyncSession, garden_id: uuid.UUID, bugun: date, baglam
     # 2) hava verisi güncel (model/tahmin günleri dahil)
     cell, _, _ = await garden_cell(session, garden_id)
     son_hava = (await session.execute(text("SELECT max(tarih) FROM era5_daily WHERE cell_id = :c AND tarih <= :b AND yagis_mm IS NOT NULL"), {"c": cell, "b": bugun})).scalar()
-    kos.append(Kosul("Hava verisi güncel", son_hava is not None and (bugun - son_hava).days <= k.guven_hava_taze_gun, None if son_hava is None else f"son gün {son_hava}"))
+    kos.append(Kosul("Hava verisi güncel", son_hava is not None and (bugun - son_hava).days <= k.guven_hava_taze_gun, None if son_hava is None else f"son gün {son_hava:%d.%m.%Y}"))
     # 3) bu bahçeyi besleyen akışlar kopuk değil (bahçeye/hücreye özgü; küresel tablolardan bağımsız → deterministik): ERA5 hücresi, bahçenin Sentinel-2'si, hava tahmini
     kopuk: list[str] = []
     olculen = 0
@@ -117,3 +117,22 @@ async def topla(session: AsyncSession, garden_id: uuid.UUID, bugun: date, baglam
         yeterli = r[0] >= k.kural_min_yanit
         kos.append(Kosul("Kural geri bildirimi olumlu", (r[1] / r[0] >= 0.4) if yeterli else None, f"{r[1]}/{r[0]} işaret isabetli" if yeterli else None))
     return olustur([*kos, *(ek or [])], k)
+
+
+# Kullanıcıya TEK satır «Veri durumu»: yalnız veri tarafında bir şey bozuksa (aşağıdaki öncelik sırasıyla en ağır olan); hepsi yolundaysa None → ekranda hiçbir şey gösterilmez.
+# Sebep UYDURULMAZ: ölçülen gerçek (son net görüntü tarihi, son hava günü, kopuk akış adı) söylenir; «bulutlu» gibi nedensellik yalnız bilindiğinde eklenir.
+_VERI_DURUMU: list[tuple[str, str, str]] = [  # (koşul, ölçüldüğünde başlık, ölçü yokken başlık)
+    ("Uydu görüntüsü taze", "Uydu görüntüsü eski", "Bu bahçe için henüz net uydu görüntüsü yok"),
+    ("Hava verisi güncel", "Hava verisi gecikmeli", "Bu bahçe için hava verisi henüz yok"),
+    ("Veri akışları kopuk değil", "Veri akışı kesik", "Veri akışı kesik"),
+    ("Şüpheli (imkânsız) ölçüm yok", "Şüpheli ölçüm ayıklandı", "Şüpheli ölçüm ayıklandı"),
+]
+
+
+def veri_durumu(g: GuvenSonuc) -> str | None:
+    by = {c.ad: c for c in g.kosullar}
+    for ad, baslik, yok in _VERI_DURUMU:
+        c = by.get(ad)
+        if c is not None and c.ok is False:
+            return f"{baslik} — {c.ek}" if c.ek else yok
+    return None

@@ -108,7 +108,10 @@ export interface Guven {
   etiket: 'dusuk' | 'orta' | 'yuksek'
   puan: number
   toplam: number
-  kosullar: { ad: string; ok: boolean; not: string | null }[]
+  kosullar: { ad: string; ok: boolean | null; not: string | null }[]
+  nasil?: string
+  /** Yalnız veri tarafında bir şey bozuksa tek satır; yolundaysa yok/null */
+  veri_durumu?: string | null
 }
 export interface PanelYaniti {
   durum: 'hazir' | 'profil_yok' | 'veri_yok'

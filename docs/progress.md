@@ -309,6 +309,15 @@ Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET
 - **IMERG kopukluğu (dev) — token sorunu DEĞİL**: dev `EARTHDATA_TOKEN` ile CMR araması 4 granül döndürdü, GES DISC `Range` isteği HTTP 206 (401/403 yok). Dev'de worker/zamanlayıcı çalışmıyor; `dogrulama_gozlem` son gün: IMERG 2026-10-28, SMAP 2026-10-28 (son yazım 30 Eki). `refresh_validation` günlük işi koşmadığı için kopukluk. Dev'de worker açılınca kendiliğinden kapanır; iç uyarı (akış tazeliği) bunu zaten gösterir.
 - **bildirimler/defter e2e aralıklı hata — kök neden**: `--repeat-each=20` (defter+bildirimler, 4 işçi, trace+video) 1/260; bildirimler ×60: 8/300 (Vite dev sunucusu). İzde hata anında Vite istemcisi «server connection lost. Polling for restart…» yazıp sayfayı TAM yeniden yüklüyor (sunucu yeniden başlamadı; uygulamada `location.reload` yok) → açık bildirim paneli/durum kayboluyor. `hmr:false` istemciyi kapatmadı (etkisiz, geri alındı). Çözüm: e2e artık `vite build` + `vite preview` ile sunuluyor (HMR WebSocket'i/anlık dönüşüm yok): ×60 → bu türden hata 0/300. Kalan 1/300 farklı: `browserContext.newPage` 90 sn'de açılamadı (4 işçi + SwiftShader yük altında tarayıcı başlatma takılması); uygulama hatası değil, izlenecek. Yeniden deneme (retry) eklenmedi.
 
+## Faz 1 — 9J Dilim 2 (iç izleme ekranı + kullanıcıya «Veri durumu» satırı) — TAMAM (2026-11-13)
+
+- Backend: `/ic/izleme/{akislar,uyum,kurallar,bahceler}` (yalnız INTERNAL_EMAILS; `domain/izleme/ic_service.py`). Güven etiketi `guven.topla` çıktısı (tek güven servisi). Kullanıcıya: Durum ve Sulama yanıtında `veri_durumu` (yalnız bozuksa tek satır; yoksa null → ekranda hiçbir şey).
+- Arayüz: `/ic/kalite` sekmeleri Akışlar (durum tablosu + gecikme zaman çizelgesi) · Kaynak uyumu (sapma serileri + drift bandı) · Kurallar (üretilen/yanıtlanan/isabet) · Bahçeler (güven dağılımı + en düşük güvenli bahçeler ve nedeni) · ETa (1A ekranı, `?sekme=eta`). Klavye: ← → ile sekme.
+- Ekranlar: `docs/design/u9j-d2-ekranlar-jlnnlk/` (1440/1024/390); ilkeler tablosu: `docs/design/u9j-d2-ilkeler-tablosu.md`.
+- Testler: `tests/test_izleme_ic.py`, `test_izleme_guven.py::test_veri_durumu_*`, `e2e/ic-izleme.spec.ts` (açık+koyu tema, axe 5 sekme), `e2e/ic-kalite.spec.ts` (ETa sekmesi).
+- Dev DB: migration 043 uygulandı (önce pg_dump alındı); bugünün gerçek günlük/haftalık izleme işi koşturuldu (geçmişe dönük sahte anlık görüntü YOK).
+- **Gerçek bulgular (dev, 2026-11-13)**: ERA5↔IMERG aylık yağış uyumu jlnnlk ve soğuk hava'da `drift` (sapma 0,439 > eşik 0,35; yalnız 1 haftalık nokta); Sentinel-2 (son net 09.10.2026), Sentinel-1, Landsat, IMERG, SMAP akışları «kopuk» (dev'de worker yok); jlnnlk güveni «düşük» (2/7 koşul).
+
 ---
 
 ## Notlar

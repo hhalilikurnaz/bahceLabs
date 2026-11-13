@@ -65,10 +65,11 @@ function KaynakSatiri({ panel }: { panel: PanelYaniti }) {
           </ul>
         </div>
       )}
+      {g?.veri_durumu && <p className="mt-1 text-small text-app-warn" data-testid="veri-durumu-satiri"><b>Veri durumu:</b> {g.veri_durumu}</p>}
       {g && (
         <details className="mt-1">
           <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-app-text">Güven nasıl hesaplandı?</summary>
-          <ul className="list-disc pl-5" data-testid="guven-kosullari">{g.kosullar.map((k) => <li key={k.ad}>{k.ok ? '✓' : '✗'} {k.ad}{k.not ? ` (${k.not})` : ''}</li>)}</ul>
+          <ul className="list-disc pl-5" data-testid="guven-kosullari">{g.kosullar.map((k) => <li key={k.ad}>{k.ok === null ? '–' : k.ok ? '✓' : '✗'} {k.ad}{k.ok === null ? ' (ölçülemiyor)' : ''}{k.not ? ` (${k.not})` : ''}</li>)}</ul>
         </details>
       )}
     </section>

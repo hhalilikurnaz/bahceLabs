@@ -6,7 +6,7 @@ test('iç kalite: tutarlı seri → kapı AÇIK, geçiş listesi, kalibrasyon, b
   await newUser(page)
   const g = await createGarden(page.request, { ad: 'ETa Tutarlı', lng: 27.91, lat: 38.7, sideM: 400 })
   seedEta(g.id, 'tutarli')
-  await page.goto('/ic/kalite')
+  await page.goto('/ic/kalite?sekme=eta')
   await expect(page.getByTestId('ic-kalite')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByTestId('ic-kapi')).toHaveAttribute('data-kapi', 'acik')
   await expect(page.getByTestId('ic-p90')).toContainText('eşik 0,15')
@@ -23,7 +23,7 @@ test('iç kalite: tutarsız seri → kapı KAPALI, eşik üstü sıçramalar iş
   await newUser(page)
   const g = await createGarden(page.request, { ad: 'ETa Tutarsız', lng: 27.92, lat: 38.7, sideM: 400 })
   seedEta(g.id, 'tutarsiz')
-  await page.goto('/ic/kalite')
+  await page.goto('/ic/kalite?sekme=eta')
   await expect(page.getByTestId('ic-kapi')).toHaveAttribute('data-kapi', 'kapali', { timeout: 30_000 })
   await expect(page.getByTestId('ic-kapi-neden')).toContainText('> eşik')
   expect(await page.getByTestId('ic-sicrama').count()).toBeGreaterThan(10)
@@ -34,6 +34,6 @@ test('iç kalite: tutarsız seri → kapı KAPALI, eşik üstü sıçramalar iş
 
 test('iç kalite: ETa hattı koşmamış bahçe yokken boş durum', async ({ page }) => {
   await newUser(page)
-  await page.goto('/ic/kalite')
+  await page.goto('/ic/kalite?sekme=eta')
   await expect(page.getByTestId('ic-bos')).toBeVisible({ timeout: 30_000 })
 })

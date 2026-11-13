@@ -82,6 +82,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
               <div className="mt-4"><KademeSeridi kademe={kademe} /></div>
               {kademe ? <p className="mt-3 flex items-baseline gap-2 text-body" data-testid="kademe-ad"><b style={{ color: KADEME_META[kademe].renk }}><span aria-hidden>{KADEME_META[kademe].isaret}</span> {KADEME_META[kademe].ad}</b><span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p> : <p className="mt-3 text-body" data-testid="kademe-satiri"><b data-testid="kademe-ad">Veri yetersiz</b> <span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p>}
               <p className="mt-1 text-small text-app-text-muted" data-testid="durum-guven"><b className={data.guven === 'dusuk' ? 'text-app-warn' : ''}>Güven {{ dusuk: 'düşük', orta: 'orta', yuksek: 'yüksek' }[data.guven]}</b> · {data.guvenNedeni.replace(/veri bayat/g, 'veri eski')}</p>
+              {data.veriDurumu && <p className="mt-1 text-small text-app-warn" data-testid="veri-durumu-satiri"><b>Veri durumu:</b> {data.veriDurumu}</p>}
               {data.guvenNasil && <details className="mt-1 text-caption text-app-text-muted" data-testid="durum-guven-nasil"><summary className="min-h-6 cursor-pointer font-semibold underline">Güven etiketi neye dayanıyor?</summary><p className="mt-1">{data.guvenNasil}</p></details>}
             </KararBlogu>
           </div>

@@ -56,3 +56,12 @@ async def test_kosullar_gercek_veriden_ve_iki_panel_ayni_metin(user_client, fact
     uyum = next(k for k in g3["kosullar"] if k["ad"] == "Kaynaklar birbiriyle uyumlu")
     assert uyum["ok"] is False and "era5_imerg_aylik" in uyum["not"]
     assert g3["etiket"] in ("yuksek", "orta") and g3["puan"] < g2["puan"] + 1
+
+
+def test_veri_durumu_yalniz_bozuksa_ve_tek_satir():
+    k = load_catalog().izleme
+    iyi = gv.olustur([gv.Kosul("Uydu görüntüsü taze", True), gv.Kosul("Hava verisi güncel", True), gv.Kosul("Veri akışları kopuk değil", True), gv.Kosul("Ağaç sayısı beyan edilmiş", False)], k)
+    assert gv.veri_durumu(iyi) is None  # beyan eksikliği veri sorunu değil: satır yok
+    bozuk = gv.olustur([gv.Kosul("Uydu görüntüsü taze", False, "son net görüntü 26.10.2026 (18 gün önce)"), gv.Kosul("Hava verisi güncel", False, "son gün 08.10.2026"), gv.Kosul("Veri akışları kopuk değil", True)], k)
+    assert gv.veri_durumu(bozuk) == "Uydu görüntüsü eski — son net görüntü 26.10.2026 (18 gün önce)"  # en ağır tek satır
+    assert gv.veri_durumu(gv.olustur([gv.Kosul("Uydu görüntüsü taze", None)], k)) is None  # ölçülemeyen koşul «bozuk» sayılmaz

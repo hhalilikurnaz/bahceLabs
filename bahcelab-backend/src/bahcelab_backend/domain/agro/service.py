@@ -461,7 +461,7 @@ class AgroService:
         return DurumV2Yanit(
             durum=result.kademe, etiket=KADEME_ADLARI[result.kademe], ozet=summary_sentence(result.kademe),
             bilesenler=[BilesenV2Yanit(kod=c.kod, ad=c.ad, seviye=c.seviye, kullanilabilir=c.kullanilabilir, bayat=c.bayat, neden=c.neden, veri_tarihi=c.veri_tarihi) for c in result.bilesenler],  # type: ignore[arg-type]
-            riskler=[r.metin for r in risks], guven=g.etiket, guven_nedeni=g.nedeni, guven_nasil=g.nasil, nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
+            riskler=[r.metin for r in risks], guven=g.etiket, guven_nedeni=g.nedeni, guven_nasil=g.nasil, veri_durumu=gv.veri_durumu(g), nasil=result.nasil, dusuren=result.dusuren, risk_sinirladi=result.risk_sinirladi,
             esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
         )
 
