@@ -8,7 +8,7 @@ import json
 import math
 import sys
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 
 import numpy as np
 from sqlalchemy import func, select
@@ -29,6 +29,7 @@ from bahcelab_backend.domain.acquisitions.store import encode_grids, grid_key, p
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.imagery.formulas import FORMULA_VERSION
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, garden_mask
+from bahcelab_backend.shared.clock import today_istanbul
 from bahcelab_backend.shared.storage import get_storage
 
 
@@ -51,7 +52,7 @@ async def main(garden_id: uuid.UUID, basit: bool) -> None:
         grid = canonical_grid(geometry)
         mask = garden_mask(grid, geometry)
         base = pattern(grid.shape)
-        today = datetime.now(UTC).date()
+        today = today_istanbul()
         start = date(today.year - 1, today.month, 1) if basit else date(2017, 1, 1)
         repo = AcquisitionRepository(session)
         storage = get_storage()

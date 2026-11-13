@@ -318,6 +318,8 @@ Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET
 - Dev DB: migration 043 uygulandı (önce pg_dump alındı); bugünün gerçek günlük/haftalık izleme işi koşturuldu (geçmişe dönük sahte anlık görüntü YOK).
 - **Gerçek bulgular (dev, 2026-11-13)**: ERA5↔IMERG aylık yağış uyumu jlnnlk ve soğuk hava'da `drift` (sapma 0,439 > eşik 0,35; yalnız 1 haftalık nokta); Sentinel-2 (son net 09.10.2026), Sentinel-1, Landsat, IMERG, SMAP akışları «kopuk» (dev'de worker yok); jlnnlk güveni «düşük» (2/7 koşul).
 
+- **Gece yarısı penceresi (00:00–03:00 İstanbul) e2e hatası — kök neden**: test tohum betikleri (`seed_water`, `seed_acquisitions`, `seed_gecici`, `seed_radar`, `fake_era5`) «bugün»ü UTC'den alıyordu; sunucu İstanbul takvim gününü kullanır (`shared/clock.today_istanbul`). Pencerede tohumlar bir gün geride kalıp sulama/sistem-kontrol e2e'leri düşüyordu (Tam paket 4 hata; yerelde 00:18'de aynen yeniden üretildi, düzeltmeden sonra 00:21'de geçti). Betikler ve 9J izleme kodu (`isler`, `veri_kontrol`, `/ic/izleme`) `today_istanbul()`'a çevrildi. Üretimde hâlâ UTC günü kullanan modüller var (ör. `revize`, `events`, `water/feed`, `acquisitions/*`): pencerede bir gün kayabilir — ayrı iş olarak onayınıza bırakıldı.
+
 ---
 
 ## Notlar

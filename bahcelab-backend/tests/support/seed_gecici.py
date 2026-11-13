@@ -5,17 +5,18 @@ Kullanım:  python -m tests.support.seed_gecici <bahce-id> <n> | python -m tests
 import asyncio
 import sys
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import text
 
 from bahcelab_backend.database import async_session_factory
 from bahcelab_backend.domain.water.era5_sync import garden_cell
+from bahcelab_backend.shared.clock import today_istanbul
 
 
 async def main() -> None:
     gid, n = uuid.UUID(sys.argv[1]), int(sys.argv[2])
-    today = datetime.now(UTC).date()
+    today = today_istanbul()
     async with async_session_factory() as s:
         cell, _, _ = await garden_cell(s, gid)
         if "--kesinlestir" in sys.argv:

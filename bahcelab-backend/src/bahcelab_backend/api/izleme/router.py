@@ -1,7 +1,7 @@
 """İç izleme uç noktaları (/ic/izleme/*): yalnız INTERNAL_EMAILS (aksi 403). Kullanıcı panellerinden AYRI."""
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -11,6 +11,7 @@ from bahcelab_backend.api.deps import get_db_session, get_workspace_id
 from bahcelab_backend.api.eta.router import ic_kullanici
 from bahcelab_backend.domain.izleme import ic_schemas as sc
 from bahcelab_backend.domain.izleme.ic_service import IzlemeIcService
+from bahcelab_backend.shared.clock import today_istanbul
 
 router = APIRouter(prefix="/ic/izleme", tags=["ic-izleme"], dependencies=[Depends(ic_kullanici)])
 
@@ -23,7 +24,7 @@ Service = Annotated[IzlemeIcService, Depends(get_service)]
 
 
 def _bugun() -> date:
-    return datetime.now(UTC).date()
+    return today_istanbul()
 
 
 @router.get("/akislar", response_model=sc.AkislarYanit)

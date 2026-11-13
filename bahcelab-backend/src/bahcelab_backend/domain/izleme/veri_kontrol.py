@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.domain.agro.catalog import IzlemeKurali, VeriKontrolKurali, load_catalog
+from bahcelab_backend.shared.clock import today_istanbul
 
 Siddet = Literal["sert", "yumusak"]
 
@@ -59,7 +60,7 @@ async def tara_era5(session: AsyncSession, since: datetime, bit: date | None = N
     """ERA5: `since`'den beri DEĞİŞEN satırlar (tetikleyiciyle tutulan `guncelleme`): yeni yazılan günler VE eski tarihli satırın sonradan güncellenmesi (model → ERA5 kesinleşmesi).
     Taranan satırın eski bayrakları (aralık/sıçrama) önce silinir: değer düzeldiyse bayrak kalkar. Eksik gün: dokunulan hücrelerin son 60 günü."""
     k = (kural or load_catalog().izleme).kontroller
-    bit = bit or date.today()
+    bit = bit or today_istanbul()
     rows = (await session.execute(text(
         "WITH ch AS (SELECT cell_id, tarih FROM era5_daily WHERE guncelleme > :s) "
         "SELECT e.cell_id::text, e.tarih, e.yagis_mm, e.et0_mm, e.t_max, e.t_min, e.sm0, e.sm1, e.sm2, e.sm3, (e.guncelleme > :s) AS degisti FROM era5_daily e "

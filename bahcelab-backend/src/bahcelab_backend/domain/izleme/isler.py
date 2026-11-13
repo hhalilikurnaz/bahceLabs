@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.domain.agro.catalog import load_catalog
 from bahcelab_backend.domain.izleme import akis, meteo_uyum, uyari, uyum, veri_kontrol
+from bahcelab_backend.shared.clock import today_istanbul
 
 logger = logging.getLogger(__name__)
 SessionFactory = async_sessionmaker[AsyncSession]
@@ -21,7 +22,7 @@ _AKIS_AD = {"kopuk": "KOPUK", "gecikmeli": "gecikmeli"}
 
 async def gunluk(factory: SessionFactory, bugun: date | None = None) -> dict[str, int]:
     """Akış durumlarını yazar, uyarı gerektirenleri iç ekibe bildirir, son 3 günün verisini tarar (bayraklar)."""
-    bugun = bugun or datetime.now(UTC).date()
+    bugun = bugun or today_istanbul()
     sonuc = {"akis": 0, "uyari": 0, "bayrak": 0, "hata": 0}
     try:
         async with factory() as s:
@@ -66,7 +67,7 @@ async def _dekad_etc(s: AsyncSession, ws: uuid.UUID, gid: uuid.UUID) -> dict[dat
 
 async def haftalik(factory: SessionFactory, bugun: date | None = None, *, agdan: bool = True) -> dict[str, int]:
     """Kaynaklar arası tutarlılık serileri (`izleme_uyum`); drift → iç uyarı. Hata bir bahçede diğerlerini durdurmaz."""
-    bugun = bugun or datetime.now(UTC).date()
+    bugun = bugun or today_istanbul()
     k = load_catalog().izleme
     sonuc = {"kontrol": 0, "drift": 0, "hata": 0}
     async with factory() as s:

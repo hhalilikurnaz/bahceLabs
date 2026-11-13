@@ -4,7 +4,9 @@
 bahçe eklenince besleme işinin gerçek hattan (idempotent upsert, hücre paylaşımı) geçmesi için kullanılır.
 """
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
+
+from bahcelab_backend.shared.clock import today_istanbul
 
 from .seed_water import _day_row
 
@@ -31,7 +33,7 @@ class FakeEra5Client:
     calls: list[str] = []
 
     def __init__(self) -> None:
-        self.today = datetime.now(UTC).date()
+        self.today = today_istanbul()
 
     def _rows(self, start: date, end: date) -> dict[date, dict]:
         return {d: _day_row(d, self.today) for d in _span(start, end)}

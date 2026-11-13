@@ -10,7 +10,7 @@ import json
 import math
 import sys
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import func, select, text
 
@@ -26,6 +26,7 @@ from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.imagery.registry import get_imagery_provider
 from bahcelab_backend.domain.water.era5_sync import garden_cell, upsert_days
 from bahcelab_backend.domain.water.models import SoilProfileModel
+from bahcelab_backend.shared.clock import today_istanbul
 from bahcelab_backend.shared.storage import get_storage
 
 from .fake_landsat import FakeLandsatProvider
@@ -51,7 +52,7 @@ async def main(garden_id: uuid.UUID) -> None:
     settings = get_settings()
     if not settings.api_debug:
         raise SystemExit("Reddedildi: yalnızca API_DEBUG=true ortamında çalışır.")
-    today = datetime.now(UTC).date()
+    today = today_istanbul()
     async with async_session_factory() as session:
         geojson = (await session.execute(select(func.ST_AsGeoJSON(GardenModel.geom)).where(GardenModel.id == garden_id))).scalar_one_or_none()
         if geojson is None:

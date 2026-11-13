@@ -10,7 +10,7 @@ Yalnızca API_DEBUG=true. Kullanım:  python -m tests.support.seed_radar <bahce-
 import asyncio
 import sys
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import delete, select
 
@@ -26,6 +26,7 @@ from bahcelab_backend.domain.acquisitions.processor import SOURCE_ID
 from bahcelab_backend.domain.acquisitions.radar_processor import RADAR_SOURCE
 from bahcelab_backend.domain.gardens.models import GardenModel
 from bahcelab_backend.domain.imagery.registry import get_imagery_provider
+from bahcelab_backend.shared.clock import today_istanbul
 from bahcelab_backend.shared.storage import get_storage
 
 from .fake_radar import FakeOrbit, FakeRadarProvider
@@ -44,7 +45,7 @@ async def main(garden_id: uuid.UUID, eski_optik: bool, bulutlu: bool) -> None:
         if geojson is None:
             raise SystemExit("Bahçe bulunamadı")
     geometry = json.loads(geojson)
-    today = datetime.now(UTC).date()
+    today = today_istanbul()
     # 167 belirgin ÇOK geçişli (5 gün): birincil yörünge takvimdeki güne bağlı olmasın (eşitlikte seçim güne göre değişiyordu)
     radar = FakeRadarProvider(geometry, [FakeOrbit(167, "inis", 5, 0), FakeOrbit(94, "inis", 6, 2), FakeOrbit(87, "cikis", 6, 4)])
     radar.jitter_db = 0.5
