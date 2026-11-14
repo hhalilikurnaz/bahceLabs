@@ -333,6 +333,11 @@ Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET
 Belge: `docs/agro/don-dogrulama.md` (+ `docs/agro/don-dilim0/` ham sonuçlar, `bahcelab-backend/scripts/don_dilim0/` betikler). Kapanış işleri: API `zaman_dilimi` istemciye (web «bugün» onunla), 044 sonrası dev dökümü (`backups/bahcelab-dev-044-sonrasi-*.dump`, git dışı).
 **Karar önerisi:** topografya profili GO (betimleyici); mutlak arazi sıcaklık düzeltmesi NO-GO (68 istasyonda doğrulanmadı); gece don riski KOŞULLU GO (olasılıksal + yerel sapma; **tahmin başarımı ölçülmedi**); bahçe-içi harita yalnız rölyef ≥ 10 m ve eğim ≥ 3°; yaprak/odun eşiği için limona özgü kaynak yok. **Yan bulgu:** Mersin istasyonunda ERA5-Land 5 kışta −2,8 K soğuk (gözlem min +0,7 °C, model 15 gece ≤ 0 °C): mevcut ERA5 tabanlı don olayları kısmen model artefaktı olabilir.
 
+
+### ADIM 10 · Dilim 1 adım 1 — tahmin başarımı (2026-11-14), go/no-go onayı bekliyor
+
+`docs/agro/don-dogrulama.md` §6. Open-Meteo previous runs, 4 model, 68 istasyon, 2 kış, 1–3 gün önceden. **Karar önerisi: KOŞULLU GO, «en soğuk model» (IFS+ICON+GFS)**: kıyıda yanlılık −0,01 K, RMSE 2,33 K; uyarı ≤ kritik+2 K: tüm istasyonlarda POD 0,95 / FAR 0,36, Akdeniz kıyıda POD 0,85 / FAR 0,64 (yalnız 39 don gecesi). Sapma düzeltmesi kuralı (≥ 3 benzer kıyı istasyonu tutarlı) **sağlanmadı → düzeltme YOK**. Kalan Dilim 1 işleri onaya bağlı.
+
 ---
 
 ## Notlar

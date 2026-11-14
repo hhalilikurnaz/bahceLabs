@@ -1,4 +1,4 @@
-# ADIM 10 · Dilim 0 — Topografya ve don: doğrulama spike'ı
+# ADIM 10 · Dilim 0 (+ Dilim 1 adım 1) — Topografya ve don: doğrulama spike'ı
 
 Tarih: 2026-11-14 · Kapsam: yalnız doğrulama (ürün kodu yok). Kural: mock yok, ücretsiz kaynak. Betikler: `bahcelab-backend/scripts/don_dilim0/` (`arazi.py`, `veri_topla.py`, `degerlendir.py`, `modis.py`); ham sonuçlar: [`docs/agro/don-dilim0/`](don-dilim0/). Eşikler ve katsayılar «ön değer · mühendis onayı bekliyor».
 
@@ -114,6 +114,62 @@ Fenoloji eşlemesi mevcut katalog evrelerinden (çiçeklenme, meyve tutumu, meyv
 4. ECOSTRESS gece geçişi (70 m) ile bahçe-içi doğrulama denenmedi (geçiş seyrek); isteğe bağlı Dilim 1 ek işi.
 
 **Öneri:** Dilim 1'e **daraltılmış kapsamla** geçilsin: (a) topografya profili (betimleyici); (b) gece don riski — olasılıksal, yerel sapma düzeltmeli, tahmin başarımı sınaması ilk iş; (c) olay motorundaki ERA5 don tespitinin Mersin sapmasıyla yeniden değerlendirilmesi (onaya bağlı); (d) altın bahçe testine don çıktısı. Mutlak arazi sıcaklık düzeltmesi **yapılmasın**.
+
+## 6. Dilim 1 · adım 1 — Tahmin (forecast) başarımı
+
+**Soru:** 1–3 gün önceden verilen gece minimumu, istasyon ölçümüne göre ne kadar iyi ve ≤ 0 °C gecelerini ne kadar yakalıyor? **Veri:** Open-Meteo *previous runs* API (1, 2, 3 gün önceki model koşuları; <https://previous-runs-api.open-meteo.com>), 4 model (`best_match`, `ecmwf_ifs025`, `icon_seamless`, `gfs_seamless`), 68 Türkiye istasyonu, Kas–Mar 2023-24 ve 2024-25 kışları, ölçüm kaynaklı Meteostat `tmin`. **Kapsam notu:** önceki-koşu verisi modele göre farklı tarihte başlıyor (IFS 0,25° Şubat 2024'ten, ICON Ocak 2024'ten kısmen, GFS ve `best_match` Kas 2023'ten; Ocak 2024 çoğunda eksik) → karşılaştırma **dört modelin ortak gecelerinde** (10 336 istasyon-gecesi); `best_match` bu bölgede ICON ile **birebir aynı** çıktı (aynı sayılar), ayrı model sayılmadı. **Akdeniz kıyı şeridi** (9 istasyon: Muğla, Dalaman, Antalya, Mersin, Adana×2, İskenderun, Ercan, Finike; 1 438 gece) ayrı raporlanır. Kıyıda gözlenen ≤ 0 °C gecesi yalnız **39** (alçak ≤ 100 m: 18): oranlar geniş belirsizlikle okunmalı.
+
+**Tablo 1 — gece minimumu hatası (tahmin − gözlem, K), 1 gün önceden, ortak geceler**
+
+| Model | Tüm istasyonlar: yanlılık / MAE / RMSE | Akdeniz kıyı: yanlılık / MAE / RMSE |
+|---|---|---|
+| ECMWF IFS 0,25° | +0,12 / 2,44 / 3,35 | +0,58 / 2,15 / 2,73 |
+| ICON (= `best_match`) | +1,06 / 2,08 / 2,89 | +2,02 / 2,32 / 3,10 |
+| GFS | +1,32 / 2,72 / 3,75 | +1,06 / 2,05 / 2,58 |
+| Ortalama (IFS+ICON+GFS) | +0,83 / 2,16 / 3,03 | +1,23 / 1,97 / 2,57 |
+| **En soğuk model** (üçünün en düşüğü) | -0,62 / 2,27 / 3,20 | **-0,01** / 1,87 / **2,33** |
+
+Süre bozulması küçük: IFS MAE 1/2/3 gün önceden tüm istasyonlarda 2,44 / 2,48 / 2,54, kıyıda 2,15 / 2,16 / 2,17; ICON 2,08 / 2,12 / 2,17 (kıyı 2,32 / 2,33 / 2,34). **1–3 gün önceden** başarım pratikte aynı.
+
+**Tablo 2 — ≤ 0 °C gözlenen geceler, tahmin eşiği ≤ T (POD = yakalanan don gecesi oranı; FAR = alarmların yanlış olan oranı), 1 gün önceden**
+
+| Tahminci / uyarı eşiği | Tüm istasyonlar (3 520 don gecesi) | Akdeniz kıyı (39 don gecesi) |
+|---|---|---|
+| IFS, ≤ 0 °C | POD 0,74 / FAR 0,23 | POD 0,57 / FAR 0,49 |
+| ICON, ≤ 0 °C | POD 0,69 / FAR 0,11 | POD 0,51 / FAR 0,17 |
+| GFS, ≤ 0 °C | POD 0,55 / FAR 0,15 | POD 0,65 / FAR 0,43 |
+| Ortalama, ≤ +2 °C | POD 0,86 / FAR 0,28 | POD 0,67 / FAR 0,55 |
+| Ortalama, ≤ +3 °C | POD 0,92 / FAR 0,34 | POD 0,82 / FAR 0,61 |
+| **En soğuk model, ≤ 0 °C** | POD 0,81 / FAR 0,24 | POD 0,64 / FAR 0,51 |
+| **En soğuk model, ≤ +1 °C** | POD 0,90 / FAR 0,30 | POD 0,72 / FAR 0,54 |
+| **En soğuk model, ≤ +2 °C** | **POD 0,95 / FAR 0,36** | **POD 0,85 / FAR 0,64** |
+| **En soğuk model, ≤ +3 °C** | POD 0,97 / FAR 0,42 | POD 0,90 / FAR 0,74 |
+
+2 ve 3 gün önceden aynı eşiklerde POD ±0,03 içinde (kıyı, en soğuk model ≤ +2 °C: 0,84 / 0,84; ≤ +3 °C: 0,95 / 0,95). Ham tablolar: [`tahmin-basarim-modeller.json`](don-dilim0/tahmin-basarim-modeller.json) (model × gün × grup), [`tahmin-basarim-topluluk.json`](don-dilim0/tahmin-basarim-topluluk.json) (ortalama ve en soğuk model).
+
+**Tablo 3 — Akdeniz kıyı istasyonlarında tahmin yanlılığı (K, 1 gün önceden, 2 kış): sapma düzeltmesi kararı**
+
+| İstasyon (rakım) | IFS | ICON | GFS | Gözlenen ≤ 0 °C gece |
+|---|---:|---:|---:|---:|
+| Dalaman (7 m) | −0,21 | +3,12 | +0,95 | 0 |
+| Antalya (50 m) | +4,81 | +5,96 | +2,96 | 1 |
+| Mersin (3 m) | −2,00 | +0,03 | −0,67 | 0 |
+| Adana İncirlik (73 m) | +0,57 | +1,15 | +1,20 | 7 |
+| Adana Şakirpaşa (20 m) | +0,54 | +0,60 | +0,78 | 4 |
+| İskenderun (3 m) | −3,05 | +1,02 | −1,18 | 0 |
+| Ercan (100 m) | +0,82 | +1,40 | +1,91 | 6 |
+| Finike (3 m) | +1,40 | +2,40 | +0,24 | 0 |
+| Muğla (646 m, iç) | +0,97 | +1,83 | +2,37 | 28 |
+
+**Kural uygulaması (karar 3):** sapma düzeltmesi yalnız «benzer rakım ve denize uzaklıktaki ≥ 3 istasyon aynı yönde ve tutarlıysa» yapılır. Alçak kıyı istasyonlarında (≤ 100 m, 8 istasyon) IFS işareti karışık (−3,05 … +4,81), ICON hep pozitif ama aralık 6 K (+0,03 … +5,96), GFS karışık → **tutarlılık koşulu sağlanmıyor → sapma düzeltmesi YAPILMAZ** (Mersin tek başına −2,0 K çıkarken İskenderun −3,05 ve Antalya +4,81: tek istasyona göre ısıtma/soğutma yanlış olurdu). Ham tahmin + geniş σ kullanılır. Not: §2'deki yeniden analiz sapması (ERA5-Land, Mersin −2,8 K) ile tahmin sapması (IFS Mersin −2,0 K) aynı yönde ama kıyıdaki diğer istasyonlarda tutarsız.
+
+**Karar (go / no-go): KOŞULLU GO — tahmin kaynağı olarak «en soğuk model» (IFS 0,25°, ICON, GFS; `models=ecmwf_ifs025,icon_seamless,gfs_seamless`).**
+- Gerekçe: kıyıda yanlılık ≈ 0 ve RMSE en düşük (2,33 K); 1–3 gün önceden bozulma yok; kaçırmayan tarafta (POD): tüm istasyonlarda ≤ +2 °C eşiğinde 0,95, kıyıda 0,85 (≤ +3 °C: 0,90–0,95).
+- **Bedeli (raporlanan yanlış alarm):** kıyıda uyarıların ≈ %64'ü (≤ +2 °C) ila %74'ü (≤ +3 °C) yanlış çıkıyor; yani her doğru don uyarısına ≈ 1,8–2,8 yanlış uyarı düşer. Ülke genelinde FAR 0,36–0,42. Bu, σ ≈ 2,3–2,6 K'lik belirsizliğin doğal sonucudur; arayüzde «olasılık/izle» dili kullanılmalı, kesin «don olacak» denmemeli.
+- Önerilen σ (olasılık hesabı): **2,4 K** (kıyı, en soğuk model RMSE 2,33; 1–3 gün aynı). Uyarı eşiği = kritik sıcaklık + 2 K (≈ σ'nın 0,85'i); «izle» = kritik + 3 K.
+- **Sınırlar:** (1) 2 kış ve kıyıda yalnız 39 don gecesi: POD'lar ±0,15 belirsiz; (2) sınama ≤ 0 °C üzerinde yapıldı — çiçek eşiği −2,8 °C ve meyve eşikleri (−0,8…−1,4) için ölçüm gecesi çok az, bu eşiklerde POD **ölçülmedi**, 0 °C sonucu vekil olarak kullanılıyor; (3) istasyonlar şehir/havalimanı; bahçedeki gerçek sıcaklık bilinmiyor; (4) Open-Meteo önceki-koşu verisinin model/tarih kapsamı eksik (Ocak 2024); (5) «en soğuk model» ölçüsü yanlış alarmı artırır — kullanıcıdan gelen geri bildirimle (olay sonrası ölçüm/hasar) zamanla yeniden kalibre edilmeli.
+
+**DUR:** Bu karar onaylanmadan Dilim 1'in kalan işleri (motor, olay motorunun yeniden değerlendirilmesi, ADR, altın bahçe don çıktısı) başlamaz.
 
 ## Kaynaklar
 
