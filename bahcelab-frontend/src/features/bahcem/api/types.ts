@@ -39,6 +39,8 @@ export interface Garden {
   alanDekar: number
   il: string | null
   ilce: string | null
+  /** Bahçenin yerel saat dilimi (IANA); «bugün» buna göre. Yoksa Europe/Istanbul */
+  zamanDilimi?: string
   createdAt: string
   /** Son geçerli (bulutsuz) NDVI gözleminin ortalaması ve tarihi; yoksa null */
   sonNdviOrtalama: number | null

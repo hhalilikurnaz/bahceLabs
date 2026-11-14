@@ -60,3 +60,10 @@ async def test_plan_durum_olay_ve_besleme_gunleri_sinirda_dogru(user_client, fac
         svc.settings = type("S", (), {"acq_start": "2026-09-01", "acq_radar_start": "2026-09-01", "acq_landsat_start": "2026-09-01"})()  # type: ignore[assignment]
         aylar = svc.month_range()
         assert aylar[-1] == date(beklenen.year, beklenen.month, 1)
+
+
+async def test_api_bahce_zaman_dilimini_istemciye_verir(user_client, factory):  # noqa: F811
+    gid = await kur(user_client, factory)
+    veri = (await user_client.get(f"/gardens/{gid}")).json()
+    assert veri["zaman_dilimi"] == "Europe/Istanbul"
+    assert any(g["zaman_dilimi"] == "Europe/Istanbul" for g in (await user_client.get("/gardens")).json())

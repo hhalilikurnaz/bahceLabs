@@ -46,6 +46,7 @@ def to_response(row: GardenRow) -> GardenResponse:
         alan_dekar=area,
         il=g.il,
         ilce=g.ilce,
+        zaman_dilimi=g.zaman_dilimi,
         created_at=g.created_at,
         updated_at=g.updated_at,
         son_ndvi_ortalama=row.son_ndvi_ortalama,

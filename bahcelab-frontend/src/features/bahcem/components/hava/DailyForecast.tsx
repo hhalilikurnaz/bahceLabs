@@ -17,8 +17,8 @@ const TD = 'tabular whitespace-nowrap px-1 py-2 align-middle @sm:px-2'
  * 7 günlük tahmin tablosu: gün | ikon | en yüksek/en düşük | yağış mm | yağış olasılığı % | rüzgâr km/s.
  * Dar kartta önce rüzgâr, sonra olasılık sütunu gizlenir (sözcükler bölünmez). İlaçlama aralığı satırın altında çip.
  */
-export function DailyForecast({ days }: { days: WeatherDay[] }) {
-  const today = todayIstanbul()
+export function DailyForecast({ days, bugun }: { days: WeatherDay[]; bugun?: string }) {
+  const today = bugun ?? todayIstanbul()
   return (
     <Card aria-label="7 günlük tahmin" data-testid="daily-forecast" className="@container p-3">
       <h3 className="mb-1 px-1 font-display text-h2 text-app-text">7 günlük tahmin</h3>

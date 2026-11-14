@@ -71,7 +71,7 @@ function DayRow({ day, label, cells, selected, onSelect }: { day: string; label:
 }
 
 /** İlaçlama penceresi: her gün için 06:00–19:00 arası saatlik renkli bar (gece gösterilmez, yalnız lejantta anılır); dokununca/üzerine gelince/ok tuşlarıyla saatin nedeni görünür. */
-export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal: string }) {
+export function SprayStrip({ hours, nowLocal, bugun }: { hours: WeatherHour[]; nowLocal: string; bugun?: string }) {
   const days = useMemo(() => {
     const byDay = new Map<string, Cell[]>()
     for (const hour of hours) {
@@ -84,7 +84,7 @@ export function SprayStrip({ hours, nowLocal }: { hours: WeatherHour[]; nowLocal
   }, [hours, nowLocal])
 
   const [picked, setPicked] = useState<WeatherHour | null>(null)
-  const today = todayIstanbul()
+  const today = bugun ?? todayIstanbul()
   const current = hours.find((h) => h.zaman.slice(0, 13) === nowLocal.slice(0, 13)) ?? hours[0]
   const shown = picked ?? current
 

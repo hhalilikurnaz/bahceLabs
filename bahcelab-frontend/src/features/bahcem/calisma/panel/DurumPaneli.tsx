@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { todayIstanbul } from '../../lib/dates'
+import { bugunBahce } from '../../lib/dates'
 import type { Garden } from '../../api/types'
 import { useGardenStatus, type StatusBilesen } from '../../api/agroApi'
 import { StaleBadge } from '@/components/chart'
@@ -60,7 +60,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
   const radar = useRadarEdinimler(garden.id).data
   const olaylar = useRadarDegisimler(garden.id).data
   const sonOptik = edinim?.edinimler[edinim.edinimler.length - 1]?.tarih ?? null
-  const eskiOptik = eskiOptikSatiri(todayIstanbul(), sonOptik, radar?.edinimler, olaylar?.degisimler)
+  const eskiOptik = eskiOptikSatiri(bugunBahce(garden), sonOptik, radar?.edinimler, olaylar?.degisimler)
   const ac = (kod: StatusBilesen['kod']) => {
     const hedef = HEDEF[kod]
     if (hedef.sekme) {

@@ -167,6 +167,7 @@ class GardenResponse(BaseModel):
     alan_dekar: float
     il: str | None
     ilce: str | None
+    zaman_dilimi: str = "Europe/Istanbul"  # bahçenin yerel saat dilimi («bugün» buna göre; shared/clock)
     created_at: datetime
     updated_at: datetime
     son_ndvi_ortalama: float | None = None

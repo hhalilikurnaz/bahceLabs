@@ -5,8 +5,8 @@ import { todayIstanbul } from '../../lib/dates'
 import { bestSprayTime, noSprayReason } from '../../lib/spray'
 
 /** Hava sekmesinin üstündeki büyük satır: haftanın en iyi ilaçlama zamanı; yoksa nedeni. */
-export function BestSprayBanner({ weather }: { weather: Weather }) {
-  const today = todayIstanbul()
+export function BestSprayBanner({ weather, bugun }: { weather: Weather; bugun?: string }) {
+  const today = bugun ?? todayIstanbul()
   const best = bestSprayTime(
     weather.gunler.map((d) => ({ tarih: d.tarih, uygunSaat: d.ilaclama.uygunSaat, enIyiAralik: d.ilaclama.enIyiAralik })),
     today,

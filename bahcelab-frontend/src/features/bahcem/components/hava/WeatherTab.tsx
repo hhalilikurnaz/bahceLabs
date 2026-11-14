@@ -5,7 +5,7 @@ import { havaKarar } from '../../lib/karar'
 import { bestSprayTime, noSprayReason } from '../../lib/spray'
 import { useWeather, useWeatherHistory } from '../../api/weatherApi'
 import type { Garden } from '../../api/types'
-import { shiftDays, todayIstanbul } from '../../lib/dates'
+import { bugunBahce, shiftDays } from '../../lib/dates'
 import { ChartState, HavaGrafikleri, TimeDomainProvider } from '@/components/chart'
 import { useElementWidth } from '../../hooks/useElementWidth'
 import { useCalismaStore } from '../../calisma/calismaStore'
@@ -36,7 +36,7 @@ function Attribution({ text }: { text: string }) {
 export function WeatherTab({ garden }: { garden: Garden }) {
   const gardenId = garden.id
   const { data, isLoading, error, refetch, isFetching } = useWeather(gardenId)
-  const today = todayIstanbul()
+  const today = bugunBahce(garden)
   const range = useMemo(() => ({ from: shiftDays(today, -89), to: today }), [today])
   const history = useWeatherHistory(gardenId, range.from, shiftDays(today, -1), true)
   const imlec = useCalismaStore((st) => st.imlecTarih)
@@ -66,10 +66,10 @@ export function WeatherTab({ garden }: { garden: Garden }) {
   return (
     <PanelKabuk karar={karar} testId="hava-paneli">
       <KararBlogu karar={karar} alt={bestSpray ? `En iyi ilaçlama zamanı: ${bestSpray.gun} ${bestSpray.aralik[0]}–${bestSpray.aralik[1]}.` : noSprayReason(data.saatlik)} sayi={`${Math.round(simdi.sicaklik)} °C`} etiket="şu an" kucuk={`${simdi.aciklama}${simdi.nem !== null ? ` · nem %${Math.round(simdi.nem)}` : ''} · rüzgâr ${Math.round(simdi.ruzgar)} km/s`} testId="hava-karar" />
-      <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} />
-      <WeatherAlertsCard alerts={data.uyarilar} />
+      <SprayStrip hours={data.saatlik} nowLocal={data.simdi.zaman} bugun={today} />
+      <WeatherAlertsCard alerts={data.uyarilar} bugun={today} />
       <RisksCard gardenId={gardenId} />
-      <DailyForecast days={data.gunler} />
+      <DailyForecast days={data.gunler} bugun={today} />
       <Card aria-label="Yağış ve sıcaklık grafiği" className="space-y-2 p-4" data-testid="weather-layer">
         <h3 className="text-lead font-semibold text-app-text">Son 90 gün: yağış ve sıcaklık</h3>
         <div ref={grafikRef}>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { todayIstanbul } from '../../lib/dates'
+import { useBahceBugunu } from '../../lib/useBugun'
 import { useEdinimler } from '../../api/edinimApi'
 import { useGecmisDoldurma } from '../../api/gecmisApi'
 import { useRadarDegisimler, useRadarEdinimler, yonAdi } from '../../api/radarApi'
@@ -25,7 +25,7 @@ export function BulutAltindaGorus({ gardenId }: { gardenId: string }) {
   const gecmis = useGecmisDoldurma(gardenId).data
   const setKatman = useCalismaStore((s) => s.setKatman)
   const setTarih = useCalismaStore((s) => s.setTarih)
-  const bugun = todayIstanbul()
+  const bugun = useBahceBugunu(gardenId)
   const serit = useMemo(() => buildSerit(bugun, edinim.data, radar.data?.edinimler, olaylar.data?.degisimler), [bugun, edinim.data, radar.data, olaylar.data])
   const yukleniyor = edinim.isLoading || radar.isLoading || olaylar.isLoading
   const w = Math.max(280, genislik)

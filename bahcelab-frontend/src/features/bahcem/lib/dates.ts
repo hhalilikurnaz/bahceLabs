@@ -106,6 +106,11 @@ export function formatClockIstanbul(iso: string): string {
 }
 
 /** Bugünün tarihi, Europe/Istanbul takvimine göre ("YYYY-MM-DD") */
-export function todayIstanbul(now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+export function todayIstanbul(now = new Date(), timeZone = 'Europe/Istanbul'): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
+/** Bahçenin yerel takvim günü: API'nin verdiği `zamanDilimi`; yoksa Europe/Istanbul (sunucudaki shared/clock.bugun ile aynı kural) */
+export function bugunBahce(garden: { zamanDilimi?: string } | null | undefined, now = new Date()): string {
+  return todayIstanbul(now, garden?.zamanDilimi || 'Europe/Istanbul')
 }

@@ -14,6 +14,7 @@ interface ApiGarden {
   alan_dekar: number
   il: string | null
   ilce: string | null
+  zaman_dilimi?: string
   created_at: string
   son_ndvi_ortalama: number | null
   son_ndvi_tarihi: string | null
@@ -33,6 +34,7 @@ function fromApi(garden: ApiGarden): Garden {
     alanDekar: garden.alan_dekar,
     il: garden.il,
     ilce: garden.ilce,
+    zamanDilimi: garden.zaman_dilimi,
     createdAt: garden.created_at,
     sonNdviOrtalama: garden.son_ndvi_ortalama,
     sonNdviTarihi: garden.son_ndvi_tarihi,

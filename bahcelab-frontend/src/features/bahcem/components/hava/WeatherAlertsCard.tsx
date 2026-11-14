@@ -5,8 +5,8 @@ import { formatHour, todayIstanbul } from '../../lib/dates'
 import { whenText } from '../../lib/weather'
 
 /** Don ve sıcak uyarıları — uydu uyarılarıyla aynı kart dili; kırmızı önce. `quiet`: uyarı yoksa hiçbir şey göstermez. */
-export function WeatherAlertsCard({ alerts, quiet = false }: { alerts: WeatherAlert[]; quiet?: boolean }) {
-  const today = todayIstanbul()
+export function WeatherAlertsCard({ alerts, quiet = false, bugun }: { alerts: WeatherAlert[]; quiet?: boolean; bugun?: string }) {
+  const today = bugun ?? todayIstanbul()
   if (alerts.length === 0 && quiet) return null
   if (alerts.length === 0) {
     return (
