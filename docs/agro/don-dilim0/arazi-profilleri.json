@@ -1,0 +1,42 @@
+{
+ "jlnnlk (kıyı ovası)": {
+  "yukseklik_m": 44.17,
+  "egim_der": 2.09,
+  "baki_der": 144.15,
+  "tpi300_m": 0.71,
+  "tpi1000_m": 1.65,
+  "akis_birikimi_ha": 0.36,
+  "cukur_derinligi_m": 0.0,
+  "svf": 0.98
+ },
+ "soğuk hava (kıyı ovası)": {
+  "yukseklik_m": 46.09,
+  "egim_der": 2.08,
+  "baki_der": 151.74,
+  "tpi300_m": 0.86,
+  "tpi1000_m": 1.58,
+  "akis_birikimi_ha": 0.54,
+  "cukur_derinligi_m": 0.0,
+  "svf": 0.98
+ },
+ "vadi tabanı (akarsu yatağı çevresi)": {
+  "yukseklik_m": 262.22,
+  "egim_der": 3.02,
+  "baki_der": 145.7,
+  "tpi300_m": -31.04,
+  "tpi1000_m": -68.97,
+  "akis_birikimi_ha": 1560.87,
+  "cukur_derinligi_m": 0.0,
+  "svf": 0.8
+ },
+ "yamaç (kuzey bakılı)": {
+  "yukseklik_m": 121.73,
+  "egim_der": 9.91,
+  "baki_der": 14.15,
+  "tpi300_m": 3.98,
+  "tpi1000_m": 3.92,
+  "akis_birikimi_ha": 0.18,
+  "cukur_derinligi_m": 0.0,
+  "svf": 0.92
+ }
+}

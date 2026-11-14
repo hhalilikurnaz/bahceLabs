@@ -327,6 +327,12 @@ Akış tazeliği + iç uyarı, veri kontrolleri (sert/yumuşak; sert yağış/ET
 - **Veri uyarısı**: kullanıcı satırı «Veri uyarısı» (önce «Veri durumu»ydu); «Ayrıntı →» Durum'daki «Veri durumu» akordeonunu açıp ilk bozuk veri koşulu satırına kaydırır ve odaklar (iki seviye, tek kavram). Sulama panelinde aynı satır güven ayrıntısını açar.
 - **Dev işçisi**: `make dev` (DB+Redis+migration+API+arq işçisi+Vite), `make worker`, `make job ad=<iş>`; belge `docs/development/dev-ortami.md`. IMERG doğrulaması: `make job ad=refresh_validation` sonrası dev'de IMERG ve SMAP son gün **2026-11-12** (önce 2026-10-28; IMERG Late ≈ 1 gün gecikmeli).
 
+
+## Faz 1 — ADIM 10 · Dilim 0 (topografya ve don doğrulama spike'ı) — TAMAM (2026-11-14), onay bekliyor
+
+Belge: `docs/agro/don-dogrulama.md` (+ `docs/agro/don-dilim0/` ham sonuçlar, `bahcelab-backend/scripts/don_dilim0/` betikler). Kapanış işleri: API `zaman_dilimi` istemciye (web «bugün» onunla), 044 sonrası dev dökümü (`backups/bahcelab-dev-044-sonrasi-*.dump`, git dışı).
+**Karar önerisi:** topografya profili GO (betimleyici); mutlak arazi sıcaklık düzeltmesi NO-GO (68 istasyonda doğrulanmadı); gece don riski KOŞULLU GO (olasılıksal + yerel sapma; **tahmin başarımı ölçülmedi**); bahçe-içi harita yalnız rölyef ≥ 10 m ve eğim ≥ 3°; yaprak/odun eşiği için limona özgü kaynak yok. **Yan bulgu:** Mersin istasyonunda ERA5-Land 5 kışta −2,8 K soğuk (gözlem min +0,7 °C, model 15 gece ≤ 0 °C): mevcut ERA5 tabanlı don olayları kısmen model artefaktı olabilir.
+
 ---
 
 ## Notlar

@@ -1,0 +1,18 @@
+{
+ "gecis_toplam": 1763,
+ "kis_tum_noktalarda_gecerli": 70,
+ "vadi_eksi_jlnnlk_K": [
+  0.58,
+  1.45
+ ],
+ "yamac_eksi_jlnnlk_K": [
+  1.09,
+  0.95
+ ],
+ "noktalar": [
+  "jlnnlk",
+  "soğuk hava",
+  "vadi",
+  "yamaç"
+ ]
+}
