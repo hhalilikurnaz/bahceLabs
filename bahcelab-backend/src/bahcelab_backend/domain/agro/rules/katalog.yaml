@@ -532,3 +532,43 @@ izleme:
   guven_hava_taze_gun: 3
   kural_min_yanit: 5
 
+
+# ADIM 10 (ADR 0031) — gece don riski. Tüm sayılar ön değer · mühendis onayı bekliyor. Doğrulama: docs/agro/don-dogrulama.md (§1–§6), kural seçimi: docs/agro/don-dilim0/kural-secimi.json
+don:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor. Kritik sıcaklıklar (donma başlangıcı): UC ANR 8100 Tablo 2 (Geisel ve Unruh 2003) ve FAO Frost Protection Böl. 4 Tablo 4.10 (Puffer ve Turrell 1967);
+    meyvede iki kaynaktan UYARI İÇİN DAHA TEMKİNLİ (yüksek) uç alınır. Yaprak ve odun: limona özgü sayısal kaynak yok → modelde YOK (mühendis girdisi bekleniyor). Süre: iki kaynak çelişir
+    (UC: nem/süre etkili; FAO: 2–24 sa için süreden bağımsız) → uyarı için kısa süre yeter (≥ 1 saat eşik altı = tek saatlik minimum), süre eşiği DEĞİŞTİRMEZ. Tahmin: Open-Meteo, 3 model, EN SOĞUK model;
+    sapma düzeltmesi YOK (benzer kıyı istasyonlarında tutarlı yön yok). σ = Akdeniz kıyısı en-soğuk-model RMSE'si. Kural A seçildi: kıyıda POD 0,846 (33/39) / FAR 0,64; B ve C kıyıda POD'u düşürdü.
+  surum: don-1
+  modeller: [ecmwf_ifs025, icon_seamless, gfs_seamless]
+  min_model_sayisi: 2
+  izle_k: 3.0          # İzle (yalnız uygulama içi): en soğuk model ≤ kritik + 3 K
+  uyari_kural: A       # Uyarı (18:00 bildirimi): en soğuk model ≤ kritik + uyari_k
+  uyari_k: 2.0
+  uzlasi_k: 3.0        # B/C için; A'da yalnız «kaç model uzlaştı» bilgisi
+  acik_sakin_bulut_max: 40.0   # C için (seçilmedi; tahmin bulut/rüzgârı don gecelerini ayırt etmedi: ulusal POD 0,45)
+  acik_sakin_ruzgar_max: 3.0
+  sigma_c: 2.4
+  kritik_c:
+    cicek: -2.8
+    yeni_meyve: -0.8
+    yesil_meyve: -1.4
+    olgun_meyve: -0.8
+    yaprak: null   # kaynak yok: mühendis girdisi bekleniyor
+    odun: null     # kaynak yok: mühendis girdisi bekleniyor
+  evre_organ:      # evrenin en hassas organı (önceki sezon meyvesi ağaçta kaldıysa olgun meyve eşiği de geçerli olabilir: mühendis onayı)
+    kis_dinlenme: [olgun_meyve]
+    tomurcuklanma: [cicek]
+    ciceklenme: [cicek]
+    meyve_tutumu: [yeni_meyve]
+    meyve_gelisimi: [yesil_meyve]
+    olgunlasma: [olgun_meyve]
+  rolyef_min_m: 10.0
+  egim_min_der: 3.0
+  dem_pencere_km: 5.0
+  bildirim_acik: false   # 18:00 bildirimi ve ertesi sabah sorusu: Dilim 2 onayına kadar KAPALI (eski «hava_don» bildirimiyle çift uyarı olmasın)
+  uyari_saat: 18
+  soru_saat: 8
+  yeniden_degerlendirme_surum: don-yd-1

@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bahcelab_backend.api.acquisitions.router import router as acquisitions_router
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
+from bahcelab_backend.api.don.router import router as don_router
 from bahcelab_backend.api.eta.router import router as eta_ic_router
 from bahcelab_backend.api.events.router import router as events_router
 from bahcelab_backend.api.fieldbook.router import router as fieldbook_router
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(series_router)
     app.include_router(events_router)
     app.include_router(gecmis_router)
+    app.include_router(don_router)
     app.include_router(fieldbook_router)
 
     @app.get("/health", tags=["system"])

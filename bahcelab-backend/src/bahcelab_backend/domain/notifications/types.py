@@ -11,6 +11,8 @@ Oncelik = Literal["kritik", "onemli", "bilgi"]  # önem: kritik anında; önemli
 
 TYPES: dict[str, dict[str, str]] = {
     "hava_don": {"ad": "Don uyarısı", "aciklama": "Önümüzdeki günlerde don bekleniyorsa."},
+    "don_gece": {"ad": "Gece don uyarısı", "aciklama": "Akşam 18:00'de: bu gece don olasılığı yüksekse (en soğuk model; bilerek temkinli)."},
+    "don_soru": {"ad": "Don oldu mu?", "aciklama": "Don uyarısı verdiğimiz gecenin ertesi sabahı: oldu / olmadı / bilmiyorum (uyarıları iyileştirir)."},
     "hava_sicak": {"ad": "Aşırı sıcak uyarısı", "aciklama": "Aşırı sıcak bekleniyorsa."},
     "zararli_riski": {"ad": "Zararlı / hastalık riski", "aciklama": "Meyve sineği, kırmızı örümcek veya kuruma hastalığı riski yüksekse (tahmin)."},
     "indeks_dususu": {"ad": "Uydu uyarısı", "aciklama": "Bahçenin kendi normunun belirgin altına düşüş."},

@@ -1,0 +1,108 @@
+{
+ "geceler": [
+  {
+   "en_soguk_c": 1.5,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-20",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": 1.5,
+    "gfs_seamless": 3.4,
+    "icon_seamless": 3.7
+   },
+   "seviye": "yok",
+   "soz": "düşük",
+   "uzlasi_model": 0
+  },
+  {
+   "en_soguk_c": 0.3,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-21",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": 0.3,
+    "gfs_seamless": 1.2,
+    "icon_seamless": 1.7
+   },
+   "seviye": "yok",
+   "soz": "düşük",
+   "uzlasi_model": 0
+  },
+  {
+   "en_soguk_c": -1.6,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-22",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": -1.6,
+    "gfs_seamless": -0.1,
+    "icon_seamless": 1.5
+   },
+   "seviye": "uyari",
+   "soz": "yüksek",
+   "uzlasi_model": 2
+  },
+  {
+   "en_soguk_c": -1.3,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-23",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": -1.3,
+    "gfs_seamless": -0.2,
+    "icon_seamless": 2.0
+   },
+   "seviye": "uyari",
+   "soz": "yüksek",
+   "uzlasi_model": 2
+  },
+  {
+   "en_soguk_c": -0.2,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-24",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": -0.2,
+    "gfs_seamless": 1.0,
+    "icon_seamless": 1.4
+   },
+   "seviye": "izle",
+   "soz": "orta",
+   "uzlasi_model": 1
+  },
+  {
+   "en_soguk_c": 2.0,
+   "evre": "tomurcuklanma",
+   "gece": "2025-02-25",
+   "kritik_c": -2.8,
+   "model_tmin": {
+    "ecmwf_ifs025": 2.0,
+    "gfs_seamless": 3.7,
+    "icon_seamless": 4.4
+   },
+   "seviye": "yok",
+   "soz": "düşük",
+   "uzlasi_model": 0
+  }
+ ],
+ "kural_surum": "don-1",
+ "topografya": {
+  "bahce_ici": {
+   "egim_ort_der": 2.1,
+   "neden": "Bahçe içi göreli soğuk nokta üretilmedi: bahçe içi yükseklik farkı 8 m (en az 10 m gerekir; DEM dikey hatası birkaç metredir); ortalama eğim 2.1° (en az 3° gerekir).",
+   "piksel": 30,
+   "rolyef_m": 8.1,
+   "uygun": false
+  },
+  "profil": {
+   "akis_birikimi_ha": 0.27,
+   "baki_der": 140.53,
+   "cukur_derinligi_m": 0.0,
+   "egim_der": 2.1,
+   "svf": 0.98,
+   "tpi1000_m": 1.95,
+   "tpi300_m": 0.95,
+   "yukseklik_m": 44.6
+  }
+ }
+}

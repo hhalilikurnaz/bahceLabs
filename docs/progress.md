@@ -338,6 +338,16 @@ Belge: `docs/agro/don-dogrulama.md` (+ `docs/agro/don-dilim0/` ham sonuçlar, `b
 
 `docs/agro/don-dogrulama.md` §6. Open-Meteo previous runs, 4 model, 68 istasyon, 2 kış, 1–3 gün önceden. **Karar önerisi: KOŞULLU GO, «en soğuk model» (IFS+ICON+GFS)**: kıyıda yanlılık −0,01 K, RMSE 2,33 K; uyarı ≤ kritik+2 K: tüm istasyonlarda POD 0,95 / FAR 0,36, Akdeniz kıyıda POD 0,85 / FAR 0,64 (yalnız 39 don gecesi). Sapma düzeltmesi kuralı (≥ 3 benzer kıyı istasyonu tutarlı) **sağlanmadı → düzeltme YOK**. Kalan Dilim 1 işleri onaya bağlı.
 
+
+## Faz 1 — ADIM 10 · Dilim 1 (topografya profili + gece don riski motoru) — TAMAM (2026-11-14), arayüz (Dilim 2) onay bekliyor
+
+ADR 0031; belge `docs/agro/don-dogrulama.md` §6–7; migration 045 (`bahce_topografya`, `don_risk`, `don_geri_bildirim`, `olay_yeniden_degerlendirme`); `domain/don/` (arazi, topografya, tahmin, risk, servis, isler, olay_yd); katalog `don` bloğu; iş `refresh_don` (saatlik); API `GET /gardens/{id}/don`, `GET …/don/goreli-soguk`, `POST …/don/geri-bildirim`; olay API'sinde `yeniden_degerlendirme`; kural performansında `don_uyari`; altın bahçe don snapshot'ı (`tests/golden/jlnnlk_don_*`).
+- **Uyarı kuralı A seçildi** (en soğuk model ≤ kritik + 2 K; İzle +3 K): kıyı POD 0,846 (33/39) / FAR 0,64 — katı ≥ 0,85 çıtasının 0,004 altında; B ve C kıyıda POD'u düşürdü (ADR 0031 §2).
+- **Bildirim ve «Don oldu mu?» sorusu KAPALI** (`don.bildirim_acik: false`; tercih listesinde de gizli) — eski «hava_don» ile çift uyarı olmasın; açma kararı Dilim 2'de.
+- **Olay yeniden değerlendirme** (dev, 16 don olayı): silinmedi; 8'inde etiket eski ön yargıdan farklı (`belirsiz` → `model_sapmasi_olasi`); Şubat 2025 olayı kamu kaydıyla `dis_kayit_destekliyor` (korunur). Tablo: `docs/agro/don-dilim0/olay-yeniden-degerlendirme.md`.
+- Dev DB: migration 045 uygulandı (önce dump: `backups/bahcelab-dev-045-oncesi-*.dump`); `make job ad=refresh_don` gerçek DEM + canlı tahminle koştu (jlnnlk: bu gece en soğuk model 15,5 °C → risk düşük; bahçe içi göreli soğuk nokta üretilmedi: rölyef 8 m, eğim 2,1°).
+- Not (test altyapısı): bir test oturumunu `pkill` ile kesince xdist işçileri yaşayıp aynı işçi DB'lerinde yeni oturumla çakışabiliyor → rastgele 401 / `assert 40…`. Kök neden oturum çakışması; testlerde bir hata yok (temiz koşu 753 geçti). Oturumu kesmek yerine bitmesini bekleyin.
+
 ---
 
 ## Notlar

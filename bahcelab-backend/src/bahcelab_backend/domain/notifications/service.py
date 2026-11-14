@@ -74,8 +74,11 @@ class NotificationService:
         return TopluOkundu(guncellenen=updated, okunmamis_sayisi=await self.repo.unread_count())
 
     async def preferences(self) -> list[TercihYanit]:
+        from bahcelab_backend.domain.agro.catalog import load_catalog
+
         saved = await self.repo.preferences()
-        return [TercihYanit(tur=k, ad=v["ad"], aciklama=v["aciklama"], acik=saved.get(k, True)) for k, v in TYPES.items()]
+        gizli = set() if load_catalog().don.bildirim_acik else {"don_gece", "don_soru"}  # kapı kapalıyken henüz üretilmeyen bildirim türleri tercih listesinde görünmez
+        return [TercihYanit(tur=k, ad=v["ad"], aciklama=v["aciklama"], acik=saved.get(k, True)) for k, v in TYPES.items() if k not in gizli]
 
     async def set_preference(self, tur: str, enabled: bool) -> list[TercihYanit]:
         if tur not in TYPES:

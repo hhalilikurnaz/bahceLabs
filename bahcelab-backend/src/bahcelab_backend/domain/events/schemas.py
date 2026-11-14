@@ -21,6 +21,7 @@ class OlayYanit(BaseModel):
     durum: Literal["olay", "bekliyor", "suphe"] = "olay"  # bekliyor: sonraki net görüntü doğrulayacak
     neden: str | None = None  # şüphe nedeni (toparlandi | tum_bahce_destek_yok | teyit_edilemedi)
     dogrulama: Literal["gerceklesti", "gerceklesmedi", "bilinmiyor"] | None = None  # çiftçinin «Uydu haklı mıydı?» yanıtı (Saha Defteri)
+    yeniden_degerlendirme: dict[str, object] | None = None  # yalnız don: «yeniden değerlendirildi» işareti (olay silinmez; ADIM 10 karar 3)
 
 
 class OlaylarYanit(BaseModel):

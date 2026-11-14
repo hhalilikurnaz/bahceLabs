@@ -113,5 +113,55 @@ async def test_altin_bahce_karsilastirici_esik_ve_kirmizi_kural():
     assert len(fark) == 4 and any("doluluk_pct" in f for f in fark) and any("etiket" in f for f in fark) and any("eleman sayısı" in f for f in fark)  # eşik dışı: kırmızı
 
 
+DON_GIRDI = Path(__file__).parent / "golden" / "jlnnlk_don_girdi.json.gz"
+DON_BEKLENEN = Path(__file__).parent / "golden" / "jlnnlk_don_beklenen.json"
+
+
+def _don_cikti() -> dict:
+    """ADIM 10 (ADR 0031): jlnnlk'in DONMUŞ DEM'i (Copernicus GLO-30, 3 km) ve Şubat 2025 gecelerinin 3 model SAATLİK tahmini (Open-Meteo historical-forecast; gerçek veri) → topografya profili,
+    bahçe içi göreli soğuk nokta kararı ve gece don seviyeleri. Ağ yok."""
+    import numpy as np
+    from pyproj import Transformer
+    from shapely.geometry import shape
+    from shapely.ops import transform as shp_transform
+
+    from bahcelab_backend.domain.agro.simulation import stage_on
+    from bahcelab_backend.domain.don import risk, topografya
+    from bahcelab_backend.domain.don.risk import SaatlikModel
+
+    d = json.loads(gzip.decompress(DON_GIRDI.read_bytes()))
+    v = json.loads(gzip.decompress(GIRDI.read_bytes()))
+    kural = load_catalog().don
+    dem = d["dem"]
+    pencere = topografya.Pencere((np.array(dem["z_dm"], dtype="float32") / 10.0).reshape(dem["satir"], dem["sutun"]), dem["x0"], dem["y0"], dem["epsg"])
+    poligon = shp_transform(Transformer.from_crs(4326, dem["epsg"], always_xy=True).transform, shape(v["bahce"]["geometry"]))
+    topo = topografya.hesapla_saf(pencere, poligon, kural)
+    t = d["tahmin"]
+    modeller = [SaatlikModel(m, t["zaman"], x["t2m"], x["bulut"], x["ruzgar"]) for m, x in t["modeller"].items()]
+    geceler = []
+    for i in range(6):
+        gece = date(2025, 2, 20) + timedelta(days=i)
+        evre, _ = stage_on("limon", "lamas", gece + timedelta(days=1))
+        kr = risk.kritik_sicaklik(evre, kural)
+        assert kr is not None
+        o = risk.gece_ozeti(modeller, gece, kr[0], kural)
+        assert o is not None
+        k = risk.karar(o, kr[0], kural)
+        geceler.append({"gece": str(gece), "evre": evre, "kritik_c": kr[0], "en_soguk_c": o.en_soguk_c, "model_tmin": o.tmin_model, "uzlasi_model": o.kac_model_uzlasi, "seviye": k.seviye, "soz": k.soz})
+    return {"topografya": topo, "geceler": geceler, "kural_surum": kural.surum}
+
+
+def test_altin_bahce_don_snapshot():
+    cikti = _don_cikti()
+    if os.environ.get("ALTIN_GUNCELLE") == "1":
+        DON_BEKLENEN.write_text(json.dumps(cikti, indent=1, ensure_ascii=False, sort_keys=True) + "\n")
+        pytest.skip("don snapshot güncellendi (gerekçeli commit gerekir)")
+    assert DON_BEKLENEN.exists(), "don snapshot yok: ALTIN_GUNCELLE=1 ile üretin"
+    fark = _farklar(json.loads(json.dumps(cikti, default=str)), json.loads(DON_BEKLENEN.read_text()))
+    assert not fark, "ALTIN BAHÇE DON ÇIKTISI DEĞİŞTİ:\n  " + "\n  ".join(fark)
+    # bahçe içi göreli soğuk nokta: bu düz kıyı bahçesinde ÜRETİLMEZ ve nedeni yazılır
+    assert cikti["topografya"]["bahce_ici"]["uygun"] is False and "yükseklik farkı" in cikti["topografya"]["bahce_ici"]["neden"]
+
+
 def _tur(_: timedelta) -> None:  # tür bütünlüğü
     return None

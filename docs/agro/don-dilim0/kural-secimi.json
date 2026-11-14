@@ -1,0 +1,885 @@
+{
+ "gece": 10436,
+ "izgara": {
+  "A(+2)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 33,
+    "alarm": 92,
+    "POD": 0.846,
+    "FAR": 0.641
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3340,
+    "alarm": 5254,
+    "POD": 0.949,
+    "FAR": 0.364
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 31,
+    "alarm": 85,
+    "POD": 0.886,
+    "FAR": 0.635
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 620,
+    "alarm": 1127,
+    "POD": 0.914,
+    "FAR": 0.45
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2720,
+    "alarm": 4127,
+    "POD": 0.957,
+    "FAR": 0.341
+   }
+  },
+  "A(+2.5)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 34,
+    "alarm": 117,
+    "POD": 0.872,
+    "FAR": 0.709
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3389,
+    "alarm": 5569,
+    "POD": 0.963,
+    "FAR": 0.391
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 8,
+    "POD": 0.5,
+    "FAR": 0.75
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 32,
+    "alarm": 109,
+    "POD": 0.914,
+    "FAR": 0.706
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 642,
+    "alarm": 1228,
+    "POD": 0.947,
+    "FAR": 0.477
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2747,
+    "alarm": 4341,
+    "POD": 0.967,
+    "FAR": 0.367
+   }
+  },
+  "A(+3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 35,
+    "alarm": 136,
+    "POD": 0.897,
+    "FAR": 0.743
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3428,
+    "alarm": 5913,
+    "POD": 0.974,
+    "FAR": 0.42
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 9,
+    "POD": 0.5,
+    "FAR": 0.778
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 33,
+    "alarm": 127,
+    "POD": 0.943,
+    "FAR": 0.74
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 653,
+    "alarm": 1330,
+    "POD": 0.963,
+    "FAR": 0.509
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2775,
+    "alarm": 4583,
+    "POD": 0.976,
+    "FAR": 0.395
+   }
+  },
+  "A(+3.5)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 38,
+    "alarm": 168,
+    "POD": 0.974,
+    "FAR": 0.774
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3463,
+    "alarm": 6254,
+    "POD": 0.984,
+    "FAR": 0.446
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 3,
+    "alarm": 15,
+    "POD": 0.75,
+    "FAR": 0.8
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 35,
+    "alarm": 153,
+    "POD": 1.0,
+    "FAR": 0.771
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 665,
+    "alarm": 1416,
+    "POD": 0.981,
+    "FAR": 0.53
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2798,
+    "alarm": 4838,
+    "POD": 0.985,
+    "FAR": 0.422
+   }
+  },
+  "B(en_soguk<=+2; >=2 model<=+3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 31,
+    "alarm": 76,
+    "POD": 0.795,
+    "FAR": 0.592
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3211,
+    "alarm": 4800,
+    "POD": 0.912,
+    "FAR": 0.331
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 29,
+    "alarm": 71,
+    "POD": 0.829,
+    "FAR": 0.592
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 569,
+    "alarm": 967,
+    "POD": 0.839,
+    "FAR": 0.412
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2642,
+    "alarm": 3833,
+    "POD": 0.93,
+    "FAR": 0.311
+   }
+  },
+  "B(en_soguk<=+2; >=2 model<=+4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 32,
+    "alarm": 88,
+    "POD": 0.821,
+    "FAR": 0.636
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3296,
+    "alarm": 5057,
+    "POD": 0.936,
+    "FAR": 0.348
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 30,
+    "alarm": 81,
+    "POD": 0.857,
+    "FAR": 0.63
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 603,
+    "alarm": 1057,
+    "POD": 0.889,
+    "FAR": 0.43
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2693,
+    "alarm": 4000,
+    "POD": 0.948,
+    "FAR": 0.327
+   }
+  },
+  "B(en_soguk<=+2.5; >=2 model<=+3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 31,
+    "alarm": 81,
+    "POD": 0.795,
+    "FAR": 0.617
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3232,
+    "alarm": 4905,
+    "POD": 0.918,
+    "FAR": 0.341
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 29,
+    "alarm": 76,
+    "POD": 0.829,
+    "FAR": 0.618
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 580,
+    "alarm": 1001,
+    "POD": 0.855,
+    "FAR": 0.421
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2652,
+    "alarm": 3904,
+    "POD": 0.933,
+    "FAR": 0.321
+   }
+  },
+  "B(en_soguk<=+2.5; >=2 model<=+4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 33,
+    "alarm": 103,
+    "POD": 0.846,
+    "FAR": 0.68
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3336,
+    "alarm": 5273,
+    "POD": 0.948,
+    "FAR": 0.367
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 31,
+    "alarm": 96,
+    "POD": 0.886,
+    "FAR": 0.677
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 621,
+    "alarm": 1126,
+    "POD": 0.916,
+    "FAR": 0.448
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2715,
+    "alarm": 4147,
+    "POD": 0.955,
+    "FAR": 0.345
+   }
+  },
+  "B(en_soguk<=+3; >=2 model<=+3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 31,
+    "alarm": 81,
+    "POD": 0.795,
+    "FAR": 0.617
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3241,
+    "alarm": 4953,
+    "POD": 0.921,
+    "FAR": 0.346
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 29,
+    "alarm": 76,
+    "POD": 0.829,
+    "FAR": 0.618
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 582,
+    "alarm": 1011,
+    "POD": 0.858,
+    "FAR": 0.424
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2659,
+    "alarm": 3942,
+    "POD": 0.936,
+    "FAR": 0.325
+   }
+  },
+  "B(en_soguk<=+3; >=2 model<=+4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 33,
+    "alarm": 109,
+    "POD": 0.846,
+    "FAR": 0.697
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3360,
+    "alarm": 5457,
+    "POD": 0.955,
+    "FAR": 0.384
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 8,
+    "POD": 0.5,
+    "FAR": 0.75
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 31,
+    "alarm": 101,
+    "POD": 0.886,
+    "FAR": 0.693
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 628,
+    "alarm": 1181,
+    "POD": 0.926,
+    "FAR": 0.468
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2732,
+    "alarm": 4276,
+    "POD": 0.961,
+    "FAR": 0.361
+   }
+  },
+  "C(B(3,3); bulut<40; ruzgar<3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 20,
+    "alarm": 57,
+    "POD": 0.513,
+    "FAR": 0.649
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 1579,
+    "alarm": 2102,
+    "POD": 0.449,
+    "FAR": 0.249
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 18,
+    "alarm": 52,
+    "POD": 0.514,
+    "FAR": 0.654
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 290,
+    "alarm": 414,
+    "POD": 0.428,
+    "FAR": 0.3
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1289,
+    "alarm": 1688,
+    "POD": 0.454,
+    "FAR": 0.236
+   }
+  },
+  "C(B(3,3); bulut<50; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 25,
+    "alarm": 67,
+    "POD": 0.641,
+    "FAR": 0.627
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 1859,
+    "alarm": 2511,
+    "POD": 0.528,
+    "FAR": 0.26
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 23,
+    "alarm": 62,
+    "POD": 0.657,
+    "FAR": 0.629
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 342,
+    "alarm": 487,
+    "POD": 0.504,
+    "FAR": 0.298
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1517,
+    "alarm": 2024,
+    "POD": 0.534,
+    "FAR": 0.25
+   }
+  },
+  "C(B(3,3); bulut<60; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 27,
+    "alarm": 70,
+    "POD": 0.692,
+    "FAR": 0.614
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 2092,
+    "alarm": 2856,
+    "POD": 0.594,
+    "FAR": 0.268
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 25,
+    "alarm": 65,
+    "POD": 0.714,
+    "FAR": 0.615
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 388,
+    "alarm": 569,
+    "POD": 0.572,
+    "FAR": 0.318
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1704,
+    "alarm": 2287,
+    "POD": 0.6,
+    "FAR": 0.255
+   }
+  },
+  "C(B(3,3); bulut<70; ruzgar<5)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 29,
+    "alarm": 74,
+    "POD": 0.744,
+    "FAR": 0.608
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 2366,
+    "alarm": 3291,
+    "POD": 0.672,
+    "FAR": 0.281
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 27,
+    "alarm": 69,
+    "POD": 0.771,
+    "FAR": 0.609
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 436,
+    "alarm": 644,
+    "POD": 0.643,
+    "FAR": 0.323
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1930,
+    "alarm": 2647,
+    "POD": 0.679,
+    "FAR": 0.271
+   }
+  },
+  "C(B(3,3); bulut<100; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 29,
+    "alarm": 75,
+    "POD": 0.744,
+    "FAR": 0.613
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3092,
+    "alarm": 4683,
+    "POD": 0.878,
+    "FAR": 0.34
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 5,
+    "POD": 0.5,
+    "FAR": 0.6
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 27,
+    "alarm": 70,
+    "POD": 0.771,
+    "FAR": 0.614
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 570,
+    "alarm": 989,
+    "POD": 0.841,
+    "FAR": 0.424
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2522,
+    "alarm": 3694,
+    "POD": 0.887,
+    "FAR": 0.317
+   }
+  },
+  "C(B(3,4); bulut<40; ruzgar<3)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 22,
+    "alarm": 76,
+    "POD": 0.564,
+    "FAR": 0.711
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 1642,
+    "alarm": 2287,
+    "POD": 0.466,
+    "FAR": 0.282
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 20,
+    "alarm": 69,
+    "POD": 0.571,
+    "FAR": 0.71
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 313,
+    "alarm": 483,
+    "POD": 0.462,
+    "FAR": 0.352
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1329,
+    "alarm": 1804,
+    "POD": 0.468,
+    "FAR": 0.263
+   }
+  },
+  "C(B(3,4); bulut<50; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 27,
+    "alarm": 88,
+    "POD": 0.692,
+    "FAR": 0.693
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 1938,
+    "alarm": 2740,
+    "POD": 0.551,
+    "FAR": 0.293
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 25,
+    "alarm": 81,
+    "POD": 0.714,
+    "FAR": 0.691
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 372,
+    "alarm": 572,
+    "POD": 0.549,
+    "FAR": 0.35
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1566,
+    "alarm": 2168,
+    "POD": 0.551,
+    "FAR": 0.278
+   }
+  },
+  "C(B(3,4); bulut<60; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 29,
+    "alarm": 93,
+    "POD": 0.744,
+    "FAR": 0.688
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 2183,
+    "alarm": 3111,
+    "POD": 0.62,
+    "FAR": 0.298
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 7,
+    "POD": 0.5,
+    "FAR": 0.714
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 27,
+    "alarm": 86,
+    "POD": 0.771,
+    "FAR": 0.686
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 422,
+    "alarm": 661,
+    "POD": 0.622,
+    "FAR": 0.362
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1761,
+    "alarm": 2450,
+    "POD": 0.62,
+    "FAR": 0.281
+   }
+  },
+  "C(B(3,4); bulut<70; ruzgar<5)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 31,
+    "alarm": 102,
+    "POD": 0.795,
+    "FAR": 0.696
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 2464,
+    "alarm": 3602,
+    "POD": 0.7,
+    "FAR": 0.316
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 8,
+    "POD": 0.5,
+    "FAR": 0.75
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 29,
+    "alarm": 94,
+    "POD": 0.829,
+    "FAR": 0.691
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 471,
+    "alarm": 752,
+    "POD": 0.695,
+    "FAR": 0.374
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 1993,
+    "alarm": 2850,
+    "POD": 0.701,
+    "FAR": 0.301
+   }
+  },
+  "C(B(3,4); bulut<100; ruzgar<4)": {
+   "kiyi": {
+    "don": 39,
+    "yakalanan": 31,
+    "alarm": 100,
+    "POD": 0.795,
+    "FAR": 0.69
+   },
+   "tum": {
+    "don": 3520,
+    "yakalanan": 3210,
+    "alarm": 5156,
+    "POD": 0.912,
+    "FAR": 0.377
+   },
+   "kiyi_2023-24": {
+    "don": 4,
+    "yakalanan": 2,
+    "alarm": 8,
+    "POD": 0.5,
+    "FAR": 0.75
+   },
+   "kiyi_2024-25": {
+    "don": 35,
+    "yakalanan": 29,
+    "alarm": 92,
+    "POD": 0.829,
+    "FAR": 0.685
+   },
+   "tum_2023-24": {
+    "don": 678,
+    "yakalanan": 616,
+    "alarm": 1158,
+    "POD": 0.909,
+    "FAR": 0.468
+   },
+   "tum_2024-25": {
+    "don": 2842,
+    "yakalanan": 2594,
+    "alarm": 3998,
+    "POD": 0.913,
+    "FAR": 0.351
+   }
+  }
+ }
+}

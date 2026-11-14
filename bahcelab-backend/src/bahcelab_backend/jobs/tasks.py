@@ -109,6 +109,20 @@ async def refresh_izleme(factory: SessionFactory, provider: WeatherProvider) -> 
     return result
 
 
+async def refresh_don(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
+    """ADIM 10 gece don riski (ADR 0031): saatlik; topografya (bir kez) + 3 gecelik risk + (bildirim açıksa) 18:00 uyarı ve ertesi sabah sorusu. Ağ gerektirir (Open-Meteo, DEM)."""
+    from bahcelab_backend.domain.don import isler
+
+    result = JobResult()
+    try:
+        r = await isler.don_isi(factory)
+        result.isler, result.uretilen, result.hata = r["bahce"], r["uyari_bildirimi"] + r["soru"], r["hata"]
+    except Exception:  # noqa: BLE001
+        logger.exception("Gece don işi başarısız")
+        result.hata += 1
+    return result
+
+
 async def refresh_era5(factory: SessionFactory, provider: WeatherProvider) -> JobResult:  # noqa: ARG001 - zamanlayıcı imzası
     """Günlük ERA5 artımlı çekimi (ADR 0018): her hava hücresi bir kez; son ERA5-Land gününden 10 gün geriden + model tahmini. İdempotent."""
     from bahcelab_backend.domain.water.feed import feed_all

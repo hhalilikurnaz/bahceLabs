@@ -107,3 +107,17 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Güven servisi | ≥ %85 yüksek · ≥ %55 orta · altı düşük (sağlanan/ölçülebilen koşul); geçici gün ≤ 8 (30 günde); uydu ≤ 14 gün; hava ≤ 3 gün | tek servis; ölçülemeyen koşul paydada yok | ön değer · mühendis onayı bekliyor |
 | Kural performansı | yanıtlı örnek < 5 → «ölçülemiyor» (isabet uydurulmaz) | aylık seri | ön değer · mühendis onayı bekliyor |
 
+## ADIM 10 — topografya ve gece don riski (`don` bloğu; hepsi «ön değer · mühendis onayı bekliyor», ADR 0031)
+
+| Kural | Durum | Not |
+|---|---|---|
+| Kritik sıcaklık: çiçek −2,8 · yeni meyve −0,8 · yeşil meyve −1,4 · olgun meyve −0,8 °C | ön değer · mühendis onayı bekliyor | UC ANR 8100 Tablo 2 + FAO Tablo 4.10; meyvede iki kaynağın temkinli (yüksek) ucu |
+| **Yaprak ve odun kritik sıcaklığı** | **mühendis girdisi bekleniyor** | limona özgü sayısal kaynak bulunamadı; modelde YOK (uydurulmadı) |
+| Süre | ön değer | iki kaynak çelişir (UC / FAO); uyarı için kısa süre yeter, süre eşiği değiştirmez |
+| Tahmin: en soğuk model (IFS, ICON, GFS), sapma düzeltmesi YOK | ön değer | benzer kıyı istasyonlarında tutarlı yön yok (don-dogrulama.md §6) |
+| İzle (≤ kritik + 3 K, uygulama içi) / Uyarı A (≤ kritik + 2 K, 18:00) | ön değer | kıyı POD 0,846 (33/39) · FAR 0,64; B ve C seçilmedi (ADR 0031 §2) |
+| σ = 2,4 K (olasılık) | ön değer | Akdeniz kıyısı en-soğuk-model RMSE |
+| Bahçe içi göreli soğuk nokta: rölyef ≥ 10 m ve eğim ≥ 3° | ön değer | DEM dikey hatası birkaç metre; jlnnlk'te üretilmez (8 m, 2,1°) |
+| Olay yeniden değerlendirme `don-yd-1` | ön değer | silmez; kullanıcı doğrulamalı olaylara dokunmaz |
+| Bildirim (18:00) ve ertesi sabah «Don oldu mu?» | **kapalı** (`bildirim_acik: false`) | Dilim 2 onayına kadar |
+

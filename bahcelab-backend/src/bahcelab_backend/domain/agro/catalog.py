@@ -555,6 +555,30 @@ class GorselKurali(KuralBlok):
         return self
 
 
+class DonKurali(KuralBlok):
+    """ADIM 10 (ADR 0031) — gece don riski. Hepsi ön değer · mühendis onayı bekliyor; doğrulama: docs/agro/don-dogrulama.md."""
+
+    surum: str
+    modeller: list[str]  # tahmin modelleri (en soğuğu esas); Open-Meteo model adları
+    min_model_sayisi: int = Field(ge=1)
+    izle_k: float = Field(gt=0)  # «İzle» (yalnız uygulama içi): en soğuk model ≤ kritik + izle_k
+    uyari_kural: Literal["A", "B", "C"]  # «Uyarı» (18:00 bildirimi): bkz. risk.karar
+    uyari_k: float = Field(gt=0)
+    uzlasi_k: float = Field(gt=0)  # B/C: en az 2 model ≤ kritik + uzlasi_k
+    acik_sakin_bulut_max: float  # C: gece (00–07) ortalama bulut < % ...
+    acik_sakin_ruzgar_max: float  # C: gece ortalama rüzgâr < ... m/s
+    sigma_c: float = Field(gt=0)  # olasılık hesabında bahçe sıcaklığı belirsizliği (K)
+    kritik_c: dict[str, float | None]  # organ → kritik sıcaklık (donma başlangıcı); yaprak/odun: null (kaynak yok)
+    evre_organ: dict[str, list[str]]  # fenoloji evresi → o dönemde hassas organlar (kritik = en yükseği)
+    rolyef_min_m: float  # bahçe içi göreli soğuk nokta: bahçe içi yükseklik aralığı en az
+    egim_min_der: float  # ... ve ortalama eğim en az
+    dem_pencere_km: float
+    bildirim_acik: bool  # 18:00 bildirimi ve ertesi sabah sorusu (Dilim 2 onayına kadar kapalı)
+    uyari_saat: int = Field(ge=0, le=23)
+    soru_saat: int = Field(ge=0, le=23)
+    yeniden_degerlendirme_surum: str
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -566,6 +590,7 @@ class Katalog(BaseModel):
     eta_ic: EtaIcKurali
     sistem_kontrol: SistemKontrolKurali
     izleme: IzlemeKurali
+    don: DonKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali

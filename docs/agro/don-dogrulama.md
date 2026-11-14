@@ -171,6 +171,23 @@ Süre bozulması küçük: IFS MAE 1/2/3 gün önceden tüm istasyonlarda 2,44 /
 
 **DUR:** Bu karar onaylanmadan Dilim 1'in kalan işleri (motor, olay motorunun yeniden değerlendirilmesi, ADR, altın bahçe don çıktısı) başlamaz.
 
+## 7. Dilim 1 — uyarı kuralı seçimi ve olay yeniden değerlendirmesi
+
+**Kural seçimi (68 istasyon × 2 kış, 1 gün önceden; ham: [`kural-secimi.json`](don-dilim0/kural-secimi.json)).** «İzle» = en soğuk model ≤ kritik + 3 K (uygulama içi). «Uyarı» adayları; kritik sıcaklık 0 °C vekili, gözlenen ≤ 0 °C gece = don (kıyı: 39 gece, tüm istasyonlar: 3 520):
+
+| Kural | Kıyı POD / FAR (alarm) | Tüm istasyonlar POD / FAR | Kıyı 2023-24 (4 don) | Kıyı 2024-25 (35 don) | Tüm 2023-24 | Tüm 2024-25 |
+|---|---|---|---|---|---|---|
+| **A** en soğuk ≤ +2 K | **0,846 / 0,64 (92)** | 0,949 / 0,364 | 0,50 / 0,71 | 0,886 / 0,635 | 0,914 / 0,45 | 0,957 / 0,34 |
+| B: A ve ≥ 2 model ≤ +3 K | 0,79 / 0,59 (76) | 0,91 / 0,33 | 0,50 / 0,60 | 0,83 / 0,59 | — | — |
+| B (≥ 2 model ≤ +4 K) | 0,82 / 0,64 (88) | 0,94 / 0,35 | 0,50 / 0,71 | 0,86 / 0,63 | — | — |
+| C: B(+3,+3) ve bulut < %40, rüzgâr < 3 m/s | 0,51 / 0,65 (57) | 0,45 / 0,25 | 0,50 / 0,60 | 0,51 / 0,65 | — | — |
+| C (bulut < %60, rüzgâr < 4 m/s) | 0,69 / 0,61 (70) | 0,59 / 0,27 | 0,50 / 0,60 | 0,71 / 0,62 | — | — |
+| C (bulut < %100, rüzgâr < 4 m/s) | 0,74 / 0,61 (75) | 0,88 / 0,34 | 0,50 / 0,60 | 0,77 / 0,61 | — | — |
+
+**Seçim: A** (ADR 0031 §2). Ölçüt «kıyıda POD ≥ 0,85, en düşük FAR»: A kıyıda 33/39 = **0,846** (çıtanın 0,004 altında, 1 gece), B ve C POD'u 0,50–0,82'ye düşürüp FAR'ı yalnız 3–5 puan azaltıyor; C'de tahmin bulutu/rüzgârı don gecelerini ayırt etmedi. Kıyı kış-bazlı doğrulaması güç taşımıyor (2023-24'te 4 don gecesi); tüm istasyonlarda iki kış tutarlı. Bilinen bedel: kıyıda uyarıların ≈ %64'ü yanlış.
+
+**Don olaylarının yeniden değerlendirmesi** (`don-yd-1`; [`olay-yeniden-degerlendirme.md`](don-dilim0/olay-yeniden-degerlendirme.md)): 16 olay (jlnnlk 8, soğuk hava 8) değerlendirildi; **hiçbiri silinmedi**, kullanıcı doğrulamalı olay yok. Sonuç (her bahçede aynı dağılım: 4 / 2 / 1 / 1): **`model_sapmasi_olasi` 4** (istasyon > 0 °C, model istasyondan ≥ 2,4 K soğuk, kamu kaydı yok): 2016-01-01 (model −4,5 / istasyon +0,9), 2017-02-15 (−0,1 / +2,8), 2020-02 (−2,6 / +1,9), 2022-03 (−2,0 / +2,2); `istasyon_destekliyor` 2: 2015-01, 2016-01-25; `belirsiz` 1: 2017-01-31; **`dis_kayit_destekliyor` 1: Şubat 2025** (model −4,9 / istasyon +0,7 ama kamu kaydı il düzeyinde don bildiriyor → olay korunur). Eski ön yargıdan farklı etiket: 8 (her bahçede 4; hepsi `belirsiz` → `model_sapmasi_olasi`); hiçbir olay silinmedi ya da «çelişiyor»a çevrilmedi. `model_sapmasi_olasi` kanıt değil işarettir: ERA5'in Mersin'deki bilinen soğuk sapmasıyla açıklanabilirliği söyler.
+
 ## Kaynaklar
 
 - Copernicus DEM GLO-30, AWS Open Data: <https://registry.opendata.aws/copernicus-dem/> (kaynak URL deseni: `copernicus-dem-30m.s3.amazonaws.com`).

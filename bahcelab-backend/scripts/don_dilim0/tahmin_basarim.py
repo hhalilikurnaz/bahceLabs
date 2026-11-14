@@ -45,6 +45,31 @@ def topla(ist_klasor: Path, cikti: Path) -> None:
             time.sleep(1.0)
 
 
+def topla_bulut(ist_klasor: Path, cikti: Path) -> None:
+    """Uyarı kuralı C için: 1 gün önceki koşunun bulut örtüsü (%) ve 10 m rüzgârı (m/s), model başına (DON_MODEL ile bölünebilir)."""
+    cikti.mkdir(parents=True, exist_ok=True)
+    for p in sorted(ist_klasor.glob("*.json")):
+        s = json.loads(p.read_text())
+        for m in (os.environ.get("DON_MODEL") or ",".join(MODELLER[1:])).split(","):
+            dosya = cikti / f"{s['id']}_{m}_bw.json"
+            if dosya.exists():
+                continue
+            for deneme in range(6):
+                try:
+                    r = httpx.get(URL, params={"latitude": s["lat"], "longitude": s["lng"], "start_date": BAS, "end_date": BIT, "hourly": "cloud_cover_previous_day1,wind_speed_10m_previous_day1", "models": m, "timezone": "auto", "wind_speed_unit": "ms"}, timeout=240)
+                except httpx.TransportError:
+                    time.sleep(10 * (deneme + 1))
+                    continue
+                if r.status_code == 429 or r.status_code >= 500:
+                    time.sleep(30 * (deneme + 1))
+                    continue
+                r.raise_for_status()
+                dosya.write_text(json.dumps(r.json()["hourly"]))
+                break
+            print("tamam" if dosya.exists() else "ATLANDI", s["id"], m, flush=True)
+            time.sleep(0.5)
+
+
 def gunluk_tmin(h: dict, anahtar: str) -> dict[str, float]:
     by: dict[str, list[float]] = {}
     for t, v in zip(h["time"], h[anahtar], strict=True):
@@ -143,7 +168,9 @@ def topluluk(ist_klasor: Path, tahmin: Path) -> dict:
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "topla":
+    if sys.argv[1] == "bulut":
+        topla_bulut(Path(sys.argv[2]), Path(sys.argv[3]))
+    elif sys.argv[1] == "topla":
         topla(Path(sys.argv[2]), Path(sys.argv[3]))
     elif sys.argv[1] == "topluluk":
         print(json.dumps(topluluk(Path(sys.argv[2]), Path(sys.argv[3])), ensure_ascii=False, indent=1))

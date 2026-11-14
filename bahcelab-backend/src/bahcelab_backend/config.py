@@ -125,6 +125,7 @@ class Settings(BaseSettings):
     job_sk_halka_hour: int = 4
     job_izleme_interval_minutes: int = 1440  # 9J veri/model kalitesi izleme: günlük (pazartesileri kaynak uyumu da)
     job_izleme_hour: int = 6
+    job_don_interval_minutes: int = 60  # ADIM 10 gece don riski: saatlik (18:00 uyarı ve sabah sorusu bahçenin yerel saatine göre içeride)
     # Su ve sıcaklık besleme (ADR 0017/0018): bahçe eklenince ERA5 geçmişi (2015→) ve doğrulama doldurması; her gün artımlı çekim
     era5_auto_feed: bool = True
     era5_client: str = ""  # YALNIZ API_DEBUG=true iken: «modül:ad» ile test istemcisi (ağsız e2e); boşsa Open-Meteo
