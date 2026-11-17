@@ -148,6 +148,13 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 14
     registration_enabled: bool = False
+    # Erken erişim bekleme listesi (POST /bekleme-listesi): istemci adresi başına pencere içi en çok «adet» başvuru
+    bekleme_limit_adet: int = 5
+    bekleme_limit_sn: int = 600
+    # KVKK aydınlatma metni «taslak — hukuki onay bekliyor» iken liste CANLIDA (API_DEBUG=false) başvuru almaz; hukuki onaydan sonra KVKK_TASLAK=false.
+    # Geliştirme ve testlerde (API_DEBUG=true) bayrak açık olsa da form çalışır.
+    kvkk_taslak: bool = True
+    bekleme_vekil_guven: bool = False  # ters vekil arkasında true: istemci adresi X-Forwarded-For'un son değerinden alınır
     # İç ekranlar (/ic/*): virgülle ayrılmış e-posta listesi; boşsa HİÇ KİMSE erişemez (403). Üretimde yalnız ekip adresleri.
     internal_emails: str = ""
     cookie_secure: bool = False

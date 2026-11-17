@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bahcelab_backend.api.acquisitions.router import router as acquisitions_router
 from bahcelab_backend.api.agro.router import router as agro_router
 from bahcelab_backend.api.auth.router import router as auth_router
+from bahcelab_backend.api.bekleme.router import router as bekleme_router
 from bahcelab_backend.api.don.router import router as don_router
 from bahcelab_backend.api.eta.router import router as eta_ic_router
 from bahcelab_backend.api.events.router import router as events_router
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, generic_error_handler)
 
     app.include_router(auth_router)
+    app.include_router(bekleme_router)
     app.include_router(overview_router)  # /gardens/overview, /gardens/{id} yolundan ÖNCE kayıtlı olmalı
     app.include_router(gardens_router)
     app.include_router(ndvi_router)

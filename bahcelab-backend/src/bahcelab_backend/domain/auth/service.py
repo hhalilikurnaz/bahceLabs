@@ -52,7 +52,7 @@ class AuthService:
 
     async def register(self, request: RegisterRequest) -> IssuedSession:
         if not get_settings().registration_enabled:
-            raise AppError(403, AppErrorCode.FORBIDDEN, "Kayıtlar çok yakında sizlerle!")
+            raise AppError(403, AppErrorCode.FORBIDDEN, "Yeni kayıtlar şu an kapalı. Erken erişim listesine katılabilirsiniz.")
 
         created = await self.repo.create_user_with_workspace(
             name=request.name,

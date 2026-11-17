@@ -50,6 +50,12 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -U pip
           .venv/bin/pip install -e ".[dev]"
+      - name: alembic heads tek olmalı
+        # Paralel dallar aynı migration numarasını alırsa birleşince iki baş çıkar ve `alembic upgrade head` kırılır
+        run: |
+          heads=$(.venv/bin/alembic heads | grep -c '(head)')
+          echo "alembic başları: $heads"
+          [ "$heads" -eq 1 ] || { echo "::error::alembic heads tek olmalı (bulunan: $heads). Son eklenen migration'ı bir sonraki boş numaraya taşıyıp down_revision'ı mevcut başa bağlayın."; .venv/bin/alembic heads; exit 1; }
       - name: ruff
         run: .venv/bin/ruff check src tests scripts
       - name: mypy
