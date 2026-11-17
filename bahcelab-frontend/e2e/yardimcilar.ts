@@ -157,8 +157,8 @@ export function seedEta(gardenId: string, tur: 'tutarli' | 'tutarsiz'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_eta', gardenId, tur], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
 }
 
-/** Test aracı: gece don riskini GERÇEK motorla sentetik saatlik modellerle yazar (`--dik`: dik yamaç DEM, `--dun`: dünkü uyarı gecesi, `--olay`: don olayı + istasyon). */
-export function seedDon(gardenId: string, seviye: 'uyari' | 'izle' | 'dusuk', ...bayrak: ('--dik' | '--dun' | '--olay')[]): void {
+/** Test aracı: gece don riskini GERÇEK motorla sentetik saatlik modellerle yazar (`--dik`: dik yamaç DEM, `--dun`: dünkü uyarı gecesi, `--olay`: don olayı + istasyon, `--gecmis`: geçmiş uyarı geceleri + yanıtlar + istasyon). */
+export function seedDon(gardenId: string, seviye: 'uyari' | 'izle' | 'dusuk', ...bayrak: ('--dik' | '--dun' | '--olay' | '--gecmis')[]): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_don', gardenId, seviye, ...bayrak], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 

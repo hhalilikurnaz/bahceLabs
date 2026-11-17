@@ -573,6 +573,8 @@ don:
   uyari_saat: 18
   soru_saat: 8
   yeniden_degerlendirme_surum: don-yd-1
+  beklenen_kiyi_far: 0.64   # ADR 0031 §2 (kural A, 2 kış, kıyı 39 don gecesi): iç kalite ekranındaki referans çizgisi
+  beklenen_kiyi_pod: 0.846
   # «Ne yapmalı» (risk orta/yüksekse gösterilir). HER önlem kaynaklıdır; sayılar kaynaktan, uydurma yok. Genel literatürdür: bahçeye uygunluğu ziraat mühendisiyle doğrulanmalı.
   onlemler:
     - kod: ruzgar_makinesi

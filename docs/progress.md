@@ -361,6 +361,10 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 - Dev DB: migration 046 uygulandı (önce dump), topografya yeniden hesaplandı (Türkçe ondalık); ekran çekimi için geçici don satırları (Şubat 2025 altın gün, tarihler kaydırıldı) yazılıp SİLİNDİ.
 - Bulgu (kapsam dışı): katman menüsü açıkken «Bölgeler» satırında axe color-contrast; e2e menü kapalıyken tarar.
 
+### ADIM 10 kapanış işleri (2026-11-17)
+- **/ic/kalite → Kurallar → `don_uyari` açılır ayrıntı** (yeni ekran yok): gece gece tablo (tarih, bahçe, en soğuk model, kademe, kritik eşik, kullanıcı yanıtı, en yakın istasyon gözlemi); birikimli FAR (kullanıcı yanıtı ve istasyon) ve POD (istasyon) + Wilson %95 aralık, ADR 0031 kıyı referans çizgileri (FAR 0,64 · POD 0,846; katalog `beklenen_kiyi_*`); n < 5 → «yetersiz örnek». Uç: `GET /ic/izleme/don-uyari`.
+- **Katman menüsü color-contrast** düzeltildi: veri olmayan satırlarda `opacity-60` (kontrastı düşürüyordu) kaldırıldı; pasif «Bahçe içi soğuk nokta» etiketinde de. Axe artık menü AÇIKKEN de taranıyor (`axe.spec.ts` boş-katman testi, iki tema; `don.spec.ts`).
+
 ---
 
 ## Notlar

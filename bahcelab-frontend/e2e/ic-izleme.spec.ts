@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { animasyonlarBitsin, createGarden, newUser, seedIzleme } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedDon, seedIzleme } from './yardimcilar'
 
 /** İç izleme ekranı (9J Dilim 2, ADR 0030): GERÇEK arka uç + gerçek izleme işlerinin yazdığı anlık görüntüler. Kullanıcıya gösterilmez. */
 async function axeTemiz(page: Page, etiket: string): Promise<void> {
@@ -85,4 +85,33 @@ test('kullanıcıya tek satır «Veri uyarısı»: veri bozukken görünür, «A
   await expect(bozuk).toBeInViewport()
   await expect(bozuk).toBeFocused()
   await expect(bozuk).toContainText(/Uydu görüntüsü|Hava verisi|Veri akışları|Şüpheli/)
+})
+
+test('Kurallar → don_uyari satırı açılır: birikimli POD/FAR + %95 aralık + ADR referans çizgisi + gece gece tablo (istasyon ve kullanıcı yanıtı)', async ({ page }) => {
+  await newUser(page)
+  const g = await createGarden(page.request, { ad: 'Don Ayrıntı', lng: 27.99, lat: 38.97, sideM: 200 })
+  seedDon(g.id, 'uyari', '--gecmis')
+  await page.goto('/ic/kalite?sekme=kurallar')
+  const ac = page.getByTestId('kural-don-uyari-ac')
+  await expect(ac).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('don-uyari-ayrinti')).toHaveCount(0) // kapalı: yeni ekran değil, açılır ayrıntı
+  await ac.click()
+  await expect(ac).toHaveAttribute('aria-expanded', 'true')
+  const ay = page.getByTestId('don-uyari-ayrinti')
+  await expect(ay).toBeVisible({ timeout: 30_000 })
+  // kullanıcı yanıtına göre FAR: 1 oldu · 2 olmadı · 1 bilmiyorum (+ bugünkü uyarı gecesi yanıtsız) → FAR 2/3, %95 aralık, ADR 0,64 çizgisi, yetersiz örnek
+  const far = page.getByTestId('don-far-kullanici')
+  await expect(far).toContainText('%67')
+  await expect(far).toContainText('2/3')
+  await expect(far).toContainText('%95 aralık')
+  await expect(far).toHaveAttribute('data-yeterli', 'false')
+  await expect(far).toContainText('yetersiz örnek')
+  await expect(far.locator('svg')).toHaveAttribute('aria-label', /ADR kıyı FAR %64/)
+  await expect(page.getByTestId('don-pod-istasyon')).toContainText('ADR kıyı POD %85')
+  await expect(ay).toContainText('ADR 0031')
+  const satirlar = page.getByTestId('don-uyari-gece-satiri')
+  expect(await satirlar.count()).toBeGreaterThanOrEqual(6) // 5 geçmiş + bugünkü uyarı + yarınki «izle»
+  await expect(satirlar.filter({ hasText: 'E2E gece istasyonu' }).first()).toContainText('-0,5 °C')
+  await expect(satirlar.filter({ hasText: 'olmadı' }).first()).toBeVisible()
+  await axeTemiz(page, 'kurallar don_uyari açık')
 })

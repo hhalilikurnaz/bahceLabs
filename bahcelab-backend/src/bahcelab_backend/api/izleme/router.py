@@ -49,3 +49,11 @@ async def kurallar(service: Service) -> sc.KurallarYanit:
 async def bahceler(service: Service) -> sc.BahcelerYanit:
     """Çalışma alanı bahçeleri: güven dağılımı ve en düşük güvenli bahçeler (nedenleriyle). Etiket kullanıcı ekranlarıyla AYNI servisten."""
     return await service.bahceler(_bugun())
+
+
+@router.get("/don-uyari", response_model=sc.DonUyariAyrinti)
+async def don_uyari(session: Annotated[AsyncSession, Depends(get_db_session)], workspace_id: Annotated[uuid.UUID, Depends(get_workspace_id)]) -> dict:
+    """Kurallar → don_uyari açılır ayrıntısı: gece gece tablo, birikimli POD/FAR + %95 güven aralığı, ADR 0031 kıyı referansı."""
+    from bahcelab_backend.domain.izleme import don_uyari as du
+
+    return await du.ayrinti(session, workspace_id)

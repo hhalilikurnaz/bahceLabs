@@ -122,7 +122,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
                       setKatman(id)
                       setOpen(false)
                     }}
-                    className={`grid w-full grid-cols-[32px_minmax(0,1fr)_auto_8px] items-center gap-2.5 rounded-md px-2 py-2 text-left hover:bg-app-card-hover ${id === katman ? 'bg-[color-mix(in_srgb,var(--color-app-primary)_18%,transparent)]' : ''} ${d.hazir ? '' : 'opacity-60'}`}
+                    className={`grid w-full grid-cols-[32px_minmax(0,1fr)_auto_8px] items-center gap-2.5 rounded-md px-2 py-2 text-left hover:bg-app-card-hover ${id === katman ? 'bg-[color-mix(in_srgb,var(--color-app-primary)_18%,transparent)]' : ''} ${d.hazir ? '' : '[&_b]:font-normal [&_b]:text-app-text-muted'}`}
                   >
                     <Ornek id={id} />
                     <span className="min-w-0">
@@ -145,7 +145,7 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
             <input type="checkbox" checked={saha} onChange={(e) => setSaha(e.target.checked)} data-testid="saha-katmani" className="h-4 w-4 accent-[var(--color-app-text)]" />
             <span><b className="block text-small">Saha kayıtları</b><span className="block text-caption text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>
           </label>
-          <label className={`flex min-h-11 items-center gap-2.5 rounded-md px-2 text-small font-medium ${donKullanilir ? 'cursor-pointer hover:bg-app-card-hover' : 'cursor-not-allowed opacity-70'}`}>
+          <label className={`flex min-h-11 items-center gap-2.5 rounded-md px-2 text-small font-medium ${donKullanilir ? 'cursor-pointer hover:bg-app-card-hover' : 'cursor-not-allowed'}`}>
             <input type="checkbox" checked={don && donKullanilir} disabled={!donKullanilir} onChange={(e) => setDon(e.target.checked)} data-testid="don-katmani" aria-describedby="don-katmani-neden" className="h-4 w-4 accent-[var(--color-app-text)]" />
             <span><b className="block text-small">Bahçe içi soğuk nokta</b><span id="don-katmani-neden" data-testid="don-katmani-neden" className="block text-caption text-app-text-muted">{donNeden}</span></span>
           </label>

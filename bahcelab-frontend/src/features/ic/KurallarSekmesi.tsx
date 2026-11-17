@@ -1,9 +1,12 @@
+import { useState } from 'react'
+import { DonUyariAyrinti } from './DonUyariAyrinti'
 import { useKurallar } from './icApi'
 import { Yuklenir } from './izlemeOrtak'
 import { ayYil, sayi, yuzde } from './izlemeBicim'
 
 export function KurallarSekmesi() {
   const q = useKurallar()
+  const [donAcik, setDonAcik] = useState(false)
   return (
     <Yuklenir q={q} baslik="Kural performansı">
       {(v) => (
@@ -14,16 +17,19 @@ export function KurallarSekmesi() {
             <table className="mt-2 w-full min-w-[640px] text-left">
               <thead className="text-app-text-muted"><tr>{['Kural', 'Üretilen', 'Yanıtlanan', 'Yanıt oranı', 'İsabet', 'Durum'].map((h) => <th key={h} className="pb-1 pr-3 font-semibold">{h}</th>)}</tr></thead>
               <tbody>
-                {v.ozet.map((o) => (
+                {v.ozet.flatMap((o) => [
                   <tr key={o.kural} className="border-t border-app-border" data-testid="kural-satir" data-kural={o.kural} data-durum={o.durum}>
-                    <td className="py-1.5 pr-3 font-semibold">{o.ad}</td>
+                    <td className="py-1.5 pr-3 font-semibold">{o.kural === 'don_uyari'
+                      ? <button type="button" onClick={() => setDonAcik(!donAcik)} aria-expanded={donAcik} aria-controls="don-uyari-ayrinti-satiri" data-testid="kural-don-uyari-ac" className="min-h-11 text-left underline">{donAcik ? '▾' : '▸'} {o.ad} · gece gece ayrıntı</button>
+                      : o.ad}</td>
                     <td className="pr-3 tabular-nums">{o.uretilen}</td>
                     <td className="pr-3 tabular-nums">{o.yanit}</td>
                     <td className="pr-3 tabular-nums">{o.uretilen ? yuzde(o.yanit / o.uretilen) : '—'}</td>
                     <td className="pr-3 font-semibold tabular-nums">{o.isabet === null ? '—' : yuzde(o.isabet)}</td>
                     <td className={o.durum === 'olculuyor' ? 'text-app-success' : 'text-app-text-muted'}>{o.durum === 'olculuyor' ? '● ölçülüyor' : '○ ölçülemiyor'}</td>
-                  </tr>
-                ))}
+                  </tr>,
+                  ...(o.kural === 'don_uyari' && donAcik ? [<tr key="don-uyari-ayrinti" id="don-uyari-ayrinti-satiri"><td colSpan={6} className="border-t border-app-border bg-app-card-hover/40 px-2"><DonUyariAyrinti /></td></tr>] : []),
+                ])}
               </tbody>
             </table>
           </section>

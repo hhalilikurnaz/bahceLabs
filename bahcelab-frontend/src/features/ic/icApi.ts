@@ -65,3 +65,13 @@ export const useAkislar = () => useQuery(izle<AkislarYanit>('akislar'))
 export const useUyum = () => useQuery(izle<UyumYanit>('uyum'))
 export const useKurallar = () => useQuery(izle<KurallarYanit>('kurallar'))
 export const useBahceler = () => useQuery(izle<BahcelerYanit>('bahceler'))
+
+export interface Wilson { k: number; n: number; oran: number | null; alt: number | null; ust: number | null; yeterli: boolean }
+export interface DonUyariGece { gece: string; bahce: string; en_soguk_c: number; kademe: 'uyarı' | 'izle'; kritik_c: number; yanit: 'oldu' | 'olmadi' | 'bilmiyorum' | null; istasyon: { ad: string; mesafe_km: number; tmin_c: number } | null }
+export interface DonUyariAyrinti {
+  referans: { far: number; pod: number; kaynak: string; min_n: number }
+  kullanici: { uyari_gece: number; yanit: number; oldu: number; olmadi: number; bilmiyorum: number; far: Wilson; aciklama: string }
+  istasyon: { gozlemli_gece: number; don_gecesi: number; uyari_gozlemli: number; far: Wilson; pod: Wilson; aciklama: string }
+  geceler: DonUyariGece[]
+}
+export const useDonUyari = (etkin: boolean) => useQuery({ ...izle<DonUyariAyrinti>('don-uyari'), enabled: etkin })

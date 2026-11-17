@@ -95,8 +95,7 @@ test('harita: düz bahçede «bahçe içi soğuk nokta» pasif + neden (rölyef,
   await page.getByTestId('don-katmani').check()
   await expect(page.getByTestId('don-lejant')).toContainText('göreli, °C değil')
   await page.waitForFunction(() => Boolean((window as unknown as { __bahcelabHarita?: { getLayer: (id: string) => unknown } }).__bahcelabHarita?.getLayer('don-goreli-dolgu')), undefined, { timeout: 30_000 })
-  await page.getByTestId('katman-dugmesi').click() // menüyü kapat (menüdeki «Bölgeler» satırının mevcut kontrast bulgusu bu kapsamın dışında)
-  await axeTemiz(page, 'don katmanı açık')
+  await axeTemiz(page, 'don katmanı açık, katman menüsü AÇIK')  // menü açıkken (veri yok / pasif satırlar dahil) taranır
 })
 
 test('arazi kartı (bahçe bilgisi): sınıf, eğim, bakı; bahçe içi neden', async ({ page }) => {

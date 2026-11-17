@@ -599,6 +599,8 @@ class DonKurali(KuralBlok):
     uyari_saat: int = Field(ge=0, le=23)
     soru_saat: int = Field(ge=0, le=23)
     yeniden_degerlendirme_surum: str
+    beklenen_kiyi_far: float  # ADR 0031 §2: seçilen kural A'nın Akdeniz kıyısı yanlış alarm oranı (referans çizgisi; iç ekran)
+    beklenen_kiyi_pod: float
 
 
 class Katalog(BaseModel):

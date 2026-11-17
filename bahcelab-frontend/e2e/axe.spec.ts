@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { animasyonlarBitsin, createGarden, newUser, seedScenes } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, newUser, seedDon, seedScenes } from './yardimcilar'
 
 /** axe-core (WCAG 2.1 A/AA): ciddi ve kritik ihlal 0 olmalı. Harita telifi (Mapbox/OSM yükümlülüğü) ve tuval hariç. */
 async function taraYaz(page: Page, etiket: string): Promise<void> {
@@ -53,6 +53,17 @@ for (const tema of ['acik', 'koyu'] as const) {
       await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.55)
       await expect(page.getByRole('dialog', { name: 'Nokta incelemesi' })).toBeVisible()
       await taraYaz(page, `${tema} nokta inceleme`)
+    })
+
+    test('katman menüsü açıkken: veri olmayan ve pasif satırlar (Bölgeler, radar, bahçe içi soğuk nokta) kontrastı korur', async ({ page }) => {
+      await newUser(page)
+      const garden = await createGarden(page.request, { ad: 'Axe Boş Katman', lng: 27.97, lat: 38.96, sideM: 200 })
+      seedDon(garden.id, 'dusuk') // düz bahçe: «Bahçe içi soğuk nokta» pasif; uydu verisi yok: katmanlar «veri yok»
+      await page.goto(`/bahceler/${garden.id}`)
+      await page.getByTestId('katman-dugmesi').click()
+      await expect(page.getByTestId('katman-bolgeler')).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByTestId('don-katmani')).toBeDisabled()
+      await taraYaz(page, `${tema} boş katman menüsü`)
     })
 
     test('giriş sayfası', async ({ page }) => {

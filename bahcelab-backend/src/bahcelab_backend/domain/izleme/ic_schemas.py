@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -99,3 +100,10 @@ class BahcelerYanit(BaseModel):
     dagilim: dict[str, int]
     en_dusuk: list[BahceGuven]
     toplam_bahce: int
+
+
+class DonUyariAyrinti(BaseModel):
+    referans: dict[str, Any]
+    kullanici: dict[str, Any]
+    istasyon: dict[str, Any]
+    geceler: list[dict[str, Any]]
