@@ -26,7 +26,9 @@ def build_candidates(
 ) -> list[Candidate]:
     out: list[Candidate] = []
     for alert in weather_alerts:
-        kind = "hava_don" if alert.tur == "don" else "hava_sicak"
+        if alert.tur != "sicak":  # don uyarısı emekli (tek don sistemi: domain/don)
+            continue
+        kind = "hava_sicak"
         out.append(
             Candidate(garden_id, kind, "kritik" if alert.seviye == "kirmizi" else "onemli", f"{garden_name}: {alert.baslik}", alert.mesaj, "hava",
                       f"hava:{garden_id}:{alert.tur}:{alert.baslangic}:{alert.seviye}")

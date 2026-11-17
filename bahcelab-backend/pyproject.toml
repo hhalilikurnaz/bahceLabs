@@ -25,6 +25,7 @@ dependencies = [
     "rasterio>=1.4.0",
     "numpy>=2.0",
     "Pillow>=10.0",
+    "fpdf2>=2.8",  # don hasar raporu PDF taslağı (ADIM 10 Dilim 2); gömülü DejaVu yazı tipi
     "PyJWT>=2.9.0",
     "pyyaml>=6.0",
     "arq>=0.26.0",

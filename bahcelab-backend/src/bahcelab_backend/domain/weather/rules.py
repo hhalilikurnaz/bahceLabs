@@ -6,7 +6,7 @@ Eşikler bilinçli olarak burada sabit tutulur; ileride kullanıcı ayarına aç
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Literal
 
 from bahcelab_backend.domain.weather.provider import DailyPoint, HourlyPoint
@@ -25,7 +25,6 @@ LOOKAHEAD_HOURS = 6
 DAY_START_HOUR, DAY_END_HOUR = 5, 21
 
 # --- Don ve sıcak
-FROST_YELLOW, FROST_RED = 2.0, 0.0
 HEAT_YELLOW, HEAT_RED = 38.0, 42.0
 
 SEASON_START_MONTH = 10  # yağış sezonu = su yılı: 1 Ekim'de başlar (DSİ/MGM ile uyumlu)
@@ -145,7 +144,7 @@ def summarize_spray_day(hours: list[tuple[str, SprayHour]], sun: SunTimes | None
     return SpraySummary(counts["uygun"], counts["sinirda"], counts["uygun_degil"], window)
 
 
-# ---------------------------------------------------------------- don ve sıcak
+# ---------------------------------------------------------------- sıcak (don uyarısı EMEKLİ: tek don sistemi = domain/don, ADR 0031/0032)
 @dataclass
 class WeatherAlert:
     tur: Literal["don", "sicak"]
@@ -156,65 +155,6 @@ class WeatherAlert:
     bitis: str
     sure_saat: int
     deger: float  # en düşük (don) veya en yüksek (sıcak) sıcaklık
-
-
-def _parse_hour(moment: str) -> tuple[date, int]:
-    return date.fromisoformat(moment[:10]), int(moment[11:13])
-
-
-def frost_alerts(hourly: list[HourlyPoint], now: str) -> list[WeatherAlert]:
-    """Tahminde ≤ 2 °C: sarı «don riski»; ≤ 0 °C: kırmızı «don tehlikesi». Kaç saat sürdüğü de verilir."""
-    upcoming = [h for h in hourly if h.zaman[:13] >= now[:13]]
-    runs: list[list[HourlyPoint]] = []
-    current: list[HourlyPoint] = []
-    last_cold: datetime | None = None
-    for hour in upcoming:
-        if hour.sicaklik > FROST_YELLOW:
-            continue
-        moment = datetime.fromisoformat(hour.zaman)
-        # 3 saatten uzun ara = yeni gece
-        if current and last_cold is not None and moment - last_cold > timedelta(hours=3):
-            runs.append(current)
-            current = []
-        current.append(hour)
-        last_cold = moment
-    if current:
-        runs.append(current)
-
-    alerts: list[WeatherAlert] = []
-    for run in runs[:3]:
-        lowest = min(h.sicaklik for h in run)
-        red = lowest <= FROST_RED
-        below_zero = sum(1 for h in run if h.sicaklik <= FROST_RED)
-        below_two = len(run)
-        day, hour_start = _parse_hour(run[0].zaman)
-        when = f"{day.day:02d}.{day.month:02d} {hour_start:02d}:00"
-        if red:
-            title = "Don tehlikesi"
-            message = (
-                f"{when} civarında sıcaklık {_fmt(lowest, 1)} °C'ye düşecek; yaklaşık {below_zero} saat 0 °C ve altında, "
-                f"toplam {below_two} saat 2 °C ve altında kalması bekleniyor. Limon don hassasiyeti yüksek bir türdür: "
-                "genç sürgün, çiçek ve meyveler zarar görebilir. Don koruma önlemlerini gözden geçirin."
-            )
-        else:
-            title = "Don riski"
-            message = (
-                f"{when} civarında sıcaklık {_fmt(lowest, 1)} °C'ye inecek; yaklaşık {below_two} saat 2 °C ve altında "
-                "kalması bekleniyor. Don tehlikesi eşiğine (0 °C) inmiyor ancak hassas dokular için dikkatli olun."
-            )
-        alerts.append(
-            WeatherAlert(
-                tur="don",
-                seviye="kirmizi" if red else "sari",
-                baslik=title,
-                mesaj=message,
-                baslangic=run[0].zaman,
-                bitis=run[-1].zaman,
-                sure_saat=below_two,
-                deger=lowest,
-            )
-        )
-    return alerts
 
 
 def heat_alerts(daily: list[DailyPoint], today: date) -> list[WeatherAlert]:

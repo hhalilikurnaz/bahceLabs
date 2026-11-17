@@ -43,6 +43,8 @@ interface Prefs {
   opaklik: number
   /** Saha Defteri kayıtları haritada ayrı üst katman olarak görünsün mü */
   saha: boolean
+  /** Bahçe içi göreli soğuk nokta katmanı (ADIM 10; yalnız rölyef ≥ 10 m ve eğim ≥ 3° ise kullanılabilir) */
+  don: boolean
 }
 
 interface CalismaState extends Prefs {
@@ -77,6 +79,7 @@ interface CalismaState extends Prefs {
   setKontur: (k: boolean) => void
   setOpaklik: (o: number) => void
   setSaha: (s: boolean) => void
+  setDon: (d: boolean) => void
   setVurgu: (v: [number, number] | null) => void
   setInceleme: (i: Inceleme | null) => void
   setPanelPx: (px: number) => void
@@ -89,13 +92,13 @@ interface CalismaState extends Prefs {
   bahceDegisti: () => void
 }
 
-const prefs: Prefs = { skala: 'genel', kontur: false, opaklik: 0.92, saha: false, ...read<Partial<Prefs>>(PREFS_KEY, {}) }
+const prefs: Prefs = { skala: 'genel', kontur: false, opaklik: 0.92, saha: false, don: false, ...read<Partial<Prefs>>(PREFS_KEY, {}) }
 const clampPanel = (px: number) => Math.round(Math.min(PANEL_LIMITS.max, Math.max(PANEL_LIMITS.min, px)))
 
 export const useCalismaStore = create<CalismaState>((set, get) => {
   const savePrefs = (patch: Partial<Prefs>) => {
-    const { skala, kontur, opaklik, saha } = { ...get(), ...patch }
-    write(PREFS_KEY, { skala, kontur, opaklik, saha })
+    const { skala, kontur, opaklik, saha, don } = { ...get(), ...patch }
+    write(PREFS_KEY, { skala, kontur, opaklik, saha, don })
   }
   return {
     ...prefs,
@@ -123,6 +126,7 @@ export const useCalismaStore = create<CalismaState>((set, get) => {
     setKontur: (kontur) => (savePrefs({ kontur }), set({ kontur })),
     setOpaklik: (opaklik) => (savePrefs({ opaklik }), set({ opaklik })),
     setSaha: (saha) => (savePrefs({ saha }), set({ saha })),
+    setDon: (don) => (savePrefs({ don }), set({ don })),
     setVurgu: (vurgu) => set({ vurgu }),
     setInceleme: (inceleme) => set({ inceleme }),
     setPanelPx: (px) => {

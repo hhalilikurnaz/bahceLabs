@@ -77,7 +77,7 @@ def bahce_ici(z: np.ndarray, maske: np.ndarray, kural: DonKurali) -> dict[str, A
     if rolyef < kural.rolyef_min_m:
         nedenler.append(f"bahçe içi yükseklik farkı {rolyef:.0f} m (en az {kural.rolyef_min_m:g} m gerekir; DEM dikey hatası birkaç metredir)")
     if egim_ort < kural.egim_min_der:
-        nedenler.append(f"ortalama eğim {egim_ort:.1f}° (en az {kural.egim_min_der:g}° gerekir)")
+        nedenler.append(f"ortalama eğim {_tr(egim_ort)}° (en az {kural.egim_min_der:g}° gerekir)")
     if nedenler:
         return {**ozet, "uygun": False, "neden": "Bahçe içi göreli soğuk nokta üretilmedi: " + "; ".join(nedenler) + "."}
     return {**ozet, "uygun": True, "neden": None, "aciklama": "Göreli sıralama (0 = en ılık, 1 = en soğuk); sıcaklık değeri değildir. Varsayım: soğuk hava bahçenin alçak kısmında birikir.", "_goreli": ((zz.max() - zz) / max(rolyef, 1e-6))}
@@ -100,6 +100,43 @@ def hesapla_saf(pencere: Pencere, poligon_utm: Any, kural: DonKurali) -> dict[st
         bi["hucreler"] = [{"x": round(float(pencere.x0 + (j + 0.5) * arazi.PIKSEL_M), 1), "y": round(float(pencere.y0 - (i + 0.5) * arazi.PIKSEL_M), 1), "goreli_soguk": round(float(g), 2)} for i, j, g in zip(rr, cc, goreli, strict=True)]
         bi["epsg"] = pencere.epsg
     return {"profil": profil, "bahce_ici": bi}
+
+
+_BAKI = ["kuzey", "kuzeydoğu", "doğu", "güneydoğu", "güney", "güneybatı", "batı", "kuzeybatı"]
+SINIF_AD = {"cukur": "Çukur / vadi tabanı", "yamac": "Yamaç", "sirt": "Sırt", "duz": "Düz arazi"}
+
+
+def _tr(x: float, n: int = 1) -> str:
+    return f"{x:.{n}f}".replace(".", ",")
+
+
+def baki_adi(baki_der: float) -> str:
+    return "düz (bakı yok)" if baki_der < 0 else _BAKI[int(((baki_der + 22.5) % 360) // 45)]
+
+
+def konum_sinifi(profil: dict[str, float], kural: DonKurali) -> dict[str, Any]:
+    """Betimleyici konum sınıfı (çukur / yamaç / sırt / düz) ve tek cümle; °C DEĞİL, sıcaklığa eklenmez."""
+    t10 = float(profil["tpi1000_m"])
+    egim = float(profil["egim_der"])
+    e = kural.konum_esik
+    sinif = "cukur" if t10 <= e.cukur_tpi1000_m else "sirt" if t10 >= e.sirt_tpi1000_m else "yamac" if egim >= e.yamac_egim_der else "duz"
+    bk = baki_adi(float(profil["baki_der"]))
+    cumle = f"{SINIF_AD[sinif]}: eğim {_tr(egim)}°, bakı {bk}, rakım {float(profil['yukseklik_m']):.0f} m; 1 km çevreye göre {t10:+.0f} m."
+    return {"sinif": sinif, "sinif_adi": SINIF_AD[sinif], "baki_adi": bk, "cumle": cumle, "esikler": "ön değer: TPI(1 km) ≤ −10 m çukur, ≥ +10 m sırt, eğim ≥ 5° yamaç"}
+
+
+def hucreler_geojson(bahce_ici: dict[str, Any]) -> dict[str, Any]:
+    """Saklı 30 m hücre merkezlerini (UTM) WGS84 kare çokgenlere çevirir (harita katmanı)."""
+    from pyproj import Transformer
+
+    t = Transformer.from_crs(bahce_ici["epsg"], 4326, always_xy=True)
+    h = arazi.PIKSEL_M / 2
+    feats = []
+    for c in bahce_ici.get("hucreler", []):
+        x, y = c["x"], c["y"]
+        ring = [list(t.transform(x + dx, y + dy)) for dx, dy in ((-h, -h), (h, -h), (h, h), (-h, h), (-h, -h))]
+        feats.append({"type": "Feature", "properties": {"goreli_soguk": c["goreli_soguk"]}, "geometry": {"type": "Polygon", "coordinates": [[[round(a, 6), round(b, 6)] for a, b in ring]]}})
+    return {"type": "FeatureCollection", "features": feats}
 
 
 def geom_hash(geojson: dict[str, Any]) -> str:

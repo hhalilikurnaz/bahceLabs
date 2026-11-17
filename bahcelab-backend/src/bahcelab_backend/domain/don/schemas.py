@@ -11,6 +11,8 @@ from pydantic import BaseModel
 class DonGecesi(BaseModel):
     gece: date  # akşamın tarihi
     sabah: date  # minimumun görüldüğü gün
+    en_soguk_saat: int | None = None  # en soğuk modelin gece minimumunu gördüğü yerel saat
+    organ_adlari: list[str] = []
     olasilik_sozu: Literal["düşük", "orta", "yüksek"]  # «Bu gece don olasılığı: yüksek»
     seviye: Literal["yok", "izle", "uyari"]  # izle: yalnız uygulama içi; uyari: 18:00 bildirimi
     kritik_c: float
@@ -25,16 +27,11 @@ class DonGecesi(BaseModel):
     geri_bildirim: str | None = None  # oldu | olmadi | bilmiyorum
 
 
-class Topografya(BaseModel):
-    profil: dict[str, float]
-    bahce_ici: dict[str, Any] | None
-    hesaplandi: datetime
-    kaynak: str
-    not_: str | None = None
-
-
 class DonYaniti(BaseModel):
     geceler: list[DonGecesi]
+    onlemler: list[dict[str, Any]] = []  # risk orta/yüksekse kaynaklı «ne yapmalı»
+    onlem_notu: str | None = None
+    dun_soru: dict[str, Any] | None = None  # dün gece uyarı verildiyse «Don oldu mu?» (yanıtlanmadıysa)
     topografya: dict[str, Any] | None
     temkin_notu: str
     nasil: str
@@ -47,8 +44,12 @@ class GoreliHucreler(BaseModel):
     uygun: bool
     neden: str | None = None
     aciklama: str | None = None
-    epsg: int | None = None
-    hucreler: list[dict[str, float]] = []
+    geojson: dict[str, Any] | None = None  # 30 m kareler (WGS84), özellik: goreli_soguk 0–1 (sıcaklık DEĞİL)
+    hucre_sayisi: int = 0
+    rolyef_m: float | None = None
+    egim_ort_der: float | None = None
+    rolyef_min_m: float | None = None  # katman açılma koşulu (katalog)
+    egim_min_der: float | None = None
 
 
 class DonGeriBildirim(BaseModel):

@@ -4,6 +4,7 @@ import { describeError } from '../../api/gardensApi'
 import { IRRIGATION_SYSTEMS, type Garden, type SulamaSistemi } from '../../api/types'
 import { useUpdateGarden } from '../../api/useGardens'
 import { parseOptionalInt, validateGardenFields, type GardenFieldErrors } from '../../lib/gardenFields'
+import { AraziKarti } from './AraziKarti'
 import { useToast } from '../layout/toastContext'
 import { VarietyField } from './VarietyField'
 import { varietyPayload, varietyValueOf, type VarietyValue } from '../../lib/variety'
@@ -74,6 +75,7 @@ export function GardenInfoDialog({ garden, onClose }: { garden: Garden; onClose:
             </option>
           ))}
         </SelectField>
+        <AraziKarti gardenId={garden.id} />
         {serverError && (
           <p role="alert" className="rounded-md bg-app-danger/10 px-3 py-2 text-small text-app-danger">
             {serverError}

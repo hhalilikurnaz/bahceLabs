@@ -66,13 +66,13 @@ async def listing(client: AsyncClient, **params) -> dict:
 # ----------------------------------------------------------------------------- yetki
 async def test_notifications_require_login(client: AsyncClient):
     for method, path in [("GET", "/notifications"), ("POST", "/notifications/okundu"), ("GET", "/notifications/tercihler"),
-                         ("PUT", "/notifications/tercihler/hava_don"), ("POST", f"/notifications/{uuid.uuid4()}/okundu"),
+                         ("PUT", "/notifications/tercihler/hava_sicak"), ("POST", f"/notifications/{uuid.uuid4()}/okundu"),
                          ("GET", f"/gardens/{uuid.uuid4()}/sulama"), ("GET", f"/gardens/{uuid.uuid4()}/riskler")]:
         assert (await client.request(method, path, json={"acik": True} if method == "PUT" else None)).status_code == 401, path
 
 
 async def test_other_users_notifications_are_invisible_and_unreadable(user_client: AsyncClient, factory, provider, app):
-    provider.frost = True
+    provider.hot = 43.0
     await new_garden(user_client)
     await run_job(factory, provider, user_client)
     mine = (await listing(user_client))["ogeler"]
@@ -87,14 +87,14 @@ async def test_other_users_notifications_are_invisible_and_unreadable(user_clien
 
 # ----------------------------------------------------------------------------- iş ve tekrar önleme
 async def test_job_creates_notifications_and_a_second_run_creates_none(user_client: AsyncClient, factory, provider):
-    provider.frost = True
+    provider.hot = 43.0
     garden = await new_garden(user_client, ad="Bahçem")
     first = await run_job(factory, provider, user_client)
     assert first.hata == 0 and first.uretilen >= 1
     data = await listing(user_client)
-    frost = next(n for n in data["ogeler"] if n["tur"] == "hava_don")
+    frost = next(n for n in data["ogeler"] if n["tur"] == "hava_sicak")
     assert frost["oncelik"] in ("kritik", "uyari") and frost["baglanti"] == f"/bahceler/{garden['id']}/hava"
-    assert frost["baslik"].startswith("Bahçem:") and frost["tur_adi"] == "Don uyarısı" and frost["okundu"] is False
+    assert frost["baslik"].startswith("Bahçem:") and frost["tur_adi"] == "Aşırı sıcak uyarısı" and frost["okundu"] is False
 
     second = await run_job(factory, provider, user_client)
     assert second.uretilen == 0  # aynı olay için tek bildirim (idempotent)
@@ -143,7 +143,7 @@ async def test_satellite_alert_becomes_one_notification_per_event(user_client: A
 
 # ----------------------------------------------------------------------------- liste, okundu, filtre
 async def test_listing_filters_paging_and_read_state(user_client: AsyncClient, factory, provider):
-    provider.frost = True
+    provider.hot = 43.0
     a = await new_garden(user_client, ad="A Bahçesi")
     await new_garden(user_client, ad="B Bahçesi")
     await run_job(factory, provider, user_client)
@@ -152,7 +152,7 @@ async def test_listing_filters_paging_and_read_state(user_client: AsyncClient, f
 
     only_a = await listing(user_client, bahce=a["id"])
     assert only_a["toplam"] >= 1 and all(n["bahce_id"] == a["id"] for n in only_a["ogeler"])
-    assert (await listing(user_client, tur="hava_don"))["toplam"] >= 1
+    assert (await listing(user_client, tur="hava_sicak"))["toplam"] >= 1
     assert (await user_client.get("/notifications", params={"tur": "yok"})).status_code == 422
 
     page1 = await listing(user_client, boyut=1, sayfa=1)
@@ -176,14 +176,14 @@ async def test_listing_filters_paging_and_read_state(user_client: AsyncClient, f
 
 # ----------------------------------------------------------------------------- tercihler ve kanallar
 async def test_preferences_disable_a_notification_type(user_client: AsyncClient, factory, provider):
-    provider.frost = True
+    provider.hot = 43.0
     await new_garden(user_client)
     prefs = (await user_client.get("/notifications/tercihler")).json()
-    assert {p["tur"] for p in prefs} >= {"hava_don", "hava_sicak", "zararli_riski", "indeks_dususu", "sulama"} and all(p["acik"] for p in prefs)
-    changed = (await user_client.put("/notifications/tercihler/hava_don", json={"acik": False})).json()
-    assert next(p for p in changed if p["tur"] == "hava_don")["acik"] is False
+    assert {p["tur"] for p in prefs} >= {"hava_sicak", "hava_sicak", "zararli_riski", "indeks_dususu", "sulama"} and all(p["acik"] for p in prefs)
+    changed = (await user_client.put("/notifications/tercihler/hava_sicak", json={"acik": False})).json()
+    assert next(p for p in changed if p["tur"] == "hava_sicak")["acik"] is False
     await run_job(factory, provider, user_client)
-    assert (await listing(user_client, tur="hava_don"))["toplam"] == 0  # kapalı tür üretilmez
+    assert (await listing(user_client, tur="hava_sicak"))["toplam"] == 0  # kapalı tür üretilmez
     assert (await user_client.put("/notifications/tercihler/yok", json={"acik": True})).status_code == 404
 
 
@@ -198,7 +198,7 @@ class FakeChannel:
 
 
 async def test_extra_channels_receive_only_new_notifications(user_client: AsyncClient, factory, provider):
-    provider.frost = True
+    provider.hot = 43.0
     await new_garden(user_client)
     channel = FakeChannel()
     registry.register(channel)
@@ -306,7 +306,7 @@ async def test_today_and_status_use_the_new_risk_and_irrigation_inputs(user_clie
 
 # ----------------------------------------------------------------------------- yaşam döngüsü
 async def test_notification_lifecycle_created_seen_resolved_or_snoozed(user_client: AsyncClient, factory, provider, test_engine):
-    provider.frost = True
+    provider.hot = 43.0
     await new_garden(user_client, ad="Döngü")
     await new_garden(user_client, ad="Döngü 2")
     await run_job(factory, provider, user_client)
@@ -345,7 +345,7 @@ async def test_notification_lifecycle_created_seen_resolved_or_snoozed(user_clie
 
 
 async def test_lifecycle_rejects_invalid_requests(user_client: AsyncClient, factory, provider):
-    provider.frost = True
+    provider.hot = 43.0
     await new_garden(user_client)
     await run_job(factory, provider, user_client)
     item = (await listing(user_client))["ogeler"][0]
@@ -409,3 +409,12 @@ async def test_system_feed_alerts_are_flagged_and_counted_separately_from_produc
     assert feed and all(n["sistem"] for n in feed) and not any(n["sistem"] for n in data["ogeler"] if n["tur"] != "besleme")
     assert data["okunmamis_sistem_sayisi"] >= 1 and data["okunmamis_sayisi"] == data["okunmamis_urun_sayisi"] + data["okunmamis_sistem_sayisi"]
     assert "WeatherSourceError" not in feed[0]["metin"]
+
+
+async def test_eski_hava_don_hic_uretilmez_don_artik_hava_servisinden_gelmez(user_client: AsyncClient, factory, provider):
+    provider.frost = True  # tahminde −1,5 °C gece: eskiden «hava_don» üretirdi
+    garden = await new_garden(user_client)
+    await run_job(factory, provider, user_client)
+    data = await listing(user_client)
+    assert all(n["tur"] != "hava_don" for n in data["ogeler"])  # tek don sistemi: domain/don (iç pilot kapısı)
+    assert (await user_client.get(f"/gardens/{garden['id']}/weather")).json()["uyarilar"] == [] or all(a["tur"] != "don" for a in (await user_client.get(f"/gardens/{garden['id']}/weather")).json()["uyarilar"])

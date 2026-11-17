@@ -555,6 +555,26 @@ class GorselKurali(KuralBlok):
         return self
 
 
+class DonOnlem(BaseModel):
+    """Don koruma önlemi: HER SATIR kaynaklıdır (uydurma yok); koşul/uyarı cümleleri kaynaktaki ifadelerin Türkçe karşılığıdır."""
+
+    kod: str
+    ad: str
+    ne: str  # ne işe yarar (kaynaktaki ifade)
+    kosullar: list[str]  # ne zaman işe yarar / nasıl yapılır (sayılar kaynaktan)
+    uyarilar: list[str]  # riskler / işe yaramadığı durumlar
+    kaynak: str
+    url: str
+
+
+class KonumEsik(BaseModel):
+    """Betimleyici konum sınıfı eşikleri (arazi → «çukur / yamaç / sırt / düz»). °C DEĞİL; yalnız etiket."""
+
+    cukur_tpi1000_m: float  # TPI(1 km) ≤ bu → çukur / vadi
+    sirt_tpi1000_m: float  # TPI(1 km) ≥ bu → sırt
+    yamac_egim_der: float  # eğim ≥ bu → yamaç
+
+
 class DonKurali(KuralBlok):
     """ADIM 10 (ADR 0031) — gece don riski. Hepsi ön değer · mühendis onayı bekliyor; doğrulama: docs/agro/don-dogrulama.md."""
 
@@ -573,7 +593,9 @@ class DonKurali(KuralBlok):
     rolyef_min_m: float  # bahçe içi göreli soğuk nokta: bahçe içi yükseklik aralığı en az
     egim_min_der: float  # ... ve ortalama eğim en az
     dem_pencere_km: float
-    bildirim_acik: bool  # 18:00 bildirimi ve ertesi sabah sorusu (Dilim 2 onayına kadar kapalı)
+    bildirim_kapisi: Literal["kapali", "ic_pilot", "acik"]  # 18:00 bildirimi ve ertesi sabah sorusu: kapali | ic_pilot (yalnız INTERNAL_EMAILS çalışma alanlarının bahçeleri) | acik
+    konum_esik: KonumEsik
+    onlemler: list[DonOnlem]
     uyari_saat: int = Field(ge=0, le=23)
     soru_saat: int = Field(ge=0, le=23)
     yeniden_degerlendirme_surum: str

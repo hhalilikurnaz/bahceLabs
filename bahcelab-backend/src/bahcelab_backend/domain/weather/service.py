@@ -80,7 +80,7 @@ def _alert(a: rules.WeatherAlert) -> HavaUyarisi:
 
 
 def weather_alerts(forecast: Forecast, today: date, now: str) -> list[HavaUyarisi]:
-    found = [*rules.frost_alerts(forecast.hourly, now), *rules.heat_alerts(forecast.daily, today)]
+    found = [*rules.heat_alerts(forecast.daily, today)]  # don uyarısı emekli: gece don riski domain/don'da (tek don sistemi)
     return [_alert(a) for a in rules.sort_alerts(found)]
 
 

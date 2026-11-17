@@ -15,6 +15,7 @@ import type { KatmanId } from '../katmanlar'
 import { durumKarar, riskCumlesi } from '../../lib/karar'
 import { useKonum } from '../useKonum'
 import { GecmisCekiliyor } from './GecmisCekiliyor'
+import { DonKarti } from './DonKarti'
 import { Akordeon, Akordeonlar, IkincilKart, KararBlogu, PanelKabuk } from './parcalar'
 import { GostergeCubuklari } from './GostergeCubuklari'
 import { SezonEgrisi } from './SezonEgrisi'
@@ -103,6 +104,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
               {data.guvenNasil && <details className="mt-1 text-caption text-app-text-muted" data-testid="durum-guven-nasil"><summary className="min-h-6 cursor-pointer font-semibold underline">Güven etiketi neye dayanıyor?</summary><p className="mt-1">{data.guvenNasil}</p></details>}
             </KararBlogu>
           </div>
+          <DonKarti gardenId={garden.id} />
           <SezonEgrisi gardenId={garden.id} />
           <TodayCard gardenId={garden.id} />
           <IkincilKart baslik="Diğer göstergeler" testId="diger-gostergeler"><GostergeCubuklari gardenId={garden.id} /></IkincilKart>

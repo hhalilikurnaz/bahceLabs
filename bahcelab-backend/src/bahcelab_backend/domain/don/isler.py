@@ -1,5 +1,5 @@
 """Gece don işi (saatlik zamanlayıcı): topografya profili (bir kez) + 3 gecelik risk (≥ 3 saatte bir ya da bildirim saatinde taze) + 18:00 uyarı bildirimi + ertesi sabah «Don oldu mu?» sorusu.
-Bildirim ve soru YALNIZ `don.bildirim_acik` ise üretilir (Dilim 2 onayına kadar kapalı; eski «hava_don» ile çift uyarı olmasın). Hata bir bahçede diğerlerini durdurmaz."""
+Bildirim ve soru YALNIZ kapı açıksa üretilir: `don.bildirim_kapisi` (kapali | ic_pilot = yalnız INTERNAL_EMAILS çalışma alanlarının bahçeleri | acik); eski «hava_don» emekli (tek don sistemi). Hata bir bahçede diğerlerini durdurmaz."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bahcelab_backend.domain.agro.catalog import DonKurali, load_catalog
-from bahcelab_backend.domain.don import servis, topografya
+from bahcelab_backend.domain.don import kapi, servis, topografya
 from bahcelab_backend.domain.don.tahmin import TahminSaglayici
 from bahcelab_backend.domain.notifications.repository import NotificationRepository
 from bahcelab_backend.domain.notifications.service import NotificationService
@@ -26,9 +26,9 @@ TAZE_SAAT = 3
 
 def uyari_adayi(garden_id: uuid.UUID, ad: str, gece: date, en_soguk: float, kritik: float) -> Candidate:
     return Candidate(
-        garden_id, "don_gece", "kritik", f"{ad}: bu gece don olasılığı yüksek",
+        garden_id, "don_uyari", "kritik", f"{ad}: bu gece don olasılığı yüksek",
         f"En soğuk model tahmini {en_soguk:.1f} °C (bu dönemde hassas organ için kritik ≈ {kritik:.1f} °C). Uyarılarımız bilerek temkinlidir; don olmayabilir. Ayrıntı ve nasıl hesaplandığı Durum ekranında.",
-        "durum", f"don_gece:{garden_id}:{gece.isoformat()}", {"gece": gece.isoformat()},
+        "durum", f"don_uyari:{garden_id}:{gece.isoformat()}", {"gece": gece.isoformat()},
     )
 
 
@@ -58,7 +58,9 @@ async def don_isi(factory: SessionFactory, saglayici: TahminSaglayici | None = N
                 if eski:
                     sonuc["risk"] += len(await servis.hesapla_ve_yaz(s, gid, saglayici, k, bugun))
                 await s.commit()
-            if not k.bildirim_acik:
+            async with factory() as ks:
+                acik = await kapi.calisma_alani_acik_mi(ks, ws, k)
+            if not acik:
                 continue
             adaylar: list[Candidate] = []
             async with factory() as s:

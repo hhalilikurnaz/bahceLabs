@@ -348,6 +348,19 @@ ADR 0031; belge `docs/agro/don-dogrulama.md` §6–7; migration 045 (`bahce_topo
 - Dev DB: migration 045 uygulandı (önce dump: `backups/bahcelab-dev-045-oncesi-*.dump`); `make job ad=refresh_don` gerçek DEM + canlı tahminle koştu (jlnnlk: bu gece en soğuk model 15,5 °C → risk düşük; bahçe içi göreli soğuk nokta üretilmedi: rölyef 8 m, eğim 2,1°).
 - Not (test altyapısı): bir test oturumunu `pkill` ile kesince xdist işçileri yaşayıp aynı işçi DB'lerinde yeni oturumla çakışabiliyor → rastgele 401 / `assert 40…`. Kök neden oturum çakışması; testlerde bir hata yok (temiz koşu 753 geçti). Oturumu kesmek yerine bitmesini bekleyin.
 
+
+## Faz 1 — ADIM 10 · Dilim 2 (gece don arayüzü, tek don sistemi, hasar raporu) — TAMAM (2026-11-17)
+
+ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar `docs/design/u10-d2-ekranlar-jlnnlk/` (+ örnek PDF).
+- **Kapı bahçe/çalışma alanı bazlı:** `don.bildirim_kapisi: ic_pilot` (yalnız INTERNAL_EMAILS çalışma alanları; bu kış iç pilot, açma kararı bahar sonunda pilot verisiyle). Uygulama içi kart/«Bugün»/harita kapıdan bağımsız.
+- **Eski `hava_don` emekli** (tek don sistemi): hava servisi don uyarısı üretmez (`frost_alerts` silindi), bildirim üretici don'u atlar, tercihler migration 046 ile `don_uyari`/`don_soru`'ya taşındı (dev'de doğrulandı), «Bugün» maddesi `don_risk`'ten; çift bildirim testli.
+- **Durum «Önümüzdeki 3 gece» kartı:** sözcük (düşük/orta/yüksek), en soğuk saat, kritik eşik + organ, temkin notu, «Nasıl hesaplandı?»; orta/yüksekte kaynaklı «Ne yapmalı» (5 önlem, her satır FAO 2005 / UC ANR 8100 kaynak + URL; kaynaksız önlem yok, test).
+- **Harita «Bahçe içi soğuk nokta»:** kapı API'de (rölyef ≥ 10 m, eğim ≥ 3°); kapalıysa pasif + neden (jlnnlk: «rölyef 8 m, eğim 2,1° — bahçe içi fark ölçülemez»); açıksa 30 m ayrık hücreler, «göreli, °C değil». Arazi kartı bahçe bilgisinde (çukur/yamaç/sırt/düz).
+- **Geri bildirim:** 18:00 uyarı + ertesi 08:00 «Don oldu mu?» (iç pilot) ve Durum kartında soru; yanıt Saha Defteri'ne + 9J `don_uyari`.
+- **Hasar raporu PDF taslağı** (fpdf2 + gömülü DejaVu): başlıkta «TARSİM başvurusuna yardımcı taslak — resmi ekspertiz değildir»; hava kanıtı grafiği, Sentinel-2 önce/sonra, fotoğraf/notlar, olay etiketi açıkça.
+- Dev DB: migration 046 uygulandı (önce dump), topografya yeniden hesaplandı (Türkçe ondalık); ekran çekimi için geçici don satırları (Şubat 2025 altın gün, tarihler kaydırıldı) yazılıp SİLİNDİ.
+- Bulgu (kapsam dışı): katman menüsü açıkken «Bölgeler» satırında axe color-contrast; e2e menü kapalıyken tarar.
+
 ---
 
 ## Notlar

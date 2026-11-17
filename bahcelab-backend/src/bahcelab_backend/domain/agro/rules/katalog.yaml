@@ -568,7 +568,69 @@ don:
   rolyef_min_m: 10.0
   egim_min_der: 3.0
   dem_pencere_km: 5.0
-  bildirim_acik: false   # 18:00 bildirimi ve ertesi sabah sorusu: Dilim 2 onayına kadar KAPALI (eski «hava_don» bildirimiyle çift uyarı olmasın)
+  bildirim_kapisi: ic_pilot   # 18:00 bildirimi ve ertesi sabah sorusu: kapali | ic_pilot (yalnız INTERNAL_EMAILS kullanıcılarının bahçeleri; bu kış iç pilot) | acik. Açma kararı bahar sonunda pilot verisiyle
+  konum_esik: {cukur_tpi1000_m: -10.0, sirt_tpi1000_m: 10.0, yamac_egim_der: 5.0}   # betimleyici sınıf (ön değer)
   uyari_saat: 18
   soru_saat: 8
   yeniden_degerlendirme_surum: don-yd-1
+  # «Ne yapmalı» (risk orta/yüksekse gösterilir). HER önlem kaynaklıdır; sayılar kaynaktan, uydurma yok. Genel literatürdür: bahçeye uygunluğu ziraat mühendisiyle doğrulanmalı.
+  onlemler:
+    - kod: ruzgar_makinesi
+      ad: Rüzgâr makinesi (büyük fan)
+      ne: "Sıcak ve soğuk hava katmanlarını karıştırarak yüzey sıcaklığını yükseltir; 1,5 m'deki ortalama sıcaklık ters dönme (inversiyon) şiddetinin yaklaşık 1/3'ü kadar artar."
+      kosullar:
+        - "Belirgin bir sıcaklık ters dönmesi (inversiyon) varken işe yarar; inversiyon ne kadar güçlüyse koruma o kadar iyidir."
+        - "Genellikle hava sıcaklığı yaklaşık 0 °C'ye ulaşınca çalıştırılır; daha iyisi kritik hasar sıcaklığına ulaşırken çalışıyor olmasıdır. Meyve ıslaksa buz oluşmadan kurutmak için daha erken başlatılır."
+        - "Kaynakta bir rüzgâr makinesi için 4–5 ha başına 75 kW gücün gerektiği belirtilir."
+      uyarilar:
+        - "Ters dönme yoksa ya da çok zayıfsa önerilmez."
+        - "Rüzgâr yaklaşık 2,5 m/s (8 km/sa) üzerindeyse ya da aşırı soğumuş sis varsa önerilmez."
+        - "Aşırı soğumuş sis pervane kanadında buzlanma yapıp kanat kırılmasına yol açabilir."
+      kaynak: "FAO, Frost Protection (Snyder ve de Melo-Abreu 2005), Böl. 7 «Active protection methods» — Wind machines"
+      url: "http://www.fao.org/4/y7223e/y7223e0d.htm"
+    - kod: agac_alti_sulama
+      ad: Ağaç altı (mikro) yağmurlama ile koruma
+      ne: "Su, donarken ısı verir; ıslak yüzeyi 0 °C civarında tutar. Kaynaklarda ağaç altı sistemlerle yaklaşık 0,5–1,7 °C koruma bildirilir (≈ 2–3,6 m yüksekliğe kadar)."
+      kosullar:
+        - "Ağaç altı sistemlerde uygulama hızı 2,0–3,0 mm/sa; başladıktan sonra sıralama yapılmadan kesintisiz çalıştırılır."
+        - "Hafif donda (en düşük > −2,0 °C) hatlar bir sıra atlayarak çalıştırılabilir."
+        - "Genç narenciye gövdelerinde, ağaç başına 38–87 L/sa gövde mikro-yağmurlamasıyla −12 °C'lik bir gecede sulanan gövdeler kontrole göre 1,0–5,0 °C daha sıcak ölçülmüştür."
+        - "Toprak 1–2 gün önceden nemlendirilir (aşağıdaki «Toprak nemi» maddesi)."
+      uyarilar:
+        - "Alt dalların ıslanmasından kaçının."
+        - "Aynı çalışmada ağaç başına 38 L/sa ile bile gövde −2,5 °C'ye düşmüştür: koruma sınırlıdır."
+        - "Su kesilirse ya da hız yetersizse hasar artabilir; sistemin güvenilir çalışması şarttır."
+      kaynak: "FAO, Frost Protection (2005), Böl. 7 — Sprinklers: under-plant ve microsprinklers (Perry 1994; Evans 2000; Rieger, Davies ve Jackson 1986)"
+      url: "http://www.fao.org/4/y7223e/y7223e0d.htm"
+    - kod: agac_ustu_yagmurlama
+      ad: Ağaç üstü yağmurlama (koşullar ve riskler)
+      ne: "Uygulama hızı yeterli ve düzgünse ≈ −7 °C'ye yakın koruma sağlayabilir; ancak narenciyede nadiren kullanılır (genç limonlar hariç, onlar daha esnektir)."
+      kosullar:
+        - "Başlatma: yaş termometre sıcaklığı 0 °C'ye ulaşınca daha az risklidir; kapatma: rüzgârın geldiği yönde yaş termometre sıcaklığı kritik sıcaklığın üstüne çıkmadan kapatılmamalı."
+        - "Dönüş süresi 60 sn'yi geçmemeli, 30 sn daha iyi. Gerekli hız (mm/sa; 30 sn / 60 sn dönüş) — rüzgâr 0–0,5 m/s: −1,7 °C için 2,0 / 2,5; −3,3 °C için 2,8 / 3,3; −5,0 °C için 3,8 / 4,3. Rüzgâr 0,9–1,4 m/s: −1,7 °C için 2,5 / 3,0; −3,3 °C için 3,3 / 3,8; −5,0 °C için 4,6 / 5,1."
+      uyarilar:
+        - "Rüzgârlı, buharlaşmanın yüksek olduğu koşullarda yetersiz hız daha çok zarar verebilir (buz süt beyazı «kırağı» görünümündeyse hız düşüktür)."
+        - "Sistem arızalanırsa ciddi hasar olabilir; buz yükü dal kırılmasına yol açabilir; kötü drenajlı toprakta kök hastalığı riski vardır."
+      kaynak: "FAO, Frost Protection (2005), Böl. 7 — Over-plant sprinklers (Tablo 7.7 ve 7.8)"
+      url: "http://www.fao.org/4/y7223e/y7223e0d.htm"
+    - kod: govde_sarma_ortu
+      ad: Gövde sarma / örtü (genç ağaçlar)
+      ne: "Genç, dona duyarlı ağaçların gövde ve dallarını yalıtkan malzemeyle sarmak; narenciyede PVC sera da kullanılabilir (kaynakta 3 yıla kadar dayanım belirtilir)."
+      kosullar:
+        - "Malzeme: palmiye yaprağı, mısır sapı, karton ya da cam elyafı; gövdeyi zeminden ana dallara kadar örtün."
+        - "Yağışlı havada dıştaki plastik örtü yalıtımı kuru tutar."
+      uyarilar:
+        - "Tek başına plastik çok az koruma sağlar."
+        - "Kaynaklar bu yöntemi genç ağaçlar için anar; yetişkin bahçede uygulanabilirliği kaynaklarda yoktur."
+      kaynak: "UC ANR Yayın 8100 (Geisel ve Unruh 2003), «Frost Protection Measures»; FAO (2005) Böl. 6 — covers"
+      url: "https://escholarship.org/uc/item/5hh528qp"
+    - kod: toprak_nemi
+      ad: Toprak nemi ve zemin
+      ne: "Nemli, çıplak toprak ısıyı daha iyi depolar ve geceleyin daha fazla ısı yayar."
+      kosullar:
+        - "Toprağı donun beklendiği günden 1–2 gün önce ıslatın ki drenaj olsun; üst 0,3 m tarla kapasitesine yakın (nemli ama doygun olmayan) tutulur."
+        - "Zemini mümkün olduğunca temiz tutun: çıplak nemli toprak, malç ya da yer örtüsüyle kaplı topraktan daha fazla ısı yayar."
+      uyarilar:
+        - "Doygun toprak ısıyı iyi depolamaz; fazla sulama yarar sağlamaz."
+      kaynak: "FAO, Frost Protection (2005), Böl. 6 «Passive protection methods» — soil water content; UC ANR Yayın 8100 (2003)"
+      url: "http://www.fao.org/4/y7223e/y7223e0c.htm"

@@ -8,7 +8,8 @@ import { useGardens } from '../../api/useGardens'
 import { timeAgo } from '../../lib/dates'
 
 const TYPES = [
-  { value: 'hava_don', label: 'Don uyarısı' },
+  { value: 'don_uyari', label: 'Gece don uyarısı' },
+  { value: 'don_soru', label: 'Don oldu mu?' },
   { value: 'hava_sicak', label: 'Aşırı sıcak uyarısı' },
   { value: 'zararli_riski', label: 'Zararlı / hastalık riski' },
   { value: 'indeks_dususu', label: 'Uydu uyarısı' },

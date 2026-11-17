@@ -119,5 +119,9 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | σ = 2,4 K (olasılık) | ön değer | Akdeniz kıyısı en-soğuk-model RMSE |
 | Bahçe içi göreli soğuk nokta: rölyef ≥ 10 m ve eğim ≥ 3° | ön değer | DEM dikey hatası birkaç metre; jlnnlk'te üretilmez (8 m, 2,1°) |
 | Olay yeniden değerlendirme `don-yd-1` | ön değer | silmez; kullanıcı doğrulamalı olaylara dokunmaz |
-| Bildirim (18:00) ve ertesi sabah «Don oldu mu?» | **kapalı** (`bildirim_acik: false`) | Dilim 2 onayına kadar |
+| Bildirim (18:00) ve ertesi sabah 08:00 «Don oldu mu?» | **iç pilot** (`bildirim_kapisi: ic_pilot`: yalnız INTERNAL_EMAILS çalışma alanları) | bu kış; açma kararı bahar sonunda pilot verisiyle (ADR 0032) |
+| «Ne yapmalı» önlemleri (rüzgâr makinesi, ağaç altı/üstü sulama, gövde sarma/örtü, toprak nemi) | kaynaklı; ön değer | her satır FAO (2005) Böl. 6–7 / UC ANR 8100 kaynak + URL; kaynaksız önlem yok (test); bahçeye uygunluk mühendis onayı bekliyor |
+| Konum sınıfı (çukur / yamaç / sırt / düz): TPI-1 km ∓10 m, eğim ≥ 5° | ön değer | betimleyici etiket (°C değil) |
+| Eski `hava_don` bildirimi | **emekli** | tek don sistemi (ADR 0032); tercihler `don_uyari`'ya taşındı (migration 046) |
+| Hasar raporu (PDF taslağı) | taslak | resmi ekspertiz değildir; hasar tutarı/oranı yok |
 

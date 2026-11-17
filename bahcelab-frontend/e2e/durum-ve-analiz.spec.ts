@@ -22,7 +22,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await expect(page.getByTestId('durum-risk-satiri')).toBeVisible()
     await expect(card).not.toContainText('/100')
 
-    await page.getByText('Nasıl hesaplandı?').click()
+    await page.locator('details:not([data-testid="don-nasil"]) > summary', { hasText: 'Nasıl hesaplandı?' }).click() // gece don kartının kendi «Nasıl hesaplandı?» satırı ayrı (don-nasil)
     const nasil = page.getByTestId('nasil-hesaplandi')
     await expect(nasil).toContainText('ön değer · v2')
     expect(await nasil.getByTestId('nasil-cumleler').locator('li').count()).toBeLessThanOrEqual(3) // en çok 3 cümle (güven ayrı etiketli satır: durum-guven-nasil)
@@ -76,7 +76,7 @@ test.describe('Durum sekmesi (v2: kademe, 5 bileşen, sayı yok)', () => {
     await expect(page.getByTestId('kademe-ad')).toContainText('İzle')
     await expect(page.locator('[data-testid="durum-cip"][data-kod="beslenme"]')).toHaveAttribute('data-seviye', 'normalin_ustu')
     await expect(page.locator('[data-testid="durum-cip"][data-kod="isi"]')).toContainText('veri yok')
-    await page.getByText('Nasıl hesaplandı?').click()
+    await page.locator('details:not([data-testid="don-nasil"]) > summary', { hasText: 'Nasıl hesaplandı?' }).click() // gece don kartının kendi «Nasıl hesaplandı?» satırı ayrı (don-nasil)
     await expect(page.getByTestId('kademe-nedeni')).toContainText('kademeyi ayrıca sınırlıyor')
   })
 

@@ -132,7 +132,7 @@ async def test_overview_status_follows_alerts(user_client: AsyncClient, factory)
 
 async def test_overview_reads_cached_weather_without_network(app, user_client: AsyncClient):
     provider = FakeProvider()
-    provider.frost = True
+    provider.hot = 43.0
     app.dependency_overrides[get_weather_provider] = lambda: provider
     garden = await garden_at(user_client)
     assert (await user_client.get(f"/gardens/{garden['id']}/weather")).status_code == 200  # önbelleği doldurur
@@ -142,7 +142,7 @@ async def test_overview_reads_cached_weather_without_network(app, user_client: A
     assert provider.forecast_calls == calls  # özet ağa çıkmaz
     assert item["hava"]["bayat"] is False and item["hava"]["ikon"]
     assert item["durum"] == "veri_yok"  # kademe henüz hesaplanmadı (anlık görüntü yok)
-    assert (await user_client.get(f"/gardens/{garden['id']}/durum")).json()["durum"] == "dikkat"  # Durum sekmesi hesaplar: kırmızı don uyarısı en az Dikkat
+    assert (await user_client.get(f"/gardens/{garden['id']}/durum")).json()["durum"] == "dikkat"  # Durum sekmesi hesaplar: kırmızı sıcak uyarısı en az Dikkat
     (item,) = (await user_client.get("/gardens/overview")).json()["bahceler"]
     assert item["durum"] == "dikkat"  # liste, Durum sekmesinin kademesini aynen gösterir (TEK kademe)
     assert ("hava", "kirmizi") in [(u["kaynak"], u["seviye"]) for u in item["uyarilar"]]

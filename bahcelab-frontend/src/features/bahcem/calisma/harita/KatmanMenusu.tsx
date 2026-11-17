@@ -8,6 +8,7 @@ import { useLandsatEdinimler } from '../../api/suApi'
 import { gunAy, kaynakSatiri } from '../../lib/format'
 import { RAMPS, ZEMIN, ZONE_SHADES, rampGradient } from '../../lib/paletler'
 import { useCalismaStore } from '../calismaStore'
+import { useGoreliSoguk, sayiTr } from '../../api/donApi'
 import { KATMANLAR, KATMAN_GRUPLARI, KATMAN_SIRASI, type KatmanId } from '../katmanlar'
 import { HARITA } from '../../map/haritaRenkleri'
 
@@ -36,7 +37,14 @@ function Ornek({ id }: { id: KatmanId }) {
 export function KatmanMenusu({ gardenId }: { gardenId: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
-  const { katman, setKatman, saha, setSaha } = useCalismaStore()
+  const { katman, setKatman, saha, setSaha, don, setDon } = useCalismaStore()
+  const goreli = useGoreliSoguk(gardenId).data
+  const donKullanilir = goreli?.uygun === true
+  const donNeden = donKullanilir
+    ? 'Göreli, °C değil: bahçenin alçak (soğuk havanın biriktiği) kısımları, 30 m hücreler. Varsayım etiketlidir.'
+    : goreli && goreli.rolyef_m !== null
+      ? `Pasif — rölyef ${sayiTr(goreli.rolyef_m, 0)} m (en az ${goreli.rolyef_min_m ?? 10} m), eğim ${sayiTr(goreli.egim_ort_der ?? 0)}° (en az ${goreli.egim_min_der ?? 3}°): bahçe içi fark ölçülemez.`
+      : (goreli?.neden ?? 'yükleniyor…')
   const edinimSorgu = useEdinimler(gardenId)
   const data = edinimSorgu.data
   const radarSorgu = useRadarEdinimler(gardenId)
@@ -136,6 +144,10 @@ export function KatmanMenusu({ gardenId }: { gardenId: string }) {
           <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md border-t border-app-border px-2 pt-2 text-small font-medium hover:bg-app-card-hover">
             <input type="checkbox" checked={saha} onChange={(e) => setSaha(e.target.checked)} data-testid="saha-katmani" className="h-4 w-4 accent-[var(--color-app-text)]" />
             <span><b className="block text-small">Saha kayıtları</b><span className="block text-caption text-app-text-muted">Defterdeki gözlem, ilaçlama, hasat… kayıtları üst katman olarak</span></span>
+          </label>
+          <label className={`flex min-h-11 items-center gap-2.5 rounded-md px-2 text-small font-medium ${donKullanilir ? 'cursor-pointer hover:bg-app-card-hover' : 'cursor-not-allowed opacity-70'}`}>
+            <input type="checkbox" checked={don && donKullanilir} disabled={!donKullanilir} onChange={(e) => setDon(e.target.checked)} data-testid="don-katmani" aria-describedby="don-katmani-neden" className="h-4 w-4 accent-[var(--color-app-text)]" />
+            <span><b className="block text-small">Bahçe içi soğuk nokta</b><span id="don-katmani-neden" data-testid="don-katmani-neden" className="block text-caption text-app-text-muted">{donNeden}</span></span>
           </label>
         </div>
       )}

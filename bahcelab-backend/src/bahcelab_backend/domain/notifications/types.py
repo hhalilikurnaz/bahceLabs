@@ -9,9 +9,11 @@ SISTEM_TURU = "besleme"  # veri akışı (sistem) bildirimi: ürün (bahçe) uya
 
 Oncelik = Literal["kritik", "onemli", "bilgi"]  # önem: kritik anında; önemli ve bilgi günlük özette (ADR 0018)
 
+# Emekli türler (artık ÜRETİLMEZ; eski kayıtların adı için): hava_don → don_uyari (ADIM 10 Dilim 2; tek don sistemi)
+ESKI_TURLER: dict[str, str] = {"hava_don": "Don uyarısı (eski)"}
+
 TYPES: dict[str, dict[str, str]] = {
-    "hava_don": {"ad": "Don uyarısı", "aciklama": "Önümüzdeki günlerde don bekleniyorsa."},
-    "don_gece": {"ad": "Gece don uyarısı", "aciklama": "Akşam 18:00'de: bu gece don olasılığı yüksekse (en soğuk model; bilerek temkinli)."},
+    "don_uyari": {"ad": "Gece don uyarısı", "aciklama": "Akşam 18:00'de: bu gece don olasılığı yüksekse (en soğuk model; bilerek temkinli)."},
     "don_soru": {"ad": "Don oldu mu?", "aciklama": "Don uyarısı verdiğimiz gecenin ertesi sabahı: oldu / olmadı / bilmiyorum (uyarıları iyileştirir)."},
     "hava_sicak": {"ad": "Aşırı sıcak uyarısı", "aciklama": "Aşırı sıcak bekleniyorsa."},
     "zararli_riski": {"ad": "Zararlı / hastalık riski", "aciklama": "Meyve sineği, kırmızı örümcek veya kuruma hastalığı riski yüksekse (tahmin)."},

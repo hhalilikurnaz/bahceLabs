@@ -93,52 +93,7 @@ def test_day_without_suitable_hours_has_no_window():
     assert summary.en_iyi_aralik is None and summary.uygun_saat == 0
 
 
-# --- don ve sıcak
-def night(temps: list[float], first_hour: int = 22, day: str = "2026-10-12") -> list[HourlyPoint]:
-    points = []
-    for i, t in enumerate(temps):
-        hour = first_hour + i
-        d = day if hour < 24 else "2026-10-13"
-        points.append(HourlyPoint(zaman=f"{d}T{hour % 24:02d}:00", sicaklik=t))
-    return points
-
-
-def test_no_alert_above_two_degrees():
-    assert rules.frost_alerts(night([6, 4, 3.5, 3]), "2026-10-12T20:00") == []
-
-
-def test_frost_risk_is_yellow_with_duration():
-    (alert,) = rules.frost_alerts(night([4, 2, 1.5, 1, 2, 5]), "2026-10-12T20:00")
-    assert alert.seviye == "sari" and alert.baslik == "Don riski"
-    assert alert.sure_saat == 4
-    assert alert.deger == 1.0
-    assert alert.baslangic == "2026-10-12T23:00"
-
-
-def test_frost_danger_is_red_at_zero_or_below():
-    (alert,) = rules.frost_alerts(night([3, 1, 0, -1.5, -0.5, 2, 4]), "2026-10-12T20:00")
-    assert alert.seviye == "kirmizi" and alert.baslik == "Don tehlikesi"
-    assert alert.deger == -1.5
-    assert "3 saat 0 °C" in alert.mesaj
-
-
-def test_exactly_two_and_zero_degrees_are_inclusive():
-    assert rules.frost_alerts(night([2.0]), "2026-10-12T20:00")[0].seviye == "sari"
-    assert rules.frost_alerts(night([0.0]), "2026-10-12T20:00")[0].seviye == "kirmizi"
-
-
-def test_past_hours_are_ignored():
-    assert rules.frost_alerts(night([-3, -3]), "2026-10-13T10:00") == []
-
-
-def test_separate_nights_give_separate_alerts():
-    first = night([1, 1], first_hour=2)
-    second = [
-        HourlyPoint(zaman=f"2026-10-14T{h:02d}:00", sicaklik=-1.0) for h in (3, 4)
-    ]
-    assert len(rules.frost_alerts(first + second, "2026-10-12T00:00")) == 2
-
-
+# --- sıcak (don uyarısı emekli: tek don sistemi domain/don)
 def daily(day: date, tmax: float) -> DailyPoint:
     return DailyPoint(tarih=day, min=tmax - 10, max=tmax)
 
@@ -153,7 +108,7 @@ def test_heat_threshold_is_38():
 
 
 def test_alerts_sorted_red_first():
-    yellow = rules.frost_alerts(night([1.0], first_hour=2), "2026-10-12T00:00")[0]
+    yellow = rules.heat_alerts([daily(date(2026, 10, 21), 39.0)], date(2026, 10, 12))[0]
     red = rules.heat_alerts([daily(date(2026, 10, 20), 43.0)], date(2026, 10, 12))[0]
     assert rules.sort_alerts([yellow, red])[0].seviye == "kirmizi"
 

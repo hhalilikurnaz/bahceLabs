@@ -3,16 +3,17 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bahcelab_backend.api.deps import get_current_user, get_db_session, get_workspace_id
 from bahcelab_backend.domain.auth.schemas import AuthUser
+from bahcelab_backend.domain.don import hasar_raporu, servis
 from bahcelab_backend.domain.don import schemas as sc
-from bahcelab_backend.domain.don import servis
 from bahcelab_backend.domain.gardens.repository import GardenRepository
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
+from bahcelab_backend.shared.storage import get_storage
 
 router = APIRouter(tags=["don"])
 
@@ -44,3 +45,12 @@ async def don_geri_bildirim(garden_id: UUID, body: sc.DonGeriBildirim, session: 
     if risk is None:
         raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bu gece için üretilmiş bir don değerlendirmesi yok.")
     await servis.geri_bildirim_yaz(session, garden_id, body.gece, body.yanit, user.id)
+
+
+@router.get("/gardens/{garden_id}/olaylar/{olay_id}/hasar-raporu", response_class=Response, responses={200: {"content": {"application/pdf": {}}}})
+async def hasar_raporu_pdf(garden_id: UUID, olay_id: UUID, session: Annotated[AsyncSession, Depends(get_db_session)], workspace_id: Annotated[UUID, Depends(get_workspace_id)], _: Annotated[AuthUser, Depends(get_current_user)]) -> Response:
+    """Don olayı SONRASI hasar raporu (PDF taslağı): hava kanıtı + Sentinel-2 önce/sonra + çiftçi fotoğrafları/notu + olay etiketi. «TARSİM başvurusuna yardımcı taslak — resmi ekspertiz değildir»."""
+    await _bahce_dogrula(session, workspace_id, garden_id)
+    pdf, ad = await hasar_raporu.hazirla(session, get_storage(), garden_id, olay_id)
+    await session.commit()  # olay etiketi yeniden değerlendirme satırı yazılmış olabilir
+    return Response(content=pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{ad}"'})

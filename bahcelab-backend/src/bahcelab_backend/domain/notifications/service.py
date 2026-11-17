@@ -15,7 +15,7 @@ from bahcelab_backend.domain.notifications.schemas import (
     TercihYanit,
     TopluOkundu,
 )
-from bahcelab_backend.domain.notifications.types import SISTEM_TURU, TYPES, Candidate
+from bahcelab_backend.domain.notifications.types import ESKI_TURLER, SISTEM_TURU, TYPES, Candidate
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 
 
@@ -29,7 +29,7 @@ def effective_state(row: NotificationModel) -> str:
 def to_response(row: NotificationModel) -> BildirimYanit:
     state = effective_state(row)
     return BildirimYanit(
-        id=row.id, bahce_id=row.garden_id, tur=row.tur, tur_adi=TYPES.get(row.tur, {}).get("ad", row.tur), oncelik=row.oncelik,  # type: ignore[arg-type]
+        id=row.id, bahce_id=row.garden_id, tur=row.tur, tur_adi=TYPES.get(row.tur, {}).get("ad") or ESKI_TURLER.get(row.tur, row.tur), oncelik=row.oncelik,  # type: ignore[arg-type]
         baslik=row.baslik, metin=row.metin, baglanti=row.baglanti, okundu=state != "olustu", sistem=row.tur == SISTEM_TURU, durum=state, ogeler=list(row.ayrinti or []),  # type: ignore[arg-type]
         ertelendi_bitis=row.ertelendi_bitis if state == "ertelendi" else None, olusturma=row.created_at,
     )
@@ -74,10 +74,10 @@ class NotificationService:
         return TopluOkundu(guncellenen=updated, okunmamis_sayisi=await self.repo.unread_count())
 
     async def preferences(self) -> list[TercihYanit]:
-        from bahcelab_backend.domain.agro.catalog import load_catalog
+        from bahcelab_backend.domain.don.kapi import calisma_alani_acik_mi
 
         saved = await self.repo.preferences()
-        gizli = set() if load_catalog().don.bildirim_acik else {"don_gece", "don_soru"}  # kapı kapalıyken henüz üretilmeyen bildirim türleri tercih listesinde görünmez
+        gizli = set() if await calisma_alani_acik_mi(self.repo.session, self.repo.workspace_id) else {"don_uyari", "don_soru"}  # kapı bu çalışma alanı için kapalıyken üretilmeyen türler tercih listesinde görünmez
         return [TercihYanit(tur=k, ad=v["ad"], aciklama=v["aciklama"], acik=saved.get(k, True)) for k, v in TYPES.items() if k not in gizli]
 
     async def set_preference(self, tur: str, enabled: bool) -> list[TercihYanit]:

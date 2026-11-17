@@ -12,6 +12,7 @@ from bahcelab_backend.domain.agro.catalog import DonKurali
 
 Seviye = Literal["yok", "izle", "uyari"]
 SOZ: dict[str, str] = {"yok": "düşük", "izle": "orta", "uyari": "yüksek"}
+ORGAN_AD: dict[str, str] = {"cicek": "Çiçek", "yeni_meyve": "Yeni meyve", "yesil_meyve": "Yeşil meyve", "olgun_meyve": "Olgun meyve"}
 TEMKIN_NOTU = "Uyarılarımız bilerek temkinlidir: don olmayan geceler için de uyarabiliriz; kaçırmamayı önceliklendiriyoruz."
 
 
@@ -35,6 +36,7 @@ class GeceOzeti:
     bulut_ort: float | None
     ruzgar_ort: float | None
     saat_kritik_alti: int  # en soğuk modelin saatlik değeri ≤ kritik olan saat sayısı (bilgi; uyarıyı KISITLAMAZ)
+    en_soguk_saat: int | None = None  # en soğuk modelin gece minimumunu gördüğü yerel saat (0–23)
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,7 @@ def gece_ozeti(modeller: list[SaatlikModel], gece: date, kritik_c: float, kural:
     bulut: list[float] = []
     ruzgar: list[float] = []
     saat_alti = None
+    en_saat: int | None = None
     for m in modeller:
         v = [(z, t) for z, t in zip(m.zaman, m.t2m, strict=False) if z.startswith(sabah) and t is not None]
         if len(v) < 22:
@@ -70,13 +73,14 @@ def gece_ozeti(modeller: list[SaatlikModel], gece: date, kritik_c: float, kural:
             ruzgar.append(sum(w) / len(w))
         if tmin[m.model] == min(tmin.values()):
             saat_alti = sum(1 for _, t in v if t <= kritik_c)
+            en_saat = int(min(v, key=lambda x: x[1])[0][11:13])
     if len(tmin) < kural.min_model_sayisi:
         return None
     return GeceOzeti(
         gece=gece, tmin_model={k: round(x, 1) for k, x in tmin.items()}, en_soguk_c=round(min(tmin.values()), 1),
         kac_model_uzlasi=sum(1 for x in tmin.values() if x <= kritik_c + kural.uzlasi_k),
         bulut_ort=round(sum(bulut) / len(bulut), 1) if bulut else None, ruzgar_ort=round(sum(ruzgar) / len(ruzgar), 1) if ruzgar else None,
-        saat_kritik_alti=int(saat_alti or 0),
+        saat_kritik_alti=int(saat_alti or 0), en_soguk_saat=en_saat,
     )
 
 

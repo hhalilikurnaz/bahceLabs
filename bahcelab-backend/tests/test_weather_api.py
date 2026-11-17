@@ -27,6 +27,7 @@ class FakeProvider:
         self.history_calls: list[tuple[date, date]] = []
         self.offline = False
         self.frost = False
+        self.hot: float | None = None
 
     def build(self) -> Forecast:
         forecast = build_sample_forecast(datetime.now(ZoneInfo("Europe/Istanbul")))
@@ -35,6 +36,11 @@ class FakeProvider:
             for hour in forecast.hourly:
                 if hour.zaman[:10] == tomorrow.isoformat() and int(hour.zaman[11:13]) in (3, 4, 5, 6):
                     hour.sicaklik = -1.5
+        if self.hot is not None:  # yarın `hot` °C (38+ sarı, 42+ kırmızı «Sıcak stresi»): don uyarısı emekli, bildirim/uyarı testleri sıcakla
+            tomorrow = (datetime.now(ZoneInfo("Europe/Istanbul")) + timedelta(days=1)).date()
+            for day in forecast.daily:
+                if day.tarih == tomorrow:
+                    day.max = self.hot
         return forecast
 
     async def forecast(self, lat, lng, past_days=7):
@@ -184,15 +190,16 @@ async def test_offline_without_cache_is_a_clear_error(user_client: AsyncClient, 
     assert summary[0]["hata"] and summary[0]["simdi"] is None
 
 
-async def test_frost_alert_in_response_and_summary(user_client: AsyncClient, provider):
+async def test_frost_no_longer_in_weather_alerts_heat_is(user_client: AsyncClient, provider):
     provider.frost = True
+    provider.hot = 40.0
     garden = await new_garden(user_client)
     data = (await user_client.get(f"/gardens/{garden['id']}/weather")).json()
-    (alert,) = [a for a in data["uyarilar"] if a["tur"] == "don"]
-    assert alert["seviye"] == "kirmizi" and alert["sure_saat"] == 4 and alert["deger"] == -1.5
+    assert not [a for a in data["uyarilar"] if a["tur"] == "don"]  # don uyarısı emekli: tek don sistemi domain/don
+    (alert,) = [a for a in data["uyarilar"] if a["tur"] == "sicak"]
+    assert alert["seviye"] == "sari" and alert["deger"] == 40.0
     summary = (await user_client.get("/weather/ozet")).json()
-    assert summary[0]["uyarilar"][0]["baslik"] == "Don tehlikesi"
-    assert summary[0]["simdi"]["sicaklik"] is not None
+    assert summary[0]["uyarilar"][0]["baslik"] == "Sıcak stresi" and summary[0]["simdi"]["sicaklik"] is not None
 
 
 async def test_history_endpoint_range_and_validation(user_client: AsyncClient, provider):

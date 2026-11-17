@@ -89,7 +89,7 @@
  "topografya": {
   "bahce_ici": {
    "egim_ort_der": 2.1,
-   "neden": "Bahçe içi göreli soğuk nokta üretilmedi: bahçe içi yükseklik farkı 8 m (en az 10 m gerekir; DEM dikey hatası birkaç metredir); ortalama eğim 2.1° (en az 3° gerekir).",
+   "neden": "Bahçe içi göreli soğuk nokta üretilmedi: bahçe içi yükseklik farkı 8 m (en az 10 m gerekir; DEM dikey hatası birkaç metredir); ortalama eğim 2,1° (en az 3° gerekir).",
    "piksel": 30,
    "rolyef_m": 8.1,
    "uygun": false

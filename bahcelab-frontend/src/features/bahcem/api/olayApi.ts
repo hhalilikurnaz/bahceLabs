@@ -19,6 +19,8 @@ export interface Olay {
   neden: string | null
   /** çiftçinin «Uydu haklı mıydı?» yanıtı (Saha Defteri); yoksa null */
   dogrulama: 'gerceklesti' | 'gerceklesmedi' | 'bilinmiyor' | null
+  /** yalnız don: «yeniden değerlendirildi» işareti (olay silinmez; ADIM 10) */
+  yeniden_degerlendirme?: { sonuc: string; aciklama: string | null; model_en_dusuk_c: number | null; istasyon_en_dusuk_c: number | null; kural_surum: string; yeniden_degerlendirildi: boolean } | null
 }
 export interface Olaylar {
   olaylar: Olay[]
@@ -37,3 +39,12 @@ export function useOlaylar(gardenId: string | null, baslangic?: string) {
 }
 
 export const GUVEN_AD: Record<Olay['guven'], string> = { yuksek: 'güven yüksek', orta: 'güven orta', dusuk: 'güven düşük' }
+
+/** Olay etiketi (yeniden değerlendirme sonucu) kullanıcı dili; hasar raporunda da aynı açıklık. */
+export const OLAY_ETIKET_AD: Record<string, string> = {
+  istasyon_destekliyor: 'İstasyon destekliyor',
+  dis_kayit_destekliyor: 'Kamu kaydı destekliyor',
+  model_sapmasi_olasi: 'Model sapması olası',
+  belirsiz: 'Belirsiz',
+  kanit_yok: 'Kanıt yok',
+}

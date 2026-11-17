@@ -18,6 +18,7 @@ import { MapRail } from './MapRail'
 import { UcusVeVurgu } from './UcusVeVurgu'
 import { NoktaInceleme } from './NoktaInceleme'
 import { OlayKarti } from './OlayKarti'
+import { DonKatmani } from './DonKatmani'
 import { SahaKatmani } from './SahaKatmani'
 import { SulamaHaritasi } from '../sulama/harita/SulamaHaritasi'
 
@@ -53,6 +54,7 @@ export function HaritaPaneli({ garden, gardens, sulama = false }: { garden: Gard
         )}
         {view.neden && <div role="status" className="glass absolute left-1/2 top-[70px] z-10 -translate-x-1/2 px-3 py-2 text-small">{view.neden}</div>}
         {saha && <SahaKatmani gardenId={garden.id} />}
+        {!sulama && <DonKatmani gardenId={garden.id} />}
         {sulama && <SulamaHaritasi gardenId={garden.id} />}
         <OlayKarti gardenId={garden.id} />
         {!drawing && !sulama && <NoktaInceleme gardenId={garden.id} view={view} />}

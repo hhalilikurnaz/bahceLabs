@@ -476,14 +476,14 @@ class AgroService:
         garden = await self._garden(garden_id)
         out: list[tuple[Oncelik, str, str, Sekme]] = []
         for e in await list_events(self.ndvi.session, garden_id, since=today - timedelta(days=rule.taze_olay_gun)):
-            cand = event_candidate(garden_id, garden.ad, e, today, rule, e.anahtar) if not (e.tahmin and e.tur == "don") else None
-            if cand is None and e.tahmin and e.tur == "don":  # tahmin donu hava uyarısı yolundan da gelir; Bugün'de kritik olay olarak görünür
-                from bahcelab_backend.domain.notifications import templates
-
-                title, body = templates.event_text(garden.ad, "don", e.baslangic, e.bitis, {"en_dusuk_c": (e.ayrinti or {}).get("don.en_dusuk_c")}, forecast=True, severe=e.siddet == "siddetli")
-                out.append(("kritik", title, body, "hava"))
-            elif cand is not None:
+            cand = event_candidate(garden_id, garden.ad, e, today, rule, e.anahtar)  # tahmin donu burada YOK: tek don sistemi domain/don (aşağıda)
+            if cand is not None:
                 out.append((cand.oncelik, cand.baslik, cand.metin, "hava" if e.tur in WEATHER_KINDS else "durum"))
+        from bahcelab_backend.domain.don import servis as don_servis
+
+        don = await don_servis.bugun_maddesi(self.ndvi.session, garden_id, today)
+        if don is not None:
+            out.append((don[0], don[1], don[2], "durum"))  # type: ignore[arg-type]
         return out
 
     # ------------------------------------------------------------------ bugün

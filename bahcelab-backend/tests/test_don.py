@@ -112,7 +112,7 @@ async def test_topografya_yalniz_rolyef_ve_egim_saglaninca_bahce_ici_uretir(user
     g = [h["goreli_soguk"] for h in bi["hucreler"]]
     assert min(g) >= 0.0 and max(g) <= 1.0 and max(g) - min(g) > 0.5  # alçak (batı) kısım daha soğuk sıralanır
     r = await user_client.get(f"/gardens/{gid}/don/goreli-soguk")
-    assert r.status_code == 200 and r.json()["uygun"] is True and len(r.json()["hucreler"]) == len(g)
+    assert r.status_code == 200 and r.json()["uygun"] is True and r.json()["hucre_sayisi"] == len(g) == len(r.json()["geojson"]["features"])
 
 
 def _duz(la: float, lo: float, km: float) -> topografya.Pencere:  # ağsız: düz sentetik DEM
@@ -163,13 +163,15 @@ async def test_is_bildirim_kapisi_18_uyari_ve_sabah_sorusu(user_client, factory)
         async with factory() as s:
             return int((await s.execute(text("SELECT count(*) FROM notifications WHERE garden_id = :g AND tur = :t"), {"g": gid, "t": tur})).scalar() or 0)
 
-    kapali = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, 5, tzinfo=ist), kural=KURAL)
-    assert kapali["risk"] >= 1 and kapali["uyari_bildirimi"] == 0 and await say("don_gece") == 0  # kapı kapalı: yalnız hesap
-    acik = KURAL.model_copy(update={"bildirim_acik": True})
+    kapali = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, 5, tzinfo=ist), kural=KURAL.model_copy(update={"bildirim_kapisi": "kapali"}))
+    assert kapali["risk"] >= 1 and kapali["uyari_bildirimi"] == 0 and await say("don_uyari") == 0  # kapı kapalı: yalnız hesap
+    pilot = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, 6, tzinfo=ist), kural=KURAL)  # varsayılan ic_pilot: INTERNAL_EMAILS'te değilse kapalı
+    assert pilot["uyari_bildirimi"] == 0 and await say("don_uyari") == 0
+    acik = KURAL.model_copy(update={"bildirim_kapisi": "acik"})
     a = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, 10, tzinfo=ist), kural=acik)
-    assert a["uyari_bildirimi"] == 1 and await say("don_gece") == 1
+    assert a["uyari_bildirimi"] == 1 and await say("don_uyari") == 1
     await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, 40, tzinfo=ist), kural=acik)
-    assert await say("don_gece") == 1  # aynı gece ikinci bildirim yok (dedupe)
+    assert await say("don_uyari") == 1  # aynı gece ikinci bildirim yok (dedupe)
     bos = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 12, 0, tzinfo=ist), kural=acik)
     assert bos["uyari_bildirimi"] == 0 and bos["soru"] == 0
     sab = await isler.don_isi(factory, saglayici, pencere_fn=_duz, simdi=datetime(2026, 10, 11, 8, 5, tzinfo=ist), kural=acik)
@@ -228,3 +230,149 @@ async def test_olay_yeniden_degerlendirme_siler_degistirmez_kullanici_dogrulamal
     isaretli = [o for o in don.values() if o["yeniden_degerlendirme"] is not None]
     assert len(isaretli) == 4 and all(o["yeniden_degerlendirme"]["yeniden_degerlendirildi"] for o in isaretli)
     assert GEOMETRY is not None
+
+
+# ------------------------------------------------------------------ Dilim 2: kapı, emeklilik, önlemler, konum sınıfı, katman, Saha Defteri, hasar raporu
+async def test_kapi_ic_pilot_yalniz_internal_emails_calisma_alani(user_client, factory, monkeypatch):
+    from bahcelab_backend.config import get_settings
+    from bahcelab_backend.domain.don import kapi
+
+    gid = await seed(user_client, factory)
+    me = (await user_client.get("/auth/me")).json()
+    ws = uuid.UUID(me["workspace_id"])
+    async with factory() as s:
+        assert KURAL.bildirim_kapisi == "ic_pilot"
+        monkeypatch.setattr(get_settings(), "internal_emails", "baska@x.com")
+        assert await kapi.calisma_alani_acik_mi(s, ws, KURAL) is False  # iç pilot dışı: kapalı
+        monkeypatch.setattr(get_settings(), "internal_emails", me["email"])
+        assert await kapi.calisma_alani_acik_mi(s, ws, KURAL) is True
+        assert await kapi.calisma_alani_acik_mi(s, ws, KURAL.model_copy(update={"bildirim_kapisi": "kapali"})) is False
+    tercihler = {p["tur"] for p in (await user_client.get("/notifications/tercihler")).json()}
+    assert "don_uyari" in tercihler and "don_soru" in tercihler and "hava_don" not in tercihler  # iç pilotta görünür; eski tür yok
+    monkeypatch.setattr(get_settings(), "internal_emails", "")
+    assert not ({"don_uyari", "don_soru"} & {p["tur"] for p in (await user_client.get("/notifications/tercihler")).json()})  # diğerlerinde gizli
+    assert gid is not None
+
+
+async def test_eski_hava_don_emekli_tek_don_sistemi_cift_bildirim_yok(user_client, factory, monkeypatch):
+    from bahcelab_backend.config import get_settings
+    from bahcelab_backend.domain.notifications.generator import build_candidates
+    from bahcelab_backend.domain.notifications.types import ESKI_TURLER, TYPES
+    from bahcelab_backend.domain.weather.schemas import HavaUyarisi
+
+    assert "hava_don" not in TYPES and "hava_don" in ESKI_TURLER
+    don = HavaUyarisi(tur="don", seviye="kirmizi", baslik="Don tehlikesi", mesaj="m", baslangic="2026-10-11T03:00", bitis="2026-10-11T06:00", sure_saat=3, deger=-1.5)
+    assert build_candidates(uuid.uuid4(), "B", weather_alerts=[don], satellite_alerts=[], irrigation=None, today=date(2026, 10, 10)) == []  # hava servisinden gelen don uyarısı artık bildirim üretmez
+    gid = await seed(user_client, factory)
+    me = (await user_client.get("/auth/me")).json()
+    monkeypatch.setattr(get_settings(), "internal_emails", me["email"])
+    ist = ZoneInfo("Europe/Istanbul")
+    sag = _sahte(date(2026, 10, 10), [(-1.5, -0.5, 0.5), (3.0, 4.0, 5.0), (3.0, 4.0, 5.0)])
+    for dk in (5, 25, 45):
+        await isler.don_isi(factory, sag, pencere_fn=_duz, simdi=datetime(2026, 10, 10, 18, dk, tzinfo=ist), kural=KURAL)
+    async with factory() as s:
+        sat = (await s.execute(text("SELECT tur, count(*) FROM notifications WHERE garden_id = :g GROUP BY 1"), {"g": gid})).all()
+    assert dict(sat) == {"don_uyari": 1}  # tek don sistemi: bu gece için TEK bildirim, eski hava_don yok
+
+
+def test_onlemlerin_hepsi_kaynakli():
+    assert len(KURAL.onlemler) >= 4
+    for o in KURAL.onlemler:
+        assert o.kaynak and o.url.startswith(("http://", "https://")) and o.kosullar and o.uyarilar and o.ne  # kaynaksız önlem YOK
+    kodlar = {o.kod for o in KURAL.onlemler}
+    assert {"ruzgar_makinesi", "agac_alti_sulama", "agac_ustu_yagmurlama", "govde_sarma_ortu", "toprak_nemi"} <= kodlar
+    rm = next(o for o in KURAL.onlemler if o.kod == "ruzgar_makinesi")
+    assert any("2,5 m/s" in u for u in rm.uyarilar) and any("inversiyon" in k for k in rm.kosullar)  # FAO: ters dönme yoksa / rüzgâr > 2,5 m/s önerilmez
+
+
+async def test_oku_onlemler_yalniz_orta_yuksekte_dun_soru_ve_saha_defteri(user_client, factory):
+    gid = await seed(user_client, factory)
+    bugun = date(2026, 10, 10)
+    async with factory() as s:
+        await servis.hesapla_ve_yaz(s, gid, _sahte(bugun, [(8.0, 9.0, 10.0), (8.0, 9.0, 10.0), (8.0, 9.0, 10.0)]), KURAL, bugun)
+        await s.commit()
+        d = await servis.oku(s, gid, bugun)
+    assert d["onlemler"] == [] and d["onlem_notu"] is None and all(g["olasilik_sozu"] == "düşük" for g in d["geceler"])  # düşük risk: önlem önerilmez
+    async with factory() as s:
+        await servis.hesapla_ve_yaz(s, gid, _sahte(bugun, [(-1.5, -0.5, 0.5), (3.0, 4.0, 5.0), (3.0, 4.0, 5.0)]), KURAL, bugun)
+        await s.commit()
+        d = await servis.oku(s, gid, bugun)
+    assert [o["kod"] for o in d["onlemler"]][:1] == ["ruzgar_makinesi"] and d["onlem_notu"] and all(o["kaynak"] and o["url"] for o in d["onlemler"])
+    g0 = d["geceler"][0]
+    assert g0["en_soguk_saat"] == 6 and g0["organ_adlari"] == ["Olgun meyve"] and g0["kritik_c"] == -0.8  # en soğuk saat (sentetik seri 06:00'da minimum)
+    # dünkü gece soru: bugün+1 günü için sor
+    async with factory() as s:
+        yarin = await servis.oku(s, gid, bugun + timedelta(days=1))
+    assert yarin["dun_soru"] is not None and yarin["dun_soru"]["gece"] == bugun and yarin["dun_soru"]["secenekler"] == ["oldu", "olmadi", "bilmiyorum"]
+    assert (await user_client.post(f"/gardens/{gid}/don/geri-bildirim", json={"gece": bugun.isoformat(), "yanit": "oldu"})).status_code == 204
+    assert (await user_client.post(f"/gardens/{gid}/don/geri-bildirim", json={"gece": bugun.isoformat(), "yanit": "olmadi"})).status_code == 204  # yanıt değişir
+    async with factory() as s:
+        kayit = (await s.execute(text("SELECT aciklama, ayrinti FROM field_records WHERE garden_id = :g AND ayrinti->>'konu' = 'don_uyarisi'"), {"g": gid})).all()
+        yarin2 = await servis.oku(s, gid, bugun + timedelta(days=1))
+    assert len(kayit) == 1 and "olmadı" in kayit[0][0] and kayit[0][1]["yanit"] == "olmadi"  # Saha Defteri'nde gece başına tek kayıt
+    assert yarin2["dun_soru"] is None  # yanıtlanmış gece tekrar sorulmaz
+
+
+def test_konum_sinifi_ve_baki():
+    p = {"tpi1000_m": 1.6, "egim_der": 2.1, "baki_der": 144.0, "yukseklik_m": 44.0}
+    assert topografya.konum_sinifi(p, KURAL)["sinif"] == "duz" and topografya.konum_sinifi(p, KURAL)["baki_adi"] == "güneydoğu"
+    assert topografya.konum_sinifi({**p, "tpi1000_m": -69.0}, KURAL)["sinif"] == "cukur"
+    assert topografya.konum_sinifi({**p, "tpi1000_m": 3.9, "egim_der": 9.9}, KURAL)["sinif"] == "yamac"
+    assert topografya.konum_sinifi({**p, "tpi1000_m": 25.0}, KURAL)["sinif"] == "sirt"
+    assert topografya.baki_adi(-1.0).startswith("düz") and topografya.baki_adi(359.0) == "kuzey"
+
+
+async def test_goreli_soguk_geojson_30m_kareler_yalniz_uygunsa(user_client, factory):
+    gid = await seed(user_client, factory)
+    r0 = (await user_client.get(f"/gardens/{gid}/don/goreli-soguk")).json()
+    assert r0["uygun"] is False and r0["geojson"] is None and "hesaplanmadı" in r0["neden"]
+    async with factory() as s:
+        await topografya.hesapla(s, gid, KURAL, pencere_fn=lambda la, lo, km: _pencere(0.5, la, lo, km))
+        await s.commit()
+    d = (await user_client.get(f"/gardens/{gid}/don/goreli-soguk")).json()
+    assert d["uygun"] is False and d["geojson"] is None and "yükseklik farkı" in d["neden"]  # düz bahçe: katman pasif + neden
+    async with factory() as s:
+        await s.execute(text("DELETE FROM bahce_topografya WHERE garden_id = :g"), {"g": gid})
+        await topografya.hesapla(s, gid, KURAL, pencere_fn=lambda la, lo, km: _pencere(25.0, la, lo, km))
+        await s.commit()
+    d = (await user_client.get(f"/gardens/{gid}/don/goreli-soguk")).json()
+    assert d["uygun"] is True and d["hucre_sayisi"] == len(d["geojson"]["features"]) > 0
+    f0 = d["geojson"]["features"][0]
+    ring = f0["geometry"]["coordinates"][0]
+    assert f0["geometry"]["type"] == "Polygon" and len(ring) == 5 and 0.0 <= f0["properties"]["goreli_soguk"] <= 1.0
+    dx = max(x for x, _ in ring) - min(x for x, _ in ring)
+    assert 0.0002 < dx < 0.0004  # ≈ 30 m (derece)
+
+
+async def test_hasar_raporu_pdf_taslak_etiket_ve_kanitlar(user_client, factory, tmp_path):
+    from bahcelab_backend.domain.don import hasar_raporu
+    from bahcelab_backend.shared.storage import LocalStorage
+
+    gid = await seed(user_client, factory)
+    async with factory() as s:
+        lat, lng = (await s.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": gid})).one()
+        await s.execute(text("DELETE FROM station_daily"))
+        await s.execute(text("DELETE FROM stations"))
+        sid = f"T{uuid.uuid4().hex[:8]}"
+        await s.execute(text("INSERT INTO stations (id, saglayici, ad, lat, lng, yukseklik, gozlem_baslangic, gozlem_bitis) VALUES (:i, 'meteostat', 'Test istasyonu', :la, :lo, 3, '2020-01-01', '2026-01-01')"), {"i": sid, "la": lat + 0.05, "lo": lng})
+        await s.execute(text("INSERT INTO station_daily (istasyon_id, tarih, tmin, prcp) VALUES (:i, '2023-12-05', 0.7, 0)"), {"i": sid})
+        await _olay(s, gid, "don:2023-12-05", date(2023, 12, 5), date(2023, 12, 6), -3.7)
+        await _olay(s, gid, "ruzgar:2023-12-05", date(2023, 12, 5), date(2023, 12, 5), 0)
+        await s.execute(text("UPDATE events SET tur = 'ruzgar', turler = CAST('[\"ruzgar\"]' AS jsonb) WHERE anahtar = 'ruzgar:2023-12-05'"))
+        await s.execute(text("INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti) VALUES (gen_random_uuid(), :g, 'gozlem', '2023-12-07', 'Genç sürgünlerde kararma', '{}'::jsonb)"), {"g": gid})
+        olay = (await s.execute(text("SELECT id FROM events WHERE garden_id = :g AND anahtar = 'don:2023-12-05'"), {"g": gid})).scalar()
+        rüzgar = (await s.execute(text("SELECT id FROM events WHERE garden_id = :g AND anahtar = 'ruzgar:2023-12-05'"), {"g": gid})).scalar()
+        await s.commit()
+    async with factory() as s:
+        v = await hasar_raporu.topla(s, LocalStorage(tmp_path), gid, olay)
+        await s.commit()
+    assert v["etiket"]["sonuc"] == "model_sapmasi_olasi" and "OLABİLİR" in v["etiket"]["ad"]  # etiket raporda açık
+    assert v["s2"]["once"] is None and "net Sentinel-2" in v["s2"]["neden"]  # önce/sonra yoksa neden yazılır (uydurma yok)
+    assert v["hava"]["istasyon"][0]["tmin_c"] == 0.7 and any("Genç sürgünlerde kararma" in (r["aciklama"] or "") for r in v["kayitlar"])
+    pdf = hasar_raporu.pdf_olustur(v)
+    assert pdf[:5] == b"%PDF-" and len(pdf) > 3000
+    r = await user_client.get(f"/gardens/{gid}/olaylar/{olay}/hasar-raporu")
+    assert r.status_code == 200 and r.headers["content-type"] == "application/pdf" and r.content[:5] == b"%PDF-" and "don-hasar-raporu-2023-12-05.pdf" in r.headers["content-disposition"]
+    assert (await user_client.get(f"/gardens/{gid}/olaylar/{rüzgar}/hasar-raporu")).status_code == 422  # yalnız don olayı
+    assert (await user_client.get(f"/gardens/{gid}/olaylar/{uuid.uuid4()}/hasar-raporu")).status_code == 404
+    assert hasar_raporu.ALT_BASLIK == "TARSİM başvurusuna yardımcı taslak — resmi ekspertiz değildir"

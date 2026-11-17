@@ -204,8 +204,8 @@ async def test_today_defaults_to_all_clear_or_spray_window(user_client: AsyncCli
         assert item["baslik"] and item["metin"] and item["sekme"] in ("durum", "analiz", "hava", "gunluk", "rapor")
 
 
-async def test_today_puts_frost_first(user_client: AsyncClient, provider):
-    provider.frost = True
+async def test_today_puts_heat_alert_first(user_client: AsyncClient, provider):
+    provider.hot = 43.0
     garden = await new_garden(user_client)
     data = (await user_client.get(f"/gardens/{garden['id']}/bugun")).json()
     first = data["maddeler"][0]
