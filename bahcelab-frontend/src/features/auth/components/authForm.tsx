@@ -24,7 +24,7 @@ export function PasswordField({ label, hint, ...rest }: PasswordFieldProps) {
             onClick={() => setVisible((v) => !v)}
             aria-pressed={visible}
             aria-label={visible ? 'Şifreyi gizle' : 'Şifreyi göster'}
-            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-app-text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-leaf-deep"
+            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-app-text-muted hover:text-mk-ink focus-visible:outline-2 focus-visible:outline-mk-accent"
           >
             {visible ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
           </button>

@@ -38,7 +38,7 @@ export function StripNarrowGlyph({ icon: Icon, anchor, label }: StripNarrowGlyph
     >
       <div className={`${driftClass[anchor]} ${nudgeClass[anchor]}`}>
         <Icon
-          className="size-[clamp(11rem,62vmin,20rem)] shrink-0 text-[#2d6b45]/[0.08] sm:size-[clamp(12rem,58vmin,22rem)] lg:size-[clamp(13rem,52vmin,24rem)]"
+          className="size-[clamp(11rem,62vmin,20rem)] shrink-0 text-mk-accent sm:size-[clamp(12rem,58vmin,22rem)] lg:size-[clamp(13rem,52vmin,24rem)]"
           strokeWidth={0.75}
           aria-hidden
         />

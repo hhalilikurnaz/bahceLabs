@@ -46,3 +46,5 @@ backups/
 bahcelab-backend/backups/
 .env
 .env.e2e
+
+bahcelab-frontend/dist-bekleme

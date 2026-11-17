@@ -1,290 +1,48 @@
-/* Kaydırmalı hero — bahceLabs Journey stilleri (yalnızca .bahce-journey altında) */
-.bahce-journey {
-  --night: #0e1a12;
-  --night-2: #13241a;
-  --ink: #13241a;
-  --ink-2: #3d4d43;
-  --cream: #f5f2e9;
-  --line-dark: rgba(243, 241, 231, 0.14);
-  --lemon: #f2c94c;
-  --lemon-2: #ffe28a;
-  --leaf: #2f6b3f;
-  --text-dark: #f3f1e7;
-  --muted-dark: rgba(243, 241, 231, 0.68);
-  --font: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --display: 'Fraunces', Georgia, 'Times New Roman', serif;
+/* Kaydırmalı hero (yalnız .journey altında). Renkler token'dan (styles/tokens.css · mk-*); köşe ve düğme görünümü Button bileşeninden. */
+.journey {
   --header-h: 64px;
-  font-family: var(--font);
+  position: relative;
+  background: var(--color-mk-night);
+  color: var(--color-mk-on-dark);
 }
 
-.bahce-journey h1,
-.bahce-journey h2 {
+.journey h1,
+.journey h2 {
   margin: 0;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  font-family: var(--display);
+  font-family: var(--font-display);
   font-weight: 500;
 }
 
-.bahce-journey p {
+.journey p {
   margin: 0;
 }
 
-.bahce-journey .container {
-  width: min(1280px, 100% - 40px);
-  margin-inline: auto;
-}
-
-.bahce-journey .eyebrow {
-  font-size: 0.78rem;
+.journey .eyebrow {
+  margin-bottom: 14px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--leaf);
-  margin-bottom: 14px;
+  color: var(--color-mk-lemon);
 }
 
-.bahce-journey .lead {
-  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
-  color: var(--muted-dark);
+.journey .lead {
   max-width: 58ch;
+  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+  line-height: 1.5;
+  color: rgb(243 239 228 / 0.82);
 }
 
-.bahce-journey .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 24px;
-  border-radius: 999px;
-  font: 700 0.95rem/1 var(--font);
-  text-decoration: none;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-}
-
-.bahce-journey .btn:hover {
-  transform: translateY(-1px);
-}
-
-/* Açık cam — Kayıtlar çok yakında */
-.bahce-journey .btn-primary {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.16);
-  color: #fffef9;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 4px 14px rgba(0, 0, 0, 0.12);
-}
-
-.bahce-journey .btn-primary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-/* Koyu cam — Misyonumuz */
-.bahce-journey .btn-ghost {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--text-dark);
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(6, 20, 13, 0.42) 48%,
-    rgba(4, 14, 10, 0.52) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
-    0 6px 20px rgba(0, 0, 0, 0.2);
-}
-
-.bahce-journey .btn-ghost:hover {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.14) 0%,
-    rgba(6, 20, 13, 0.48) 48%,
-    rgba(4, 14, 10, 0.58) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.26);
-}
-
-.bahce-journey .actions {
+.journey .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 32px;
 }
 
-.bahce-journey .hero-line {
-  grid-area: 1 / 1;
-  justify-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 22px;
-  border-radius: 999px;
-  background: rgba(14, 26, 18, 0.78);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--line-dark);
-  font-family: var(--display);
-  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
-  text-align: center;
-  will-change: opacity, transform;
-}
-
-.bahce-journey .hero-line-num {
-  font: 700 0.75rem/1 var(--font);
-  color: var(--lemon);
-  letter-spacing: 0.1em;
-}
-
-.bahce-journey .scroll-hint {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted-dark);
-}
-
-.bahce-journey .scroll-hint i {
-  width: 1px;
-  height: 36px;
-  background: linear-gradient(var(--lemon), transparent);
-  animation: bahce-journey-hint 1.8s ease-in-out infinite;
-}
-
-@keyframes bahce-journey-hint {
-  0% {
-    transform: scaleY(0);
-    transform-origin: top;
-  }
-  50% {
-    transform: scaleY(1);
-    transform-origin: top;
-  }
-  51% {
-    transform-origin: bottom;
-  }
-  100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
-  }
-}
-
-.bahce-journey .stage-legend {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  list-style: none;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(14, 26, 18, 0.85);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  font-size: 0.78rem;
-  max-width: calc(100% - 28px);
-}
-
-.bahce-journey .stage-legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.bahce-journey .sw {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.bahce-journey .sw-fill {
-  background: var(--c);
-}
-
-.bahce-journey .sw-ring {
-  border: 2px solid var(--c);
-}
-
-.bahce-journey .sw-box {
-  border-radius: 2px;
-  border: 2px solid var(--c);
-}
-
-.bahce-journey .sw-dash {
-  border-radius: 2px;
-  border: 2px dashed var(--c);
-}
-
-.bahce-journey .copilot {
-  position: absolute;
-  right: 14px;
-  top: 14px;
-  width: min(330px, calc(100% - 28px));
-  display: grid;
-  gap: 8px;
-  animation: bahce-journey-rise 0.5s ease both;
-}
-
-.bahce-journey .copilot p {
-  padding: 11px 14px;
-  border-radius: 14px;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.bahce-journey .copilot-q {
-  justify-self: end;
-  background: var(--text-dark);
-  color: var(--night);
-  border-bottom-right-radius: 4px;
-}
-
-.bahce-journey .copilot-a {
-  background: rgba(14, 26, 18, 0.92);
-  border: 1px solid rgba(242, 201, 76, 0.45);
-  border-bottom-left-radius: 4px;
-  animation: bahce-journey-rise 0.5s 0.5s ease both;
-}
-
-@keyframes bahce-journey-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.bahce-journey.journey {
-  position: relative;
-  background: var(--night);
-  color: var(--text-dark);
-}
-
-.bahce-journey .j-anchor {
-  position: absolute;
-  left: 0;
-  height: 1px;
-  width: 1px;
-  pointer-events: none;
-}
-
-.bahce-journey .journey-sticky {
+.journey-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
@@ -292,267 +50,8 @@
   overflow: hidden;
 }
 
-/* —— Kısa üst hero (tek ekran) —— */
-.bahce-journey.journey-hero-short {
-  position: relative;
-  height: 100vh;
-  height: 100svh;
-  background: var(--night);
-  overflow: hidden;
-}
-
-.bahce-journey .journey-hero-short-stage {
-  position: absolute;
-  inset: 0;
-}
-
-.bahce-journey .journey-hero-short-ui {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.bahce-journey .journey-hero-short-ui a,
-.bahce-journey .journey-hero-short-ui button {
-  pointer-events: auto;
-}
-
-.bahce-journey .journey-hero-short-hint {
-  opacity: 1;
-}
-
-/* —— Krem şerit içi ürün turu kutusu —— */
-.bahce-journey.journey-cream-scroll {
-  position: relative;
-  margin-bottom: 0.5rem;
-}
-
-.bahce-journey .journey-cream-pin {
-  position: relative;
-  z-index: 1;
-  padding-bottom: 0.25rem;
-}
-
-.bahce-journey .journey-cream-intro {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.bahce-journey .journey-cream-eyebrow {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #2f6b3f;
-}
-
-.bahce-journey .journey-cream-lead {
-  margin: 0.45rem 0 0;
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: #5c665d;
-}
-
-.bahce-journey .journey-cream-frame {
-  border-radius: 1.25rem;
-  overflow: hidden;
-  border: 1px solid rgba(12, 36, 24, 0.12);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
-    0 28px 72px rgba(12, 36, 24, 0.14),
-    0 8px 24px rgba(12, 36, 24, 0.08);
-  background: #06140d;
-  outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.bahce-journey .journey-cream-frame--active,
-.bahce-journey .journey-cream-frame:focus-visible {
-  border-color: rgba(47, 107, 63, 0.45);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
-    0 0 0 3px rgba(47, 107, 63, 0.2),
-    0 28px 72px rgba(12, 36, 24, 0.16),
-    0 8px 24px rgba(12, 36, 24, 0.1);
-}
-
-.bahce-journey .journey-cream-sticky {
-  position: relative;
-  top: auto;
-  height: min(78vh, 820px);
-  overflow: hidden;
-}
-
-.bahce-journey .journey-cream-sticky .journey-stage {
-  position: absolute;
-  inset: 0;
-}
-
-.bahce-journey .journey-cream-frame .j-chip {
-  top: 10px;
-  left: 12px;
-}
-
-.bahce-journey .journey-cream-frame .j-copilot {
-  top: 10px;
-  right: 12px;
-}
-
-.bahce-journey .journey-cream-frame .j-foot {
-  right: 12px;
-  bottom: 12px;
-}
-
-.bahce-journey .journey-cream-frame .j-steps {
-  padding-top: 0;
-}
-
-/* Kutu içi: ana sayfa krem rengi devralınmasın; metinler koyu sahne üstünde açık */
-.bahce-journey .journey-cream-frame {
-  color: var(--text-dark);
-}
-
-.bahce-journey .journey-cream-frame .j-shade {
-  background:
-    linear-gradient(90deg, rgba(8, 16, 10, 0.65) 0%, rgba(8, 16, 10, 0.35) 34%, rgba(8, 16, 10, 0) 56%),
-    linear-gradient(to top, rgba(8, 16, 10, 0.5), transparent 32%);
-}
-
-.bahce-journey .journey-cream-frame .j-step h2 {
-  color: #fffef9;
-}
-
-.bahce-journey .journey-cream-frame .j-step-tag {
-  color: rgba(243, 241, 231, 0.78);
-}
-
-.bahce-journey .journey-cream-frame .j-step p:last-child {
-  color: rgba(243, 241, 231, 0.92);
-}
-
-.bahce-journey .journey-cream-frame .j-note,
-.bahce-journey .journey-cream-frame .j-legend,
-.bahce-journey .journey-cream-frame .scroll-hint {
-  color: rgba(243, 241, 231, 0.82);
-}
-
-.bahce-journey .journey-cream-frame .j-chip {
-  color: var(--text-dark);
-}
-
-.bahce-journey .journey-cream-frame .hero-line {
-  color: var(--text-dark);
-}
-
-.bahce-journey .journey-cream-frame--ended .journey-stage {
-  filter: blur(10px) brightness(0.55) saturate(0.85);
-  transition: filter 0.5s ease;
-}
-
-.bahce-journey .journey-tour-end-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  background: rgba(6, 14, 10, 0.42);
-  animation: bahce-journey-replay-scrim 0.5s ease both;
-}
-
-@keyframes bahce-journey-replay-scrim {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.bahce-journey .journey-cream-frame--ended .j-ui .j-chip,
-.bahce-journey .journey-cream-frame--ended .j-ui .j-lines,
-.bahce-journey .journey-cream-frame--ended .j-ui .j-steps,
-.bahce-journey .journey-cream-frame--ended .j-ui .j-foot,
-.bahce-journey .journey-cream-frame--ended .j-ui .j-copilot,
-.bahce-journey .journey-cream-frame--ended .j-ui .j-card,
-.bahce-journey .journey-cream-frame--ended .j-ui .scroll-hint {
-  opacity: 0 !important;
-  visibility: hidden;
-  transition: opacity 0.35s ease;
-}
-
-.bahce-journey .journey-tour-replay {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 12;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  animation: bahce-journey-rise 0.45s 0.08s ease both;
-  filter: none;
-}
-
-.bahce-journey .journey-tour-replay-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  border: 2px solid rgba(242, 201, 76, 0.9);
-  background: rgba(8, 18, 12, 0.96);
-  color: #fffef9;
-  cursor: pointer;
-  box-shadow:
-    0 0 0 4px rgba(6, 14, 10, 0.35),
-    0 16px 40px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.bahce-journey .journey-tour-replay-btn:hover {
-  transform: scale(1.06);
-  background: rgba(12, 28, 18, 0.98);
-  border-color: var(--lemon-2);
-  box-shadow:
-    0 0 0 4px rgba(242, 201, 76, 0.15),
-    0 20px 48px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.bahce-journey .journey-tour-replay-btn:focus-visible {
-  outline: 2px solid #fffef9;
-  outline-offset: 4px;
-}
-
-.bahce-journey .journey-tour-replay-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.bahce-journey .journey-tour-replay-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fffef9;
-  text-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.75),
-    0 1px 3px rgba(0, 0, 0, 0.9);
-}
-
-/* Animasyon bittiğinde sahne sabit kalır; misyon bölümü üstüne kayar (eski hero davranışı) */
-.bahce-journey .journey-sticky--pinned {
+/* Animasyon bittiğinde sahne sabit kalır; sayfa içeriği üstüne kayar */
+.journey-sticky--pinned {
   position: fixed;
   inset: 0;
   z-index: 5;
@@ -560,14 +59,14 @@
   pointer-events: none;
 }
 
-.bahce-journey .journey-stage {
+.journey-stage {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #6b4a2c;
+  background: var(--color-mk-night);
 }
 
-.bahce-journey .j-world {
+.j-world {
   position: absolute;
   left: 0;
   top: 0;
@@ -575,17 +74,15 @@
   will-change: transform;
   --scan: 0;
   --rings: 0;
-  --ids: 0;
-  --health: 0;
-  --yield: 0;
+  --zones: 0;
   --water: 0;
   --grade: 0;
   --k: 1;
 }
 
-.bahce-journey .j-world img,
-.bahce-journey .j-grade,
-.bahce-journey .j-svg {
+.j-world img,
+.j-grade,
+.j-svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -593,300 +90,116 @@
   display: block;
 }
 
-.bahce-journey .j-grade {
-  background: rgba(6, 22, 14, 0.5);
+.j-grade {
+  background: rgb(6 22 14 / 0.5);
   mix-blend-mode: multiply;
   opacity: var(--grade);
   clip-path: inset(0 0 calc(max(0, 1 - var(--scan)) * 100%) 0);
 }
 
-.bahce-journey .j-svg {
+.j-svg {
   overflow: visible;
 }
 
-.bahce-journey .j-svg path,
-.bahce-journey .j-svg line,
-.bahce-journey .j-svg circle {
+.j-svg path,
+.j-svg line,
+.j-svg circle {
   vector-effect: non-scaling-stroke;
 }
 
-.bahce-journey .j-fixed {
-  transform: translate(var(--x), var(--y)) scale(calc(1 / var(--k)));
-}
-
-.bahce-journey .j-rings path {
+/* Taç işaretleri: tarama çizgisi geçtikçe belirir */
+.j-rings path {
   fill: none;
-  stroke: var(--lemon);
+  stroke: var(--color-mk-lemon);
   stroke-width: 2;
   opacity: calc(clamp(0, (var(--scan) - var(--ty)) * 30, 1) * var(--rings));
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 0 3px rgb(0 0 0 / 0.6));
 }
 
-.bahce-journey .j-ids {
-  opacity: var(--ids);
+/* Bölge boyaması (anlatım): güçlü / orta / zayıf */
+.j-zones {
+  opacity: var(--zones);
 }
 
-.bahce-journey .j-ids text {
-  font: 700 11px/1 var(--font);
-  fill: #fff;
-  paint-order: stroke;
-  stroke: rgba(8, 16, 10, 0.85);
-  stroke-width: 3px;
-  letter-spacing: 0.04em;
-}
-
-.bahce-journey .j-health {
-  opacity: var(--health);
-}
-
-.bahce-journey .j-h {
-  fill: currentColor;
+.j-zones circle {
   fill-opacity: 0.28;
-  stroke: currentColor;
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
-.bahce-journey .j-h-watch,
-.bahce-journey .j-h-bad {
-  fill-opacity: 0.42;
-  animation: bahce-journey-pulse 1.8s ease-in-out infinite;
+.j-z-ok {
+  fill: var(--color-mk-ok);
+  stroke: var(--color-mk-ok);
 }
 
-.bahce-journey .j-h-bad {
-  stroke-width: 3.5;
+.j-z-mid {
+  fill: var(--color-mk-mid);
+  stroke: var(--color-mk-mid);
 }
 
-@keyframes bahce-journey-pulse {
-  50% {
-    fill-opacity: 0.15;
-  }
+.j-z-weak {
+  fill: var(--color-mk-weak);
+  stroke: var(--color-mk-weak);
+  stroke-dasharray: 6 5;
 }
 
-.bahce-journey .j-yield {
-  opacity: var(--yield);
-}
-
-.bahce-journey .j-yield rect {
-  fill: rgba(14, 26, 18, 0.82);
-  stroke: rgba(242, 201, 76, 0.6);
-  stroke-width: 1;
-}
-
-.bahce-journey .j-yield rect.is-focus {
-  fill: var(--lemon);
-}
-
-.bahce-journey .j-yield rect.is-focus + text {
-  fill: var(--night);
-}
-
-.bahce-journey .j-yield text {
-  font: 800 11px/1 var(--font);
-  fill: var(--lemon-2);
-}
-
-.bahce-journey .j-water {
+/* Damla sulama hatları */
+.j-water {
   opacity: var(--water);
+  color: var(--color-mk-water);
 }
 
-.bahce-journey .j-drip {
+.j-drip {
   stroke: currentColor;
   stroke-width: 4;
   stroke-dasharray: 10 8;
-  animation: bahce-journey-flow 1.2s linear infinite;
+  animation: journey-flow 1.2s linear infinite;
   filter: drop-shadow(0 0 4px currentColor);
 }
 
-@keyframes bahce-journey-flow {
+@keyframes journey-flow {
   to {
     stroke-dashoffset: -18;
   }
 }
 
-.bahce-journey .j-pill {
-  fill: rgba(14, 26, 18, 0.88);
-  stroke: currentColor;
-  stroke-width: 1;
-}
-
-.bahce-journey .j-pill-text {
-  font: 700 11px/1 var(--font);
-  fill: #fff;
-}
-
-.bahce-journey .j-focus path {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 3;
-}
-
-.bahce-journey .j-focus-halo {
-  fill: none;
-  stroke: var(--lemon);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 6;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: bahce-journey-spin 14s linear infinite;
-}
-
-@keyframes bahce-journey-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.bahce-journey .j-video {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% 70%;
-  will-change: transform, opacity;
-}
-
-@media (max-width: 767px) {
-  .bahce-journey .j-video {
-    transform-origin: 50% 50%;
-  }
-}
-
-.bahce-journey .j-frames,
-.bahce-journey .j-poster {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.bahce-journey .j-frames {
-  z-index: 3;
-}
-
-.bahce-journey .j-poster {
-  z-index: 2;
-  transition: opacity 0.35s ease;
-}
-
-.bahce-journey .j-poster--done {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.bahce-journey .j-scanline {
+.j-scanline {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   height: 2px;
   opacity: 0;
-  background: var(--lemon);
+  background: var(--color-mk-lemon);
   box-shadow:
-    0 0 18px 4px rgba(242, 201, 76, 0.55),
-    0 0 60px 12px rgba(242, 201, 76, 0.18);
+    0 0 18px 4px rgb(242 201 76 / 0.55),
+    0 0 60px 12px rgb(242 201 76 / 0.18);
   pointer-events: none;
   will-change: transform;
 }
 
-.bahce-journey .j-shade {
+.j-shade {
   position: absolute;
   inset: 0;
   pointer-events: none;
   transition: opacity 0.4s ease;
   background:
-    linear-gradient(90deg, rgba(8, 16, 10, 0.88) 0%, rgba(8, 16, 10, 0.55) 32%, rgba(8, 16, 10, 0) 58%),
-    linear-gradient(to top, rgba(8, 16, 10, 0.55), transparent 30%);
+    linear-gradient(90deg, rgb(8 16 10 / 0.88) 0%, rgb(8 16 10 / 0.55) 32%, rgb(8 16 10 / 0) 58%),
+    linear-gradient(to top, rgb(8 16 10 / 0.55), transparent 30%);
 }
 
-.bahce-journey .j-card {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 250px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: rgba(14, 26, 18, 0.9);
-  border: 1px solid rgba(242, 201, 76, 0.4);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-  font-size: 0.84rem;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.bahce-journey .j-card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 800;
-  margin: 0 0 8px;
-}
-
-.bahce-journey .j-card-title i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.bahce-journey .j-card dl {
-  margin: 0;
-  display: grid;
-  gap: 5px;
-}
-
-.bahce-journey .j-card dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid var(--line-dark);
-  padding-top: 5px;
-}
-
-.bahce-journey .j-card dt {
-  color: var(--muted-dark);
-}
-
-.bahce-journey .j-card dd {
-  margin: 0;
-  font-weight: 700;
-  text-align: right;
-}
-
-.bahce-journey .j-ui {
+.j-ui {
   position: absolute;
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  --chip: 0;
 }
 
-.bahce-journey .j-ui a,
-.bahce-journey .j-ui button {
+.j-ui a,
+.j-ui button {
   pointer-events: auto;
 }
 
-.bahce-journey .j-chip {
-  position: absolute;
-  top: calc(var(--header-h) + 18px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(14, 26, 18, 0.85);
-  border: 1px solid rgba(242, 201, 76, 0.45);
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-  opacity: var(--chip);
-}
-
-.bahce-journey .j-chip span {
-  color: var(--lemon);
-  font-variant-numeric: tabular-nums;
-}
-
-.bahce-journey .j-intro {
+.j-intro {
   position: absolute;
   inset: 0;
   display: flex;
@@ -896,12 +209,12 @@
   box-sizing: border-box;
   padding-top: var(--header-h);
   padding-right: clamp(1.25rem, 4vw, 2.5rem);
-  padding-left: clamp(1.5rem, 6vw, 5.5rem);
+  padding-left: clamp(1.25rem, 6vw, 5.5rem);
   will-change: opacity, transform;
 }
 
 @media (min-width: 1024px) {
-  .bahce-journey .j-intro {
+  .j-intro {
     padding-left: clamp(2.75rem, 9vw, 7rem);
     max-width: min(1280px, 100% - 40px);
     margin-inline: auto;
@@ -911,11 +224,7 @@
   }
 }
 
-.bahce-journey .j-intro .eyebrow {
-  color: var(--lemon);
-}
-
-.bahce-journey .j-intro h1 {
+.j-intro h1 {
   font-size: clamp(2rem, 5.5vw, 4.25rem);
   max-width: 22ch;
   line-height: 1.08;
@@ -923,24 +232,18 @@
   text-wrap: balance;
 }
 
-.bahce-journey .j-lines {
-  position: absolute;
-  left: 50%;
-  bottom: 12vh;
-  transform: translateX(-50%);
-  width: min(720px, 100% - 40px);
-  display: grid;
-}
-
-.bahce-journey .j-steps {
+.j-steps {
   position: absolute;
   inset: 0;
   display: grid;
   align-items: center;
+  box-sizing: border-box;
   padding-top: var(--header-h);
+  padding-left: clamp(1.25rem, 6vw, 5.5rem);
+  padding-right: clamp(1.25rem, 4vw, 2.5rem);
 }
 
-.bahce-journey .j-step {
+.j-step {
   grid-area: 1 / 1;
   max-width: 440px;
   display: grid;
@@ -948,251 +251,143 @@
   will-change: opacity, transform;
 }
 
-.bahce-journey .j-step-tag {
-  margin: 0;
-  font-size: 0.78rem;
+.j-step-tag {
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted-dark);
+  color: rgb(243 239 228 / 0.78);
 }
 
-.bahce-journey .j-step-tag span {
-  color: var(--lemon);
+.j-step-tag span {
+  color: var(--color-mk-lemon);
   margin-right: 6px;
 }
 
-.bahce-journey .j-step h2 {
+.j-step h2 {
   font-size: clamp(1.8rem, 3vw, 2.7rem);
   line-height: 1.12;
-  margin: 0;
+  color: var(--color-mk-on-dark);
 }
 
-.bahce-journey .j-step p:last-child {
-  margin: 0;
-  color: var(--muted-dark);
+.j-step p:last-child {
+  color: rgb(243 239 228 / 0.85);
+  line-height: 1.55;
 }
 
-.bahce-journey .j-copilot {
-  top: calc(var(--header-h) + 20px);
-  right: 24px;
-  width: min(360px, calc(100% - 32px));
-}
-
-.bahce-journey .j-foot {
+.j-foot {
   position: absolute;
   right: 20px;
   bottom: 18px;
   display: grid;
   justify-items: end;
-  gap: 6px;
+  gap: 8px;
 }
 
-.bahce-journey .j-legend {
-  position: static;
-}
-
-.bahce-journey .j-note {
+.j-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   margin: 0;
-  font-size: 0.72rem;
-  color: var(--muted-dark);
+  padding: 10px 12px;
+  list-style: none;
+  border-radius: var(--radius-md);
+  background: rgb(14 26 18 / 0.85);
+  font-size: 13px;
+}
+
+.j-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.j-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--c);
+}
+
+.j-note {
+  font-size: 12px;
+  color: rgb(243 239 228 / 0.82);
+}
+
+.scroll-hint {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(243 239 228 / 0.78);
+}
+
+.scroll-hint i {
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(var(--color-mk-lemon), transparent);
+  animation: journey-hint 1.8s ease-in-out infinite;
+}
+
+@keyframes journey-hint {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
 }
 
 @media (max-width: 767px) {
-  .bahce-journey .journey-cream-sticky {
-    height: min(64vh, 580px);
+  .j-shade {
+    background: linear-gradient(to top, rgb(8 16 10 / 0.94) 0%, rgb(8 16 10 / 0.7) 42%, rgb(8 16 10 / 0.15) 70%, rgb(8 16 10 / 0.35) 100%);
   }
-
-  .bahce-journey .journey-cream-frame {
-    border-radius: 1rem;
-  }
-
-  .bahce-journey .journey-cream-frame .j-shade {
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(6, 14, 10, 0.55) 0%,
-        rgba(6, 14, 10, 0.28) 36%,
-        rgba(6, 14, 10, 0) 52%
-      ),
-      linear-gradient(to top, rgba(8, 16, 10, 0.72) 0%, rgba(8, 16, 10, 0.45) 30%, rgba(8, 16, 10, 0) 52%);
-  }
-
-  .bahce-journey .j-shade {
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(6, 14, 10, 0.82) 0%,
-        rgba(6, 14, 10, 0.45) 38%,
-        rgba(6, 14, 10, 0) 58%
-      ),
-      linear-gradient(
-        to top,
-        rgba(8, 16, 10, 0.95) 0%,
-        rgba(8, 16, 10, 0.75) 34%,
-        rgba(8, 16, 10, 0) 58%
-      );
-  }
-
-  .bahce-journey .j-intro.container {
-    width: 100%;
-    max-width: none;
-    margin-inline: 0;
-    left: 0;
-    right: 0;
-  }
-
-  .bahce-journey .j-intro {
-    justify-content: flex-start;
-    align-items: center;
-    text-align: center;
-    padding: calc(var(--header-h) + clamp(1.25rem, 7vh, 2.75rem)) 1.35rem 1.5rem;
-  }
-
-  .bahce-journey .j-intro .eyebrow,
-  .bahce-journey .j-intro h1,
-  .bahce-journey .j-intro .lead {
-    margin-inline: auto;
-    text-align: center;
-  }
-
-  .bahce-journey .j-intro .eyebrow {
-    font-size: 0.82rem;
-    margin-bottom: 12px;
-    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
-  }
-
-  .bahce-journey .j-intro h1 {
-    max-width: 13ch;
-    font-size: clamp(2.35rem, 10vw, 3rem);
-    line-height: 1.06;
-    margin-bottom: 18px;
-    color: #fffef9;
-    text-shadow:
-      0 2px 28px rgba(0, 0, 0, 0.55),
-      0 1px 4px rgba(0, 0, 0, 0.45);
-  }
-
-  .bahce-journey .j-intro .lead {
-    max-width: 34ch;
-    font-size: clamp(1.08rem, 4.5vw, 1.2rem);
-    line-height: 1.45;
-    color: rgba(243, 241, 231, 0.94);
-    text-shadow: 0 1px 18px rgba(0, 0, 0, 0.55);
-  }
-
-  .bahce-journey .j-intro .actions {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .bahce-journey .journey-stage::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    height: min(46vh, 360px);
-    pointer-events: none;
-    background: linear-gradient(to top, var(--night) 18%, transparent 100%);
-  }
-
-  .bahce-journey .j-steps {
+  .j-steps {
     align-items: end;
-    justify-items: center;
-    padding-bottom: 28px;
-    padding-inline: 1.25rem;
-    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 72px;
   }
-
-  .bahce-journey .j-step {
-    gap: 8px;
-    width: 100%;
-    max-width: 26rem;
-    margin-inline: auto;
-    text-align: center;
-    justify-items: center;
+  .j-step {
+    max-width: 100%;
   }
-
-  .bahce-journey .j-step-tag,
-  .bahce-journey .j-step h2,
-  .bahce-journey .j-step p:last-child {
-    text-align: center;
-  }
-
-  .bahce-journey .j-step h2 {
-    font-size: 1.6rem;
-  }
-
-  .bahce-journey .j-step p:last-child {
-    font-size: 0.92rem;
-  }
-
-  .bahce-journey .j-card {
-    width: 230px;
-    padding: 10px 12px;
-    font-size: 0.78rem;
-  }
-
-  .bahce-journey .j-card dl div:nth-child(n + 3) {
-    display: none;
-  }
-
-  .bahce-journey .journey-stage {
-    background: var(--night);
-  }
-
-  .bahce-journey .j-foot {
-    top: calc(var(--header-h) + 10px);
-    bottom: auto;
-    left: 12px;
-    right: auto;
+  .j-foot {
+    left: 20px;
+    right: 20px;
+    bottom: 16px;
     justify-items: start;
   }
-
-  .bahce-journey .j-note {
-    display: none;
-  }
-
-  .bahce-journey .j-chip {
-    top: calc(var(--header-h) + 60px);
-  }
-
-  .bahce-journey .journey-cream-frame .j-chip {
-    top: 10px;
-  }
-
-  .bahce-journey .journey-cream-frame .j-foot {
-    top: auto;
-    bottom: 12px;
-    left: auto;
-    right: 12px;
-    justify-items: end;
-  }
-
-  .bahce-journey .journey-cream-frame .j-ui .j-copilot {
-    top: 10px;
-    right: 12px;
-  }
-
-  .bahce-journey .j-ui .j-copilot {
-    top: calc(var(--header-h) + 64px);
-    right: 16px;
-    bottom: auto;
-  }
-
-  .bahce-journey .j-lines {
-    bottom: 18vh;
+  .scroll-hint {
+    bottom: 20px;
   }
 }
 
+/* Azaltılmış hareket: kaydırmalı sahne yerine tek statik görsel (JourneyHero → StaticHero) */
+.journey-static {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.journey-static img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .bahce-journey .j-drip,
-  .bahce-journey .j-focus-halo,
-  .bahce-journey .scroll-hint i,
-  .bahce-journey .j-h-watch,
-  .bahce-journey .j-h-bad {
+  .j-drip,
+  .scroll-hint i {
     animation: none;
   }
 }

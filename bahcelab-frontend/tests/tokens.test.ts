@@ -12,6 +12,7 @@ function dosyalar(dir: string, out: string[] = []): string[] {
   return out
 }
 const UYGULAMA = [...dosyalar(join(KOK, 'features/bahcem')), ...dosyalar(join(KOK, 'components'))]
+const TANITIM = [...dosyalar(join(KOK, 'features/marketing')), ...dosyalar(join(KOK, 'features/auth'))]
 /** Ham renk değeri izinli yerler: veri rampaları ve harita/canvas motoru (CSS değişkeni okuyamayan yüzeyler). */
 const IZINLI = ['lib/paletler.ts', 'lib/indices.ts', 'lib/izgara.ts', 'lib/kademe.ts', 'map/haritaRenkleri.ts']
 
@@ -49,5 +50,27 @@ describe('tek token dosyası kuralları (ilke 5, 9)', () => {
     const t = readFileSync(join(KOK, 'styles/tokens.css'), 'utf8')
     expect(t).toMatch(/--radius-md: 6px/)
     expect(t).toMatch(/--shadow-e1: none/)
+  })
+
+  it('tanıtım ve giriş sayfalarında ham hex yok: renkler mk-* token setinden (L1)', () => {
+    const ihlal: string[] = []
+    for (const p of TANITIM) {
+      const metin = readFileSync(p, 'utf8')
+      for (const m of metin.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) ihlal.push(`${p.replace(KOK, 'src')}: ${m[0]}`)
+    }
+    expect(ihlal).toEqual([])
+  })
+  it('tanıtım sayfalarında yazı 12 px altında değil; ham köşe yarıçapı yok (token: rounded-md / rounded-mk / rounded-sheet)', () => {
+    const ihlal: string[] = []
+    for (const p of TANITIM) {
+      const metin = readFileSync(p, 'utf8')
+      for (const m of metin.matchAll(/text-\[(\d+(?:\.\d+)?)px\]/g)) if (Number(m[1]) < 12) ihlal.push(`${p.replace(KOK, 'src')}: ${m[0]}`)
+      for (const m of metin.matchAll(/rounded(?:-[a-z]{1,2})?-\[[^\]]+\]|\brounded-(?:xl|2xl|3xl)\b/g)) ihlal.push(`${p.replace(KOK, 'src')}: ${m[0]}`)
+    }
+    expect(ihlal).toEqual([])
+  })
+  it('«Kayıtlar çok yakında» hiçbir tanıtım ekranında kalmadı (CTA: Erken erişime katıl)', () => {
+    const ihlal = TANITIM.filter((p) => /Kayıtlar çok yakında/i.test(readFileSync(p, 'utf8'))).map((p) => p.replace(KOK, 'src'))
+    expect(ihlal).toEqual([])
   })
 })

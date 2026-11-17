@@ -31,8 +31,17 @@ export default defineConfig({
     },
     {
       command: `NODE_ENV=development npx vite build --mode development && npx vite preview --port ${E2E.webPort} --strictPort`,
-      env: { API_PROXY_TARGET: E2E.apiUrl },
+      // Kayıt arayüzü bayrağı açıkça verilir: yerel .env ile CI (env dosyası yok) aynı davranır
+      env: { API_PROXY_TARGET: E2E.apiUrl, VITE_REGISTRATION_ENABLED: 'true' },
       url: E2E.webUrl,
+      reuseExistingServer: false,
+      timeout: 240_000,
+    },
+    {
+      // Kayıtlar kapalı derleme (erken erişim / bekleme listesi formu): ayrı çıktı klasörü ve port
+      command: `NODE_ENV=development npx vite build --mode development --outDir dist-bekleme && npx vite preview --outDir dist-bekleme --port ${E2E.beklemeWebPort} --strictPort`,
+      env: { API_PROXY_TARGET: E2E.apiUrl, VITE_REGISTRATION_ENABLED: 'false', VITE_KVKK_TASLAK: 'false' }, // taslak kapalı: bekleme formu (canlı derleme sayılsa da) açık
+      url: E2E.beklemeWebUrl,
       reuseExistingServer: false,
       timeout: 240_000,
     },

@@ -107,6 +107,41 @@
   --glass-text-muted: #343b39; /* en kötü zemin (koyu yeşil raster) üstünde AA: tests/glass.test.ts */
 }
 
+/* Tanıtım token'ları: `static` → yalnız CSS dosyalarında (journey.css, blog.css) var(--color-mk-*) ile kullanılanlar da çıktıya yazılır */
+@theme static {
+  /* Tanıtım sayfaları (landing, blog, giriş/kayıt) · «mk-*» seti. Bileşenlerde ham hex yok (tests/tokens.test.ts); köşe: düğme/alan 6 px (--radius-md), kart/pencere --radius-mk.
+     Kontrast (WCAG): ink/body/muted/accent açık yüzeylerde ≥ 4,98:1; on-dark koyu yüzeylerde %60 opaklıkta bile ≥ 5,69:1. */
+  --color-mk-night: #0e1a12; /* sayfa ve hero zemini */
+  --color-mk-night-deep: #06140d; /* üst çubuk */
+  --color-mk-forest: #0f2a1c; /* koyu şerit */
+  --color-mk-ink: #0c2418; /* açık zeminde başlık */
+  --color-mk-text: #1a241c;
+  --color-mk-body: #4b554c;
+  --color-mk-muted: #5c665d;
+  --color-mk-accent: #2d6b45; /* açık zeminde bağlantı ve üst etiket */
+  --color-mk-on-dark: #f3efe4; /* koyu zeminde metin */
+  --color-mk-lemon: #f2c94c; /* koyu zeminde vurgu */
+  --color-mk-lime: #a3e635; /* koyu şeritte simge */
+  --color-mk-sage: #e4ede0;
+  --color-mk-paper: #f0ece3;
+  --color-mk-cream: #f7f4ee;
+  --color-mk-photo-fallback: #d8e0d4; /* görsel yüklenirken zemin */
+  --color-mk-ok: #78c86e; /* anlatım görseli: güçlü bölge */
+  --color-mk-mid: #f2c94c; /* anlatım görseli: orta bölge */
+  --color-mk-weak: #f08c32; /* anlatım görseli: zayıf bölge */
+  --color-mk-water: #4896e6; /* anlatım görseli: damla sulama hattı */
+  --color-mk-parcel-1: #1a3524;
+  --color-mk-parcel-2: #16301f;
+  --color-mk-parcel-3: #1c3b27;
+  --color-mk-parcel-4: #234a2f;
+  --color-mk-parcel-5: #2a4d34;
+  --color-mk-parcel-6: #2b5a37;
+  --color-mk-parcel-7: #356b40;
+  --color-mk-parcel-8: #3d7a48;
+  --radius-mk: 10px;
+  --radius-sheet: 32px; /* sayfa içeriğinin hero üstüne kayan üst köşesi */
+}
+
 /* Koyu tema (aynı veri rampaları; yüzeyler antrasit) */
 html[data-theme='dark'] .app-shell {
   --color-app-bg: #0e1311;

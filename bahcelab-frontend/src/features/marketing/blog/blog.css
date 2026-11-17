@@ -1,7 +1,7 @@
 .blog-prose {
   font-size: 1.0625rem;
   line-height: 1.75;
-  color: #1a241c;
+  color: var(--color-mk-text);
 }
 
 .blog-prose h2 {
@@ -10,7 +10,7 @@
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0c2418;
+  color: var(--color-mk-ink);
 }
 
 .blog-prose h3 {
@@ -18,7 +18,7 @@
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #0c2418;
+  color: var(--color-mk-ink);
 }
 
 .blog-prose p {
@@ -36,23 +36,23 @@
 }
 
 .blog-prose a {
-  color: #2d6b45;
+  color: var(--color-mk-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .blog-prose strong {
   font-weight: 600;
-  color: #0c2418;
+  color: var(--color-mk-ink);
 }
 
 .blog-prose blockquote {
   margin: 1.25rem 0;
   padding: 0.85rem 1.1rem;
-  border-left: 3px solid #a3e635;
+  border-left: 3px solid var(--color-mk-lime);
   background: rgba(163, 230, 53, 0.08);
   border-radius: 0 12px 12px 0;
-  color: #3d4d43;
+  color: var(--color-mk-body);
   font-style: normal;
 }
 
@@ -62,7 +62,7 @@
   -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(12, 36, 24, 0.1);
   border-radius: 1rem;
-  background: #fff;
+  background: white;
 }
 
 .blog-prose table {
@@ -82,8 +82,8 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0c2418;
-  background: #f7f4ee;
+  color: var(--color-mk-ink);
+  background: var(--color-mk-cream);
   border-bottom: 1px solid rgba(12, 36, 24, 0.1);
   vertical-align: bottom;
 }
@@ -95,7 +95,7 @@
 .blog-prose tbody td {
   padding: 0.85rem 1rem;
   vertical-align: top;
-  color: #4b554c;
+  color: var(--color-mk-body);
   border-bottom: 1px solid rgba(12, 36, 24, 0.08);
 }
 
@@ -104,13 +104,13 @@
 }
 
 .blog-prose tbody td:first-child {
-  color: #5c665d;
+  color: var(--color-mk-muted);
   background: rgba(247, 244, 238, 0.65);
   border-right: 1px solid rgba(12, 36, 24, 0.08);
 }
 
 .blog-prose tbody td:last-child {
-  color: #1a241c;
+  color: var(--color-mk-text);
 }
 
 @media (max-width: 480px) {

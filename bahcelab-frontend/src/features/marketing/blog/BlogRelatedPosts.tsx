@@ -13,14 +13,14 @@ export function BlogRelatedPosts({ posts, className = '', layout = 'list' }: Blo
 
   const listClass =
     layout === 'grid'
-      ? 'mt-4 grid gap-3 border-t border-[#0c2418]/10 pt-6 sm:grid-cols-2'
-      : 'mt-4 space-y-1 border-t border-[#0c2418]/10 pt-4'
+      ? 'mt-4 grid gap-3 border-t border-mk-ink/10 pt-6 sm:grid-cols-2'
+      : 'mt-4 space-y-1 border-t border-mk-ink/10 pt-4'
 
   return (
     <aside className={className} aria-labelledby="blog-related-heading">
       <h2
         id="blog-related-heading"
-        className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d6b45]"
+        className="text-caption font-semibold uppercase tracking-[0.18em] text-mk-accent"
       >
         İlginizi çekebilecek diğer yazılar
       </h2>
@@ -29,9 +29,9 @@ export function BlogRelatedPosts({ posts, className = '', layout = 'list' }: Blo
           <li key={item.slug}>
             <Link
               to={`/blog/${item.slug}`}
-              className="group flex gap-3 rounded-lg py-2.5 no-underline transition-colors hover:bg-[#f7f4ee]/70"
+              className="group flex gap-3 rounded-lg py-2.5 no-underline transition-colors hover:bg-mk-cream/70"
             >
-              <div className="relative h-14 w-[4.25rem] shrink-0 overflow-hidden rounded-md border border-[#0c2418]/10 bg-[#d8e0d4]">
+              <div className="relative h-14 w-[4.25rem] shrink-0 overflow-hidden rounded-md border border-mk-ink/10 bg-mk-photo-fallback">
                 <img
                   src={item.cover}
                   alt=""
@@ -44,12 +44,12 @@ export function BlogRelatedPosts({ posts, className = '', layout = 'list' }: Blo
               </div>
               <span className="min-w-0 flex-1">
                 {item.tags[0] && (
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d6b45]/85">
+                  <span className="block text-caption font-semibold uppercase tracking-[0.12em] text-mk-accent">
                     {item.tags[0]}
                   </span>
                 )}
                 <span
-                  className="mt-0.5 block text-[13px] font-semibold leading-snug tracking-[-0.01em] text-[#0c2418] group-hover:text-[#2d6b45]"
+                  className="mt-0.5 block text-[13px] font-semibold leading-snug tracking-[-0.01em] text-mk-ink group-hover:text-mk-accent"
                 >
                   {item.title}
                 </span>
@@ -60,7 +60,7 @@ export function BlogRelatedPosts({ posts, className = '', layout = 'list' }: Blo
       </ul>
       <Link
         to="/blog"
-        className="mt-5 inline-block text-[13px] font-medium text-[#2d6b45] no-underline hover:underline"
+        className="mt-5 inline-block text-[13px] font-medium text-mk-accent no-underline hover:underline"
       >
         Tüm yazılar
       </Link>

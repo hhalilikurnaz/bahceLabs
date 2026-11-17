@@ -1,10 +1,28 @@
 import { execFileSync } from 'node:child_process'
-import { backendEnv } from './ortam'
+import AxeBuilder from '@axe-core/playwright'
+import { E2E, E2E_DB_HARICI, backendEnv } from './ortam'
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 
 /** Axe, süren (sonlu) animasyonlar bitmeden koşarsa yarı saydam öğeler için sahte «color-contrast» üretir (CI'da aralıklı düşme; kök neden): önce bitmelerini bekler. */
 export async function animasyonlarBitsin(page: Page): Promise<void> {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || (a.effect?.getComputedTiming().endTime ?? 0) === Infinity), undefined, { timeout: 10_000 })
+}
+
+/** axe (WCAG 2.1 A/AA): ciddi ve kritik ihlal 0 olmalı (tanıtım sayfaları için; uygulama ekranları e2e/axe.spec.ts'te). */
+export async function axeAgirIhlalYok(page: Page, etiket: string): Promise<void> {
+  await animasyonlarBitsin(page)
+  const sonuc = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+  const agir = sonuc.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+  expect(agir.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`), etiket).toEqual([])
+}
+
+/** e2e veritabanında bu e-postanın bekleme listesindeki satır sayısı (kullanıcı verisi olmayan tablo; doğrudan SQL). */
+export function beklemeSatirSayisi(email: string): number {
+  const sql = `SELECT count(*) FROM bekleme_listesi WHERE email = '${email.replace(/'/g, "''")}'`
+  const cikti = E2E_DB_HARICI
+    ? execFileSync('psql', [E2E.databaseUrl.replace('+asyncpg', ''), '-Atq', '-c', sql], { encoding: 'utf8' })
+    : execFileSync('docker', ['exec', E2E.dbContainer, 'psql', '-Atq', '-U', 'bahcelab', '-d', E2E.dbName, '-c', sql], { encoding: 'utf8' })
+  return Number(cikti.trim())
 }
 
 export const PASSWORD = 'test1234'

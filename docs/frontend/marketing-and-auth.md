@@ -1,135 +1,67 @@
-# Kurumsal site (marketing) ve giriş
+# Tanıtım sitesi (landing, blog, KVKK) ve giriş
 
-Phase 1 B planlama modülüne ek olarak, kamuya açık tanıtım sitesi ve planlama erişimi için **frontend-only** kimlik akışı eklendi.
+Kamuya açık tanıtım sayfaları ve kimlik akışı. Kaynak: `bahcelab-frontend/src/features/marketing/` ve `src/features/auth/`. Bu belge L1 işinden (landing P0/P1 düzeltmeleri) sonraki durumu anlatır; gerekçeler için [docs/design/landing-inceleme.md](../design/landing-inceleme.md), ölçümler için [docs/design/landing-l1-rapor.md](../design/landing-l1-rapor.md).
 
-## Routing (`bahcelab-frontend/src/App.tsx`)
+## Rotalar (`src/App.tsx`)
 
-| Path | Sayfa | Auth |
-|------|--------|------|
+| Yol | Sayfa | Giriş |
+|---|---|---|
 | `/` | `LandingPage` | Hayır |
-| `/blog` | `BlogPage` — yazı listesi | Hayır |
-| `/blog/:slug` | `BlogPostPage` — markdown yazı | Hayır |
+| `/blog`, `/blog/:slug` | Blog | Hayır |
+| `/kvkk` | `KvkkPage`: erken erişim listesi aydınlatma metni | Hayır |
 | `/login` | `LoginPage` | Hayır |
-| `/register` | `RegisterPage` | Hayır |
-| `/planning` | `PlanningListPage` | **Evet** (`ProtectedRoute`) |
-| `/planning/:planId` | `PlanningWorkspacePage` | **Evet** |
-| `*` | `/` yönlendirme | — |
+| `/register` | Kayıt açıksa hesap formu, kapalıysa erken erişim (bekleme listesi) formu | Hayır |
+| `/bahceler/*`, `/asistan`, … | Uygulama | Evet |
 
-Giriş yapılmadan `/planning` isteği → `/login` (state: `from` geri dönüş yolu).
+Kayıt bayrağı: `VITE_REGISTRATION_ENABLED` (arayüz) ve `REGISTRATION_ENABLED` (sunucu). Kapalıyken `/register` aynı adreste `BeklemeFormu` gösterir.
 
-## Marketing feature (`src/features/marketing/`)
+## Landing akışı
 
-| Alan | Açıklama |
-|------|----------|
-| **Hero** | Kaydırmalı **Journey** (bahceLabs referansı) — drone kare dizisi, kuşbakışı bahçe, tarama ve özellik durakları; navbar ve alt şeritler aynı |
-| **Şerit bölümler** | `DiagonalStripSection` — çapraz üst kenar, tonlar (cream/sage/paper/forest), dar alan glyph |
-| **Misyon** | Problem odaklı metin + `MissionOutcomeCards` (3 kart, örnek önce/hedef çubukları) |
-| **Footer** | `MarketingFooter` — copyright, blog linki, yayvan watermark wordmark |
-| **Navbar** | `MarketingNavbar` — misyon anchor, blog, giriş/kayıt linkleri |
+Görünüm **L2** işinde son arayüz turunda baştan tasarlanacak ([roadmap](../roadmap.md)); bu bölüm L1 sonrası geçici durumdur.
 
-### Tasarım notları
+1. **Hero** (`journey/`): kaydırmalı sahne, giriş + 3 durak. CTA: «Erken erişime katıl» → `/register`, «Nasıl çalışır» → `#nasil-calisir`. Sahne anlatım içindir (sayı, kimlik ya da ölçüm değeri yok); sahnede bunu söyleyen not durur. `prefers-reduced-motion`: statik tek görsel.
+2. **Kanıt şeridi** (`sections/KanitSeridi`): kurucu hikâyesi + kullanılan veri kaynakları adıyla. Sayı, logo ya da alıntı yok.
+3. **Nasıl çalışır** (`id=nasil-calisir`): üç adım.
+4. **Dürüstlük**: «Ön değerdir, karar üreticinindir.»
+5. **Erken erişim çağrısı + footer** (`ErkenErisimSection`, `MarketingFooter`).
 
-- Fontlar: **Inter** (gövde), **Plus Jakarta Sans** (başlıklar) — `index.html` Google Fonts.
-- Journey hero ek fontlar: **Manrope** (UI), **Fraunces** (hero başlık) — yalnızca `.bahce-journey` altında (`journey.css`).
-- Krem yüzey token: `--color-marketing-cream` (`#f7f4ee`) → `bg-marketing-cream`.
-- Şerit bindirme: `index.css` — `--marketing-strip-slant`, `marketing-strip-overlap` (clip-path + negatif margin).
-- Ana içerik paneli: animasyon bittikten sonra misyon şeridi hero üzerine kayar (`main` `z-20`, `-mt-[100dvh]`); ilk şeritte `rounded-t` + gölge; `main` üzerinde `overflow-x-clip`.
-- Landing sayfa arka planı (hero sonrası boşluklar): `#0e1a12` (journey `--night` ile uyumlu).
+**Ürün ekranı görseli yok:** L1'de eklenen gerçek bahçe ekran görüntüleri (sahibi bilinmeyen arazi) kaldırıldı; yenisi eklenmedi. Yeni görsel yalnız sahibi belli ve onaylı bir bahçeden ya da demo bahçeden gelmelidir.
 
-### Journey hero (`src/features/marketing/journey/`)
+Üst çubuk: Nasıl çalışır · Blog · Giriş yap · [Erken erişime katıl]. 390 px'te CTA tek satır, menü `md` altında açılır liste (`aria-expanded`, Escape kapatır). Sosyal bağlantılar yalnız footer'da. Sayfa içi bağlantılar (`/#nasil-calisir`) `ScrollToTopOnNavigate` ile kaydırılır.
 
-Kaynak: [hhalilikurnaz/bahceLabs](https://github.com/hhalilikurnaz/bahceLabs) `Journey` bileşeni; Next.js / next-intl yerine Vite + React Router + sabit Türkçe metinler (`journeyMessages.ts`).
+## Medya
 
-| Dosya | Rol |
-|-------|-----|
-| `JourneyHero.tsx` | Uzun sticky bölüm, scroll → `frameAt()` zaman çizelgesi, UI/metin katmanları |
-| `FrameSequence.tsx` | WebP kare dizisini canvas’a çizer (kaydırmaya bağlı video) |
-| `journeyTimeline.ts` | Kamera durakları, ağaç koordinatları, `TOTAL_LEN` |
-| `journeySite.ts` | Medya yolları (`public/media/…`) |
-| `journeyMessages.ts` | Hero metinleri, özellik adımları, journey kartları |
-| `journey.css` | Journey’ye özel stiller (`.bahce-journey` kapsamı) |
+| Dosya | Boyut | Üretim |
+|---|---|---|
+| `public/media/hero/hero-1920.webp`, `hero-1000.webp` | ≈366 KB, ≈128 KB | `scripts/landing-gorsel-optimize.py hero <kaynak>` |
 
-**Scroll akışı**
+`index.html` içindeki statik ilk kare (`#boot`) yalnız `/` için hero fotoğrafını ve başlığı JS'ten bağımsız basar; React hero görseli çözümleyince kabuğu kaldırır. `tests/journey.test.ts` bütçeyi (masaüstü ≤ 1,5 MB, mobil ≤ 800 KB) ve kabuk metinlerinin `journeyMessages.ts` ile aynı kaldığını denetler. Hero kare dizisi (120 WebP, 14,6 MB) kodda hiç kullanılmadığı için silindi.
 
-1. Sayfa üstünde kaydırma ilerledikçe drone kareleri → kuşbakışı fotoğraf → tarama → ağaç durakları.
-2. `s >= PIN_AT` iken sahne `position: fixed` (`journey-sticky--pinned`, `z-index: 5`); son kare donar, metin/kartlar ve `j-shade` gizlenir.
-3. Bölüm sonunda `main` (misyon) son **100dvh** hero üzerine biner; eski sabit hero + spacer davranışı.
+## Tasarım dili
 
-**Boşta önizleme (scroll öncesi)**
+Renkler `styles/tokens.css` içindeki `mk-*` setinden (`@theme static`); ham hex yok, `tests/tokens.test.ts` tanıtım ve giriş dosyalarını da denetler. Köşe: düğme ve alan `rounded-md` (6 px), kart/pencere `rounded-mk`, hero üstüne kayan içerik `rounded-t-sheet`. Düğme görünümü tek kaynaktan: `components/ui/buttonClass.ts` (`<Button>` ve `<Link>` aynı sınıfları kullanır). Tek logo: `components/ui/BrandLogo` (uygulama üst çubuğundaki yaprak işaretiyle aynı çizim); `public/favicon.svg` aynı çizimdir (`scripts/favicon-uret.mjs` PNG'leri üretir).
 
-- `FrameSequence` `idle={0.22}`: ilk ~%22 karede ileri–geri döngü (~7 sn tur).
-- Idle aralığındaki kareler öncelikli yüklenir; sabit hızlı ping-pong (cosine yavaşlatması kullanılmaz).
-- İlk kare: poster + `journey-stage` `background-image` (canvas hazır olana kadar boş ekran önlenir).
+Yazı tipleri: Fraunces (başlık), Source Sans 3 (metin); self-host (`styles/fonts.css`). Yazı en az 12 px.
 
-**Hero metinleri**
+## Erken erişim (bekleme listesi)
 
-- Başlık: *«Üretim verimini yükseltmek, bitkiyi anlamaktan geçer.»*
-- CTA: Kayıt ol → `/register`; ikincil → `#misyon`
+`POST /bekleme-listesi` (genel uç nokta): e-posta, il, ürün (limon, portakal, mandalina, diğer), açık rıza. Tablo `bekleme_listesi` (migration 048): e-posta benzersiz, rıza zamanı ve aydınlatma sürümü saklanır, IP saklanmaz. Yeni ve yinelenen e-posta aynı yanıtı alır (liste dışarıdan yoklanamaz). Hız sınırı süreç içi kayan penceredir (varsayılan 10 dakikada 5; `BEKLEME_LIMIT_*`); çok işçili dağıtımda sınır işçi sayısıyla çarpılır. Ters vekil arkasında `BEKLEME_VEKIL_GUVEN=true`. Aydınlatma metni sürümü iki yerde aynı tutulur: `src/features/auth/bekleme.ts` ve `domain/bekleme/schemas.py` (`tests/bekleme.test.ts` denetler).
 
-**Medya** (`bahcelab-frontend/public/media/`)
+**KVKK taslak bayrağı:** aydınlatma metni hukuki onay beklerken (`VITE_KVKK_TASLAK` ≠ `false`, sunucuda `KVKK_TASLAK=true`) bekleme listesi **canlıda kapalıdır**: canlı derlemede `/register` «başvurular şu an alınmıyor» gösterir, sunucu `POST /bekleme-listesi` isteğini `API_DEBUG=false` iken 403 ile reddeder (veri yazılmaz). Geliştirme sunucusunda ve `API_DEBUG=true` iken form çalışır. `/kvkk` sayfası bayrak açıkken «Taslak, hukuki onay bekliyor» uyarısı gösterir. Onaydan sonra iki bayrak `false` yapılır (`bahcelab-backend/.env`, `bahcelab-frontend/.env`).
 
-- `hero-frames/desktop/` — 120 × webp (1280 px genişlik)
-- `hero-frames/mobile/` — 80 × webp (768 px)
-- `orchard/master-3344.webp`, `master-1920.webp` — kuşbakışı ana fotoğraf
+Liste şu an yalnız veritabanından okunur (yönetim ekranı yok):
 
-Kare üretimi için referans repo: `scripts/extract-frames.sh`, `docs/VIDEO.md`.
-
-**Kullanılmayan (eski hero)**
-
-- `HeroScrollCue.tsx` — artık landing’de import edilmez; journey kendi scroll hint’ini kullanır.
-- `hero-orchard-drones.jpg` — yalnızca `AuthShell` sol panelinde.
-
-### Varlıklar (`src/assets/marketing/`)
-
-- `bahcelab-logo.png` — navbar wordmark (şeffaf)
-- `bahcelab-logo-wordmark.png`, `bahcelab-footer-wordmark.png` — footer watermark
-- `hero-orchard-drones.jpg` — auth sol panel (landing hero artık journey medyası)
-
-## Auth feature (`src/features/auth/`)
-
-| Dosya | Rol |
-|-------|-----|
-| `AuthContext.tsx` | Oturum (`GET /auth/me` ile yüklenir), `login` / `register` / `logout` |
-| `authConfig.ts` | `REGISTRATION_ENABLED` — `VITE_REGISTRATION_ENABLED=true` ise `/register` gerçek form gösterir |
-| `AuthShell.tsx` | Sol panel (görsel + metin) / sağ form düzeni |
-| `ProtectedRoute.tsx` | Korumalı rotalar; oturum kontrolü bitene kadar bekler, giriş yoksa `/login` |
-| `LoginPage.tsx`, `RegisterPage.tsx` | Formlar; başarılı girişte `/bahcem` (korumalı bir sayfadan yönlendirildiyse oraya) |
-
-API istemcisi `src/lib/apiClient.ts`: `credentials: 'include'`; 401 gelince `/auth/refresh` ile oturumu
-bir kez yeniler ve isteği tekrarlar, olmazsa kullanıcıyı çıkış durumuna alır (`ProtectedRoute` `/login`'e yönlendirir).
-
-### Kimlik doğrulama
-
-Gerçek backend auth'a bağlı (`/auth/*`, argon2 + JWT). Token'lar **httpOnly cookie**'dir, frontend token
-saklamaz. Yerelde Vite proxy (`/api` → `:8001`) sayesinde tarayıcı ve API aynı origin'dir. Ayrıntı:
-[bahcelab-backend/README.md](../../bahcelab-backend/README.md#kimlik-doğrulama).
-
-## Marka ve site meta
-
-- Sekme başlığı: **BahçeLab | Tarımda Akıllı Üretim** (`index.html`).
-- Favicon: `public/favicon.png` (yuvarlatılmış köşeli wordmark görseli).
-- Planlama giriş ve workspace navbar: `BahcelabBrandLogo` (ana sayfa ile aynı PNG).
-
-## İlgili bileşenler
-
+```sql
+SELECT email, il, urun, created_at FROM bekleme_listesi ORDER BY created_at;
 ```
-features/marketing/
-  journey/
-    JourneyHero.tsx
-    FrameSequence.tsx
-    journeyTimeline.ts
-    journeySite.ts
-    journeyMessages.ts
-    journey.css
-  components/
-    BahcelabBrandLogo.tsx
-    MarketingNavbar.tsx
-    MarketingFooter.tsx
-    DiagonalStripSection.tsx
-    MissionOutcomeCards.tsx
-    HeroScrollCue.tsx      # eski hero; journey’de kullanılmıyor
-    Reveal.tsx
-    StripNarrowGlyph.tsx
-  pages/
-    LandingPage.tsx        # JourneyHero + misyon şeritleri
-```
+
+## Kimlik doğrulama
+
+Gerçek backend auth'a bağlı (`/auth/*`, argon2 + JWT). Token'lar httpOnly çerezdir, frontend token saklamaz. Şifre kuralı tek sabitten: `MIN_PASSWORD_LENGTH` (`authConfig.ts`); sunucudaki `MIN_PASSWORD_LENGTH` ile eşitliği `tests/bekleme.test.ts` denetler. «Şifremi unuttum» akışı yoktur: e-posta gönderim altyapısı kurulu değil; roadmap Adım 18'de.
+
+## Testler
+
+- `tests/journey.test.ts`, `tests/bekleme.test.ts`, `tests/tokens.test.ts` (vitest)
+- `e2e/landing.spec.ts`: axe (0 ciddi/kritik; masaüstü, mobil, azaltılmış hareket), CTA, gezinme, LCP görseli, KVKK taslak uyarısı
+- `e2e/bekleme-listesi.spec.ts`: ikinci web derlemesinde (`VITE_REGISTRATION_ENABLED=false`, `E2E_WEB_PORT+1`) form, rıza, yinelenen e-posta, hız sınırı
+- Backend: `tests/test_bekleme_listesi.py`, `tests/test_alembic_heads.py` (tek alembic başı)

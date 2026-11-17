@@ -29,6 +29,13 @@ export const E2E = {
   get webUrl(): string {
     return `http://localhost:${this.webPort}`
   },
+  /** İkinci web derlemesi: VITE_REGISTRATION_ENABLED=false → /register erken erişim (bekleme listesi) formunu gösterir */
+  get beklemeWebPort(): string {
+    return String(Number(this.webPort) + 1)
+  },
+  get beklemeWebUrl(): string {
+    return `http://localhost:${this.beklemeWebPort}`
+  },
   storageDir: 'uploads-e2e',
 }
 

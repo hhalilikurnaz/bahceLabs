@@ -20,13 +20,14 @@ const KalitePage = lazy(() => import('@/features/ic/KalitePage').then((m) => ({ 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const BlogPage = lazy(() => import('@/features/marketing/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
+const KvkkPage = lazy(() => import('@/features/marketing/pages/KvkkPage').then((m) => ({ default: m.KvkkPage })))
 const BlogPostPage = lazy(() => import('@/features/marketing/pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })))
 
 
 function PageFallback() {
   return (
-    <div className="flex h-dvh items-center justify-center bg-forest" role="status" aria-label="Sayfa yükleniyor">
-      <BrandMark size={48} className="animate-pulse" />
+    <div className="flex h-dvh items-center justify-center bg-mk-night" role="status" aria-label="Sayfa yükleniyor">
+      <BrandMark size={48} surface="dark" className="animate-pulse" />
     </div>
   )
 }
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/kvkk" element={<KvkkPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/bahcem/*" element={<EskiAdres />} />

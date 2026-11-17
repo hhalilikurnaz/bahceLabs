@@ -1,0 +1,19 @@
+/* Alt bilgi filigranı: süs. İçerik sözde öğede olduğu için metin olarak sayılmaz (ekran okuyucu ve renk kontrastı denetimi dışında); renk token'dan. */
+.mk-watermark {
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mk-watermark::before {
+  content: 'BahçeLab';
+  display: block;
+  margin-bottom: -0.1em;
+  white-space: nowrap;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 0.85;
+  font-size: clamp(4rem, 17vw, 15rem);
+  color: color-mix(in srgb, var(--color-mk-ink) 6%, transparent);
+}

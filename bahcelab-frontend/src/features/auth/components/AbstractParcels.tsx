@@ -9,7 +9,7 @@ function lcg(seed: number): () => number {
   }
 }
 
-const TONES = ['#16301f', '#1c3b27', '#234a2f', '#2b5a37', '#356b40', '#2a4d34', '#3d7a48', '#1a3524']
+const TONES = ['var(--color-mk-parcel-2)', 'var(--color-mk-parcel-3)', 'var(--color-mk-parcel-4)', 'var(--color-mk-parcel-6)', 'var(--color-mk-parcel-7)', 'var(--color-mk-parcel-5)', 'var(--color-mk-parcel-8)', 'var(--color-mk-parcel-1)']
 const COLS = 9
 const ROWS = 11
 

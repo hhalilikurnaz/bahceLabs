@@ -1,13 +1,8 @@
-/** Kaydırmalı hero (bahceLabs Journey) medya yolları — dosyalar `public/media/` altında. */
+/** Hero fotoğrafı: `public/media/hero/` (WebP; üretim: scripts/landing-gorsel-optimize.py hero). index.html'deki statik ilk kare (#boot) aynı adayları kullanır. */
 export const journeySite = {
-  heroSequence: {
-    desktop: { path: '/media/hero-frames/desktop/', count: 120, ext: 'webp' },
-    mobile: { path: '/media/hero-frames/mobile/', count: 80, ext: 'webp' },
-    pad: 4,
-  },
-  orchardMaster: {
-    large: '/media/orchard/master-3344.webp',
-    small: '/media/orchard/master-1920.webp',
+  hero: {
+    srcSet: '/media/hero/hero-1000.webp 1000w, /media/hero/hero-1920.webp 1920w',
+    src: '/media/hero/hero-1920.webp',
     width: 1672,
     height: 941,
   },

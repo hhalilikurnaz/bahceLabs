@@ -4,6 +4,7 @@ import { ApiError } from '@/lib/apiClient'
 export function authErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof ApiError) {
     if (err.status === 429) return 'Çok fazla deneme yapıldı. Birkaç dakika sonra tekrar deneyin.'
+    if (err.status === 422) return 'Girdiğiniz bilgileri kontrol edin.'
     if (err.status >= 500) return 'Sunucuda bir sorun oluştu. Biraz sonra tekrar deneyin.'
     return err.message || fallback
   }

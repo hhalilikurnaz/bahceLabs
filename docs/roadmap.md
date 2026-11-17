@@ -51,6 +51,7 @@ EnMAP, PRISMA, EMIT. **Laboratuvarla kalibre edilene kadar öneri üretmez.**
 Ek olarak **ilaçlama drone'u** (DJI Agras, XAG) ve **traktör** (ISO-XML) için reçete haritası dışa aktarımı. **Doz etiket dozunu asla aşmaz.**
 
 ### 16 · Copilot + PDF rapor · 17 · Pazar ve Depo · 18 · WhatsApp Bekçi · 19 · Çoklu kullanıcı
+**18 ek · «Şifremi unuttum»:** e-posta ile şifre sıfırlama. Önkoşul: e-posta gönderim altyapısı (sağlayıcı seçimi: SMTP, Resend veya SES); şu an yok, bu yüzden giriş sayfasında bağlantı da yok. İçerik: sıfırlama belirteci tablosu (tek kullanımlık, kısa ömürlü, yalnız özet saklanır), iki uç nokta (iste, onayla), hız sınırı, e-posta şablonu, sayfa; kullanıcı varlığı yanıtla sızdırılmaz. Bildirim kanalı (WhatsApp Bekçi) ile aynı gönderim katmanını paylaşır.
 
 ### 19B · Komşularla anonim kıyas
 **En az 10 benzer bahçe** ve **açık rıza**; koşul yoksa kıyas gösterilmez.
@@ -61,6 +62,9 @@ Ek olarak **ilaçlama drone'u** (DJI Agras, XAG) ve **traktör** (ISO-XML) için
 Sürümlü `/v1`, API anahtarı ve kapsamlar, hız sınırı, kullanım ölçümü, **HMAC imzalı webhook**.
 
 ### 21 · İşlerim · tarım ajanları · 22–26 Hizmetler ve veri ürünleri · 27 Yayın + 20 maddelik kontrol listesi · son tur tüm site UI/UX
+
+### L2 · Landing yeniden tasarım (son arayüz turunda)
+Landing görünümü son arayüz turunda **baştan** tasarlanır; L1 (P0/P1 düzeltmeleri) sonrası tasarım işi durduruldu. Kapsam: ana sayfa, blog, giriş/kayıt görünümü; kaynak [docs/design/landing-inceleme.md](design/landing-inceleme.md) ve [landing-l1-rapor.md](design/landing-l1-rapor.md). Girdiler: **ürün ekranı görseli yok** (L1'de sahibi bilinmeyen gerçek arazi görüntüleri kaldırıldı; yeni görsel, sahibi belli ve onaylı bir bahçeden ya da bu amaçla kurulmuş bir demo bahçeden gelmeli), kanıt şeridi (yalnız doğrulanabilir bilgi), hero (LCP: statik ilk kare), blog kapakları (gerçek saha fotoğrafı). Kapı: KVKK aydınlatma metni hukuki onayı (`KVKK_TASLAK`/`VITE_KVKK_TASLAK` bayrakları kalkmadan erken erişim listesi canlıda kapalı).
 
 ## Belge haritası
 Kararlar: `docs/mimari/karar/` (ADR 0001–0019 …) · kural kataloğu: `bahcelab-backend/src/bahcelab_backend/domain/agro/rules/katalog.yaml` · raporlar: `docs/agro/` · talimatlar: `docs/development/conventions.md`.

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Reveal } from './Reveal'
 import { StripNarrowGlyph } from './StripNarrowGlyph'
 import { narrowAnchorForEdge } from './stripKenar'
 
@@ -8,10 +7,10 @@ export type StripTone = 'cream' | 'sage' | 'forest' | 'paper'
 type TopEdge = 'flat' | 'slant-down' | 'slant-up'
 
 const toneClasses: Record<StripTone, string> = {
-  cream: 'bg-marketing-cream text-[#1a241c]',
-  sage: 'bg-[#e4ede0] text-[#1a241c]',
-  paper: 'bg-[#f0ece3] text-[#1a241c]',
-  forest: 'bg-[#0f2a1c] text-[#f3efe4]',
+  cream: 'bg-mk-cream text-mk-text',
+  sage: 'bg-mk-sage text-mk-text',
+  paper: 'bg-mk-paper text-mk-text',
+  forest: 'bg-mk-forest text-mk-on-dark',
 }
 
 const topEdgeClass: Record<TopEdge, string> = {
@@ -72,48 +71,3 @@ export function DiagonalStripSection({
     </section>
   )
 }
-
-interface StripTextContentProps {
-  title: string
-  children: ReactNode
-  textSide: 'left' | 'right'
-  eyebrow?: string
-  /** Kart / grafik gibi geniş içerik için */
-  wide?: boolean
-}
-
-export function StripTextContent({
-  title,
-  children,
-  textSide,
-  eyebrow,
-  wide = false,
-}: StripTextContentProps) {
-  const alignLeft = textSide === 'left'
-  const widthClass = wide ? 'max-w-4xl' : 'max-w-2xl'
-
-  return (
-    <div className={alignLeft ? widthClass : `ml-auto ${widthClass}`}>
-      {eyebrow && (
-        <Reveal>
-            <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.24em] text-[#2d6b45]/75">
-              {eyebrow}
-            </p>
-        </Reveal>
-      )}
-      <Reveal delayMs={60}>
-          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#0c2418] sm:text-3xl lg:text-[1.875rem] lg:leading-snug">
-          {title}
-        </h2>
-      </Reveal>
-      <Reveal delayMs={120}>
-        <div className="mt-5 space-y-4 text-[15px] leading-[1.75] text-[#4b554c] sm:text-base">
-          {children}
-        </div>
-      </Reveal>
-    </div>
-  )
-}
-
-/** @deprecated use StripTextContent */
-export const AlternatingStripContent = StripTextContent

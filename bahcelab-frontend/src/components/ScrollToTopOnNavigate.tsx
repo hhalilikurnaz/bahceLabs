@@ -13,9 +13,9 @@ function scrollWindowToTopInstant() {
   html.style.scrollBehavior = previousBehavior
 }
 
-/** Her rota değişiminde pencereyi anında en üste alır (önceki sayfadaki scroll konumu taşınmaz). */
+/** Her rota değişiminde pencereyi anında en üste alır; adreste `#bölüm` varsa o bölüme kaydırır (sayfa içi bağlantılar: Nasıl çalışır, Özellikler). */
 export function ScrollToTopOnNavigate() {
-  const { pathname } = useLocation()
+  const { pathname, hash } = useLocation()
 
   useEffect(() => {
     if ('scrollRestoration' in history) {
@@ -24,8 +24,16 @@ export function ScrollToTopOnNavigate() {
   }, [])
 
   useLayoutEffect(() => {
-    scrollWindowToTopInstant()
-  }, [pathname])
+    if (!hash) scrollWindowToTopInstant()
+  }, [pathname, hash])
+
+  useEffect(() => {
+    if (!hash) return
+    const hedef = document.getElementById(decodeURIComponent(hash.slice(1)))
+    if (!hedef) return
+    const kare = requestAnimationFrame(() => hedef.scrollIntoView({ block: 'start' }))
+    return () => cancelAnimationFrame(kare)
+  }, [pathname, hash])
 
   return null
 }

@@ -2,13 +2,44 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f2a1c" />
     <title>BahçeLab | Tarımda Akıllı Üretim</title>
+    <!-- Landing LCP: ana sayfada hero'nun ilk karesi (fotoğraf + başlık) JS paketinden BAĞIMSIZ, statik ve animasyonsuz basılır (#boot);
+         React hazır olup kendi hero görselini çözümleyince kabuğu kaldırır (JourneyHero → useBootKaldir). Metinler journeyMessages.ts ile aynı olmalı: tests/journey.test.ts denetler. -->
+    <style>
+      #boot { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #0e1a12; color: #f3efe4; font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif }
+      #boot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+      #boot .sh { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(8 16 10 / 0.88) 0%, rgb(8 16 10 / 0.55) 32%, rgb(8 16 10 / 0) 58%), linear-gradient(to top, rgb(8 16 10 / 0.55), transparent 30%) }
+      #boot .tx { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; box-sizing: border-box; padding: 64px clamp(1.25rem, 4vw, 2.5rem) 0 clamp(1.25rem, 6vw, 5.5rem) }
+      #boot .ey { margin: 0 0 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #f2c94c }
+      #boot h1 { margin: 0 0 22px; max-width: 22ch; font-family: Fraunces, Georgia, 'Times New Roman', serif; font-weight: 500; font-size: clamp(2rem, 5.5vw, 4.25rem); line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance }
+      #boot .ld { margin: 0; max-width: 58ch; font-size: clamp(1.05rem, 1.3vw, 1.2rem); line-height: 1.5; color: rgb(243 239 228 / 0.82) }
+      #boot .ac { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px }
+      #boot .ac a { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 48px; padding: 0 16px; border-radius: 6px; font-size: 15px; font-weight: 600; text-decoration: none; color: #0e1a12; background: #f3efe4 }
+      #boot .ac a + a { color: #f3efe4; background: transparent; border: 1px solid rgb(243 239 228 / 0.45) }
+      @media (min-width: 1024px) { #boot .tx { left: 0; right: 0; width: 100%; max-width: min(1280px, 100% - 40px); margin-inline: auto; padding-left: clamp(2.75rem, 9vw, 7rem) } }
+    </style>
   </head>
   <body>
+    <script>
+      if (location.pathname === '/') {
+        var b = document.createElement('div')
+        b.id = 'boot'
+        b.setAttribute('aria-hidden', 'true') // süs kopya: erişilebilirlik ağacında çift başlık/bağlantı olmasın; React hero asıl içeriktir
+        b.innerHTML =
+          '<img src="/media/hero/hero-1920.webp" srcset="/media/hero/hero-1000.webp 1000w, /media/hero/hero-1920.webp 1920w" sizes="100vw" width="1672" height="941" alt="" decoding="async" fetchpriority="high">' +
+          '<div class="sh"></div><div class="tx">' +
+          '<p class="ey">Narenciye bahçeleri için akıllı tarım sistemleri</p>' +
+          '<h1>Üretim verimini yükseltmek,<br>bitkiyi anlamaktan geçer.</h1>' +
+          '<p class="ld">BahçeLab, uydu görüntülerini ve hava verisini işler; bahçenizin canlılığını, su durumunu ve risklerini kendi geçmişine göre tek bir haritada gösterir.</p>' +
+          '<div class="ac"><a href="/register" tabindex="-1">Erken erişime katıl</a><a href="/#nasil-calisir" tabindex="-1">Nasıl çalışır</a></div></div>'
+        document.body.insertBefore(b, document.body.firstChild)
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,6 +1,7 @@
 export { Badge, type BadgeTone } from './Badge'
 export { BrandLogo, BrandMark } from './BrandLogo'
 export { Button, type ButtonVariant } from './Button'
+export { buttonClass } from './buttonClass'
 export { Card, StatCard } from './Card'
 export { Chip } from './Chip'
 export { Drawer } from './Drawer'

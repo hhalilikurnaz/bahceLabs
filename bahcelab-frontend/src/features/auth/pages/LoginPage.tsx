@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../useAuth'
+import { Button } from '@/components/ui'
 import { REGISTRATION_ENABLED } from '../authConfig'
 import { authErrorMessage } from '../authErrors'
 import { PasswordField } from '../components/authForm'
-import {
-  AuthShell,
-  authFieldClass,
-  authLabelClass,
-  authPrimaryButtonClass,
-} from '../components/AuthShell'
+import { AuthShell, authFieldClass, authLabelClass } from '../components/AuthShell'
+import { useAuth } from '../useAuth'
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -47,54 +43,33 @@ export function LoginPage() {
     <AuthShell
       variant="login"
       title="Giriş yap"
-      subtitle="Hesabınızla bahçelerinize ve planlarınıza ulaşın."
+      subtitle="Hesabınızla bahçelerinize ulaşın."
       footer={
         <>
-          {REGISTRATION_ENABLED ? 'Hesabınız yok mu?' : 'Kayıtlar çok yakında.'}{' '}
-          <Link
-            to="/register"
-            className="font-semibold text-ink no-underline underline-offset-2 hover:underline"
-          >
-            {REGISTRATION_ENABLED ? 'Kayıt olun' : 'Detaylar'}
+          Hesabınız yok mu?{' '}
+          <Link to="/register" className="font-semibold text-mk-ink no-underline underline-offset-2 hover:underline">
+            {REGISTRATION_ENABLED ? 'Kayıt olun' : 'Erken erişime katılın'}
           </Link>
         </>
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         {error && (
-          <p
-            role="alert"
-            className="rounded-lg border border-app-danger/25 bg-app-danger/8 px-3.5 py-2.5 text-small text-app-danger"
-          >
+          <p role="alert" className="rounded-lg border border-app-danger/25 bg-app-danger/8 px-3.5 py-2.5 text-small text-app-danger">
             {error}
           </p>
         )}
 
         <label className="block">
           <span className={authLabelClass}>E-posta</span>
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={authFieldClass}
-            placeholder="ornek@bahce.com"
-          />
+          <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={authFieldClass} placeholder="ornek@bahce.com" />
         </label>
 
-        <PasswordField
-          label="Şifre"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Şifreniz"
-        />
+        <PasswordField label="Şifre" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Şifreniz" />
 
-        <button type="submit" disabled={pending} className={`${authPrimaryButtonClass} mt-2`}>
+        <Button type="submit" variant="primary" size="lg" block loading={pending} className="mt-2">
           {pending ? 'Giriş yapılıyor…' : 'Giriş yap'}
-        </button>
+        </Button>
       </form>
     </AuthShell>
   )
