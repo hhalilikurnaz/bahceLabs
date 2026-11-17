@@ -365,6 +365,11 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 - **/ic/kalite → Kurallar → `don_uyari` açılır ayrıntı** (yeni ekran yok): gece gece tablo (tarih, bahçe, en soğuk model, kademe, kritik eşik, kullanıcı yanıtı, en yakın istasyon gözlemi); birikimli FAR (kullanıcı yanıtı ve istasyon) ve POD (istasyon) + Wilson %95 aralık, ADR 0031 kıyı referans çizgileri (FAR 0,64 · POD 0,846; katalog `beklenen_kiyi_*`); n < 5 → «yetersiz örnek». Uç: `GET /ic/izleme/don-uyari`.
 - **Katman menüsü color-contrast** düzeltildi: veri olmayan satırlarda `opacity-60` (kontrastı düşürüyordu) kaldırıldı; pasif «Bahçe içi soğuk nokta» etiketinde de. Axe artık menü AÇIKKEN de taranıyor (`axe.spec.ts` boş-katman testi, iki tema; `don.spec.ts`).
 
+### ADIM 10B — Dilim 0 + Dilim 1 (2026-11-17)
+- **Dilim 0** (`docs/agro/sebep-ayristirma.md`): literatür tablosu, kural tabanlı kanıt modeli, geriye dönük spike (21 olay, 2 bahçe), ekran dili, koşullu GO (don + görüntü; su «olası»; besin/hastalık/mekanik yalnız kontrol listesi).
+- **Dilim 1 (motor + API, ADR 0033):** `domain/sebep/` (saf motor + servis), katalog `sebep`, migration 047 `sebep_etiket` (rıza alanı, varsayılan yok), `GET /gardens/{id}/olaylar/{olay}/sebep`, `POST …/sebep-yaniti` (Saha Defteri + etiket), 9J `sebep_ayrisma`, görüntü kapısı (bildirim işi + Bugün listesi). Eleme ile seçim yok; 1 Şubat 2025 «mekanik» vakası «belirsiz». Kaynakça bağlantıları tek tek açıldı; açılmayanlar «doğrulanamadı».
+- Kapı geriye dönük ölçüm: 13 uyarıdan 0 bastırma (uyarı anında görüntü kanıtı ≤ 1,0). Altın bahçe sebep snapshot'ı (`tests/golden/sebep_*.json`, gerçek olay girdisi).
+
 ---
 
 ## Notlar

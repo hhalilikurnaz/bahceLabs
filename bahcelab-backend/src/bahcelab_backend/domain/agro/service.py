@@ -475,7 +475,11 @@ class AgroService:
         rule = self.catalog.bildirim
         garden = await self._garden(garden_id)
         out: list[tuple[Oncelik, str, str, Sekme]] = []
+        from bahcelab_backend.domain.sebep.servis import kapi_bastir
+
         for e in await list_events(self.ndvi.session, garden_id, since=today - timedelta(days=rule.taze_olay_gun)):
+            if await kapi_bastir(self.ndvi.session, garden_id, e):  # ADIM 10B: görüntü kaynaklı olabilir → Bugün listesine de girmez
+                continue
             cand = event_candidate(garden_id, garden.ad, e, today, rule, e.anahtar)  # tahmin donu burada YOK: tek don sistemi domain/don (aşağıda)
             if cand is not None:
                 out.append((cand.oncelik, cand.baslik, cand.metin, "hava" if e.tur in WEATHER_KINDS else "durum"))

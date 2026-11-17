@@ -24,6 +24,7 @@ from bahcelab_backend.api.ndvi.router import router as ndvi_router
 from bahcelab_backend.api.notifications.router import router as notifications_router
 from bahcelab_backend.api.overview.router import router as overview_router
 from bahcelab_backend.api.planning.router import router as planning_router
+from bahcelab_backend.api.sebep.router import router as sebep_router
 from bahcelab_backend.api.series.router import router as series_router
 from bahcelab_backend.api.water.router import router as water_router
 from bahcelab_backend.api.weather.router import router as weather_router
@@ -135,6 +136,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router)
     app.include_router(gecmis_router)
     app.include_router(don_router)
+    app.include_router(sebep_router)
     app.include_router(fieldbook_router)
 
     @app.get("/health", tags=["system"])

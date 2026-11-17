@@ -125,3 +125,17 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Eski `hava_don` bildirimi | **emekli** | tek don sistemi (ADR 0032); tercihler `don_uyari`'ya taşındı (migration 046) |
 | Hasar raporu (PDF taslağı) | taslak | resmi ekspertiz değildir; hasar tutarı/oranı yok |
 
+
+
+## ADIM 10B — olası sebep ayrıştırma (ADR 0033) · katalog `sebep` · hepsi «ön değer · mühendis onayı bekliyor» · durum: doğrulanmadı
+
+| Kural | Değer (ön) | Kaynak notu |
+|---|---|---|
+| Seçilebilir sebepler | don, su, görüntü kaynaklı; besin/hastalık/mekanik yalnız kontrol listesi | Doğrudan uydu kanıtı yok (`docs/agro/sebep-ayristirma.md` §1, §5) |
+| Seçim | ≥ 1 doğrudan lehte kanıt + puan ≥ 2,0 + ikinciden ≥ 0,5 önde; yoksa «belirsiz» | Tasarım önsel değeri |
+| Bağımsız kanıt çarpanı | ×1,5 (istasyon · dış kayıt · kullanıcı yanıtı); bağımlı ×1 | Tasarım önsel değeri |
+| Don kanıtı | ERA5-Land pencere en düşük ≤ −2 °C (+3) · ≤ 0 °C (+2) · ≤ +2 °C (+0,5) · > +2 °C (−3); istasyon destek +3 / çelişme −3; kamu kaydı +2; kullanıcı «oldu» +3 / «olmadı» −3; pencere = önceki sahne − 21 gün … düşüşü gören sahne | Hasar gecikmesi: UF/IFAS HS1275, CH004; 21 gün katalog `olay.don_hasar_gun` |
+| Su kanıtı | 30 gün toprak nemi z ≤ −1 (+1,5, doğrudan) · z ≥ 0,5 (−1) · ΔNDMI ≤ −0,05 (+1, destekleyici; özgül değil) · yaz (+0,5) | Tasarım önsel değeri; NDMI'nin don/hasarda da düşmesi aynı veride gözlendi |
+| Görüntü kanıtı | sonraki net sahnede toparlandı (+2) · sahne bulutu ≥ %20 (+1) · bahçenin ≥ %80'i tek adımda (+1) · kalıcı (−1,5) · radar değişimi (−1) | Sentinel-2 SCL sınıfları (arXiv 2406.18584) |
+| Görüntü kapısı | görüntü seçildi, puan ≥ 2,0, don puanı < 1,0 → uyarı/bildirim yok; geriye dönük etki: 13 uyarıdan 0 | ADR 0033 |
+| Kararlılık | ağırlık ×U(0,7–1,3), 200 deneme | Tasarım önsel değeri |

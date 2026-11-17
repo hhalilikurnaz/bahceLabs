@@ -165,3 +165,46 @@ def test_altin_bahce_don_snapshot():
 
 def _tur(_: timedelta) -> None:  # tür bütünlüğü
     return None
+
+
+# ------------------------------------------------------------------ ADIM 10B (ADR 0033): olası sebep çıktısı
+SEBEP_GIRDI = Path(__file__).parent / "golden" / "sebep_girdi.json"
+SEBEP_BEKLENEN = Path(__file__).parent / "golden" / "sebep_beklenen.json"
+
+
+def _sebep_girdisi(d: dict):  # noqa: ANN202
+    from bahcelab_backend.domain.sebep.motor import Girdi, HazirKanit
+
+    return Girdi(**{**d, "hazir": tuple(HazirKanit(**h) for h in d["hazir"])})
+
+
+def _sebep_cikti() -> list[dict]:
+    """jlnnlk + soğuk hava bahçelerinin GERÇEK S2 düşüş olaylarının donmuş motor girdisi (scripts/altin_bahce_sebep_uret.py; sentetik değer yok) → sebep seçimi, güven, puanlar, kanıt kodları, kararlılık."""
+    from bahcelab_backend.domain.sebep import motor
+
+    k = load_catalog().sebep
+    out = []
+    for r in json.loads(SEBEP_GIRDI.read_text()):
+        g = _sebep_girdisi(r["girdi"])
+        s = motor.degerlendir(g, k)
+        out.append({
+            "bahce": r["bahce"], "tarih": r["tarih"], "secim": s.secim, "guven": s.guven, "belirsiz_nedeni": s.belirsiz_nedeni, "kapi": s.kapi, "kararlilik": motor.kararlilik(g, k),
+            "puan": {p.sebep: p.puan for p in s.siralama}, "kanit": {p.sebep: sorted(x.kod for x in p.kanitlar) for p in s.siralama},
+        })
+    return out
+
+
+def test_altin_bahce_sebep_snapshot():
+    cikti = _sebep_cikti()
+    if os.environ.get("ALTIN_GUNCELLE") == "1":
+        SEBEP_BEKLENEN.write_text(json.dumps(cikti, indent=1, ensure_ascii=False, sort_keys=True) + "\n")
+        pytest.skip("sebep snapshot güncellendi (gerekçeli commit gerekir)")
+    assert SEBEP_BEKLENEN.exists(), "sebep snapshot yok: ALTIN_GUNCELLE=1 ile üretin"
+    fark = _farklar(json.loads(json.dumps(cikti, default=str)), json.loads(SEBEP_BEKLENEN.read_text()))
+    assert not fark, "ALTIN BAHÇE SEBEP ÇIKTISI DEĞİŞTİ:\n  " + "\n  ".join(fark)
+    # kilit vakalar (gerçek veri): Şubat 2025 don bağımsız istasyon kanıtıyla «daha olası»; donun ÖNCESİNDEKİ 1 Şubat 2025 düşüşü «belirsiz» (eleme ile «mekanik» seçilmez)
+    by = {(r["bahce"], r["tarih"]): r for r in cikti}
+    assert by[("jlnnlk", "2025-03-13")]["secim"] == "don" and by[("jlnnlk", "2025-03-13")]["guven"] == "daha_olasi"
+    subat = by[("soğuk hava", "2025-02-01")]
+    assert subat["secim"] is None and subat["guven"] == "belirsiz" and subat["belirsiz_nedeni"]
+    assert "mekanik" not in subat["puan"]  # besin/hastalık/mekanik seçilemez: yalnız kontrol listesi

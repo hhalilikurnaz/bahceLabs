@@ -1,0 +1,575 @@
+[
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": "Hiçbir sebep için doğrudan (pozitif) kanıt yok; başka açıklamanın yokluğu kanıt sayılmaz.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_tum_bahce"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_yaz"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 1.0,
+   "su": -0.5
+  },
+  "secim": null,
+  "tarih": "2015-09-12"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "daha_olasi",
+  "kanit": {
+   "don": [
+    "don_era5_sifir",
+    "don_istasyon_destek",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": 7.0,
+   "goruntu": -1.5,
+   "su": 1.0
+  },
+  "secim": "don",
+  "tarih": "2016-02-09"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 0.46,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 2.0,
+   "su": -1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2016-04-29"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": "Hiçbir sebep için doğrudan (pozitif) kanıt yok; başka açıklamanın yokluğu kanıt sayılmaz.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_kalici",
+    "gor_tum_bahce"
+   ],
+   "su": [
+    "su_ndmi_dusus",
+    "su_yaz"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": -0.5,
+   "su": 1.5
+  },
+  "secim": null,
+  "tarih": "2017-09-26"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_guclu",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_kalici",
+    "gor_radar_degisim"
+   ],
+   "su": [
+    "su_ndmi_dusus",
+    "su_toprak_nemli"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": 3.5,
+   "goruntu": -1.5,
+   "su": 0.0
+  },
+  "secim": "don",
+  "tarih": "2020-03-19"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": "Doğrudan kanıtı olan en yüksek puan (-0.5) seçim eşiğinin (2) altında.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_toprak_nemli"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.0,
+   "goruntu": -0.5,
+   "su": -2.0
+  },
+  "secim": null,
+  "tarih": "2020-03-29"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz"
+   ],
+   "goruntu": [
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_toprak_kurak"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 0.46,
+  "puan": {
+   "don": -3.0,
+   "goruntu": 2.0,
+   "su": 0.5
+  },
+  "secim": "goruntu",
+  "tarih": "2021-02-12"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_toprak_nemli"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -3.0,
+   "goruntu": 3.0,
+   "su": -2.0
+  },
+  "secim": "goruntu",
+  "tarih": "2021-12-24"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_guclu",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": 3.5,
+   "goruntu": -1.5,
+   "su": 1.0
+  },
+  "secim": "don",
+  "tarih": "2022-04-13"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 3.0,
+   "su": -1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2023-05-18"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": "Doğrudan kanıtı olan en yüksek puan (0.5) seçim eşiğinin (2) altında.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_kalici",
+    "gor_tum_bahce"
+   ],
+   "su": [
+    "su_ndmi_yok"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 0.5,
+   "su": -1.0
+  },
+  "secim": null,
+  "tarih": "2024-05-22"
+ },
+ {
+  "bahce": "jlnnlk",
+  "belirsiz_nedeni": null,
+  "guven": "daha_olasi",
+  "kanit": {
+   "don": [
+    "don_dis_kayit_destek",
+    "don_era5_guclu",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_dusus",
+    "su_toprak_nemli"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": 6.5,
+   "goruntu": -1.5,
+   "su": 0.0
+  },
+  "secim": "don",
+  "tarih": "2025-03-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": "Hiçbir sebep için doğrudan (pozitif) kanıt yok; başka açıklamanın yokluğu kanıt sayılmaz.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_tum_bahce"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_yaz"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 1.0,
+   "su": -0.5
+  },
+  "secim": null,
+  "tarih": "2015-09-12"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 0.46,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 2.0,
+   "su": 1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2019-04-04"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_dusus",
+    "su_yaz"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 0.39,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 2.0,
+   "su": 1.5
+  },
+  "secim": "goruntu",
+  "tarih": "2019-08-27"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": "Hiçbir sebep için doğrudan (pozitif) kanıt yok; başka açıklamanın yokluğu kanıt sayılmaz.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici",
+    "gor_tum_bahce"
+   ],
+   "su": [
+    "su_ndmi_dusus",
+    "su_toprak_nemli"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.0,
+   "goruntu": -0.5,
+   "su": 0.0
+  },
+  "secim": null,
+  "tarih": "2020-04-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok",
+    "su_toprak_kurak",
+    "su_yaz"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 0.46,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 2.0,
+   "su": 1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2021-08-21"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_guclu",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": 3.5,
+   "goruntu": -1.5,
+   "su": 1.0
+  },
+  "secim": "don",
+  "tarih": "2022-04-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 3.0,
+   "su": 1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2023-05-18"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": null,
+  "guven": "olasi",
+  "kanit": {
+   "don": [
+    "don_era5_imkansiz",
+    "don_istasyon_celisme"
+   ],
+   "goruntu": [
+    "gor_bulut",
+    "gor_toparlandi"
+   ],
+   "su": [
+    "su_ndmi_yok"
+   ]
+  },
+  "kapi": true,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -7.5,
+   "goruntu": 3.0,
+   "su": -1.0
+  },
+  "secim": "goruntu",
+  "tarih": "2024-05-22"
+ },
+ {
+  "bahce": "soğuk hava",
+  "belirsiz_nedeni": "Doğrudan kanıtı olan en yüksek puan (-4) seçim eşiğinin (2) altında.",
+  "guven": "belirsiz",
+  "kanit": {
+   "don": [
+    "don_dis_kayit_destek",
+    "don_era5_imkansiz",
+    "don_istasyon_celisme",
+    "don_kis_kalici"
+   ],
+   "goruntu": [
+    "gor_kalici"
+   ],
+   "su": [
+    "su_ndmi_dusus"
+   ]
+  },
+  "kapi": false,
+  "kararlilik": 1.0,
+  "puan": {
+   "don": -4.0,
+   "goruntu": -1.5,
+   "su": 1.0
+  },
+  "secim": null,
+  "tarih": "2025-02-01"
+ }
+]

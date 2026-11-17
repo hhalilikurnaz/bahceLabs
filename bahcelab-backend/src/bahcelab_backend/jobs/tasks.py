@@ -224,7 +224,11 @@ async def event_and_tier_candidates(session: AsyncSession, agro: AgroService, ga
     out: list[Candidate] = []
     from datetime import timedelta
 
+    from bahcelab_backend.domain.sebep.servis import kapi_bastir
+
     for e in await list_events(session, garden_id, since=today - timedelta(days=rule.taze_olay_gun)):
+        if await kapi_bastir(session, garden_id, e):  # ADIM 10B: «görüntü kaynaklı olabilir» kapısı — bu düşüş için bildirim üretilmez (olay Geçmiş'te kalır)
+            continue
         candidate = event_candidate(garden_id, name, e, today, rule, e.anahtar)
         if candidate is not None:
             out.append(candidate)

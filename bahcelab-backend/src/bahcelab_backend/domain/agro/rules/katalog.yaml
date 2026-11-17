@@ -636,3 +636,81 @@ don:
         - "Doygun toprak ısıyı iyi depolamaz; fazla sulama yarar sağlamaz."
       kaynak: "FAO, Frost Protection (2005), Böl. 6 «Passive protection methods» — soil water content; UC ANR Yayın 8100 (2003)"
       url: "http://www.fao.org/4/y7223e/y7223e0c.htm"
+
+# ADIM 10B — olası sebep ayrıştırma (ADR 0033): kural tabanlı, açıklanabilir; ML yok. Kanıt = lehte/aleyhte satırlar; puan yalnız SIRALAMA içindir (olasılık değil).
+sebep:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor. Tüm ağırlık ve eşikler tasarım önsel değeridir (docs/agro/sebep-ayristirma.md §2); iki bahçe, tek bağımsız etiketle (Şubat 2025 don) geriye dönük sınandı,
+    doğruluk ÖLÇÜLEMEDİ. Don hasarının geç görünmesi: UF/IFAS HS1275 ve CH004 (belirtiler haftalar–aylar içinde belirir; dal ölümü iki yıla dek sürebilir). Besin/hastalık/mekanik için doğrudan uydu kanıtı
+    yoktur: bunlar seçilemez, yalnız «sahada kontrol edin» listesidir.
+  surum: sebep-1
+  siralanan: [don, su, goruntu]
+  bagimsiz_carpan: 1.5
+  secim_esik: 2.0
+  secim_marj: 0.5
+  kapi_esik: 2.0
+  kapi_don_azami: 1.0
+  bulut_pct: 20
+  tum_bahce_pay: 0.8
+  toparlanma_orani: 0.6
+  z_kurak: -1.0
+  z_nemli: 0.5
+  ndmi_dusus: -0.05
+  don_c_guclu: -2.0
+  don_c_sinir: 2.0
+  don_c_imkansiz: 2.0
+  yaz_aylari: [6, 7, 8, 9]
+  kis_aylari: [12, 1, 2, 3, 4]
+  kararlilik_deneme: 200
+  kararlilik_aralik: 0.3
+  agirlik:
+    don_kullanici_oldu: 3.0
+    don_istasyon_destek: 3.0
+    don_dis_kayit_destek: 2.0
+    don_era5_guclu: 3.0
+    don_era5_sifir: 2.0
+    don_era5_sinir: 0.5
+    don_kis_kalici: 0.5
+    don_kullanici_olmadi: -3.0
+    don_istasyon_celisme: -3.0
+    don_era5_imkansiz: -3.0
+    su_toprak_kurak: 1.5
+    su_ndmi_dusus: 1.0
+    su_yaz: 0.5
+    su_toprak_nemli: -1.0
+    su_ndmi_yok: -1.0
+    gor_toparlandi: 2.0
+    gor_bulut: 1.0
+    gor_tum_bahce: 1.0
+    gor_kalici: -1.5
+    gor_radar_degisim: -1.0
+  kontrol_listesi:
+    don:
+      - metin: "Yaprakta koyu, sulu görünümlü alanlar; ölen yaprakta ağarma/kahverengileşme; genç sürgünde kararma."
+        kaynak: "UF/IFAS HS1275 (Zekri ve ark.), «Freeze Damage Symptoms and Recovery for Citrus»"
+        url: "https://ask.ifas.ufl.edu/publication/HS1275"
+      - metin: "Dal kabuğunu hafifçe kazıyın: yeşil doku çoğunlukla canlı odundur, kahverengi doku donla ölmüş odundur. Yapraklar birkaç günde dökülürse odun büyük olasılıkla ölmemiştir; yapraklar dalda kuruyup kalıyorsa odun ölmüş olabilir."
+        kaynak: "UF/IFAS HS1275"
+        url: "https://ask.ifas.ufl.edu/publication/HS1275"
+      - metin: "Hasar hemen belli olmayabilir: dal ölümü aylarca, bazen iki yıla kadar sürebilir; budamayı acele etmeyin."
+        kaynak: "UF/IFAS CH004 (Recovering from Freeze Damage)"
+        url: "https://ask.ifas.ufl.edu/publication/CH004"
+    su:
+      - metin: "Damlatıcı/mikro-yağmurlama çıkışları ve hat basıncı; düşüşün sulama bloğu sınırına uyup uymadığı."
+      - metin: "Birkaç yerde 20–30 cm derinlikte toprak nemi (elle ya da probla); yaprakta solgunluk."
+    besin:
+      - metin: "Belirtilerin yaprakta ve ağaçta dağılımı; HLB ile karışabilen belirtiler için UF/IFAS rehberine bakın ve şüphede yaprak/toprak analizi yaptırın."
+        kaynak: "UF/IFAS PP328 (Vashisth ve ark.), «HLB and Nutrient Deficiency Identification»"
+        url: "https://ask.ifas.ufl.edu/publication/PP328"
+    hastalik:
+      - metin: "Düşüşün bir odaktan komşu ağaçlara doğru genişleyip genişlemediği; yaprak, meyve ve sürgünde leke/ben, kabuk ya da sakız akıntısı; yaprak altında böcek."
+      - metin: "Şüphede HLB ve besin eksikliği belirtilerini ayırt etmek için UF/IFAS rehberi; kesin tanı için il/ilçe tarım müdürlüğü."
+        kaynak: "UF/IFAS PP328"
+        url: "https://ask.ifas.ufl.edu/publication/PP328"
+    mekanik:
+      - metin: "Düşen alanda budama, söküm, hasat, ilaçlama, ağır araç geçişi ya da toprak işleme kaydı var mı; alanın kenarı düz/keskin mi?"
+    goruntu:
+      - metin: "Sonraki net Sentinel-2 geçişini bekleyin; bulut gölgesi/ince bulut/sis düşüşü gösterip sonraki görüntüde kaybolabilir."
+        kaynak: "Sentinel-2 SCL etiketleri bulut gölgesini, ince bulutu ayrı sınıflar olarak verir; sınıflandırma kusursuz değildir (Sentinel-2 SCL kapsama değerlendirmesi, arXiv 2406.18584)"
+        url: "https://arxiv.org/html/2406.18584v2"

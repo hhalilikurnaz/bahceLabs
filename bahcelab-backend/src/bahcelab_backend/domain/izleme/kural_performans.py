@@ -5,6 +5,8 @@
   sistem_kontrol   — üretilen: işaret bildirimleri; yanıt: kullanıcı yanıtı; isabet = (tıkalı + başka sorun) / yanıt
   don              — üretilen: don uyarıları + don olayları; yanıt: «Uydu/uyarı haklı mıydı?» doğrulaması (grup don); isabet = gerçekleşti / (gerçekleşti + gerçekleşmedi)
   hastalik_zararli — üretilen: zararlı/hastalık riski bildirimleri; yanıt: uyarı doğrulaması; isabet aynı
+  sebep_ayrisma    — üretilen: S2 canlılık düşüşü olayları (her biri için «olası sebepler» gösterilir); yanıt: «sebep buydu» etiketi; isabet = motorun SEÇTİĞİ sebep = kullanıcının sebebi (yalnız
+                     motorun seçim yaptığı ve kullanıcının «bilmiyorum» dışında yanıt verdiği örneklerde; seçim yoksa/«bilmiyorum» isabet hesabına girmez)
   olay_on_dogrulama— üretilen: olaylar; yanıt: olay doğrulaması (9G-E); isabet aynı
 """
 
@@ -24,6 +26,7 @@ KURAL_AD = {
     "don": "Don uyarısı / olayı",
     "hastalik_zararli": "Hastalık / zararlı riski",
     "don_uyari": "Gece don uyarısı (ADIM 10)",
+    "sebep_ayrisma": "Olası sebep ayrıştırma (ADIM 10B)",
     "olay_on_dogrulama": "Olay ön doğrulaması (9G-E)",
 }
 
@@ -81,10 +84,17 @@ async def kural_performansi(session: AsyncSession, bas: date, bit: date, kural: 
     # gece don uyarısı: üretilen = «uyarı» seviyeli geceler; yanıt = «Don oldu mu?» yanıtı (oldu/olmadı/bilmiyorum); isabet = oldu / (oldu+olmadı) (olmadı = yanlış alarm)
     dun = await aylik("SELECT date_trunc('month', d.gece)::date, count(*) FROM don_risk d WHERE d.seviye = 'uyari' AND d.gece BETWEEN :b AND :e GROUP BY 1")
     duy = await aylik("SELECT date_trunc('month', b.gece)::date, count(*), count(*) FILTER (WHERE b.yanit = 'oldu'), count(*) FILTER (WHERE b.yanit IN ('oldu','olmadi')) FROM don_geri_bildirim b JOIN don_risk d ON d.garden_id = b.garden_id AND d.gece = b.gece AND d.seviye = 'uyari' WHERE b.gece BETWEEN :b AND :e GROUP BY 1")
+    # olası sebep (ADIM 10B): üretilen = S2 düşüşü içeren olaylar; yanıt = «sebep buydu» etiketi; isabet = motor seçimi = kullanıcı sebebi (görüntü kaynaklı kullanıcıya sorulmaz)
+    seu = await aylik("SELECT date_trunc('month', baslangic)::date, count(*) FROM events WHERE turler ? 's2_dusus' AND durum IN ('olay','bekliyor') AND baslangic BETWEEN :b AND :e GROUP BY 1")
+    sey = await aylik(
+        "SELECT date_trunc('month', created_at)::date, count(*), "
+        "count(*) FILTER (WHERE sebep <> 'bilmiyorum' AND model_secim IS NOT NULL AND ((sebep = 'hastalik_zararli' AND model_secim = 'hastalik') OR (sebep = 'budama_hasat' AND model_secim = 'mekanik') OR sebep = model_secim)), "
+        "count(*) FILTER (WHERE sebep <> 'bilmiyorum' AND model_secim IS NOT NULL) FROM sebep_etiket WHERE created_at::date BETWEEN :b AND :e GROUP BY 1"
+    )
     dd = await dog("(tur_grubu = 'don' OR hedef_anahtar LIKE 'hava_don%')")
     dz = await dog("(hedef_tur = 'uyari' AND hedef_anahtar LIKE 'zararli%')")
     do = await dog("hedef_tur = 'olay'")
-    for d in (sul, skn, sky, don_u, don_o, zar_u, olay_u, dd, dz, do, dun, duy):
+    for d in (sul, skn, sky, don_u, don_o, zar_u, olay_u, dd, dz, do, dun, duy, seu, sey):
         ay_listesi |= set(d)
     for ay in sorted(ay_listesi):
         s = sul.get(ay, (0, 0))
@@ -93,6 +103,8 @@ async def kural_performansi(session: AsyncSession, bas: date, bit: date, kural: 
         out.append(degerlendir("sistem_kontrol", ay, skn.get(ay, (0,))[0], y[0], y[1], y[0], k.kural_min_yanit, True))
         y2 = duy.get(ay, (0, 0, 0))
         out.append(degerlendir("don_uyari", ay, dun.get(ay, (0,))[0], y2[0], y2[1], y2[2], k.kural_min_yanit, True))
+        y3 = sey.get(ay, (0, 0, 0))
+        out.append(degerlendir("sebep_ayrisma", ay, seu.get(ay, (0,))[0], y3[0], y3[1], y3[2], k.kural_min_yanit, True))
         for ad, u, dv in (("don", (don_u.get(ay, (0,))[0] + don_o.get(ay, (0,))[0]), dd.get(ay, (0, 0, 0))), ("hastalik_zararli", zar_u.get(ay, (0,))[0], dz.get(ay, (0, 0, 0))), ("olay_on_dogrulama", olay_u.get(ay, (0,))[0], do.get(ay, (0, 0, 0)))):
             n, oran = _dogrulama_isabet(dv[1], dv[2], dv[0] - dv[1] - dv[2])
             out.append(degerlendir(ad, ay, u, dv[0], dv[1], n, k.kural_min_yanit, True))
@@ -108,6 +120,6 @@ def ozet(satirlar: list[KuralAy], kural: IzlemeKurali | None = None) -> dict[str
         u, y = sum(s.uretilen for s in sat), sum(s.yanit for s in sat)
         poz = sum(s.isabet_poz for s in sat)
         n = sum(s.isabet_n for s in sat)
-        olculebilir = ad in ("sistem_kontrol", "don", "don_uyari", "hastalik_zararli", "olay_on_dogrulama")
+        olculebilir = ad in ("sistem_kontrol", "don", "don_uyari", "sebep_ayrisma", "hastalik_zararli", "olay_on_dogrulama")
         out[ad] = {"ad": KURAL_AD[ad], "uretilen": u, "yanit": y, "yanit_orani": (y / u) if u else None, "isabet_n": n, "isabet": None if not olculebilir or n < k.kural_min_yanit else poz / n, "durum": "olculuyor" if olculebilir and n >= k.kural_min_yanit else "olculemiyor"}
     return out

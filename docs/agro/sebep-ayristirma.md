@@ -9,14 +9,14 @@ Kanıt derecesi: **A** = narenciyeye özgü, uydu tabanlı; **B** = başka ürü
 
 | Sebep | Beklenen imza | Zaman / mekân deseni | Derece | Kaynak |
 |---|---|---|---|---|
-| Don | Hasar donla birlikte değil, **1–3 hafta gecikmeyle** NDVI düşüşü; hava gecesi ≤ eşik | Bahçe geneli ya da çukur/alçak kesim; kalıcı | A/B | UF/IFAS HS1275, CH004 (hasarın görünme zamanı); NOAA-7 Florida 1982 don haritalama (cartogis Auto-Carto 5); Valencia Meteosat don eşiği çalışması |
+| Don | Hasar donla birlikte değil, **gecikmeyle** (belirtiler günler–haftalar, dal ölümü aylar–iki yıl) NDVI düşüşü; hava gecesi ≤ eşik | Bahçe geneli ya da çukur/alçak kesim; kalıcı | A/B | UF/IFAS HS1275, CH004 (hasarın gecikmeli görünmesi — doğrulandı); NOAA-7 Florida 1982 don haritalama (Auto-Carto 5; PDF açıldı, içerik doğrulanamadı); Valencia Meteosat çalışması (bağlantı yok, doğrulanamadı) |
 | Su stresi | NDMI/NDWI düşüşü NDVI'den önce/birlikte; düşük toprak nemi, az yağış | Yaz; bahçe geneli ya da sulama/toprak sınırına uyan kümeler | B | Fas ve Sicilya narenciye NDMI/NDWI çalışmaları |
-| Besin | NDRE / kırmızı-kenar göstergeleri NDVI'den önce tepki verir; **kademeli**, mevsimsel | Yavaş, bahçe geneli ya da parsel bazlı | B | Hefer Valley İHA+S2 azot çalışması; kinnow kırmızı-kenar konumu; elma/mango NDRE; UF/IFAS PP328 (belirti simetrisi) |
+| Besin | NDRE / kırmızı-kenar göstergeleri NDVI'den önce tepki verir; **kademeli**, mevsimsel | Yavaş, bahçe geneli ya da parsel bazlı | B | Hefer Valley İHA+S2 azot çalışması (başlık doğrulandı); kinnow kırmızı-kenar konumu; elma/mango NDRE (elma: Frontiers Plant Sci. 2025, başlık doğrulandı); UF/IFAS PP328 (HLB ve besin eksikliği ayırt etme rehberi; «orta damar simetrisi» ayrıntısı PDF'ten doğrulanamadı) |
 | Hastalık/zararlı | Yayılan, kümeli yama; hava (nem+ılık) önkoşul | Kenardan ya da odaktan genişleyen küme; aylar | B/C | Xunwu HLB uydu çalışması; Tabasco misket limonu S2; mal secco epidemiyolojisi (C) |
 | Mekanik/yönetim | **Keskin kenarlı**, ani, kalıcı yama; hava/su açıklaması yok | Budama/söküm/hasat mevsimi; düzgün geometri | B/C | SITS clear-cut tespiti; Soutinho BFAST; badem budama zamanı; INRAE bahçe karıştırıcıları |
-| Görüntü | Tek sahnede düşüş, sonrakinde **toparlanma**; tüm bahçe birden | Bulut/gölge/sis; mevsim fark etmez | A | Main-Knorn vd.: SCL bulut gölgesini %55,6 oranında kaçırır; MDPI Remote Sens. 13(2):300 |
+| Görüntü | Tek sahnede düşüş, sonrakinde **toparlanma**; tüm bahçe birden | Bulut/gölge/sis; mevsim fark etmez | A | Sentinel-2 SCL değerlendirmesi (arXiv 2406.18584: SCL bulut gölgesi/ince bulut sınıfları verir; «%55,6 kaçırma» rakamı kaynakta bulunamadı → **kaldırıldı**); MDPI Remote Sens. 13(2):300 (403 erişim engeli, doğrulanamadı) |
 
-**Boşluklar (dürüstçe):** besin, hastalık ve mekanik için narenciyeye özgü, doğrulanmış uydu ayrıştırma çalışması bulunamadı; bu üçü B/C derecesindedir. Kaynak bağlantıları kaynakça aşamasında tek tek yeniden açılıp doğrulanacak; doğrulanamayan satır tablodan çıkarılır.
+**Kaynakça doğrulaması (Dilim 1):** aşağıdaki «Kaynakça» bölümü. **Boşluklar (dürüstçe):** besin, hastalık ve mekanik için narenciyeye özgü, doğrulanmış uydu ayrıştırma çalışması bulunamadı; bu üçü B/C derecesindedir. Kaynak bağlantıları kaynakça aşamasında tek tek yeniden açılıp doğrulanacak; doğrulanamayan satır tablodan çıkarılır.
 
 ## 2. Kanıt modeli önerisi (kural tabanlı, açıklanabilir)
 
@@ -89,3 +89,74 @@ Bahçe/vana canlılık düşüşü kartında, **«Olası sebepler (kesin değil)
 **Sınırlar:** iki bahçe ilişkili (yaklaşık 13 bağımsız tarih); 1 bağımsız etiket; ağırlıklar ön değer; yalnız S2 NDVI deltası ve bahçe ortancası; parsel içi mekânsal desen (kenar keskinliği, küme yayılımı) bu spikede ölçülmedi.
 
 **Onay sonrası önerilen sıra:** Dilim 1 — kanıt modeli motoru (don + görüntü + su), ağırlıklar katalogda, kanıt satırlarının kaydı; Saha Defteri «sebep buydu» etiketi. Besin/hastalık/mekanik, etiket birikene ve en az 2 farklı bölgeden doğrulama gelene kadar açılmaz.
+
+
+## 6. Dilim 1 — kararlar ve sonuçlar (motor + API)
+
+Onay kararları (3): (1) eleme ile seçim yok; (2) görüntü kaynaklı = kapı; (3) her kanıt satırında bağımsızlık etiketi. ADR: `docs/mimari/karar/0033-sebep-ayristirma.md`.
+
+**Motor (`domain/sebep/`):** seçilebilir sebepler yalnız **don, su, görüntü kaynaklı**. Besin, hastalık, mekanik seçilemez; «sahada kontrol edin» listesi (kaynaklı madde yoksa «kaynak yok» işaretli). Seçim koşulu: en az bir DOĞRUDAN lehte kanıt + puan ≥ 2,0 + ilk iki sebep farkı ≥ 0,5; aksi halde «belirsiz» ve nedeni. Bağımsız kanıt (istasyon · dış kayıt · kullanıcı yanıtı) ×1,5; bağımsız lehte kanıt yoksa güven sözcüğü «daha olası» olamaz.
+
+**Spike'tan farklar:** (a) «mekanik/hastalık/besin» artık seçilemez (spike'ta dışlamayla öne çıkıyordu); (b) NDMI düşüşü yalnız destekleyici (+1,0; don da düşürür) — tek başına su seçtirmez; (c) bağımsız kanıt (Mersin 17340 istasyonu, kamu kaydı, «Don oldu mu?» yanıtı) eklendi; (d) kalıcılık ölçüsü olay motorunun yama düzeyi ölçüsüdür (spike ile aynı).
+
+**Geriye dönük çıktı (eldeki tüm veri, 21 olay; kararlılık = ağırlık ×U(0,7–1,3), 200 deneme):**
+
+| Bahçe | Tarih | Olay (neden) | Seçim | Güven | Kararlılık | Puan |
+|---|---|---|---|---|---|---|
+| jlnnlk | 2015-09-12 | şüphe (tüm bahçe) | belirsiz | belirsiz | 1,00 | don −7,5 · su −0,5 · görüntü 1 |
+| jlnnlk | 2016-02-09 | don | don | daha olası | 1,00 | don 7 · su 1 · görüntü −1,5 |
+| jlnnlk | 2016-04-29 | şüphe (toparlandı) | görüntü | olası | 0,46 | don −7,5 · su −1 · görüntü 2 |
+| jlnnlk | 2017-09-26 | düşüş | belirsiz | belirsiz | 1,00 | don −7,5 · su 1,5 · görüntü −0,5 |
+| jlnnlk | 2020-03-19 | don | don | olası | 1,00 | don 3,5 · su 0 · görüntü −1,5 |
+| jlnnlk | 2020-03-29 | düşüş | belirsiz | belirsiz | 1,00 | don −7 · su −2 · görüntü −0,5 |
+| jlnnlk | 2021-02-12 | şüphe (toparlandı) | görüntü | olası | 0,46 | don −3 · su 0,5 · görüntü 2 |
+| jlnnlk | 2021-12-24 | şüphe (toparlandı) | görüntü | olası | 1,00 | don −3 · su −2 · görüntü 3 |
+| jlnnlk | 2022-04-13 | don | don | olası | 1,00 | don 3,5 · su 1 · görüntü −1,5 |
+| jlnnlk | 2023-05-18 | şüphe (toparlandı) | görüntü | olası | 1,00 | don −7,5 · su −1 · görüntü 3 |
+| jlnnlk | 2024-05-22 | şüphe (tüm bahçe) | belirsiz | belirsiz | 1,00 | don −7,5 · su −1 · görüntü 0,5 |
+| jlnnlk | 2025-03-13 | don | **don** | **daha olası** | 1,00 | don 6,5 · su 0 · görüntü −1,5 |
+| soğuk hava | 2015-09-12 | şüphe (teyit edilemedi) | belirsiz | belirsiz | 1,00 | don −7,5 · su −0,5 · görüntü 1 |
+| soğuk hava | 2019-04-04 | şüphe (toparlandı) | görüntü | olası | 0,46 | don −7,5 · su 1 · görüntü 2 |
+| soğuk hava | 2019-08-27 | şüphe (toparlandı) | görüntü | olası | 0,39 | don −7,5 · su 1,5 · görüntü 2 |
+| soğuk hava | 2020-04-13 | şüphe (tüm bahçe) | belirsiz | belirsiz | 1,00 | don −7 · su 0 · görüntü −0,5 |
+| soğuk hava | 2021-08-21 | şüphe (toparlandı) | görüntü | olası | 0,46 | don −7,5 · su 1 · görüntü 2 |
+| soğuk hava | 2022-04-13 | don | don | olası | 1,00 | don 3,5 · su 1 · görüntü −1,5 |
+| soğuk hava | 2023-05-18 | şüphe (toparlandı) | görüntü | olası | 1,00 | don −7,5 · su 1 · görüntü 3 |
+| soğuk hava | 2024-05-22 | şüphe (toparlandı) | görüntü | olası | 1,00 | don −7,5 · su −1 · görüntü 3 |
+| soğuk hava | 2025-02-01 | düşüş | **belirsiz** | belirsiz | 1,00 | don −4 · su 1 · görüntü −1,5 |
+
+- **1 Şubat 2025 «mekanik» vakası «belirsiz»'e döndü** (testle kilitli: `test_altin_bahce_sebep_snapshot`, `test_eleme_ile_secim_yok_dogrudan_kanit_sart`). Don puanı −4: pencerede en düşük ERA5 3,8 °C ve Mersin istasyonu çelişiyor; kamu kaydı («Şubat 2025», il düzeyi) lehte ama aylık ve tek başına yetmez.
+- **Şubat 2025 don (jlnnlk, bağımsız etiket):** don, «daha olası» (bağımsız istasyon kanıtı).
+- **Düşüş sebebi sınırı:** «toparlandı» sonucu olay motorunun kendi etiketidir; görüntü seçimleri bu etikete kısmen dayanır (dairesel). Toparlanan 9 uyarıdan 6'sı «görüntü» (3'ü belirsiz); kalıcı 3 düşüşten hiçbiri «görüntü» seçilmedi.
+- **Düşük kararlılık (0,39–0,46)** görüntü seçilen beş olayda: puan eşiğe (2,0) çok yakın; ağırlık ±%30 oynayınca belirsize düşüyor. Ekranda kararlılık «düşük» ise güven sözcüğü bir kademe düşürülmelidir (Dilim 2 kararı).
+
+**Görüntü kapısı — geriye dönük ölçüm (uyarı ANINDAKİ veriyle, sonraki sahne yok):** uyarı nüfusu 13 (saf optik düşüş olayları + sonradan şüpheye düşenler; hepsi «doğrulama bekliyor» olarak bildirilmişti). Sonradan: 9 toparlandı, 3 kalıcı, 1 bilinmiyor.
+
+| Kapı eşiği (görüntü puanı) | Bastırılacak uyarı | Doğru bastırma (sonra toparlandı) | Yanlış bastırma (kalıcı düşüş) |
+|---|---|---|---|
+| 1,0 · 1,5 · 2,0 · 2,5 · 3,0 | **0** | 0 | 0 |
+
+Sebep: uyarı anında görüntü lehine yalnız «sahne bulutu ≥ %20» ve «bahçenin ≥ %80'i tek adımda» kanıtı vardır; bu 13 uyarıda sahne bulutu hep < %20 ve görüntü puanı en çok 1,0. «Toparlandı» kanıtı (puan +2) ancak SONRAKİ sahneyle gelir; o noktada olay zaten atmosfer şüphesine düşer ve mevcut akış önceki bildirimi kapatır. **Sonuç: kapı bu veride 0 uyarıyı bastırır; mevcut «bildirimi kapat» akışının önüne geçecek ek bir kazanç ölçülemedi.** Kapı kodu ve testleri hazırdır (bulutlu + tüm-bahçe düşüşünde kapanır, kalıcı/don kanıtlı olayda kapanmaz). Daha erken (uyarı anı) sinyal gerekir: SCL gölge/bulut piksel payı ya da aynı hafta ikinci sensör (Landsat/HLS) — Dilim 2'den sonra ayrı karar.
+
+**Kullanıcı yanıtı:** «sebep buydu» (su · don · besin · hastalık/zararlı · budama/hasat · bilmiyorum) → `sebep_etiket` (ayrı tablo; yanıt anındaki model seçimi ve sırası ile birlikte) + Saha Defteri «gözlem» kaydı + 9J kural performansı `sebep_ayrisma` (isabet = motor seçimi = kullanıcı sebebi; seçim yoksa ya da «bilmiyorum» ise isabete girmez; yanıt < `kural_min_yanit` ise «ölçülemiyor»). `egitim_riza` alanı vardır, varsayılan **yok**; eğitimde kullanım açık rızaya bağlıdır (rıza metni Adım 19–20).
+
+## Kaynakça (bağlantılar 2026-11-17'de tek tek açıldı)
+
+| Kaynak | Bağlantı | Sonuç |
+|---|---|---|
+| UF/IFAS HS1275 — Freeze Damage Symptoms and Recovery for Citrus | https://ask.ifas.ufl.edu/publication/HS1275 | Açıldı; don belirtileri, kabuk kazıma, yaprak dökümü, dal ölümü aylar–iki yıl **doğrulandı** |
+| UF/IFAS CH004 — Recovering from Freeze Damage | https://ask.ifas.ufl.edu/publication/CH004 | Açıldı; gecikmeli hasar, dal ölümü iki yıla kadar **doğrulandı** |
+| UF/IFAS PP328 — HLB and Nutrient Deficiency Identification | https://ask.ifas.ufl.edu/publication/PP328 | Sayfa açıldı (rehber başlığı doğrulandı); «orta damar simetrisi» ayrıntısı PDF'te, PDF okunamadı → **ayrıntı doğrulanamadı** |
+| UF/IFAS SS616 — Mn ve Zn (narenciye) | https://ask.ifas.ufl.edu/publication/SS616 | Açıldı; besin işlevleri (belirti ayrıntısı kullanılmadı) |
+| Sentinel-2 SCL kapsama değerlendirmesi | https://arxiv.org/html/2406.18584v2 | Açıldı; SCL sınıfları (bulut gölgesi, ince bulut) **doğrulandı**; «%55,6 gölge kaçırma» rakamı **bulunamadı, kaldırıldı** |
+| Hefer Valley İHA+uydu kanopi azotu | https://cris.iucc.ac.il/en/publications/multi-scale-remote-sensing-for-sustainable-citrus-farming-predict/ | Açıldı; başlık doğrulandı, içerik ayrıntısı okunmadı |
+| Elma azotu, simüle uydu verisi (Frontiers Plant Sci. 2025) | https://www.frontiersin.org/articles/10.3389/fpls.2025.1613487/full | Açıldı; başlık doğrulandı (B derece: başka ürün) |
+| Florida 1982 don — NOAA kutup yörüngeli (Auto-Carto 5) | https://cartogis.org/docs/proceedings/archive/auto-carto-5/pdf/an-evaluation-of-the-noaa-polar-orbiter-as-a-tool-for-mapping-freeze-damage-in-florida-during-january-1982.pdf | PDF açıldı; metin okunamadı → **içerik doğrulanamadı** |
+| Narenciye mal secco, limon bahçesi toprak mikrobiyomu (PMC11276235) | https://pmc.ncbi.nlm.nih.gov/articles/PMC11276235 | Açıldı; konu mal secco (epidemiyoloji değil mikrobiyom) → **epidemiyoloji satırında kullanılamaz** |
+| MDPI Remote Sens. 13(2):300 | https://www.mdpi.com/2072-4292/13/2/300 | **Açılamadı (403)** → doğrulanamadı |
+| MDPI Remote Sens. 11(24):2925 | https://mdpi.com/2072-4292/11/24/2925 | **Açılamadı (403)** → doğrulanamadı |
+| INRAE HAL (hal-04761841, hal-04872820) | https://hal.inrae.fr/hal-04761841v1/document | **Açılamadı** (bot doğrulaması sayfası) → doğrulanamadı |
+| HLB, ResNet yaprak (ISPRS Annals X-3-2024) | https://isprs-annals.copernicus.org/articles/X-3-2024/331/2024/ | Açıldı; başlık doğrulandı (HLB, yer tabanlı çoklu bant; uydu değil) |
+| Valencia Meteosat don; Sicilya NDVI+NDWI; Fas NDMI; Xunwu HLB; Tabasco misket limonu S2; SITS clear-cut; Soutinho BFAST; badem budama zamanı | — | Bu oturumda bağlantısı yok → **doğrulanamadı**; §1 tablosunda bu satırlar kaynakça tamamlanana kadar «B/C, doğrulanamadı» okunmalıdır |
+
+Katalog (`sebep.kontrol_listesi`) yalnız doğrulanan kaynaklara bağlanır: don → HS1275, CH004; besin/hastalık → PP328 (rehber varlığı); görüntü → arXiv 2406.18584 (SCL sınıfları). Su ve mekanik maddeleri **kaynaksızdır** (kaynak: null).

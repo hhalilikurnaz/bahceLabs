@@ -1,0 +1,477 @@
+[
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 9,
+   "d_ndmi": -0.0295657217502594,
+   "dusen_pay": 0.993,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 12 Ağu 2015 – 13 Eyl 2015: en düşük 23,8 °C (gözlem)"
+    }
+   ],
+   "kalici": null,
+   "radar_degisim": false,
+   "sahne_bulut": 1.467275,
+   "tmin_pencere": 20.3,
+   "toparlanma_orani": null,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2015-09-12"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 2,
+   "d_ndmi": -0.1648341715335846,
+   "dusen_pay": 0.796,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_destek",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 9 Oca 2016 – 10 Şub 2016: en düşük 0,0 °C (gözlem)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 7.103114,
+   "tmin_pencere": -1.5,
+   "toparlanma_orani": -0.04992241209203547,
+   "z_nem30": null
+  },
+  "olay_turu": "don",
+  "tarih": "2016-02-09"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 4,
+   "d_ndmi": -0.04713146388530731,
+   "dusen_pay": 0.309,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 29 Mar 2016 – 30 Nis 2016: en düşük 11,1 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 3.201688,
+   "tmin_pencere": 7.4,
+   "toparlanma_orani": 1.4428108457535031e-05,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2016-04-29"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 9,
+   "d_ndmi": -0.10626488924026489,
+   "dusen_pay": 0.855,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 21 Ağu 2017 – 27 Eyl 2017: en düşük 21,3 °C (gözlem)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 11.158025,
+   "tmin_pencere": 19.4,
+   "toparlanma_orani": 0.5000618992337755,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_dusus",
+  "tarih": "2017-09-26"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 3,
+   "d_ndmi": -0.10848438739776611,
+   "dusen_pay": 0.0,
+   "hazir": [],
+   "kalici": true,
+   "radar_degisim": true,
+   "sahne_bulut": 41.656961,
+   "tmin_pencere": -2.6,
+   "toparlanma_orani": -0.5624594767231587,
+   "z_nem30": 0.730224181180953
+  },
+  "olay_turu": "don",
+  "tarih": "2020-03-19"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 3,
+   "d_ndmi": 0.003912478685379028,
+   "dusen_pay": 0.432,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 27 Şub 2020 – 30 Mar 2020: en düşük 7,0 °C (gözlem)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 40.896182,
+   "tmin_pencere": 2.8,
+   "toparlanma_orani": 0.24806810864086806,
+   "z_nem30": 0.8285445993617675
+  },
+  "olay_turu": "s2_dusus",
+  "tarih": "2020-03-29"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 2,
+   "d_ndmi": -0.04526790976524353,
+   "dusen_pay": 0.526,
+   "hazir": [],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 9.776152,
+   "tmin_pencere": 2.7,
+   "toparlanma_orani": 0.4139531742442738,
+   "z_nem30": -3.9288791506161496
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2021-02-12"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 12,
+   "d_ndmi": -0.03585413098335266,
+   "dusen_pay": 0.349,
+   "hazir": [],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 28.761086,
+   "tmin_pencere": 2.4,
+   "toparlanma_orani": 0.6037296093616289,
+   "z_nem30": 1.3175583134007822
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2021-12-24"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 4,
+   "d_ndmi": -0.07643245160579681,
+   "dusen_pay": 0.0,
+   "hazir": [],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 5.574355,
+   "tmin_pencere": -2.0,
+   "toparlanma_orani": 0.2611164502271517,
+   "z_nem30": -0.9129570373618541
+  },
+  "olay_turu": "don",
+  "tarih": "2022-04-13"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 5,
+   "d_ndmi": -0.02312690019607544,
+   "dusen_pay": 0.434,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 28 Mar 2023 – 19 May 2023: en düşük 7,3 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 24.71289,
+   "tmin_pencere": 4.2,
+   "toparlanma_orani": 0.2990838359383976,
+   "z_nem30": 0.37016076687737803
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2023-05-18"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 5,
+   "d_ndmi": -0.04170217365026474,
+   "dusen_pay": 0.928,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 16 Nis 2024 – 23 May 2024: en düşük 14,0 °C (gözlem)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 23.23561,
+   "tmin_pencere": 10.8,
+   "toparlanma_orani": 0.16789492085683258,
+   "z_nem30": -0.005454750214491932
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2024-05-22"
+ },
+ {
+  "bahce": "jlnnlk",
+  "girdi": {
+   "ay": 3,
+   "d_ndmi": -0.16031982004642487,
+   "dusen_pay": 0.0,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:dis_kayit",
+     "baglanti": "https://www.haberler.com/ekonomi/mersin-deki-don-afeti-narenciye-uretimini-tehdit-ediyor-18709175-haberi/",
+     "kod": "don_dis_kayit_destek",
+     "metin": "Haberler.com (04.06.2025): «Mersin'deki Don Afeti Narenciye Üretimini Tehdit Ediyor»: Mersin, 1 Şub 2025 – 28 Şub 2025 — don · il düzeyi kayıt · Haber Şubat ve Nisan 2025'teki zirai donu anıyor (gün belirtilmemiş; Şubat ayı olarak girildi); limon dâhil narenciye etkilendi; yer olarak Mersin ve Toroslar ilçesi geçiyor, Erdemli adı yok. (il düzeyi kayıt)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 0.032498,
+   "tmin_pencere": -4.9,
+   "toparlanma_orani": 0.34499197330289677,
+   "z_nem30": 0.6359623073234175
+  },
+  "olay_turu": "don",
+  "tarih": "2025-03-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 9,
+   "d_ndmi": 0.03886230289936066,
+   "dusen_pay": 0.837,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 12 Ağu 2015 – 13 Eyl 2015: en düşük 23,8 °C (gözlem)"
+    }
+   ],
+   "kalici": null,
+   "radar_degisim": false,
+   "sahne_bulut": 1.467275,
+   "tmin_pencere": 20.3,
+   "toparlanma_orani": null,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2015-09-12"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 4,
+   "d_ndmi": -0.09110093116760254,
+   "dusen_pay": 0.482,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 27 Şub 2019 – 5 Nis 2019: en düşük 5,7 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 15.374279,
+   "tmin_pencere": 4.6,
+   "toparlanma_orani": 0.2873451621444137,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2019-04-04"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 8,
+   "d_ndmi": -0.09656396508216858,
+   "dusen_pay": 0.247,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 22 Tem 2019 – 28 Ağu 2019: en düşük 25,2 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 5.70871,
+   "tmin_pencere": 20.0,
+   "toparlanma_orani": 0.7027445016083893,
+   "z_nem30": null
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2019-08-27"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 4,
+   "d_ndmi": -0.1395246610045433,
+   "dusen_pay": 0.924,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 27 Şub 2020 – 14 Nis 2020: en düşük 7,0 °C (gözlem)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 0.7551,
+   "tmin_pencere": 2.8,
+   "toparlanma_orani": 0.16307387803051923,
+   "z_nem30": 1.0221313325252752
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2020-04-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 8,
+   "d_ndmi": -0.027038514614105225,
+   "dusen_pay": 0.327,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 11 Tem 2021 – 22 Ağu 2021: en düşük 20,3 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 0.434352,
+   "tmin_pencere": 21.1,
+   "toparlanma_orani": 0.6122649318040019,
+   "z_nem30": -1.341635028889667
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2021-08-21"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 4,
+   "d_ndmi": -0.19412222504615784,
+   "dusen_pay": 0.319,
+   "hazir": [],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 5.574355,
+   "tmin_pencere": -2.0,
+   "toparlanma_orani": 0.005245987885917714,
+   "z_nem30": -0.9129570373618541
+  },
+  "olay_turu": "don",
+  "tarih": "2022-04-13"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 5,
+   "d_ndmi": -0.05536441504955292,
+   "dusen_pay": 0.713,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 28 Mar 2023 – 19 May 2023: en düşük 7,3 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 24.71289,
+   "tmin_pencere": 4.2,
+   "toparlanma_orani": 0.6619106738939198,
+   "z_nem30": 0.37016076687737803
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2023-05-18"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 5,
+   "d_ndmi": -0.0024839118123054504,
+   "dusen_pay": 0.542,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 16 Nis 2024 – 23 May 2024: en düşük 14,0 °C (gözlem)"
+    }
+   ],
+   "kalici": false,
+   "radar_degisim": false,
+   "sahne_bulut": 23.23561,
+   "tmin_pencere": 10.8,
+   "toparlanma_orani": 0.4358853933946142,
+   "z_nem30": -0.005454750214491932
+  },
+  "olay_turu": "s2_suphe",
+  "tarih": "2024-05-22"
+ },
+ {
+  "bahce": "soğuk hava",
+  "girdi": {
+   "ay": 2,
+   "d_ndmi": -0.13358986377716064,
+   "dusen_pay": 0.371,
+   "hazir": [
+    {
+     "bagimsizlik": "bagimsiz:istasyon",
+     "baglanti": "https://meteostat.net/en/station/17340",
+     "kod": "don_istasyon_celisme",
+     "metin": "Mersin istasyonu (bahçeye 26 km · 3 m rakım · kıyı), 6 Oca 2025 – 2 Şub 2025: en düşük 7,9 °C (gözlem)"
+    },
+    {
+     "bagimsizlik": "bagimsiz:dis_kayit",
+     "baglanti": "https://www.haberler.com/ekonomi/mersin-deki-don-afeti-narenciye-uretimini-tehdit-ediyor-18709175-haberi/",
+     "kod": "don_dis_kayit_destek",
+     "metin": "Haberler.com (04.06.2025): «Mersin'deki Don Afeti Narenciye Üretimini Tehdit Ediyor»: Mersin, 1 Şub 2025 – 28 Şub 2025 — don · il düzeyi kayıt · Haber Şubat ve Nisan 2025'teki zirai donu anıyor (gün belirtilmemiş; Şubat ayı olarak girildi); limon dâhil narenciye etkilendi; yer olarak Mersin ve Toroslar ilçesi geçiyor, Erdemli adı yok. (il düzeyi kayıt)"
+    }
+   ],
+   "kalici": true,
+   "radar_degisim": false,
+   "sahne_bulut": 0.528008,
+   "tmin_pencere": 3.8,
+   "toparlanma_orani": -0.6837182574801975,
+   "z_nem30": -0.46998376368250644
+  },
+  "olay_turu": "s2_dusus",
+  "tarih": "2025-02-01"
+ }
+]

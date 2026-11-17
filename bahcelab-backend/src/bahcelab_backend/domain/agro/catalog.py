@@ -603,6 +603,41 @@ class DonKurali(KuralBlok):
     beklenen_kiyi_pod: float
 
 
+class SebepKontrol(BaseModel):
+    """«Sahada şunlara bakın» maddeleri (sebep başına). Kaynaksız madde `kaynak: null` ile işaretlenir ve ekranda «kaynak yok» denir."""
+
+    metin: str = Field(min_length=1)
+    kaynak: str | None = None
+    url: str | None = None
+
+
+class SebepKurali(KuralBlok):
+    """ADIM 10B (ADR 0033) — olası sebep ayrıştırma (kural tabanlı, açıklanabilir). Hepsi ön değer · mühendis onayı bekliyor; araştırma: docs/agro/sebep-ayristirma.md."""
+
+    surum: str
+    siralanan: list[Literal["don", "su", "goruntu"]]  # yalnız bunlar SEÇİLEBİLİR; besin/hastalık/mekanik kontrol listesidir (doğrudan uydu kanıtı yok)
+    bagimsiz_carpan: float = Field(ge=1.0)  # bağımsız kanıt (istasyon / dış kayıt / kullanıcı yanıtı) ağırlığı bu çarpanla büyür; bağımlı (model/ERA5/uydu) ×1
+    secim_esik: float = Field(gt=0)  # seçim: en az bir DOĞRUDAN lehte kanıt + puan ≥ eşik
+    secim_marj: float = Field(ge=0)  # ve ilk sebep ikinciden en az bu kadar önde
+    kapi_esik: float = Field(gt=0)  # «görüntü kaynaklı olabilir» kapısı: görüntü seçildi ve puanı ≥ eşik → düşüş için uyarı/bildirim üretilmez
+    kapi_don_azami: float  # kapı: don puanı bu değerin altında olmalı (don kanıtı varsa kapı açılmaz)
+    bulut_pct: float  # sahne bulutu ≥ % ... → görüntü lehine doğrudan kanıt
+    tum_bahce_pay: float  # düşen piksel payı ≥ ... → tek adımda tüm bahçe
+    toparlanma_orani: float  # sonraki net sahnede kaybın en az bu oranı geri geldiyse «toparlandı»
+    z_kurak: float  # 30 gün toprak nemi z ≤ ... → kurak
+    z_nemli: float  # z ≥ ... → su stresi aleyhine
+    ndmi_dusus: float  # ΔNDMI ≤ ... → su içeriği düşüşü (özgül DEĞİL: don/hasar da düşürür)
+    don_c_guclu: float  # pencere en düşük ERA5 ≤ ... → güçlü don kanıtı
+    don_c_sinir: float  # ≤ ... → sınırda
+    don_c_imkansiz: float  # > ... → don fiziksel olarak mümkün değil (aleyhte)
+    yaz_aylari: list[int]
+    kis_aylari: list[int]
+    agirlik: dict[str, float]  # kanıt kodu → ham ağırlık (işaretli: + lehte, − aleyhte)
+    kararlilik_deneme: int = Field(ge=10)
+    kararlilik_aralik: float = Field(gt=0, lt=1)  # her sebep için ağırlık çarpanı U(1−a, 1+a)
+    kontrol_listesi: dict[Literal["don", "su", "besin", "hastalik", "mekanik", "goruntu"], list[SebepKontrol]]
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -615,6 +650,7 @@ class Katalog(BaseModel):
     sistem_kontrol: SistemKontrolKurali
     izleme: IzlemeKurali
     don: DonKurali
+    sebep: SebepKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali
