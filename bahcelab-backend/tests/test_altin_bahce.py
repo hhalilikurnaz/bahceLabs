@@ -186,9 +186,9 @@ def _sebep_cikti() -> list[dict]:
     out = []
     for r in json.loads(SEBEP_GIRDI.read_text()):
         g = _sebep_girdisi(r["girdi"])
-        s = motor.degerlendir(g, k)
+        s = motor.degerlendir_tam(g, k)
         out.append({
-            "bahce": r["bahce"], "tarih": r["tarih"], "secim": s.secim, "guven": s.guven, "belirsiz_nedeni": s.belirsiz_nedeni, "kapi": s.kapi, "kararlilik": motor.kararlilik(g, k),
+            "bahce": r["bahce"], "tarih": r["tarih"], "secim": s.secim, "guven": s.guven, "guven_dusuruldu": s.guven_dusuruldu, "belirsiz_nedeni": s.belirsiz_nedeni, "kapi": s.kapi, "kararlilik": s.kararlilik,
             "puan": {p.sebep: p.puan for p in s.siralama}, "kanit": {p.sebep: sorted(x.kod for x in p.kanitlar) for p in s.siralama},
         })
     return out

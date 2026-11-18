@@ -132,7 +132,7 @@ su:
     tükenme oranı p = 0,5 (RAW/TAW); doluluk «nemli» ≥ %60, «kuru» ≤ %35 (AYNI DÖNEM normaline göre, ±15 gün, 2015–2025); günlük < 2 mm yağış su dengesinde sayılmaz;
     yüzey–hava farkı bahçenin aynı ay Landsat geçmişine göre p25–p75 bandıyla değerlendirilir (sabit eşik yok; aynı ayda ≥ 8 geçmiş sahne);
     karışık piksel |bahçe − tampon| ≥ 1,5 °C. Tarla kapasitesi ve solma noktası SoilGrids + Saxton & Rawls pedotransferinden (ön değer),
-    ERA5 mutlak nemine uygulanmaz. Adım 14 toprak tahlili gelince değişecek.
+    ERA5 mutlak nemine uygulanmaz. Toprak tahlili girişi gelince değişecek.
   kc_ndvi_alt: 0.30
   kc_ndvi_ust: 0.80
   kc_alt: 0.45
@@ -663,6 +663,7 @@ sebep:
   yaz_aylari: [6, 7, 8, 9]
   kis_aylari: [12, 1, 2, 3, 4]
   kararlilik_deneme: 200
+  kararlilik_min: 0.5
   kararlilik_aralik: 0.3
   agirlik:
     don_kullanici_oldu: 3.0
@@ -712,5 +713,5 @@ sebep:
       - metin: "Düşen alanda budama, söküm, hasat, ilaçlama, ağır araç geçişi ya da toprak işleme kaydı var mı; alanın kenarı düz/keskin mi?"
     goruntu:
       - metin: "Sonraki net Sentinel-2 geçişini bekleyin; bulut gölgesi/ince bulut/sis düşüşü gösterip sonraki görüntüde kaybolabilir."
-        kaynak: "Sentinel-2 SCL etiketleri bulut gölgesini, ince bulutu ayrı sınıflar olarak verir; sınıflandırma kusursuz değildir (Sentinel-2 SCL kapsama değerlendirmesi, arXiv 2406.18584)"
+        kaynak: "Sentinel-2 SCL sınıfları, arXiv 2406.18584"
         url: "https://arxiv.org/html/2406.18584v2"

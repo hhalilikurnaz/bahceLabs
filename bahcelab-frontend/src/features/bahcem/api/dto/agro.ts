@@ -106,5 +106,5 @@ export interface ApiDurum {
 
 export interface ApiBugun {
   tarih: string
-  maddeler: { tur: string; oncelik: 'kritik' | 'onemli' | 'bilgi'; baslik: string; metin: string; sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'; ayrinti?: string | null }[]
+  maddeler: { tur: string; oncelik: 'kritik' | 'onemli' | 'bilgi'; baslik: string; metin: string; sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'; ayrinti?: string | null; olay_id?: string | null }[]
 }

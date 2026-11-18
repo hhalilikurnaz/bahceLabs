@@ -38,7 +38,7 @@ YANIT_SEBEP = {
     "budama_hasat": "mekanik",
     "bilmiyorum": None,
 }
-KAPI_MESAJ = "Görüntü kaynaklı olabilir (bulut gölgesi/sis/sınıflandırma) — bir sonraki net görüntüyü bekleyin."
+KAPI_MESAJ = "Görüntü kaynaklı olabilir — bir sonraki net görüntüyü bekleyin."
 
 
 @dataclass(frozen=True)
@@ -97,6 +97,23 @@ def _z(deger: float | None, diger: list[float]) -> float | None:
         return None
     sd = statistics.pstdev(diger)
     return None if sd == 0 else (deger - statistics.mean(diger)) / sd
+
+
+def doy_farki(a: date, b: date) -> int:
+    """Yılın gününe göre dairesel fark (gün)."""
+    d = abs(a.timetuple().tm_yday - b.timetuple().tm_yday)
+    return min(d, 365 - d)
+
+
+async def halka_z(session: AsyncSession, garden_id: uuid.UUID, tarih: date, pencere_gun: int, min_n: int = 5) -> dict[str, float | None] | None:
+    """Komşu halka (bahçe sınırından 100–300 m, yalnız ağaçlık; `sk_halka` önbelleği) NDVI/NDMI'sinin, AYNI sahnede, aynı dönemin (±`pencere_gun`) DİĞER yılları temelinde z-skoru.
+    Halka verisi yoksa ya da bu tarihte ölçüm yoksa None. Panel isteği ağ kullanmaz (önbellek tablo)."""
+    rows = (await session.execute(text("SELECT tarih, ndvi, ndmi FROM sk_halka WHERE garden_id = :g AND ndvi IS NOT NULL AND ndmi IS NOT NULL"), {"g": garden_id})).all()
+    bu = next((r for r in rows if r.tarih == tarih), None)
+    if bu is None:
+        return None
+    taban = [r for r in rows if r.tarih.year != tarih.year and doy_farki(r.tarih, tarih) <= pencere_gun]
+    return {"ndvi": _z(float(bu.ndvi), [float(r.ndvi) for r in taban]) if len(taban) >= min_n else None, "ndmi": _z(float(bu.ndmi), [float(r.ndmi) for r in taban]) if len(taban) >= min_n else None, "n": float(len(taban))}
 
 
 async def _bagimsiz_kanit(
@@ -280,9 +297,7 @@ def _kanit_dict(x: motor.Kanit) -> dict[str, Any]:
     }
 
 
-def cikti(
-    s: motor.Sonuc, k: SebepKurali, kararlilik: float | None, gecis: date | None
-) -> dict[str, Any]:
+def cikti(s: motor.Sonuc, k: SebepKurali, gecis: date | None) -> dict[str, Any]:
     return {
         "surum": k.surum,
         "durum": k.durum,
@@ -291,7 +306,8 @@ def cikti(
         "secim_ad": SEBEP_AD.get(s.secim) if s.secim else None,
         "guven": s.guven,
         "belirsiz_nedeni": s.belirsiz_nedeni,
-        "kararlilik": kararlilik,
+        "kararlilik": s.kararlilik,
+        "guven_dusuruldu": s.guven_dusuruldu,
         "kapi": {
             "kapali": s.kapi,
             "mesaj": KAPI_MESAJ if s.kapi else None,
@@ -337,12 +353,11 @@ async def olay_sebep(
     g, baglam = await girdi_olustur(session, garden_id, row.bitis, k, row.ayrinti)
     if baglam is None:
         return None
-    s = motor.degerlendir(g, k)
+    s = motor.degerlendir_tam(g, k)
     sahneler = [r.tarih for r in await _sahneler(session, garden_id, None)]
     out = cikti(
         s,
         k,
-        motor.kararlilik(g, k),
         beklenen_gecis(sahneler, await bahce_bugunu(session, garden_id)),
     )
     out["olay"] = {
@@ -361,17 +376,23 @@ async def olay_sebep(
     return out
 
 
-async def kapi_bastir(
-    session: AsyncSession, garden_id: uuid.UUID, e: Any, as_of: date | None = None
-) -> bool:
-    """Bu SAF optik düşüş olayı için uyarı/bildirim bastırılsın mı? Yalnız «görüntü kaynaklı olabilir» kapısı kapalıysa True. Don bağlantılı (tur=don) ya da başka tür olaylara dokunmaz."""
+async def kapi_karari(session: AsyncSession, garden_id: uuid.UUID, e: Any, as_of: date | None = None) -> dict[str, Any] | None:
+    """«Görüntü kaynaklı olabilir» kapısı kapalıysa {mesaj, beklenen_gecis (tahmini)}, açıksa None. Yalnız SAF optik düşüş olayı (tur=s2_dusus, olay/bekliyor) kapıya girer; don bağlantılı
+    (tur=don) ya da başka tür olaylara dokunmaz."""
     if e.tur != "s2_dusus" or e.durum not in ("olay", "bekliyor"):
-        return False
+        return None
     k = load_catalog().sebep
     g, baglam = await girdi_olustur(session, garden_id, e.bitis, k, e.ayrinti, as_of=as_of)
-    if baglam is None:
-        return False
-    return motor.degerlendir(g, k).kapi
+    if baglam is None or not motor.degerlendir_tam(g, k).kapi:
+        return None
+    sahneler = [r.tarih for r in await _sahneler(session, garden_id, as_of)]
+    gecis = beklenen_gecis(sahneler, await bahce_bugunu(session, garden_id))
+    return {"mesaj": KAPI_MESAJ, "beklenen_gecis": gecis}
+
+
+async def kapi_bastir(session: AsyncSession, garden_id: uuid.UUID, e: Any, as_of: date | None = None) -> bool:
+    """Bu olay için uyarı/bildirim bastırılsın mı? (kapı kapalıysa True)"""
+    return await kapi_karari(session, garden_id, e, as_of) is not None
 
 
 # ------------------------------------------------------------------ kullanıcı yanıtı → Saha Defteri + etiket tablosu

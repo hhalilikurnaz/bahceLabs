@@ -46,7 +46,7 @@ export function RisksCard({ gardenId }: { gardenId: string }) {
       )}
       {data && (
         <p className="text-caption text-app-text-dim" data-testid="risk-note">
-          {data.not} {data.tuzak.desteklenir ? '' : `Tuzak sayımı girişi ${data.tuzak.adim}'de eklenecek.`}
+          {data.not} {data.tuzak.desteklenir ? '' : 'Tuzak sayımı girişi yakında eklenecek.'}
         </p>
       )}
     </Card>

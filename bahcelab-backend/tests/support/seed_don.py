@@ -59,6 +59,7 @@ async def main() -> None:
             lat, lng = (await s.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": gid})).one()
             d0 = bugun - timedelta(days=12)
             sid = f"E{uuid.uuid4().hex[:8]}"
+            await s.execute(text("DELETE FROM stations"))  # izolasyon: önceki testlerin istasyonları en yakın 3'ü doldurup bu testin istasyonunu gölgelemesin
             await s.execute(text("INSERT INTO stations (id, saglayici, ad, lat, lng, yukseklik, gozlem_baslangic, gozlem_bitis) VALUES (:i, 'meteostat', 'E2E istasyonu', :la, :lo, 3, '2020-01-01', '2099-01-01')"), {"i": sid, "la": lat + 0.05, "lo": lng})
             await s.execute(text("INSERT INTO station_daily (istasyon_id, tarih, tmin, prcp) VALUES (:i, :t, 0.7, 0)"), {"i": sid, "t": d0})
             await s.execute(text("INSERT INTO events (id, garden_id, anahtar, tur, turler, baslangic, bitis, guven, siddet, tahmin, ayrinti, formul_surumu) VALUES (:i, :g, :a, 'don', CAST('[\"don\"]' AS jsonb), :b, :e, 'orta', 'normal', false, CAST(:y AS jsonb), 'olay-v2')"),
@@ -68,6 +69,7 @@ async def main() -> None:
         if "--gecmis" in sys.argv:  # geçmiş uyarı geceleri + kullanıcı yanıtları + en yakın istasyon gözlemi (iç kalite «don_uyari» ayrıntısı)
             lat, lng = (await s.execute(text("SELECT ST_Y(ST_Centroid(geom)), ST_X(ST_Centroid(geom)) FROM gardens WHERE id = :g"), {"g": gid})).one()
             sid = f"G{uuid.uuid4().hex[:8]}"
+            await s.execute(text("DELETE FROM stations"))  # izolasyon (bkz. --olay)
             await s.execute(text("INSERT INTO stations (id, saglayici, ad, lat, lng, yukseklik, gozlem_baslangic, gozlem_bitis) VALUES (:i, 'meteostat', 'E2E gece istasyonu', :la, :lo, 3, '2020-01-01', '2099-01-01')"), {"i": sid, "la": lat + 0.04, "lo": lng})
             for i, (yanit, tmin) in enumerate([("oldu", -0.5), ("olmadi", 2.0), ("olmadi", None), ("bilmiyorum", None), (None, 1.5)]):
                 gece = bugun - timedelta(days=20 + i)

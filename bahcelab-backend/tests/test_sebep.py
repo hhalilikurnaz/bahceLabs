@@ -38,7 +38,7 @@ def test_eleme_ile_secim_yok_dogrudan_kanit_sart():
     """1 Şubat 2025 (soğuk hava): don'dan ÖNCE düşüş; su için yalnız destekleyici kanıt. Eşikler sıfırlansa bile doğrudan kanıt yoksa seçim YOK («belirsiz»)."""
     g = gercek("soğuk hava", "2025-02-01")
     s = motor.degerlendir(g, K)
-    assert s.secim is None and s.guven == "belirsiz" and "eşiğinin" in (s.belirsiz_nedeni or "")
+    assert s.secim is None and s.guven == "belirsiz" and "eşiğinin altında" in (s.belirsiz_nedeni or "")
     gevsek = K.model_copy(update={"secim_esik": 0.1, "secim_marj": 0.0})
     assert motor.degerlendir(g, gevsek).secim is None  # puan eşikte olsa da doğrudan kanıt şartı aranır
     assert {p.sebep for p in s.siralama} == {"don", "su", "goruntu"}  # besin/hastalık/mekanik seçilemez
@@ -120,6 +120,12 @@ async def _tohumla(factory, gid, *, bulut: float, sonraki: bool) -> uuid.UUID:  
         await add_s2(factory, gid, D0 + timedelta(days=5), None)
     async with factory() as s:
         await s.execute(text("UPDATE acquisitions SET bulut_orani = :b WHERE garden_id = :g AND tarih = :d"), {"b": bulut, "g": gid, "d": D0})
+        # sahne istatistikleri (üretimde işlemci yazar; test ızgaraları yalnız NDVI taşır): bahçe ortancası düşüşü ve toparlanması
+        for gun, v in ((D0 - timedelta(days=5), 0.7), (D0, 0.4), (D0 + timedelta(days=5), 0.7)):
+            await s.execute(
+                text("INSERT INTO acquisition_stats SELECT id, 'ndvi', :v, :v, :v, :v, :v, :v, :v, :v, 100 FROM acquisitions WHERE garden_id = :g AND tarih = :d AND source_id = 'sentinel2-l2a'"),
+                {"v": v, "g": gid, "d": gun},
+            )
         await s.commit()
     await add_era5(factory, gid, {D0 - timedelta(days=k): (15.0, 5.0) for k in range(0, 30)})
     async with factory() as s:
@@ -134,7 +140,7 @@ async def _tohumla(factory, gid, *, bulut: float, sonraki: bool) -> uuid.UUID:  
 
 async def test_sebep_api_kanit_satirlari_kontrol_listesi_ve_kapi(user_client, factory):
     gid = await seed(user_client, factory)
-    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=False)
+    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=True)  # sonraki net sahnede toparlandı: kararlı görüntü kanıtı
     r = await user_client.get(f"/gardens/{gid}/olaylar/{eid}/sebep")
     assert r.status_code == 200
     j = r.json()
@@ -150,13 +156,15 @@ async def test_sebep_api_kanit_satirlari_kontrol_listesi_ve_kapi(user_client, fa
 
 async def test_kapi_bildirimi_bastirir_acik_olaylara_dokunmaz(user_client, factory):
     gid = await seed(user_client, factory)
-    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=False)
+    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=True)
     async with factory() as s:
         ev = next(e for e in await list_events(s, gid) if e.id == eid)
         assert await servis.kapi_bastir(s, gid, ev) is True
+        karar = await servis.kapi_karari(s, gid, ev)
+        assert karar is not None and karar["mesaj"] == "Görüntü kaynaklı olabilir — bir sonraki net görüntüyü bekleyin." and karar["beklenen_gecis"] > D0  # tahmini sonraki geçiş sahne ritminden
         assert await servis.kapi_bastir(s, gid, ev.__class__(**{**ev.__dict__, "tur": "don"})) is False  # don bağlantılı olay kapıya girmez
-        # uyarı anındaki (as_of) veriyle de aynı: kapı SONRAKİ görüntüyü kullanmaz
-        assert await servis.kapi_bastir(s, gid, ev, as_of=D0) is True
+        # uyarı anındaki (as_of) veriyle: kapı SONRAKİ görüntüyü kullanmaz; yalnız bulut + tüm bahçe (puan 2,0, kararlılık < 0,5) kapıyı AÇIK bırakır
+        assert await servis.kapi_bastir(s, gid, ev, as_of=D0) is False
 
 
 async def test_bulutsuz_ya_da_kalici_dusus_kapidan_gecer(user_client, factory):
@@ -169,7 +177,7 @@ async def test_bulutsuz_ya_da_kalici_dusus_kapidan_gecer(user_client, factory):
 
 async def test_sebep_buydu_etiket_saha_defteri_ve_kural_performansi(user_client, factory):
     gid = await seed(user_client, factory)
-    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=False)
+    eid = await _tohumla(factory, gid, bulut=60.0, sonraki=True)
     r = await user_client.post(f"/gardens/{gid}/olaylar/{eid}/sebep-yaniti", json={"sebep": "budama_hasat"})
     assert r.status_code == 204
     assert (await user_client.post(f"/gardens/{gid}/olaylar/{eid}/sebep-yaniti", json={"sebep": "bilinmeyen"})).status_code == 422
@@ -197,3 +205,16 @@ def test_kural_performans_sebep_ayrisma_tanimli():
     assert "sebep_ayrisma" in kural_performans.KURAL_AD
     ozet = kural_performans.ozet([])
     assert ozet["sebep_ayrisma"]["isabet"] is None
+
+
+def test_kararlilik_dusukse_guven_bir_kademe_duser_ve_kapi_kapanmaz():
+    kararsiz = motor.degerlendir_tam(gercek("jlnnlk", "2016-04-29"), K)  # gerçek olay: görüntü seçildi ama kararlılık 0,46 < 0,5
+    assert kararsiz.secim == "goruntu" and kararsiz.kararlilik is not None and kararsiz.kararlilik < K.kararlilik_min
+    assert kararsiz.guven == "zayif" and kararsiz.guven_dusuruldu is True and kararsiz.kapi is False
+    kararli = motor.degerlendir_tam(gercek("jlnnlk", "2021-12-24"), K)  # kararlılık 1,0: düşürme yok
+    assert kararli.guven == "olasi" and kararli.guven_dusuruldu is False
+    don = motor.degerlendir_tam(gercek("jlnnlk", "2025-03-13"), K)
+    assert don.guven == "daha_olasi" and don.guven_dusuruldu is False
+    belirsiz = motor.degerlendir_tam(gercek("soğuk hava", "2025-02-01"), K)
+    assert belirsiz.secim is None and belirsiz.guven == "belirsiz" and belirsiz.guven_dusuruldu is False
+    assert motor._DUSUR["daha_olasi"] == "olasi" and motor._DUSUR["olasi"] == "zayif"  # noqa: SLF001

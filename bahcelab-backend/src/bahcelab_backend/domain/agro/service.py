@@ -91,6 +91,9 @@ IRRIGATION_NOTE = "Yaklaşık öneridir, sulama reçetesi değildir; toprak nemi
 RISK_NOTE = "Hava koşullarından türetilen risk tahminidir; teşhis ya da ilaçlama tavsiyesi değildir. Sahada kontrol edin."
 
 
+AYLAR = ("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara")
+
+
 class AgroService:
     def __init__(
         self,
@@ -326,7 +329,7 @@ class AgroService:
         ]
         return RiskleriYanit(
             tarih=today, riskler=items,
-            tuzak=TuzakArayuzu(desteklenir=False, adim="Adım 12", aciklama="Tuzak sayımı girişi Adım 12'de bu risk motoruna bağlanacak."),
+            tuzak=TuzakArayuzu(desteklenir=False, adim="yakında", aciklama="Tuzak sayımı girişi yakında bu risk motoruna bağlanacak."),
             not_=RISK_NOTE,
         )
 
@@ -464,30 +467,34 @@ class AgroService:
             esik_durumu="ön değer · v2" if rule.durum == "dogrulanmadi" else "mühendis onaylı · v2", hesaplama_tarihi=today,
         )
 
-    async def _today_events(self, garden_id: uuid.UUID, today: date) -> list[tuple[Oncelik, str, str, Sekme]]:
-        """Bugün listesine girecek taze/tahmin olaylar: önem ve metin bildirimle AYNI kuraldan (event_importance + şablon). Düşük güvenliler girmez."""
+    async def _today_events(self, garden_id: uuid.UUID, today: date) -> list[tuple[Oncelik, str, str, Sekme, str | None]]:
+        """Bugün listesine girecek taze/tahmin olaylar: önem ve metin bildirimle AYNI kuraldan (event_importance + şablon). Düşük güvenliler girmez.
+        ADIM 10B: «görüntü kaynaklı olabilir» kapısı kapalıysa uyarı yerine TEK satır bilgi (bekleme mesajı + tahmini sonraki geçiş); S2 düşüşü içeren maddeler olay kimliğini taşır (Olası sebepler)."""
         from bahcelab_backend.domain.events.service import list_events
         from bahcelab_backend.domain.notifications.event_candidates import (
             WEATHER_KINDS,
             event_candidate,
         )
+        from bahcelab_backend.domain.sebep.servis import kapi_karari
 
         rule = self.catalog.bildirim
         garden = await self._garden(garden_id)
-        out: list[tuple[Oncelik, str, str, Sekme]] = []
-        from bahcelab_backend.domain.sebep.servis import kapi_bastir
-
+        out: list[tuple[Oncelik, str, str, Sekme, str | None]] = []
         for e in await list_events(self.ndvi.session, garden_id, since=today - timedelta(days=rule.taze_olay_gun)):
-            if await kapi_bastir(self.ndvi.session, garden_id, e):  # ADIM 10B: görüntü kaynaklı olabilir → Bugün listesine de girmez
+            oid = str(e.id) if "s2_dusus" in e.turler else None
+            kapi = await kapi_karari(self.ndvi.session, garden_id, e)
+            if kapi is not None:
+                gecis = kapi["beklenen_gecis"]
+                out.append(("bilgi", "Görüntü kaynaklı olabilir", f"{kapi['mesaj']}" + (f" Beklenen geçiş: {gecis.day} {AYLAR[gecis.month - 1]} (tahmini)." if gecis else ""), "durum", oid))
                 continue
             cand = event_candidate(garden_id, garden.ad, e, today, rule, e.anahtar)  # tahmin donu burada YOK: tek don sistemi domain/don (aşağıda)
             if cand is not None:
-                out.append((cand.oncelik, cand.baslik, cand.metin, "hava" if e.tur in WEATHER_KINDS else "durum"))
+                out.append((cand.oncelik, cand.baslik, cand.metin, "hava" if e.tur in WEATHER_KINDS else "durum", oid))
         from bahcelab_backend.domain.don import servis as don_servis
 
         don = await don_servis.bugun_maddesi(self.ndvi.session, garden_id, today)
         if don is not None:
-            out.append((don[0], don[1], don[2], "durum"))  # type: ignore[arg-type]
+            out.append((don[0], don[1], don[2], "durum", None))  # type: ignore[arg-type]
         return out
 
     # ------------------------------------------------------------------ bugün

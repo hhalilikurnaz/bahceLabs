@@ -25,8 +25,8 @@ KURAL_AD = {
     "sistem_kontrol": "Sulama sistemi kontrol işareti",
     "don": "Don uyarısı / olayı",
     "hastalik_zararli": "Hastalık / zararlı riski",
-    "don_uyari": "Gece don uyarısı (ADIM 10)",
-    "sebep_ayrisma": "Olası sebep ayrıştırma (ADIM 10B)",
+    "don_uyari": "Gece don uyarısı",
+    "sebep_ayrisma": "Olası sebep ayrıştırma",
     "olay_on_dogrulama": "Olay ön doğrulaması (9G-E)",
 }
 

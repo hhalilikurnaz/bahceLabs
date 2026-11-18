@@ -103,9 +103,11 @@ class SebepPuan:
 class Sonuc:
     siralama: list[SebepPuan]
     secim: str | None
-    guven: Literal["daha_olasi", "olasi", "belirsiz"]
+    guven: Literal["daha_olasi", "olasi", "zayif", "belirsiz"]
     belirsiz_nedeni: str | None
     kapi: bool = False  # «görüntü kaynaklı olabilir» kapısı (uyarı/bildirim bastırma)
+    kararlilik: float | None = None
+    guven_dusuruldu: bool = False  # kararlılık < `kararlilik_min` ise güven sözcüğü bir kademe düştü
 
     def puan_of(self, sebep: str) -> SebepPuan:
         return next(s for s in self.siralama if s.sebep == sebep)
@@ -261,12 +263,12 @@ def degerlendir(g: Girdi, k: SebepKurali, carpan: dict[str, float] | None = None
         en = uygun[0]
         ikinci = next((p.puan for p in siralama if p.sebep != en.sebep), float("-inf"))
         if en.puan < k.secim_esik:
-            neden = f"Doğrudan kanıtı olan en yüksek puan ({en.puan:g}) seçim eşiğinin ({k.secim_esik:g}) altında."
+            neden = "Doğrudan kanıtı olan sebeplerin toplam kanıtı seçim eşiğinin altında kalıyor."
         elif en.puan - ikinci < k.secim_marj:
-            neden = f"İlk iki sebep birbirine yakın (fark < {k.secim_marj:g})."
+            neden = "İlk iki sebep birbirine çok yakın."
         else:
             secim, secilen = en.sebep, en
-    guven: Literal["daha_olasi", "olasi", "belirsiz"] = "belirsiz"
+    guven: Literal["daha_olasi", "olasi", "zayif", "belirsiz"] = "belirsiz"
     if secim:
         guven = "daha_olasi" if secilen is not None and secilen.bagimsiz_lehte > 0 else "olasi"
     s = Sonuc(siralama, secim, guven, neden)
@@ -290,3 +292,18 @@ def kararlilik(g: Girdi, k: SebepKurali, tohum: int = 7) -> float:
         c = {s: rng.uniform(1 - k.kararlilik_aralik, 1 + k.kararlilik_aralik) for s in SEBEPLER}
         sabit += degerlendir(g, k, c).secim == ref
     return round(sabit / k.kararlilik_deneme, 2)
+
+
+_DUSUR: dict[str, Literal["daha_olasi", "olasi", "zayif", "belirsiz"]] = {"daha_olasi": "olasi", "olasi": "zayif", "zayif": "zayif", "belirsiz": "belirsiz"}
+
+
+def degerlendir_tam(g: Girdi, k: SebepKurali) -> Sonuc:
+    """Ekran/API/kapı için tam sonuç: `degerlendir` + kararlılık. Kararlılık < `kararlilik_min` ise güven sözcüğü bir kademe düşer (daha olası → olası → zayıf) ve görüntü kapısı KAPANMAZ
+    (kararsız seçimle uyarı bastırılmaz)."""
+    s = degerlendir(g, k)
+    s.kararlilik = kararlilik(g, k)
+    if s.secim and s.kararlilik < k.kararlilik_min:
+        s.guven = _DUSUR[s.guven]
+        s.guven_dusuruldu = True
+        s.kapi = False
+    return s

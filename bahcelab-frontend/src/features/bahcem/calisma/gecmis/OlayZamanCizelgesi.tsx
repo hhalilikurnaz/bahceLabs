@@ -1,6 +1,7 @@
 import { ErrorState } from '@/components/ui'
 import { useMemo, useState } from 'react'
 import { HasarRaporuDugmesi } from './HasarRaporuDugmesi'
+import { SebepKarti } from '../sebep/SebepKarti'
 import { Link } from 'react-router-dom'
 import { GUVEN_AD, OLAY_ETIKET_AD, useOlaylar, type Olay } from '../../api/olayApi'
 import { KAYIT_TUR_AD, KAYIT_TUR_ISARET, SONUC_AD, useSahaKayitlari, type Kayit } from '../../api/sahaApi'
@@ -140,6 +141,7 @@ export function OlayZamanCizelgesi({ gardenId, yil, yilTemizle }: { gardenId: st
                               <p>{r.o.baslangic === r.o.bitis ? sade(r.o.baslangic) : `${sade(r.o.baslangic)} – ${sade(r.o.bitis)}`} · {r.o.kaynak_sayisi} kaynak kaydı{r.o.alan_da ? ` · yaklaşık ${r.o.alan_da.toFixed(1).replace('.', ',')} da` : ''}{r.o.siddet ? ` · ${r.o.siddet}` : ''}</p>
                               {r.o.yeniden_degerlendirme && <p className="mt-1" data-testid="olay-etiket" data-sonuc={r.o.yeniden_degerlendirme.sonuc}><b>Olay etiketi: {OLAY_ETIKET_AD[r.o.yeniden_degerlendirme.sonuc] ?? r.o.yeniden_degerlendirme.sonuc}</b> <span className="text-app-text-muted">· yeniden değerlendirildi — {r.o.yeniden_degerlendirme.aciklama}</span></p>}
                               {r.o.durum === 'bekliyor' && <p className="mt-1 text-app-text-muted">Sonraki net görüntü doğrulayacak (doğrulama bekliyor).</p>}
+                              {r.o.turler.includes('s2_dusus') && <div className="mt-2 border-t border-app-border pt-2" data-testid="olay-sebep"><SebepKarti gardenId={gardenId} olayId={r.o.id} /></div>}
                               <div className="mt-1.5 flex flex-wrap gap-2">
                                 {(r.o.tur === 'don' || r.o.turler.includes('don')) && <HasarRaporuDugmesi gardenId={gardenId} olayId={r.o.id} />}
                                 <Link to={`${gardenPath(gardenId)}?olay=${r.o.id}`} data-testid="olay-haritada" className="inline-flex min-h-11 items-center rounded-md border border-app-text px-3 text-small font-semibold hover:bg-app-card-hover">Haritada göster ↗</Link>

@@ -37,3 +37,15 @@ test('görüntüsü olmayan bahçede harita dürüst boş durum gösterir', asyn
   await expect(page.getByTestId('histogram-lejant')).toHaveCount(0)
   await expect(page.getByTestId('tarih-kutusu')).toContainText('görüntü yok')
 })
+
+test('Durum: veri yetersizken «Normal» sözcüğü ve büyük sayı gösterilmez (aynı ekranda iki çelişen durum yok)', async ({ page }) => {
+  await newUser(page)
+  const g = await createGarden(page.request, { ad: 'Veri Yok', lng: 27.71, lat: 38.71 })
+  await page.route('**/api/gardens/*/weather', (route) => route.abort())
+  await page.goto(`/bahceler/${g.id}`)
+  const kart = page.getByTestId('durum-karti')
+  await expect(kart).toHaveAttribute('data-kademe', 'veri_yok', { timeout: 30_000 })
+  await expect(kart).toContainText('veri yetersiz', { ignoreCase: true })
+  await expect(page.getByTestId('durum-paneli-ic')).not.toContainText(/Bahçe bu mevsim için normal/i)
+  await expect(kart.getByText(/^Normal$/)).toHaveCount(0)
+})

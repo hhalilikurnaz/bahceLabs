@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
@@ -22,6 +23,7 @@ class BugunMaddesi:
     metin: str
     sekme: Sekme
     ayrinti: str | None = None  # teknik ayrıntı (GDD, eşikler): arayüzde «Ayrıntı» açılırında
+    olay_id: str | None = None  # olay maddesi ve olay S2 düşüşü içeriyorsa: «Olası sebepler» için olay kimliği (ADIM 10B)
 
 
 @dataclass(frozen=True)
@@ -33,7 +35,7 @@ class Girdi:
     ilaclama: list[tuple[date, str, str]]  # (gün, başlangıç, bitiş) bugün/yarın en iyi aralıklar (gündüz)
     uydu_uyarilari: list[tuple[Literal["sari", "kirmizi"], str, str, str | None]]  # (seviye, başlık, kısa mesaj, açılır ayrıntı)
     sulama: tuple[float, str] | None  # (önümüzdeki 7 gün ihtiyaç mm, tek cümle) — yalnızca öneri anlamlıysa
-    olaylar: list[tuple[Oncelik, str, str, Sekme]] = field(default_factory=list)  # (önem, başlık, metin, sekme): taze/tahmin olaylar (olay motoru)
+    olaylar: Sequence[tuple[Oncelik, str, str, Sekme] | tuple[Oncelik, str, str, Sekme, str | None]] = field(default_factory=list)  # (önem, başlık, metin, sekme[, olay_id]): taze/tahmin olaylar (olay motoru)
 
 
 def build_today(data: Girdi, today: date, priority: tuple[str, ...], limit: int) -> list[BugunMaddesi]:
@@ -62,8 +64,9 @@ def build_today(data: Girdi, today: date, priority: tuple[str, ...], limit: int)
         if need > 0:
             candidates["sulama"].append(BugunMaddesi("sulama", "bilgi", "Sulama ihtiyacı görünüyor", sentence, "hava"))
 
-    for onem, title, message, tab in data.olaylar:
-        candidates["olay"].append(BugunMaddesi("olay", onem, title, message, tab))
+    for olay in data.olaylar:
+        onem, title, message, tab = olay[:4]
+        candidates["olay"].append(BugunMaddesi("olay", onem, title, message, tab, olay_id=olay[4] if len(olay) > 4 else None))
 
     items: list[BugunMaddesi] = []
     for kind in priority:

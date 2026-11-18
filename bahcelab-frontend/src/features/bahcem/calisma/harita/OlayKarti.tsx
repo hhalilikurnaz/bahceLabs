@@ -1,6 +1,8 @@
 import { X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useOlaylar } from '../../api/olayApi'
 import { gunAy } from '../../lib/format'
+import { SebepAcilir } from '../sebep/SebepAcilir'
 import { gardenPath } from '../../lib/routes'
 import { useCalismaStore } from '../calismaStore'
 
@@ -8,6 +10,7 @@ import { useCalismaStore } from '../calismaStore'
 export function OlayKarti({ gardenId }: { gardenId: string }) {
   const olay = useCalismaStore((s) => s.olay)
   const setOlay = useCalismaStore((s) => s.setOlay)
+  const kayit = useOlaylar(gardenId).data?.olaylar.find((o) => o.id === olay?.id)
   if (!olay) return null
   const ayni = olay.baslangic === olay.bitis
   return (
@@ -16,6 +19,7 @@ export function OlayKarti({ gardenId }: { gardenId: string }) {
         <b className="block">{olay.ad}</b>
         <span className="num text-app-text-muted">{ayni ? gunAy(olay.baslangic, 'always') : `${gunAy(olay.baslangic, 'always')} – ${gunAy(olay.bitis, 'always')}`} · harita olayın görüldüğü ilk net görüntüde</span>
         <Link to={gardenPath(gardenId, 'hava')} className="mt-0.5 block font-semibold text-app-accent underline-offset-2 hover:underline">Hava sekmesinde ayrıntı</Link>
+        {kayit?.turler.includes('s2_dusus') && <div className="max-h-[13vh] overflow-y-auto min-[561px]:max-h-[46vh]"><SebepAcilir gardenId={gardenId} olayId={olay.id} testId="olay-karti-sebep" /></div>}
       </div>
       <button type="button" aria-label="Olay kartını kapat" onClick={() => setOlay(null)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md hover:bg-app-card-hover max-[560px]:h-11 max-[560px]:w-11">
         <X className="h-4 w-4" aria-hidden />

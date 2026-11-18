@@ -158,6 +158,7 @@ class BugunMaddesiYanit(BaseModel):
     metin: str
     sekme: Literal["durum", "analiz", "hava", "gunluk", "rapor"]
     ayrinti: str | None = None
+    olay_id: str | None = None  # S2 düşüşü içeren olay maddesi: «Olası sebepler (kesin değil)» için
 
 
 class BugunYanit(BaseModel):

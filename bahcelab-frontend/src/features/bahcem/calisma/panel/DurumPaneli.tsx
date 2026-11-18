@@ -12,7 +12,7 @@ import { useRadarDegisimler, useRadarEdinimler } from '../../api/radarApi'
 import { eskiOptikSatiri } from '../../lib/radarSerit'
 import { useCalismaStore } from '../calismaStore'
 import type { KatmanId } from '../katmanlar'
-import { durumKarar, riskCumlesi } from '../../lib/karar'
+import { durumBasligi, riskCumlesi } from '../../lib/karar'
 import { useKonum } from '../useKonum'
 import { GecmisCekiliyor } from './GecmisCekiliyor'
 import { DonKarti } from './DonKarti'
@@ -74,7 +74,9 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
       document.querySelector('[data-testid="harita-paneli"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
   }
-  const karar = data ? (konum.konum ? durumKarar(konum.konum) : kademe ? data.ozet : 'Bahçe durumu için veri yetersiz.') : null
+  const baslik = data ? durumBasligi(data.durum === 'veri_yok', konum.konum, kademe ? data.ozet : null) : null
+  const karar = baslik?.karar ?? null
+  const sayiGoster = baslik?.sayiGoster ?? false
   const riskC = data ? riskCumlesi(data.riskler) : ''
   const alt = data && kademe && kademe !== 'iyi' ? (riskC && data.riskSinirladi ? `İzlemede: ${riskC.charAt(0).toLowerCase()}${riskC.slice(1)}` : data.ozet) : null
   return (
@@ -90,7 +92,7 @@ export function DurumPaneli({ garden }: { garden: Garden }) {
         <>
           {eskiOptik && <p className="rounded-md border border-app-border bg-app-card px-3 py-2 text-small leading-snug text-app-text-muted" data-testid="eski-optik-satiri">{eskiOptik}</p>}
           <div data-testid="durum-karti" data-kademe={data.durum}>
-            <KararBlogu karar={karar!} alt={alt} sayi={konum.sayi?.buyuk ?? null} etiket={konum.sayi ? 'normale göre' : undefined} kucuk={konum.sayi?.kucuk}
+            <KararBlogu karar={karar!} alt={alt} sayi={sayiGoster ? konum.sayi?.buyuk ?? null : null} etiket={sayiGoster && konum.sayi ? 'normale göre' : undefined} kucuk={sayiGoster ? konum.sayi?.kucuk : undefined}
               yas={konum.yasGun !== null ? <StaleBadge kaynak="Sentinel-2" gun={konum.yasGun} /> : undefined}>
               <div className="mt-4"><KademeSeridi kademe={kademe} /></div>
               {kademe ? <p className="mt-3 flex items-baseline gap-2 text-body" data-testid="kademe-ad"><b style={{ color: KADEME_META[kademe].renk }}><span aria-hidden>{KADEME_META[kademe].isaret}</span> {KADEME_META[kademe].ad}</b><span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p> : <p className="mt-3 text-body" data-testid="kademe-satiri"><b data-testid="kademe-ad">Veri yetersiz</b> <span className="text-app-text-muted" data-testid="durum-ozet">{data.ozet}</span></p>}

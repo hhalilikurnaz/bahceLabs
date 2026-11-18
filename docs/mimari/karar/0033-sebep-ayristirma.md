@@ -14,3 +14,8 @@ Durum: kabul edildi (Dilim 0 koşullu GO, 2026-11-17). İlgili: ADR 0018 (olay m
 - İki bahçe (yaklaşık 13 bağımsız tarih), tek bağımsız dış etiket (Şubat 2025 don): doğruluk ÖLÇÜLEMEDİ; yalnız tutarlılık denetimi.
 - Kapı, uyarı anındaki veriyle geriye dönük 13 uyarının **hiçbirini** bastırmazdı (uyarı anında görüntü kanıtı en çok 1,0 puan). Kapı hazırdır; erken sinyal (SCL gölge payı, ikinci sensör) ayrı karar.
 - Kaynakça: açılamayan/okunamayan bağlantılar «doğrulanamadı» işaretlidir.
+
+## Dilim 2 eki (arayüz ve erken sinyal)
+- **Güven kademesi:** kararlılık < 0,5 ise güven sözcüğü bir kademe düşer (daha olası → olası → zayıf olasılık) ve görüntü kapısı kapanmaz (kararsız seçimle uyarı bastırılmaz). Katalog: `sebep.kararlilik_min`.
+- **Erken sinyal (kapı):** komşu halka eş zamanlı düşüşü (z ≤ −1 + hava kanıtı yok) ve SCL gölge+bulut payı (≥ %10, bahçe + 100 m) uyarı anındaki veriyle ölçüldü; ikisi de sonradan toparlanmayan (kalıcı) bir uyarıyı bastırdı → kabul ölçütü geçmedi, kapı eski haliyle kalır, motora eklenmedi. Ölçüm betiği ve SCL yardımcısı korunur.
+- **Arayüz:** «Olası sebepler (kesin değil)» Durum Yapılacaklar maddesinde, haritada olay kartında ve Geçmiş olay ayrıntısında; yüzde yok; her kanıt satırında bağımsızlık etiketi; kapı devredeyse Durum'da tek satır bilgi (uyarı değil). `GET /gardens/{id}/bugun` maddesi S2 düşüşü içeren olayda `olay_id` taşır.

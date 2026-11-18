@@ -136,7 +136,7 @@ Onay kararları (3): (1) eleme ile seçim yok; (2) görüntü kaynaklı = kapı;
 |---|---|---|---|
 | 1,0 · 1,5 · 2,0 · 2,5 · 3,0 | **0** | 0 | 0 |
 
-Sebep: uyarı anında görüntü lehine yalnız «sahne bulutu ≥ %20» ve «bahçenin ≥ %80'i tek adımda» kanıtı vardır; bu 13 uyarıda sahne bulutu hep < %20 ve görüntü puanı en çok 1,0. «Toparlandı» kanıtı (puan +2) ancak SONRAKİ sahneyle gelir; o noktada olay zaten atmosfer şüphesine düşer ve mevcut akış önceki bildirimi kapatır. **Sonuç: kapı bu veride 0 uyarıyı bastırır; mevcut «bildirimi kapat» akışının önüne geçecek ek bir kazanç ölçülemedi.** Kapı kodu ve testleri hazırdır (bulutlu + tüm-bahçe düşüşünde kapanır, kalıcı/don kanıtlı olayda kapanmaz). Daha erken (uyarı anı) sinyal gerekir: SCL gölge/bulut piksel payı ya da aynı hafta ikinci sensör (Landsat/HLS) — Dilim 2'den sonra ayrı karar.
+Sebep: uyarı anında görüntü lehine yalnız «sahne bulutu ≥ %20» ve «bahçenin ≥ %80'i tek adımda» kanıtı vardır; görüntü puanı en çok 1,0 (tek kanıt: sahne bulutu). **Düzeltme (Dilim 2):** «sahne bulutu» Sentinel-2 karosunun (tile) genel bulut yüzdesidir, bahçeye özgü değildir; önceki cümledeki «hep < %20» yanlıştı — 13 uyarının 5'inde karo bulutu ≥ %20 idi (kalıcı gerçek düşüşlerden biri dahil: 20 Mart 2020, karo %41). Bu kanıt özgül değildir. «Toparlandı» kanıtı (puan +2) ancak SONRAKİ sahneyle gelir; o noktada olay zaten atmosfer şüphesine düşer ve mevcut akış önceki bildirimi kapatır. **Sonuç: kapı bu veride 0 uyarıyı bastırır; mevcut «bildirimi kapat» akışının önüne geçecek ek bir kazanç ölçülemedi.** Kapı kodu ve testleri hazırdır (bulutlu + tüm-bahçe düşüşünde kapanır, kalıcı/don kanıtlı olayda kapanmaz). Daha erken (uyarı anı) sinyal gerekir: SCL gölge/bulut piksel payı ya da aynı hafta ikinci sensör (Landsat/HLS) — Dilim 2'den sonra ayrı karar.
 
 **Kullanıcı yanıtı:** «sebep buydu» (su · don · besin · hastalık/zararlı · budama/hasat · bilmiyorum) → `sebep_etiket` (ayrı tablo; yanıt anındaki model seçimi ve sırası ile birlikte) + Saha Defteri «gözlem» kaydı + 9J kural performansı `sebep_ayrisma` (isabet = motor seçimi = kullanıcı sebebi; seçim yoksa ya da «bilmiyorum» ise isabete girmez; yanıt < `kural_min_yanit` ise «ölçülemiyor»). `egitim_riza` alanı vardır, varsayılan **yok**; eğitimde kullanım açık rızaya bağlıdır (rıza metni Adım 19–20).
 
@@ -160,3 +160,35 @@ Sebep: uyarı anında görüntü lehine yalnız «sahne bulutu ≥ %20» ve «ba
 | Valencia Meteosat don; Sicilya NDVI+NDWI; Fas NDMI; Xunwu HLB; Tabasco misket limonu S2; SITS clear-cut; Soutinho BFAST; badem budama zamanı | — | Bu oturumda bağlantısı yok → **doğrulanamadı**; §1 tablosunda bu satırlar kaynakça tamamlanana kadar «B/C, doğrulanamadı» okunmalıdır |
 
 Katalog (`sebep.kontrol_listesi`) yalnız doğrulanan kaynaklara bağlanır: don → HS1275, CH004; besin/hastalık → PP328 (rehber varlığı); görüntü → arXiv 2406.18584 (SCL sınıfları). Su ve mekanik maddeleri **kaynaksızdır** (kaynak: null).
+
+
+## 7. Dilim 2 başı — görüntü kapısı için ERKEN sinyal ölçümü (uyarı anı, sonraki sahne yok)
+
+Eşikler ölçümden ÖNCE belirlendi, sonuca bakılarak ayarlanmadı: (a) komşu halka (bahçe sınırından 100–300 m, yalnız ağaçlık; mevcut `sk_halka` önbelleği) aynı sahnede NDVI ya da NDMI z ≤ −1 (aynı dönemin ±15 günü, diğer yıllar) **ve** hava kanıtı yok (pencere en düşük > +2 °C, kurak toprak yok); (b) SCL bulut gölgesi (sınıf 3) + bulut olasılığı (8, 9, 10) piksel payı, bahçe + 100 m tamponda ≥ %10 **ve** hava kanıtı yok. Kabul ölçütü: toparlanmayan bir uyarı bastırılırsa kural GEÇMEZ.
+
+| Bahçe | Tarih | Sonradan | Halka z (NDVI / NDMI) | SCL gölge+bulut | Hava kanıtı yok | (a) halka | (b) SCL |
+|---|---|---|---|---|---|---|---|
+| jlnnlk | 2016-04-29 | toparlandı | -0.5 / -0.7 | %0.0 | evet | — | — |
+| jlnnlk | 2017-09-26 | kalıcı | -0.9 / 0.3 | %0.0 | evet | — | — |
+| jlnnlk | 2020-03-29 | kalıcı | -2.4 / 1.3 | %22.9 | evet | bastırır | bastırır |
+| jlnnlk | 2021-02-12 | toparlandı | -2.6 / -0.4 | %0.0 | hayır | — | — |
+| jlnnlk | 2021-12-24 | toparlandı | -1.6 / 0.4 | %0.0 | evet | bastırır | — |
+| jlnnlk | 2023-05-18 | toparlandı | -2.1 / -0.0 | %0.0 | evet | bastırır | — |
+| soğuk hava | 2015-09-12 | bilinmiyor | — / — | %0.0 | evet | — | — |
+| soğuk hava | 2019-04-04 | toparlandı | — / — | %0.0 | evet | — | — |
+| soğuk hava | 2019-08-27 | toparlandı | — / — | %0.0 | evet | — | — |
+| soğuk hava | 2021-08-21 | toparlandı | — / — | %0.0 | hayır | — | — |
+| soğuk hava | 2023-05-18 | toparlandı | — / — | %0.0 | evet | — | — |
+| soğuk hava | 2024-05-22 | toparlandı | — / — | %0.0 | evet | — | — |
+| soğuk hava | 2025-02-01 | kalıcı | — / — | %0.0 | evet | — | — |
+
+| Kural | Bastırılan | Sonradan toparlanan | Sonradan KALICI (gerçek düşüş) | Karar |
+|---|---|---|---|---|
+| (a) komşu halka | 3 | 2 | 1 | **GEÇMEZ** |
+| (b) SCL gölge+bulut | 1 | 0 | 1 | **GEÇMEZ** |
+| (a) ya da (b) | 3 | 2 | 1 | **GEÇMEZ** |
+
+**Sonuç:** her iki kural da 20 Mart 2020 jlnnlk düşüşünü bastırırdı; bu düşüş sonraki sahnede toparlanmadı (kalıcı, gerçek). Halka z −2,4 (komşular da düştü: bölgesel, Şubat 2020 donunun gecikmiş etkisi olası — pencere dışı) ve SCL payı %22,9. Kabul ölçütü ihlal edildi: **kapı eski haliyle kalır; bu iki sinyal motora EKLENMEDİ.** Halka yalnız jlnnlk için var (soğuk hava bahçesinde `sk_halka` yok): 13 uyarının 7'si halka için değerlendirilemedi. SCL ölçümü ağ gerektirir (panel isteğinde kullanılamaz); ölçüm betiği: `scripts/sebep_dilim2_erken_sinyal.py`, yardımcı: `domain/sebep/scl.py`.
+**Not:** «bölgesel düşüş + hava kanıtı yok» bu bahçede gerçek bir hasarın (gecikmiş don) de imzasıdır; halka eş zamanlı düşüşü tek başına «görüntü kaynaklı» demek için yeterli ayırt edici değildir.
+
+**Güven kademesi (onay):** kararlılık < 0,5 ise güven sözcüğü bir kademe düşer (daha olası → olası → zayıf) ve görüntü kapısı KAPANMAZ. Altın bahçede etkilenen beş olay: jlnnlk 2016-04-29, 2021-02-12; soğuk hava 2019-04-04, 2019-08-27, 2021-08-21 (hepsi «olası» → «zayıf»; kapı kapanmaz).

@@ -180,6 +180,11 @@ export function seedDon(gardenId: string, seviye: 'uyari' | 'izle' | 'dusuk', ..
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_don', gardenId, seviye, ...bayrak], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 180_000, maxBuffer: 512 * 1024 * 1024 })
 }
 
+/** Test aracı (ADIM 10B): taze optik canlılık düşüşü olayı — `belirsiz` (sebep seçilmez) ya da `kapi` (görüntü kaynaklı olabilir; bildirim/uyarı bastırılır). SENTETİK test verisi. */
+export function seedSebep(gardenId: string, mod: 'belirsiz' | 'kapi'): void {
+  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_sebep', gardenId, mod], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 120_000 })
+}
+
 /** Test aracı: iç izleme ekranı için GERÇEK izleme işlerini (günlük akış anlık görüntüsü + haftalık uyum) geçmiş günler için koşturur (ağ yok). */
 export function seedIzleme(gun = 21): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_izleme', String(gun)], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 240_000, maxBuffer: 512 * 1024 * 1024 })

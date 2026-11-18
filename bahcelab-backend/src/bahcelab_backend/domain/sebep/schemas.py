@@ -47,7 +47,8 @@ class SebepCikti(BaseModel):
     aciklama: str
     secim: str | None
     secim_ad: str | None
-    guven: Literal["daha_olasi", "olasi", "belirsiz"]
+    guven: Literal["daha_olasi", "olasi", "zayif", "belirsiz"]
+    guven_dusuruldu: bool
     belirsiz_nedeni: str | None
     kararlilik: float | None
     kapi: SebepKapisi

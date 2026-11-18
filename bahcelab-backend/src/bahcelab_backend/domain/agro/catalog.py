@@ -634,6 +634,7 @@ class SebepKurali(KuralBlok):
     kis_aylari: list[int]
     agirlik: dict[str, float]  # kanıt kodu → ham ağırlık (işaretli: + lehte, − aleyhte)
     kararlilik_deneme: int = Field(ge=10)
+    kararlilik_min: float = Field(ge=0, le=1)  # kararlılık bunun altındaysa güven sözcüğü bir kademe düşer, kapı kapanmaz
     kararlilik_aralik: float = Field(gt=0, lt=1)  # her sebep için ağırlık çarpanı U(1−a, 1+a)
     kontrol_listesi: dict[Literal["don", "su", "besin", "hastalik", "mekanik", "goruntu"], list[SebepKontrol]]
 

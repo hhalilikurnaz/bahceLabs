@@ -1,6 +1,6 @@
 export interface ComingSoonItem {
   title: string
-  /** "Adım 11" gibi */
+  /** Kullanıcıya gösterilen durum etiketi («yakında»); iç yol haritası adımı (Adım/Faz/Dilim numarası) YAZILMAZ */
   step: string
   text: string
 }

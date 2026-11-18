@@ -285,7 +285,7 @@ async def test_risks_endpoint_lists_applicable_rules_with_status_and_trap_placeh
     for risk in data["riskler"]:
         assert risk["seviye"] in ("dusuk", "orta", "yuksek") and risk["gerekce"] and risk["kural"]["durum"] == "dogrulanmadi"
         assert risk["gecerlilik_baslangic"] <= risk["gecerlilik_bitis"]
-    assert data["tuzak"] == {"desteklenir": False, "adim": "Adım 12", "aciklama": data["tuzak"]["aciklama"]} and "teşhis" in data["not_"]
+    assert data["tuzak"] == {"desteklenir": False, "adim": "yakında", "aciklama": data["tuzak"]["aciklama"]} and "teşhis" in data["not_"]
 
     orange = await new_garden(user_client, urun="portakal")
     kinds = {r["kod"] for r in (await user_client.get(f"/gardens/{orange['id']}/riskler")).json()["riskler"]}

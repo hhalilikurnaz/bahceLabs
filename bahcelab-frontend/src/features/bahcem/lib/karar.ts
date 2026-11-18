@@ -20,6 +20,16 @@ export function durumKarar(konum: KonumKodu | null): string {
   return { icinde: 'Bahçe bu mevsim için normal.', altinda: 'Bahçe bu mevsim için normalin altında.', ustunde: 'Bahçe bu mevsim için normalin üstünde.' }[konum]
 }
 
+/**
+ * Durum başlığı ve büyük sayı kararı: Durum «veri yok» ise (kademe üretilemedi: veri eski/yetersiz) «Normal / normalin altında» sözcüğü ve büyük sayı GÖSTERİLMEZ — eski bir görüntünün bandı
+ * «normal» görünse bile aynı ekranda «Veri yetersiz» ile çelişemez. Yalnız «veri yetersiz» yazılır.
+ */
+export function durumBasligi(veriYok: boolean, konum: KonumKodu | null, ozet: string | null): { karar: string; sayiGoster: boolean } {
+  if (veriYok) return { karar: 'Bahçe durumu için veri yetersiz.', sayiGoster: false }
+  if (konum) return { karar: durumKarar(konum), sayiGoster: true }
+  return { karar: ozet ?? 'Bahçe durumu için veri yetersiz.', sayiGoster: false }
+}
+
 /** Büyük sayı: bandın içindeyse «Normal»; dışındaysa ortancaya göre sapma («−%8»). Gerçek değer küçük yazıda. */
 export function konumSayisi(deger: number, band: Pick<NormalBantAy, 'p25' | 'p50' | 'p75' | 'ceyrek_yeterli'> | undefined): { buyuk: string; kucuk: string } | null {
   const k = konumOf(deger, band)

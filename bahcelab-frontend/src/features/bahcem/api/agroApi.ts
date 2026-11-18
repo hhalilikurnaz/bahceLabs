@@ -100,6 +100,8 @@ export interface TodayItem {
   sekme: 'durum' | 'analiz' | 'hava' | 'gunluk' | 'rapor'
   /** Teknik ayrıntı (GDD, eşikler): «Ayrıntı» açılırında */
   ayrinti: string | null
+  /** S2 düşüşü içeren olay maddesi: «Olası sebepler (kesin değil)» için olay kimliği */
+  olay_id: string | null
 }
 
 const meta = (m: ApiKuralMeta | null): RuleMeta | null => (m ? { durum: m.durum, kaynak: m.kaynak, onaylayan: m.onaylayan } : null)
@@ -172,7 +174,7 @@ export const agroApi = {
     }
   },
   async today(gardenId: string): Promise<TodayItem[]> {
-    return (await apiRequest<ApiBugun>(`/gardens/${gardenId}/bugun`)).maddeler.map((m) => ({ ...m, ayrinti: m.ayrinti ?? null }))
+    return (await apiRequest<ApiBugun>(`/gardens/${gardenId}/bugun`)).maddeler.map((m) => ({ ...m, ayrinti: m.ayrinti ?? null, olay_id: m.olay_id ?? null }))
   },
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analizBuyukSayi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, geciciNotu, sulamaKarar, sulamaNeden, sulamaPanelKarar, sulamaSatiri, suDengesiCumlesi, sureMetni, suKarar, toprakSuyuCumlesi } from '@/features/bahcem/lib/karar'
+import { analizBuyukSayi, durumBasligi, durumKarar, gecmisKarar, havaKarar, konumOf, konumSayisi, riskCumlesi, geciciNotu, sulamaKarar, sulamaNeden, sulamaPanelKarar, sulamaSatiri, suDengesiCumlesi, sureMetni, suKarar, toprakSuyuCumlesi } from '@/features/bahcem/lib/karar'
 
 const BAND = { p25: 0.643, p50: 0.676, p75: 0.717, ceyrek_yeterli: true }
 
@@ -137,5 +137,20 @@ describe('geçici gün notu', () => {
   it('N gün → tek cümle; 0 → yok', () => {
     expect(geciciNotu(5)).toBe('Son 5 gün geçici: ERA5 henüz kesinleşmedi, kesinleşince plan yeniden hesaplanır.')
     expect(geciciNotu(0)).toBeNull()
+  })
+})
+
+describe('Durum başlığı: veri yetersizken «Normal» sözcüğü gösterilmez', () => {
+  it('veri yok → yalnız «veri yetersiz», sayı ve «normal» yok (eski görüntünün bandı normal olsa bile)', () => {
+    const b = durumBasligi(true, 'icinde', 'Durum için yeterli veri yok.')
+    expect(b.karar).toBe('Bahçe durumu için veri yetersiz.')
+    expect(b.sayiGoster).toBe(false)
+    expect(b.karar).not.toMatch(/normal/i)
+    for (const k of ['icinde', 'altinda', 'ustunde'] as const) expect(durumBasligi(true, k, null).karar).not.toMatch(/normal/i)
+  })
+  it('veri varsa konum cümlesi ve büyük sayı gösterilir', () => {
+    expect(durumBasligi(false, 'icinde', 'x')).toEqual({ karar: 'Bahçe bu mevsim için normal.', sayiGoster: true })
+    expect(durumBasligi(false, null, 'Özet cümlesi')).toEqual({ karar: 'Özet cümlesi', sayiGoster: false })
+    expect(durumBasligi(false, null, null).karar).toBe('Bahçe durumu için veri yetersiz.')
   })
 })

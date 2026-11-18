@@ -4,6 +4,8 @@ import { ErrorState, Skeleton, cx } from '@/components/ui'
 import { useToday, type TodayItem } from '../../api/agroApi'
 import { gardenPath } from '../../lib/routes'
 import { SulamaSatiri } from './SulamaSatiri'
+import { KAPI_BASLIK } from '../../api/sebepApi'
+import { SebepAcilir } from '../../calisma/sebep/SebepAcilir'
 
 const ICON = { kritik: CircleAlert, onemli: TriangleAlert, bilgi: Info } as const
 const TONE = { kritik: 'text-app-danger', onemli: 'text-app-warn', bilgi: 'text-app-accent' } as const
@@ -30,7 +32,8 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
           const done = item.tur === 'her_sey_yolunda'
           const Icon = done ? CircleCheck : ICON[item.oncelik]
           return (
-            <li key={`${item.tur}-${item.baslik}`} className="flex items-center gap-3 py-3" data-testid="today-item" data-kind={item.tur}>
+            <li key={`${item.tur}-${item.baslik}`} className="py-3" data-testid="today-item" data-kind={item.tur}>
+              <div className="flex items-center gap-3">
               <Icon className={cx('h-5 w-5 shrink-0', done ? 'text-app-success' : TONE[item.oncelik])} aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="text-body font-semibold leading-snug text-app-text">
@@ -54,6 +57,8 @@ export function TodayCard({ gardenId }: { gardenId: string }) {
                   {ACTION_LABEL[item.sekme]}
                 </Link>
               )}
+              </div>
+              {item.olay_id && item.baslik !== KAPI_BASLIK && <div className="pl-8"><SebepAcilir gardenId={gardenId} olayId={item.olay_id} testId="today-sebep" /></div>}
             </li>
           )
         })}

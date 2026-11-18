@@ -53,7 +53,7 @@ from bahcelab_backend.shared.clock import bugun
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
-NOTE = "Bölgeler ağaç gücünü gösterir; hasat kayıtlarıyla (Adım 11) verim potansiyeli olarak doğrulanacak."
+NOTE = "Bölgeler ağaç gücünü gösterir; hasat kayıtlarıyla verim potansiyeli olarak doğrulanacak."
 ZONE_NAMES = {3: ["Zayıf", "Orta", "Güçlü"], 5: ["En zayıf", "Zayıf", "Orta", "Güçlü", "En güçlü"]}
 STABILITY_NAMES = {1: "dusuk", 2: "orta", 3: "yuksek"}
 DIRECTIONS = ["kuzey", "kuzeydoğu", "doğu", "güneydoğu", "güney", "güneybatı", "batı", "kuzeybatı"]

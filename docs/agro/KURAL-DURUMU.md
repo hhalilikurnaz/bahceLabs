@@ -137,5 +137,5 @@ Bölgeleme eşikleri (yıl uyum korelasyonu 0,5; homojenlik %8; en küçük böl
 | Don kanıtı | ERA5-Land pencere en düşük ≤ −2 °C (+3) · ≤ 0 °C (+2) · ≤ +2 °C (+0,5) · > +2 °C (−3); istasyon destek +3 / çelişme −3; kamu kaydı +2; kullanıcı «oldu» +3 / «olmadı» −3; pencere = önceki sahne − 21 gün … düşüşü gören sahne | Hasar gecikmesi: UF/IFAS HS1275, CH004; 21 gün katalog `olay.don_hasar_gun` |
 | Su kanıtı | 30 gün toprak nemi z ≤ −1 (+1,5, doğrudan) · z ≥ 0,5 (−1) · ΔNDMI ≤ −0,05 (+1, destekleyici; özgül değil) · yaz (+0,5) | Tasarım önsel değeri; NDMI'nin don/hasarda da düşmesi aynı veride gözlendi |
 | Görüntü kanıtı | sonraki net sahnede toparlandı (+2) · sahne bulutu ≥ %20 (+1) · bahçenin ≥ %80'i tek adımda (+1) · kalıcı (−1,5) · radar değişimi (−1) | Sentinel-2 SCL sınıfları (arXiv 2406.18584) |
-| Görüntü kapısı | görüntü seçildi, puan ≥ 2,0, don puanı < 1,0 → uyarı/bildirim yok; geriye dönük etki: 13 uyarıdan 0 | ADR 0033 |
-| Kararlılık | ağırlık ×U(0,7–1,3), 200 deneme | Tasarım önsel değeri |
+| Görüntü kapısı | görüntü seçildi, puan ≥ 2,0, don puanı < 1,0, kararlılık ≥ 0,5 → uyarı/bildirim yok (Durum'da tek satır bilgi); geriye dönük etki: 13 uyarıdan 0; erken sinyaller (halka, SCL) kalıcı bir düşüşü bastırdığı için eklenmedi | ADR 0033 |
+| Kararlılık | ağırlık ×U(0,7–1,3), 200 deneme; < 0,5 ise güven sözcüğü bir kademe düşer ve kapı kapanmaz | Tasarım önsel değeri |
