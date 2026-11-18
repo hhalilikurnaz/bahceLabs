@@ -42,6 +42,7 @@ async def main() -> None:
                     text("INSERT INTO acquisition_stats SELECT id, :n, :v, :v, :v, :v, :v, :v, :v, :v, 100 FROM acquisitions WHERE garden_id = :g AND source_id = :s AND scene_id = :c ON CONFLICT DO NOTHING"),
                     {"n": ind, "v": v, "g": gid, "s": SOURCE, "c": f"SEED_{gid}_{gun}"},
                 )
+        await s.execute(text("DELETE FROM stations"))  # izolasyon: önceki testlerin (don, iç izleme) istasyonları bu bahçeye 80 km içinde bağımsız don kanıtı üretip beklenen «belirsiz»/kapı sonucunu bozmasın
         cell, _, _ = await garden_cell(s, gid)
         for k in range(0, 60):
             await s.execute(
