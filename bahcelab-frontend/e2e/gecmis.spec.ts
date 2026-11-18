@@ -12,7 +12,9 @@ test.describe('Geçmiş sayfası', () => {
     seedScenes(garden.id)
     seedOlayOzet(garden.id)
     await page.goto(`/bahceler/${garden.id}/gecmis`)
-    await expect(page.getByTestId('gecmis-baslik')).toContainText('Geçmiş')
+    // Başlık veri yüklenirken «Geçmiş yükleniyor», yüklenince karar cümlesidir («Bu sezon değişken.»): geçici metni değil KALICI durumu doğrula
+    await expect(page.getByTestId('gecmis-baslik')).toHaveText(/^(?!Geçmiş yükleniyor).+\S/, { timeout: 30_000 })
+    await expect(page).toHaveURL(new RegExp(`/bahceler/${garden.id}/gecmis$`))
     await expect(page.getByTestId('sezon-egrisi').getByRole('heading', { level: 3 })).toContainText('önceki yıllara', { timeout: 30_000 })
     await page.locator('summary', { hasText: 'Yıl yıl özet' }).click()
     await expect(page.getByTestId('yil-tablosu')).toBeVisible({ timeout: 30_000 })

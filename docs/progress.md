@@ -384,6 +384,8 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 - **Doğrulananlar / düzeltmeler:** UNECE FFV-14 (2009 metni) üç sınıf tanımlar (Extra, Class I, Class II); «ihracatlık» ve «sanayilik» standardın sınıfı değildir; TS karşılığı ve güncel baskı doğrulanamadı. 390 px ölçümü (jlnnlk): kayıt formu sayfanın 5.015. pikselinde, 32 hedef < 44 px; durum belgesindeki «tarih alanı 36 px» ve «413» iddiaları düzeltildi.
 - **Açık madde:** etiket kümesinde «su stresi» yok → 10B «su» yanıtı eşlenemiyor (öneri: Çevre/fizyolojik'e ekle).
 
+- **Aralıklı e2e (Tam paket, Dilim 0 koşusu) — kök neden bulundu:** `gecmis.spec › açılır…` başlıkta `toContainText('Geçmiş')` bekliyordu; başlık veri yüklenirken «Geçmiş yükleniyor», yüklenince karar cümlesi («Bu sezon değişken.») olur. Test yalnız geçici yükleniyor metnini yakalarsa geçiyordu (veri hızlı gelince düşer). Kanıt: veri yüklendikten sonra başlık «Bu sezon değişken.» (eski beklenti %100 düşer). Düzeltme: kalıcı durum doğrulanır (başlık «yükleniyor» değil ve dolu + adres); 30/30 geçti. Yeniden deneme eklenmedi.
+
 ---
 
 ## Notlar
