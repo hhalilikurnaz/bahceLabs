@@ -378,6 +378,12 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 - **İç yol haritası sızıntısı:** «Adım 11/12/14» ifadeleri API metinlerinde (çok yıllı bölge notu, tuzak sayımı açıklaması, kural kataloğu) ve arayüzde vardı; temizlendi. Tarama testleri: `tests/test_yol_haritasi_sizmasi.py` (arka uç dizeleri + katalog YAML değerleri) ve `tests/yolHaritasiSizmasi.test.ts` (TypeScript AST ile tüm dize/JSX metinleri; iç kalite ekranı hariç).
 - **Aralıklı e2e (defter, bahçe düzenleme):** `--repeat-each=30` ile defter (3 test) + bahçe düzenleme (2 test) = 150 koşu, temiz e2e veritabanında **0 hata** (beklenen «pencere kapanınca sunucudan okuma yarışı» ÜRETİLEMEDİ). Ayrı bir izolasyon hatası bulundu ve giderildi: `global-teardown` yalnız `saglayici = 'test'` istasyonlarını siliyordu; don tohumunun «meteostat» istasyonları koşular arasında kalıyor, daha sonraki `defter › dış ön yargı` testinde en yakın 3 istasyonu doldurup test istasyonunu gölgeliyordu (kalıntı varken 4/4 hata, temizken 0/150). Tohumlar ve teardown artık TÜM istasyonları siliyor. Düzeltmeden sonra 228 koşuda 1 hata görüldü (ilk 4'lük partide; izi alınamadı), sonraki 224 koşu temiz. Kök nedeni KANITLANAMADI; deterministik olmayan tek hata açık madde olarak izleniyor (yeniden deneme eklenmedi).
 
+### ADIM 11 — Dilim 0 (2026-11-18): kararlar ve şema (kod yok)
+- **ADR 0034** (`docs/mimari/karar/0034-gunluk-gozlem-hasat.md`): hasat birimi (bahçe geneli + isteğe bağlı çoklu vana/bölge; bölge çokgen anlık görüntüsü), miktar (kantar | kasa_tahmini, kanonik kg), kalite sözlüğü ve UNECE FFV-14 eşleşme tablosu, ayrı ve kişiye özel satış tablosu, 29 etiketlik gözlem kümesi, 10B/Don yanıtı eşlemesi, çevrimdışı kuyruk + PWA kabuğu (harita karosu önbelleği YOK), CSV/GeoJSON dışa aktarma, şema önerisi (migration Dilim 1–5'te).
+- **Katalog `gunluk`** (ön değer · mühendis onayı bekliyor) + `tests/test_gunluk_katalog.py` (onaylı liste birebir kilitli, eşleme doğrulayıcıları).
+- **Doğrulananlar / düzeltmeler:** UNECE FFV-14 (2009 metni) üç sınıf tanımlar (Extra, Class I, Class II); «ihracatlık» ve «sanayilik» standardın sınıfı değildir; TS karşılığı ve güncel baskı doğrulanamadı. 390 px ölçümü (jlnnlk): kayıt formu sayfanın 5.015. pikselinde, 32 hedef < 44 px; durum belgesindeki «tarih alanı 36 px» ve «413» iddiaları düzeltildi.
+- **Açık madde:** etiket kümesinde «su stresi» yok → 10B «su» yanıtı eşlenemiyor (öneri: Çevre/fizyolojik'e ekle).
+
 ---
 
 ## Notlar

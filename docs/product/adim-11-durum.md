@@ -1,6 +1,6 @@
 # ADIM 11 — Günlük (gözlem + hasat kaydı): durum belgesi
 
-Tarih: 2026-11-18. Kapsam: **yalnız durum tespiti ve dilim önerisi; kod yok.** Kaynaklar: `docs/roadmap.md`, `docs/PLAN-FAZ1.md`, `docs/design/BILGI-MIMARISI.md`, ADR 0019, repo kodu (dosya yolları aşağıda), geliştirme veritabanı (salt okunur sayım). Doğrulama notu: bu belgedeki «bugün var olan» maddeleri kod ve veritabanı sayımından çıkarıldı; **390 px'te Saha Defteri'nin ekran görüntüsü bu belge için alınmadı** (§4 kod incelemesidir).
+Tarih: 2026-11-18. Kapsam: **yalnız durum tespiti ve dilim önerisi; kod yok.** Kaynaklar: `docs/roadmap.md`, `docs/PLAN-FAZ1.md`, `docs/design/BILGI-MIMARISI.md`, ADR 0019, repo kodu (dosya yolları aşağıda), geliştirme veritabanı (salt okunur sayım). Doğrulama notu: bu belgedeki «bugün var olan» maddeleri kod ve veritabanı sayımından çıkarıldı. §4, Dilim 0'da jlnnlk 390 px ölçümüyle doğrulandı ve iki yerde düzeltildi (`adim-11-d0-390-olcum.md`).
 
 ## 1. Roadmap'te Adım 11 ve 11B için yazanlar (aynen)
 
@@ -73,9 +73,9 @@ Geliştirme veritabanında bugün: `field_records` **0**, `field_photos` **0**, 
 ## 4. Mobil / saha kullanımı riskleri (kod incelemesi; 390 px ekran görüntüsü alınmadı)
 
 1. **Bağlantı:** çevrimdışı yok; mutasyonlar zaman aşımı/yeniden deneme olmadan bekler (`apiRequest` AbortController kullanmıyor). Zayıf bağlantıda «Kaydet» sonsuza dek bekleyebilir; sayfa yenilenirse yazılan not kaybolur (taslak yok).
-2. **Fotoğraf yükleme:** istemci tarafında küçültme yok; telefon fotoğrafı sıklıkla 3–10 MB iken sınır 6 MB (413 riski, zayıf hatta yavaş). Fotoğraflar kayıttan sonra sıralı yüklenir: kısmi başarısızlıkta kayıt var, fotoğraf yok; kullanıcı «yeniden dene» ile **ikinci bir kayıt** üretebilir (kopya). iOS'ta HEIC için tarayıcı dönüşümüne güveniliyor. `capture` özniteliği yok: doğrudan kamera açılmıyor.
+2. **Fotoğraf yükleme:** istemci tarafında küçültme yok; telefon fotoğrafı sıklıkla 3–10 MB iken sınır 6 MB (aşılırsa sunucu doğrulama hatası döner; zayıf hatta yavaş) — **Dilim 0 ölçümü:** 413 değil doğrulama hatası. Fotoğraflar kayıttan sonra sıralı yüklenir: kısmi başarısızlıkta kayıt var, fotoğraf yok; kullanıcı «yeniden dene» ile **ikinci bir kayıt** üretebilir (kopya). iOS'ta HEIC için tarayıcı dönüşümüne güveniliyor. `capture` özniteliği yok: doğrudan kamera açılmıyor.
 3. **Konum:** kayıt formunda «Konumumu kullan» yok; konum haritaya dokunarak seçilir (GPS yalnız saha turu başlangıcında, `TurBolumu`). Doğruluk (m) gösterilmiyor. Güneş ışığında 10 m piksel haritasında nokta seçimi zor.
-4. **Tek elle kullanım / 390 px:** ≤ 900 px'te harita `56vh` üstte, form altta: nokta seçmek için sayfayı iki yönde kaydırmak gerekiyor; ekran klavyesi formu ve düğmeyi örtebilir. Dokunma hedefleri: çoğu düğme ≤ 560 px'te `min-h-11` (44 px), ama **tarih alanı `h-9` (36 px)** ve bazı süzgeç çipleri 36 px kalıyor; gözden geçirilecek.
+4. **Tek elle kullanım / 390 px:** ≤ 900 px'te harita `56vh` üstte, form altta: nokta seçmek için sayfayı iki yönde kaydırmak gerekiyor; ekran klavyesi formu ve düğmeyi örtebilir. Dokunma hedefleri: **Dilim 0 ölçümüne göre** giriş formu 390 px'te 44 px (tarih alanı ≥ 561 px'te 36 px); asıl sorun başka yerde: 32 hedef < 44 px (doğrulama rozeti özeti 24 px, «kaynak» bağlantısı, katman onay kutusu 13 px) ve **yeni kayıt formu sayfanın 5.015. pikselinde** (23 doğrulama kartından sonra). Ayrıntı: `adim-11-d0-390-olcum.md`.
 5. **Gerçek durum zorluğu:** eldiven, güneş yansıması (renk dışı işaret kuralı var), batarya; kayıt akışı 3 dokunuştan uzun (tür → tarih → konum → not → foto → ekle).
 6. **Kişisel veri:** konumlu fotoğraf ve not kişisel veridir (KVKK); alıcı/fiyat ticari olarak hassas; dışa aktarma ve ileride paylaşım bağlantısı (rapor adımı) bunu kapsamalı.
 7. **Veri bütünlüğü:** `ayrinti` serbest JSON; hasat ve gözlem için tür bazlı doğrulama yok (yağışta var). Kg/kasa gibi alanlarda birim karışıklığı riski.

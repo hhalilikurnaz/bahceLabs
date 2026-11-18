@@ -639,6 +639,79 @@ class SebepKurali(KuralBlok):
     kontrol_listesi: dict[Literal["don", "su", "besin", "hastalik", "mekanik", "goruntu"], list[SebepKontrol]]
 
 
+class GozlemEtiketi(BaseModel):
+    kod: str = Field(pattern=r"^[a-z0-9_]+$")
+    ad: str = Field(min_length=1)
+
+
+class GozlemKategorisi(BaseModel):
+    kod: str = Field(pattern=r"^[a-z0-9_]+$")
+    ad: str = Field(min_length=1)
+    etiketler: list[GozlemEtiketi] = Field(min_length=1)
+
+
+class SecenekKodu(BaseModel):
+    kod: str = Field(pattern=r"^[a-z0-9_]+$")
+    ad: str = Field(min_length=1)
+
+
+class KaliteSinifi(SecenekKodu):
+    unece: str = Field(min_length=1)  # UNECE FFV-14 karşılığı (kaynak: ECE/TRADE/C/WP.7/2009/5) ya da «karşılığı yok»
+
+
+class GunlukFoto(BaseModel):
+    uzun_kenar_px: int = Field(ge=800)  # istemcide küçültme: uzun kenar
+    hedef_bayt: int = Field(ge=100_000)  # istemci çıktısı için hedef boyut (~1 MB)
+    roller: list[str]  # fotoğraf rolü: kantar_fisi | genel
+
+
+class GunlukKuyruk(BaseModel):
+    istek_zaman_asimi_sn: int = Field(ge=5)  # tek istek zaman aşımı (AbortController)
+    foto_zaman_asimi_sn: int = Field(ge=5)
+    yeniden_deneme_bekleme_sn: list[int] = Field(min_length=1)  # artan bekleme (üstel değil, sabit liste)
+    en_cok_bekleyen: int = Field(ge=1)  # kuyrukta tutulacak en çok kayıt (taşarsa kullanıcıya söylenir)
+
+
+class GunlukHasat(BaseModel):
+    kasa_kg_varsayilan: float = Field(gt=0)  # bahçe ayarında değiştirilebilir
+    kasa_kg_min: float = Field(gt=0)
+    kasa_kg_max: float = Field(gt=0)
+    miktar_kaynaklari: list[SecenekKodu]  # kantar | kasa_tahmini
+    kalite: list[KaliteSinifi]
+    satis_sekilleri: list[SecenekKodu]
+    toplam_tolerans_yuzde: float = Field(ge=0, le=5)  # sınıf satırları toplamı ile kayıt toplamı arasındaki izinli fark (kantar kaynağında)
+
+
+class GunlukKurali(KuralBlok):
+    """ADIM 11 (ADR 0034) — Günlük: gözlem etiketleri, hasat sözlüğü, fotoğraf ve çevrimdışı kuyruk ayarları. Hepsi ön değer · mühendis onayı bekliyor."""
+
+    surum: str
+    gozlem_kategorileri: list[GozlemKategorisi]
+    siddet: list[SecenekKodu]
+    yayginlik: list[SecenekKodu]
+    hasat: GunlukHasat
+    foto: GunlukFoto
+    kuyruk: GunlukKuyruk
+    sistem_eslesme: dict[str, dict[str, str | None]]  # sistem yanıtı → «kategori.etiket» (None: eşleşme yok); 10B «Sebep buydu», «Don oldu mu?»
+
+    @model_validator(mode="after")
+    def _tutarli(self) -> GunlukKurali:
+        kodlar = [f"{k.kod}.{e.kod}" for k in self.gozlem_kategorileri for e in k.etiketler]
+        if len(set(kodlar)) != len(kodlar) or len({k.kod for k in self.gozlem_kategorileri}) != len(self.gozlem_kategorileri):
+            raise ValueError("Gözlem kategori/etiket kodları tekil olmalı.")
+        for ad, eslesme in self.sistem_eslesme.items():
+            for yanit, hedef in eslesme.items():
+                if hedef is not None and hedef not in kodlar:
+                    raise ValueError(f"sistem_eslesme.{ad}.{yanit}: «{hedef}» etiket kümesinde yok.")
+        h = self.hasat
+        if not h.kasa_kg_min <= h.kasa_kg_varsayilan <= h.kasa_kg_max:
+            raise ValueError("Varsayılan kasa ağırlığı min–max aralığında olmalı.")
+        for grup in (h.miktar_kaynaklari, h.kalite, h.satis_sekilleri, self.siddet, self.yayginlik):
+            if len({x.kod for x in grup}) != len(grup):
+                raise ValueError("Seçenek kodları tekil olmalı.")
+        return self
+
+
 class Katalog(BaseModel):
     surum: int
     sezon_baslangici: str
@@ -652,6 +725,7 @@ class Katalog(BaseModel):
     izleme: IzlemeKurali
     don: DonKurali
     sebep: SebepKurali
+    gunluk: GunlukKurali
     durum_v2: DurumV2Kurali
     olay: OlayKurali
     bildirim: BildirimKurali

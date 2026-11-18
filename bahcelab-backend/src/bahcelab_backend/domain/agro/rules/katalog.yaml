@@ -715,3 +715,109 @@ sebep:
       - metin: "Sonraki net Sentinel-2 geçişini bekleyin; bulut gölgesi/ince bulut/sis düşüşü gösterip sonraki görüntüde kaybolabilir."
         kaynak: "Sentinel-2 SCL sınıfları, arXiv 2406.18584"
         url: "https://arxiv.org/html/2406.18584v2"
+
+# ADIM 11 — Günlük (ADR 0034): gözlem etiketleri, hasat sözlüğü, fotoğraf ve çevrimdışı kuyruk. Hepsi ön değer · mühendis onayı bekliyor
+gunluk:
+  durum: dogrulanmadi
+  kaynak: >-
+    Ön değer · mühendis onayı bekliyor. Etiket kümesi ve kalite/satış sözlüğü ürün sahibinin kararıdır (ADR 0034); zararlı/hastalık adları ziraat mühendisi tarafından doğrulanacak.
+    Kalite sınıfları: UNECE FFV-14 (turunçgil) «Extra / Class I / Class II» sınıfları (ECE/TRADE/C/WP.7/2009/5 metni okundu; güncel baskı doğrulanamadı) ile BİREBİR eşleşmez:
+    «ihracatlik» bir ticari hedef sınıfıdır, «sanayilik_iskarta» standardın asgari gereklerini karşılamayan mahsuldür. Türk Standardı (TS) karşılığı bu oturumda doğrulanamadı.
+  surum: gunluk-1
+  gozlem_kategorileri:
+    - kod: zararli
+      ad: Zararlı
+      etiketler:
+        - {kod: akdeniz_meyve_sinegi, ad: Akdeniz meyve sineği}
+        - {kod: kirmizi_orumcek, ad: Kırmızı örümcek}
+        - {kod: unlu_bit, ad: Unlu bit}
+        - {kod: kabuklu_bit, ad: Kabuklu bit}
+        - {kod: beyaz_sinek, ad: Beyaz sinek}
+        - {kod: yaprak_galeri_guvesi, ad: Yaprak galeri güvesi}
+        - {kod: thrips, ad: Thrips}
+        - {kod: yaprak_biti, ad: Yaprak biti}
+        - {kod: diger, ad: Diğer}
+    - kod: hastalik
+      ad: Hastalık
+      etiketler:
+        - {kod: uckurutan, ad: Uçkurutan}
+        - {kod: kahverengi_curukluk, ad: Kahverengi çürüklük / Phytophthora}
+        - {kod: kok_bogazi_curuklugu, ad: Kök boğazı çürüklüğü}
+        - {kod: antraknoz, ad: Antraknoz}
+        - {kod: diger, ad: Diğer}
+    - kod: fenoloji
+      ad: Fenoloji
+      etiketler:
+        - {kod: surgun, ad: Sürgün}
+        - {kod: cicek, ad: Çiçek}
+        - {kod: meyve_tutumu, ad: Meyve tutumu}
+        - {kod: meyve_buyumesi, ad: Meyve büyümesi}
+        - {kod: renk_donumu, ad: Renk dönümü}
+        - {kod: hasat_olgunlugu, ad: Hasat olgunluğu}
+    - kod: cevre
+      ad: Çevre / fizyolojik
+      etiketler:
+        - {kod: don, ad: Don}
+        - {kod: dolu, ad: Dolu}
+        - {kod: ruzgar, ad: Rüzgâr}
+        - {kod: gunes_yanigi, ad: Güneş yanığı}
+        - {kod: yaprak_sararmasi, ad: Yaprak sararması (besin belirtisi olabilir)}
+    - kod: sulama_altyapi
+      ad: Sulama / altyapı
+      etiketler:
+        - {kod: tikali_damlatici, ad: Tıkalı damlatıcı}
+        - {kod: sizinti, ad: Sızıntı}
+        - {kod: pompa_vana_arizasi, ad: Pompa / vana arızası}
+    - kod: genel
+      ad: Genel
+      etiketler:
+        - {kod: genel, ad: Genel gözlem}
+  siddet:
+    - {kod: az, ad: Az}
+    - {kod: orta, ad: Orta}
+    - {kod: cok, ad: Çok}
+  yayginlik:
+    - {kod: tek_agac, ad: Tek ağaç}
+    - {kod: birkac_agac, ad: Birkaç ağaç}
+    - {kod: bolge, ad: Bölge}
+    - {kod: bahce_geneli, ad: Bahçe geneli}
+  hasat:
+    kasa_kg_varsayilan: 20
+    kasa_kg_min: 5
+    kasa_kg_max: 40
+    miktar_kaynaklari:
+      - {kod: kantar, ad: Kantar fişi (kg)}
+      - {kod: kasa_tahmini, ad: Kasa adedi × kasa ağırlığı (tahmin)}
+    kalite:
+      - {kod: ihracatlik, ad: İhracatlık, unece: "Ticari hedef sınıfı; UNECE sınıfı değil (en az Class I + alıcı/ihracat şartnamesi, ön değer)"}
+      - {kod: birinci_sinif, ad: Birinci sınıf, unece: "Class I"}
+      - {kod: ikinci_sinif, ad: İkinci sınıf, unece: "Class II"}
+      - {kod: sanayilik_iskarta, ad: Sanayilik / ıskarta, unece: "Karşılığı yok (Class II asgari gereklerini karşılamayan mahsul)"}
+    satis_sekilleri:
+      - {kod: dalinda_goturu, ad: Dalında götürü}
+      - {kod: tuccara_kg, ad: Tüccara (kg)}
+      - {kod: hale, ad: Hal}
+      - {kod: kendi_depoya, ad: Kendi depoma}
+      - {kod: ihracatciya, ad: İhracatçıya}
+    toplam_tolerans_yuzde: 1
+  foto:
+    uzun_kenar_px: 2048
+    hedef_bayt: 1000000
+    roller: [genel, kantar_fisi]
+  kuyruk:
+    istek_zaman_asimi_sn: 30
+    foto_zaman_asimi_sn: 60
+    yeniden_deneme_bekleme_sn: [5, 30, 120, 600]
+    en_cok_bekleyen: 200
+  sistem_eslesme:
+    sebep_yaniti:          # 10B «Sebep buydu» → gözlem etiketi (etiket kümesinde karşılığı olmayanlar None; ADR 0034 §5)
+      don: cevre.don
+      su: null
+      besin: cevre.yaprak_sararmasi
+      hastalik_zararli: hastalik.diger
+      budama_hasat: null
+      bilmiyorum: null
+    don_yaniti:            # ADIM 10 «Don oldu mu?»
+      oldu: cevre.don
+      olmadi: null
+      bilmiyorum: null
