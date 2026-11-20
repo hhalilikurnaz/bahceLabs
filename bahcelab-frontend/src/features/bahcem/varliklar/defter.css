@@ -40,7 +40,7 @@
 .notebook .rule-r { border-right: 1px solid var(--rule); }
 .notebook .num-big { font-weight: 600; font-size: 34px; letter-spacing: -0.01em; line-height: 1; }
 .notebook .unit { font-size: 13px; color: var(--ink-3); font-weight: 500; margin-left: 3px; }
-.notebook .btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--rule-2); background: var(--paper); color: var(--ink); font: 600 14px var(--font-ui); cursor: pointer; }
+.notebook .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; height: auto; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--rule-2); background: var(--paper); color: var(--ink); font: 600 14px var(--font-ui); cursor: pointer; }
 .notebook .btn.primary { background: var(--lemon); border-color: var(--lemon); color: var(--on-lemon); }
 .notebook .btn.quiet { border-color: var(--rule); color: var(--ink-2); }
 .notebook .tab { font: 600 14px var(--font-ui); padding: 9px 0; margin-right: 18px; color: var(--ink-3); border-bottom: 2px solid transparent; background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer; }

@@ -194,3 +194,9 @@ export function seedIzleme(gun = 21): void {
 export function seedSistemKontrol(gardenId: string, mod: 'tek' | 'vana'): void {
   execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_sk', gardenId, mod], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe' })
 }
+
+/** Saha Defteri: sabit «+ Kayıt» eylemiyle kayıt çekmecesini açar (form artık sayfanın dibinde değil). */
+export async function kayitAc(page: Page): Promise<void> {
+  await page.getByTestId('kayit-ekle').click({ timeout: 30_000 })
+  await expect(page.getByTestId('kayit-formu')).toBeVisible()
+}

@@ -446,11 +446,13 @@ async def yanit_yaz(
         "budama_hasat": "budama/hasat",
         "bilmiyorum": "bilmiyorum",
     }[yanit]
+    kayit_id = uuid.uuid4()
     await session.execute(
         text(
-            "INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti, created_by) VALUES (gen_random_uuid(), :g, 'gozlem', :d, :a, CAST(:y AS jsonb), :u)"
+            "INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti, created_by) VALUES (:i, :g, 'gozlem', :d, :a, CAST(:y AS jsonb), :u)"
         ),
         {
+            "i": kayit_id,
             "g": garden_id,
             "d": row.bitis,
             "a": f"Canlılık düşüşünün sebebi ({row.bitis:%d.%m.%Y}): {etiket}",
@@ -458,4 +460,7 @@ async def yanit_yaz(
             "u": user_id,
         },
     )
+    from bahcelab_backend.domain.fieldbook import sistem
+
+    await sistem.etiket_yaz(session, kayit_id, "sebep_yaniti", yanit, row.anahtar)  # «Sebep buydu» → gözlem etiketi (katalog eşlemesi; eşleşmeyen etiketsiz kalır)
     return True

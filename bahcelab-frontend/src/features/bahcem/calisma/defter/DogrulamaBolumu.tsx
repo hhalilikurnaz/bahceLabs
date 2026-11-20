@@ -14,13 +14,13 @@ function OnYargiRozeti({ kart }: { kart: DogrulamaKarti }) {
   if (!y) return null
   return (
     <details className="mt-0.5 text-[12px]" data-testid="on-yargi" data-sonuc={y.sonuc}>
-      <summary className={`min-h-6 cursor-pointer font-semibold ${ON_YARGI_SINIF[y.sonuc]}`} data-testid="on-yargi-rozeti">{ON_YARGI_AD[y.sonuc]}</summary>
+      <summary className={`flex min-h-11 cursor-pointer items-center font-semibold ${ON_YARGI_SINIF[y.sonuc]}`} data-testid="on-yargi-rozeti">{ON_YARGI_AD[y.sonuc]}</summary>
       <ul className="mt-1 grid gap-0.5 text-[var(--ink-2)]">
         {y.kanitlar.map((k) => (
           <li key={k.metin}>
             {k.metin}
             {k.il_duzeyi && <span className="ml-1 font-semibold" data-testid="il-duzeyi">(il düzeyi kayıt)</span>}
-            {k.baglanti && <> · <a href={k.baglanti} target="_blank" rel="noreferrer" className="underline">kaynak</a></>}
+            {k.baglanti && <> · <a href={k.baglanti} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center px-1 underline">kaynak</a></>}
           </li>
         ))}
         {y.kanitlar.length === 0 && <li className="text-[var(--ink-3)]">Neden: {y.neden}</li>}
@@ -53,7 +53,7 @@ function Kart({ gardenId, kart }: { gardenId: string; kart: DogrulamaKarti }) {
       <p className="mt-0.5 text-small text-[var(--ink-2)]">Uydu haklı mıydı?</p>
       <div className="mt-1 flex flex-wrap gap-1.5" role="group" aria-label={`${kart.baslik}: Uydu haklı mıydı?`}>
         {SONUCLAR.map((s) => (
-          <button key={s} type="button" aria-pressed={(secim ?? kart.sonuc) === s} onClick={() => setSecim(s)} data-testid={`sonuc-${s}`} className={`min-h-9 border px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 ${(secim ?? kart.sonuc) === s ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)] text-[var(--ink-2)] hover:border-[var(--ink)]'}`}>
+          <button key={s} type="button" aria-pressed={(secim ?? kart.sonuc) === s} onClick={() => setSecim(s)} data-testid={`sonuc-${s}`} className={`min-h-11 border px-3 text-[12px] font-semibold ${(secim ?? kart.sonuc) === s ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)] text-[var(--ink-2)] hover:border-[var(--ink)]'}`}>
             {SONUC_AD[s]}
           </button>
         ))}
@@ -67,8 +67,8 @@ function Kart({ gardenId, kart }: { gardenId: string; kart: DogrulamaKarti }) {
       {acik && (
         <div className="mt-2 grid gap-1.5" data-testid="dogrulama-formu">
           <label className="text-caption font-semibold text-[var(--ink-3)]" htmlFor={`not-${kart.hedef_anahtar}`}>Not (isteğe bağlı)</label>
-          <textarea id={`not-${kart.hedef_anahtar}`} value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} placeholder="Sahada ne gördünüz?" className="w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px]" />
-          <label className="inline-flex min-h-9 w-fit cursor-pointer items-center border border-[var(--rule-2)] px-2.5 text-[12px] font-semibold hover:border-[var(--ink)] max-[560px]:min-h-11">
+          <textarea id={`not-${kart.hedef_anahtar}`} value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} placeholder="Sahada ne gördünüz?" className="min-h-11 w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px]" />
+          <label className="inline-flex min-h-11 w-fit cursor-pointer items-center border border-[var(--rule-2)] px-3 text-[12px] font-semibold hover:border-[var(--ink)]">
             {foto ? `Fotoğraf: ${foto.name.slice(0, 24)}` : 'Fotoğraf ekle'}
             <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" data-testid="dogrulama-foto" onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
           </label>
@@ -97,7 +97,7 @@ export function DogrulamaBolumu({ gardenId }: { gardenId: string }) {
       <p className="mt-1 text-small text-[var(--ink-2)]" data-testid="on-yargi-aciklama">Bağımsız kaynaklar (istasyon gözlemi, kamu kayıtları) bir ön yargı verir. Dış kaynağın desteklediği olaylar varsayılan listede çıkmaz; yalnız <b>çelişen</b>, <b>belirsiz</b> (veri var ama eşikler arasında) ve <b>kanıtı olmayan</b> (hiç bağımsız veri yok) olaylara bakmanız yeter, bu sırayla. Ön yargı sizin yargınızın yerine geçmez.</p>
       <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Kart süzgeci">
         {([['gereken', `Doğrulamanız gereken (${sorgu.data?.dogrulanacak ?? 0})`], ['bekleyen', `Yanıt bekleyen (${sorgu.data?.bekleyen ?? 0})`], ['hepsi', `Hepsi (${kartlar.length})`]] as const).map(([k, ad]) => (
-          <button key={k} type="button" aria-pressed={suzgec === k} onClick={() => setSuzgec(k)} data-testid={`kartlar-${k}`} className={`min-h-9 border px-2.5 text-[12px] font-semibold max-[560px]:min-h-11 ${suzgec === k ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)]'}`}>{ad}</button>
+          <button key={k} type="button" aria-pressed={suzgec === k} onClick={() => setSuzgec(k)} data-testid={`kartlar-${k}`} className={`min-h-11 border px-3 text-[12px] font-semibold ${suzgec === k ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]' : 'border-[var(--rule-2)]'}`}>{ad}</button>
         ))}
       </div>
       {sorgu.isLoading ? (

@@ -14,12 +14,15 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     DogrulukOzeti,
     FotoOnerisi,
     FotoYanit,
+    GunlukSozlugu,
     KayitGirdisi,
     KayitGuncelle,
     KayitListesi,
     KayitTuru,
     KayitYanit,
     SahaTuru,
+    SozlukEtiket,
+    SozlukKategori,
     ZiyaretGirdisi,
 )
 from bahcelab_backend.domain.fieldbook.service import FieldbookService
@@ -50,8 +53,8 @@ async def read_upload(file: UploadFile) -> bytes:
 
 # ----------------------------------------------------------------------------- kayıtlar
 @router.get("/gardens/{garden_id}/saha-kayitlari", response_model=KayitListesi)
-async def list_records(garden_id: uuid.UUID, svc: Svc, tur: KayitTuru | None = None, baslangic: Annotated[date | None, Query()] = None, bitis: Annotated[date | None, Query()] = None) -> KayitListesi:
-    return KayitListesi(kayitlar=await svc.list_records(garden_id, tur=tur, since=baslangic, until=bitis))
+async def list_records(garden_id: uuid.UUID, svc: Svc, tur: KayitTuru | None = None, baslangic: Annotated[date | None, Query()] = None, bitis: Annotated[date | None, Query()] = None, kategori: Annotated[str | None, Query(max_length=20)] = None, etiket: Annotated[str | None, Query(max_length=32)] = None) -> KayitListesi:
+    return KayitListesi(kayitlar=await svc.list_records(garden_id, tur=tur, since=baslangic, until=bitis, kategori=kategori, etiket=etiket))
 
 
 @router.post("/gardens/{garden_id}/saha-kayitlari", response_model=KayitYanit, status_code=status.HTTP_201_CREATED)
@@ -133,3 +136,17 @@ async def tour(garden_id: uuid.UUID, svc: Svc, lng: Annotated[float | None, Quer
 @router.put("/gardens/{garden_id}/saha-turu/ziyaret", status_code=status.HTTP_204_NO_CONTENT)
 async def visit(garden_id: uuid.UUID, body: ZiyaretGirdisi, svc: Svc) -> None:
     await svc.set_visit(garden_id, body.nokta_anahtar, visited=body.ziyaret_edildi, record_id=body.kayit_id)
+
+
+@router.get("/gunluk/sozluk", response_model=GunlukSozlugu)
+async def gunluk_sozlugu(_: Annotated[AuthUser, Depends(get_current_user)]) -> GunlukSozlugu:
+    """Gözlem etiket sözlüğü (katalog `gunluk`; ön değer · mühendis onayı bekliyor). Arayüz seçenekleri buradan alır."""
+    from bahcelab_backend.domain.agro.catalog import load_catalog
+
+    g = load_catalog().gunluk
+    return GunlukSozlugu(
+        surum=g.surum, durum=g.durum,
+        kategoriler=[SozlukKategori(kod=k.kod, ad=k.ad, siddet_zorunlu=k.siddet_zorunlu, etiketler=[SozlukEtiket(kod=e.kod, ad=e.ad) for e in k.etiketler]) for k in g.gozlem_kategorileri],
+        siddet=[SozlukEtiket(kod=x.kod, ad=x.ad) for x in g.siddet], yayginlik=[SozlukEtiket(kod=x.kod, ad=x.ad) for x in g.yayginlik],
+        foto_uzun_kenar_px=g.foto.uzun_kenar_px, foto_hedef_bayt=g.foto.hedef_bayt,
+    )

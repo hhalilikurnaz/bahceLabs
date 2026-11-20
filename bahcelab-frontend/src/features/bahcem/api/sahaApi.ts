@@ -15,6 +15,40 @@ export interface Foto {
   url: string
   boyut_bayt: number
 }
+/** Etiketli gözlem (ADR 0034): sözlük sunucudan gelir (`/gunluk/sozluk`, katalog; ön değer · mühendis onayı bekliyor). */
+export interface GozlemGirdisi {
+  kategori: string
+  etiket: string
+  siddet: string | null
+  yayginlik: string | null
+  sector_id: string | null
+  konum_dogruluk_m: number | null
+}
+export interface GozlemDetay {
+  kategori: string
+  kategori_ad: string
+  etiket: string
+  etiket_ad: string
+  siddet: string | null
+  siddet_ad: string | null
+  yayginlik: string | null
+  yayginlik_ad: string | null
+  sector_id: string | null
+  kaynak: 'kullanici' | 'sistem'
+  iliski_anahtar: string | null
+  konum_dogruluk_m: number | null
+}
+export interface SozlukSecenek { kod: string; ad: string }
+export interface SozlukKategori { kod: string; ad: string; siddet_zorunlu: boolean; etiketler: SozlukSecenek[] }
+export interface GunlukSozlugu {
+  surum: string
+  durum: string
+  kategoriler: SozlukKategori[]
+  siddet: SozlukSecenek[]
+  yayginlik: SozlukSecenek[]
+  foto_uzun_kenar_px: number
+  foto_hedef_bayt: number
+}
 export interface Kayit {
   id: string
   tur: KayitTuru
@@ -25,6 +59,7 @@ export interface Kayit {
   ayrinti: Record<string, unknown> | null
   fotograflar: Foto[]
   created_at: string
+  gozlem: GozlemDetay | null
 }
 export interface KayitGirdisi {
   tur: KayitTuru
@@ -33,6 +68,8 @@ export interface KayitGirdisi {
   aciklama: string | null
   /** Sulama kaydı: `sure_dk` (damlatıcı açık kalma süresi) ya da `m3`; sulama planının kovasına girer (ADR 0023) */
   ayrinti?: { sure_dk?: number; m3?: number; sektor?: string; mm?: number } | null
+  /** yalnız tur = gozlem */
+  gozlem?: GozlemGirdisi | null
 }
 /** Fotoğrafın EXIF'inden öneri (sunucuda okunur, saklanmaz): kullanıcı onaylamadan kayda yazılmaz. */
 export interface FotoOnerisi {
@@ -108,7 +145,7 @@ export interface DogrulukOzeti {
 }
 export interface TurNoktasi {
   anahtar: string
-  tur: 'zayif_kesim' | 'stres_yamasi' | 'bekliyor'
+  tur: 'zayif_kesim' | 'stres_yamasi' | 'bekliyor' | 'sebep_belirsiz'
   baslik: string
   neden: string
   lng: number
@@ -119,6 +156,10 @@ export interface TurNoktasi {
   ziyaret_zamani: string | null
   kayit_id: string | null
   olay_anahtar: string | null
+  /** sebep_belirsiz: «Sebep buydu» yanıtı bu olaya yazılır */
+  olay_id?: string | null
+  /** sebep_belirsiz: «Sahada şunlara bakın» maddeleri (katalog) */
+  kontrol?: { sebep: string; ad: string; maddeler: { metin: string; kaynak: string | null; url: string | null }[] }[] | null
 }
 export interface SahaTuru {
   noktalar: TurNoktasi[]
@@ -139,8 +180,17 @@ export const sahaKeys = {
   tur: (id: string | null) => ['saha-turu', id] as const,
 }
 
-export function useSahaKayitlari(gardenId: string | null) {
-  return useQuery({ queryKey: sahaKeys.kayitlar(gardenId), queryFn: () => apiRequest<{ kayitlar: Kayit[] }>(`${base(gardenId!)}/saha-kayitlari`).then((r) => r.kayitlar), enabled: gardenId !== null, staleTime: 30_000 })
+export interface KayitSuzgeci { kategori?: string | null; etiket?: string | null }
+export function useSahaKayitlari(gardenId: string | null, suzgec: KayitSuzgeci = {}) {
+  const q = new URLSearchParams()
+  if (suzgec.kategori) q.set('kategori', suzgec.kategori)
+  if (suzgec.etiket) q.set('etiket', suzgec.etiket)
+  const qs = q.toString()
+  return useQuery({ queryKey: [...sahaKeys.kayitlar(gardenId), qs], queryFn: () => apiRequest<{ kayitlar: Kayit[] }>(`${base(gardenId!)}/saha-kayitlari${qs ? `?${qs}` : ''}`).then((r) => r.kayitlar), enabled: gardenId !== null, staleTime: 30_000 })
+}
+/** Gözlem sözlüğü (kategori → etiket, şiddet, yaygınlık, fotoğraf küçültme hedefi): kod içine gömülmez, katalogdan gelir. */
+export function useGunlukSozlugu() {
+  return useQuery({ queryKey: ['gunluk-sozluk'], queryFn: () => apiRequest<GunlukSozlugu>('/gunluk/sozluk'), staleTime: 60 * 60_000 })
 }
 export function useDogrulamaKartlari(gardenId: string | null) {
   return useQuery({ queryKey: sahaKeys.kartlar(gardenId), queryFn: () => apiRequest<DogrulamaListesi>(`${base(gardenId!)}/dogrulama`), enabled: gardenId !== null, staleTime: 30_000 })

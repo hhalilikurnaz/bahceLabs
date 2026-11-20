@@ -31,7 +31,7 @@ Kanonik birim **kg**. Kaynak alanı `miktar_kaynagi`: `kantar` (doğrudan kg, ka
 `dalinda_goturu | tuccara_kg | hale | kendi_depoya | ihracatciya` (kod ASCII; arayüzde «Dalında götürü»); alıcı adı serbest metin; fiyat TL/kg, götürüde **toplam TL**. Ayrı tabloda (`hasat_satis`), yalnız çalışma alanı sahibine döner; **hiçbir toplulaştırma, kıyas, pazar ya da dışa aktarma bu tabloyu açık seçim/rıza olmadan okumaz** (19B kıyası ve 17 Pazar bu tablodan beslenmez; CI testi: satış tablosunu okuyan kod yolu allow-list ile sınırlı).
 
 ### 5. Gözlem etiketleri ve sistem yanıtları
-Etiket kümesi katalogda (altı kategori, 29 etiket; test onaylı listeyle birebir kilitler). Her gözlemde **şiddet** (az/orta/çok), **yaygınlık** (tek ağaç/birkaç ağaç/bölge/bahçe geneli), **konum** («Konumumu kullan» ya da haritadan nokta; doğruluk metre olarak yazılır) ve isteğe bağlı vana.
+Etiket kümesi katalogda (yedi kategori, 33 etiket; test onaylı listeyle birebir kilitler). **Dilim 1 güncellemesi (onay 2026-11-20):** «Çevre/fizyolojik»e **Su stresi (solgunluk)** eklendi; yeni kategori **Bakım/yönetim** (Budama, Hasat, «Budama / hasat (ayrıştırılmamış)»; ileride ilaçlama ve gübreleme buraya girer). Şiddet + yaygınlık zararlı, hastalık, çevre ve sulama/altyapıda **zorunlu**, fenoloji, bakım ve genel gözlemde isteğe bağlıdır (`siddet_zorunlu`, ön değer). Her gözlemde **şiddet** (az/orta/çok), **yaygınlık** (tek ağaç/birkaç ağaç/bölge/bahçe geneli), **konum** («Konumumu kullan» ya da haritadan nokta; doğruluk metre olarak yazılır) ve isteğe bağlı vana.
 **Eşleme** (sistem yanıtları aynı etiket setiyle yazılır; kayıt `gozlem_detay.kaynak = 'sistem'`):
 
 | Sistem yanıtı | Gözlem etiketi |
@@ -39,13 +39,13 @@ Etiket kümesi katalogda (altı kategori, 29 etiket; test onaylı listeyle bireb
 | 10B «Sebep buydu: don» | Çevre/fizyolojik · Don |
 | «besin» | Çevre/fizyolojik · Yaprak sararması (besin belirtisi olabilir) |
 | «hastalık/zararlı» | Hastalık · Diğer (tür bilinmiyor) |
-| «su» | **eşleşme yok** |
-| «budama/hasat» | **eşleşme yok** (yönetim işlemi; etiket kümesinde karşılığı yok) |
+| «su» | Çevre/fizyolojik · Su stresi (solgunluk) |
+| «budama/hasat» | Bakım/yönetim · Budama / hasat (ayrıştırılmamış) |
 | «bilmiyorum» | eşleşme yok (gözlem üretilmez) |
 | ADIM 10 «Don oldu mu?» oldu | Çevre/fizyolojik · Don |
 | «olmadı», «bilmiyorum» | eşleşme yok (olumsuz yanıt gözlem değildir; `don_geri_bildirim`'de kalır) |
 
-**Açık madde (ürün sahibine):** etiket kümesinde **«su stresi / solgunluk»** yok; 10B'nin «su» yanıtı bu yüzden eşlenemiyor. Öneri: Çevre/fizyolojik'e «Su stresi (solgunluk)» eklenmesi; onay gelene kadar eşleme `null` kalır, `sebep_etiket` tablosu asıl kayıt olarak sürer. Eşlenmeyen yanıtlar kayıp değildir: `sebep_etiket` ve Saha Defteri gözlem kaydı (`konu: sebep_yaniti`) olduğu gibi durur.
+**Karar (2026-11-20):** «su» ve «budama/hasat» yanıtları yukarıdaki etiketlere eşlenir; «Don oldu mu?» «olmadı» ve «bilmiyorum» eşlenmez (`don_geri_bildirim`'de kalır, Saha Defteri kaydı etiketsiz durur). 10B «budama/hasat» yanıtı tek bir yanıttır; budama mı hasat mı ayrımı yapılamadığından «ayrıştırılmamış» etiketine yazılır. `sebep_etiket` tablosu asıl kayıt olarak sürer.
 
 ### 6. Çevrimdışı
 - **Yazma kuyruğu** (IndexedDB): her kayıt istemcide üretilen **kimlikle** (`istemci_kimligi`, UUID) kuyruğa girer; sunucuda `(garden_id, istemci_kimligi)` tekildir → aynı kayıt tekrar gönderilirse **mevcut kayıt döner, ikinci kayıt oluşmaz**. Fotoğrafın da kendi istemci kimliği vardır (`field_photos (kayıt, istemci_kimligi)` tekil): **fotoğraf yeniden denemesi ikinci fotoğraf/kayıt üretmez.** Sıra: kayıt → fotoğraflar; kayıt oluştuysa fotoğraf yarıda kalsa da yalnız eksik fotoğraflar sürer.
@@ -103,3 +103,10 @@ API (uygulama sırası): Dilim 1 `POST/PATCH /gardens/{id}/saha-kayitlari` gözl
 - 11B için veri yeterliliği ancak hasat kayıtları birikince ölçülür; dev veritabanı bugün sıfırdır.
 - TS karşılığı ve UNECE güncel baskı doğrulaması açık; kalite sözlüğü «ön değer · mühendis onayı bekliyor».
 - Çevrimdışıyken harita yoktur; GPS doğruluğu cihaza bağlıdır.
+
+## Dilim 1 gerçeklemesi (2026-11-20)
+- Migration `049_gozlem_detay` (kategori, etiket, şiddet, yaygınlık, vana, kaynak kullanici|sistem, ilişki anahtarı, GPS doğruluğu); `GET /gunluk/sozluk` (katalogdan); kayıt uç noktaları gözlem alanlarını alır, katalogdan doğrular (bilinmeyen kod, eksik şiddet/yaygınlık, başka bahçenin vanası 422), `kategori`/`etiket` süzgeci.
+- Sistem yanıtları (`Sebep buydu`, `Don oldu mu?`) `fieldbook/sistem.py` ile katalog eşlemesinden etiketli yazılır (`kaynak = sistem`).
+- Saha turu: 10B «belirsiz» (son 45 gün, `saha.tur_sebep_gun`, henüz yanıtsız) düşüşler `sebep_belirsiz` noktası olur: olay yaması merkezi, katalog «Sahada şunlara bakın» maddeleri (kaynaksız madde «kaynak yok»), ziyarette «Sebep buydu». Aynı olay iki nokta üretmez.
+- Arayüz: sabit «+ Kayıt» ve kayıt çekmecesi (≤ 900 px'te harita üstte, çekmece kalan alanda; kaydırma gerekmez), «Konumumu kullan» (doğruluk m), kamera/galeri, istemcide küçültme (uzun kenar ve hedef boyut katalogdan), yerel taslak, Günlük sekmesi, tüm Defter hedefleri ≥ 44 px (e2e taraması 390 ve 1024 px).
+- Dilim 2'ye bırakılanlar: çevrimdışı kuyruk, `istemci_kimligi` idempotansı, PWA. Taslakta fotoğraf yoktur.

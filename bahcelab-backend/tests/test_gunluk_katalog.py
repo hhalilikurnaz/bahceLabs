@@ -16,12 +16,13 @@ def test_durum_dogrulanmadi_ve_kaynak_etiketli():
 
 
 def test_gozlem_etiket_kumesi_onaylanan_listeyle_birebir():
-    assert [k.kod for k in G.gozlem_kategorileri] == ["zararli", "hastalik", "fenoloji", "cevre", "sulama_altyapi", "genel"]
+    assert [k.kod for k in G.gozlem_kategorileri] == ["zararli", "hastalik", "fenoloji", "cevre", "sulama_altyapi", "bakim", "genel"]
     assert _etiketler("zararli") == ["Akdeniz meyve sineği", "Kırmızı örümcek", "Unlu bit", "Kabuklu bit", "Beyaz sinek", "Yaprak galeri güvesi", "Thrips", "Yaprak biti", "Diğer"]
     assert _etiketler("hastalik") == ["Uçkurutan", "Kahverengi çürüklük / Phytophthora", "Kök boğazı çürüklüğü", "Antraknoz", "Diğer"]
     assert _etiketler("fenoloji") == ["Sürgün", "Çiçek", "Meyve tutumu", "Meyve büyümesi", "Renk dönümü", "Hasat olgunluğu"]
-    assert _etiketler("cevre") == ["Don", "Dolu", "Rüzgâr", "Güneş yanığı", "Yaprak sararması (besin belirtisi olabilir)"]
+    assert _etiketler("cevre") == ["Don", "Dolu", "Rüzgâr", "Güneş yanığı", "Yaprak sararması (besin belirtisi olabilir)", "Su stresi (solgunluk)"]
     assert _etiketler("sulama_altyapi") == ["Tıkalı damlatıcı", "Sızıntı", "Pompa / vana arızası"]
+    assert _etiketler("bakim") == ["Budama", "Hasat", "Budama / hasat (ayrıştırılmamış)"]
     assert [x.kod for x in G.siddet] == ["az", "orta", "cok"]
     assert [x.kod for x in G.yayginlik] == ["tek_agac", "birkac_agac", "bolge", "bahce_geneli"]
 
@@ -45,7 +46,9 @@ def test_sistem_yaniti_eslemesi_etiket_kumesine_baglanir():
             assert hedef is None or hedef in kodlar
     assert G.sistem_eslesme["sebep_yaniti"]["don"] == "cevre.don"
     assert G.sistem_eslesme["sebep_yaniti"]["besin"] == "cevre.yaprak_sararmasi"
-    assert G.sistem_eslesme["sebep_yaniti"]["su"] is None  # etiket kümesinde «su stresi» yok: eşleşme yok (karar bekliyor, ADR 0034 §5)
+    assert G.sistem_eslesme["sebep_yaniti"]["su"] == "cevre.su_stresi"
+    assert G.sistem_eslesme["sebep_yaniti"]["budama_hasat"] == "bakim.budama_hasat"
+    assert G.sistem_eslesme["sebep_yaniti"]["bilmiyorum"] is None
     assert G.sistem_eslesme["don_yaniti"]["oldu"] == "cevre.don" and G.sistem_eslesme["don_yaniti"]["olmadi"] is None
 
 

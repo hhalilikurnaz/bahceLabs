@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { mapPoint, createGarden, newUser, seedIstasyon, seedOlayOzet, seedSaha, seedScenes } from './yardimcilar'
+import { mapPoint, createGarden, kayitAc, newUser, seedIstasyon, seedOlayOzet, seedSaha, seedScenes } from './yardimcilar'
 
 /** Saha Defteri (9G-B): konumlu kayıtlar + fotoğraf, «Uydu haklı mıydı?» doğrulaması, doğruluk özeti, otomatik saha turu, harita katmanı. */
 // 8×6 piksel geçerli JPEG (sunucu Pillow ile doğrular)
@@ -26,7 +26,7 @@ test.describe('Saha Defteri', () => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'Nokta Kaydı', lng: 27.91, lat: 38.91, sideM: 300 })
     await page.goto(`/bahceler/${garden.id}/defter`)
-    await expect(page.getByTestId('kayit-formu')).toBeVisible({ timeout: 30_000 })
+    await kayitAc(page)
     await page.getByTestId('kayit-tur-ilaclama').click()
     await page.getByTestId('konum-nokta').click()
     await expect(page.getByTestId('konum-ipucu')).toContainText('dokunarak')
@@ -49,7 +49,7 @@ test.describe('Saha Defteri', () => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'Alan Kaydı', lng: 27.92, lat: 38.92, sideM: 300 })
     await page.goto(`/bahceler/${garden.id}/defter`)
-    await expect(page.getByTestId('kayit-formu')).toBeVisible({ timeout: 30_000 })
+    await kayitAc(page)
     await page.getByTestId('kayit-tur-sulama').click()
     await page.getByTestId('konum-alan').click()
     await expect(page.getByTestId('kayit-kaydet')).toBeDisabled() // köşe yok
@@ -146,7 +146,7 @@ test.describe('Saha Defteri', () => {
     await newUser(page)
     const garden = await createGarden(page.request, { ad: 'EXIF Önerisi', lng: 27.96, lat: 38.96, sideM: 300 })
     await page.goto(`/bahceler/${garden.id}/defter`)
-    await expect(page.getByTestId('kayit-formu')).toBeVisible({ timeout: 30_000 })
+    await kayitAc(page)
     await page.getByTestId('kayit-foto').setInputFiles({ name: 'exif.jpg', mimeType: 'image/jpeg', buffer: JPEG_EXIF })
     const oneri = page.getByTestId('foto-onerisi')
     await expect(oneri).toContainText('çekim tarihi 05.10.2026', { timeout: 30_000 })
@@ -154,6 +154,7 @@ test.describe('Saha Defteri', () => {
     await expect(page.getByTestId('konum-ipucu')).toHaveCount(0)
     await oneri.getByTestId('oneri-tarih').click()
     await oneri.getByTestId('oneri-konum').click()
+    await page.getByTestId('gozlem-kategori-genel').click() // gözlem etiketi zorunlu
     await expect(page.getByTestId('kayit-tarih')).toHaveValue('2026-10-05')
     await expect(page.getByTestId('konum-ipucu')).toContainText('Nokta seçildi')
     await page.getByTestId('kayit-kaydet').click()

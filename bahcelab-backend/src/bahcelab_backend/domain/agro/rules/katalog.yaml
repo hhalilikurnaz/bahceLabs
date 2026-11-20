@@ -387,6 +387,7 @@ saha:
   tur_hiz_m_dk: 55
   tur_nokta_dk: 4
   tur_azami_nokta: 12
+  tur_sebep_gun: 45
 
 # Olay doğrulamasında bağımsız dış kanıt (9G-E) — ön değer
 dis_kanit:
@@ -746,6 +747,7 @@ gunluk:
         - {kod: antraknoz, ad: Antraknoz}
         - {kod: diger, ad: Diğer}
     - kod: fenoloji
+      siddet_zorunlu: false
       ad: Fenoloji
       etiketler:
         - {kod: surgun, ad: Sürgün}
@@ -762,13 +764,22 @@ gunluk:
         - {kod: ruzgar, ad: Rüzgâr}
         - {kod: gunes_yanigi, ad: Güneş yanığı}
         - {kod: yaprak_sararmasi, ad: Yaprak sararması (besin belirtisi olabilir)}
+        - {kod: su_stresi, ad: Su stresi (solgunluk)}
     - kod: sulama_altyapi
       ad: Sulama / altyapı
       etiketler:
         - {kod: tikali_damlatici, ad: Tıkalı damlatıcı}
         - {kod: sizinti, ad: Sızıntı}
         - {kod: pompa_vana_arizasi, ad: Pompa / vana arızası}
+    - kod: bakim
+      siddet_zorunlu: false
+      ad: Bakım / yönetim
+      etiketler:      # ileride ilaçlama ve gübreleme de buraya girecek
+        - {kod: budama, ad: Budama}
+        - {kod: hasat, ad: Hasat}
+        - {kod: budama_hasat, ad: Budama / hasat (ayrıştırılmamış)}
     - kod: genel
+      siddet_zorunlu: false
       ad: Genel
       etiketler:
         - {kod: genel, ad: Genel gözlem}
@@ -810,12 +821,12 @@ gunluk:
     yeniden_deneme_bekleme_sn: [5, 30, 120, 600]
     en_cok_bekleyen: 200
   sistem_eslesme:
-    sebep_yaniti:          # 10B «Sebep buydu» → gözlem etiketi (etiket kümesinde karşılığı olmayanlar None; ADR 0034 §5)
+    sebep_yaniti:          # 10B «Sebep buydu» → gözlem etiketi (karşılığı olmayanlar None; ADR 0034 §5)
       don: cevre.don
-      su: null
+      su: cevre.su_stresi
       besin: cevre.yaprak_sararmasi
       hastalik_zararli: hastalik.diger
-      budama_hasat: null
+      budama_hasat: bakim.budama_hasat
       bilmiyorum: null
     don_yaniti:            # ADIM 10 «Don oldu mu?»
       oldu: cevre.don

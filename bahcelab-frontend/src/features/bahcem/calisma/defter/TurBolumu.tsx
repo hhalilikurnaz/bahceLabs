@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { useKayitOlustur, useSahaTuru, useZiyaret, type TurNoktasi } from '../../api/sahaApi'
+import { SEBEP_YANITLARI, useSebepYaniti } from '../../api/sebepApi'
 import { bugunIstanbul, mesafe } from '../../lib/saha'
 
-const TUR_AD: Record<TurNoktasi['tur'], string> = { zayif_kesim: 'Zayıf kesim', stres_yamasi: 'Stres yaması', bekliyor: 'Doğrulama bekliyor' }
+const TUR_AD: Record<TurNoktasi['tur'], string> = { zayif_kesim: 'Zayıf kesim', stres_yamasi: 'Stres yaması', bekliyor: 'Doğrulama bekliyor', sebep_belirsiz: 'Sebep belirsiz' }
 
 function Nokta({ gardenId, nokta, acik, ac, kayitSec }: { gardenId: string; nokta: TurNoktasi; acik: boolean; ac: () => void; kayitSec: (id: string) => void }) {
   const ziyaret = useZiyaret(gardenId)
   const olustur = useKayitOlustur(gardenId)
+  const sebepYanit = useSebepYaniti(gardenId, nokta.olay_id ?? '')
   const [not, setNot] = useState('')
   const [foto, setFoto] = useState<File | null>(null)
   const bekle = ziyaret.isPending || olustur.isPending
   const notluKaydet = () =>
     olustur.mutate(
-      { girdi: { tur: 'gozlem', tarih: bugunIstanbul(), konum: { type: 'Point', coordinates: [nokta.lng, nokta.lat] }, aciklama: not.trim() || null }, fotolar: foto ? [foto] : [] },
+      { girdi: { tur: 'gozlem', tarih: bugunIstanbul(), konum: { type: 'Point', coordinates: [nokta.lng, nokta.lat] }, aciklama: not.trim() || null, gozlem: { kategori: 'genel', etiket: 'genel', siddet: null, yayginlik: null, sector_id: null, konum_dogruluk_m: null } }, fotolar: foto ? [foto] : [] },
       { onSuccess: (kayit) => ziyaret.mutate({ nokta_anahtar: nokta.anahtar, kayit_id: kayit.id, ziyaret_edildi: true }, { onSuccess: () => (setNot(''), setFoto(null)) }) },
     )
   return (
@@ -27,6 +29,30 @@ function Nokta({ gardenId, nokta, acik, ac, kayitSec }: { gardenId: string; nokt
       </button>
       {acik && (
         <div className="grid gap-1.5 pb-3 pl-[34px]" data-testid="tur-noktasi-ayrinti">
+          {nokta.tur === 'sebep_belirsiz' && nokta.kontrol && (
+            <div data-testid="tur-kontrol" className="grid gap-1">
+              <b className="text-small">Sahada şunlara bakın</b>
+              {nokta.kontrol.map((g) => (
+                <details key={g.sebep} className="border border-[var(--rule)] px-2" data-testid="tur-kontrol-grup" data-sebep={g.sebep}>
+                  <summary className="flex min-h-11 cursor-pointer items-center text-small font-semibold">{g.ad}</summary>
+                  <ul className="list-disc pb-2 pl-5 text-small">
+                    {g.maddeler.map((m) => (
+                      <li key={m.metin}>{m.metin} {m.url && m.kaynak ? <a href={m.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold underline">({m.kaynak})</a> : <span className="text-[var(--ink-3)]">(kaynak yok)</span>}</li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
+              <div role="group" aria-label="Sebep buydu" data-testid="tur-sebep-yaniti" className="mt-1">
+                <p className="text-small font-semibold">Sebep buydu: hangisi?</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {SEBEP_YANITLARI.map((y) => (
+                    <button key={y.kod} type="button" disabled={sebepYanit.isPending} onClick={() => sebepYanit.mutate(y.kod, { onSuccess: () => void ziyaret.mutate({ nokta_anahtar: nokta.anahtar, ziyaret_edildi: true }) })} data-testid={`tur-sebep-${y.kod}`} className="min-h-11 border border-[var(--ink)] px-3 text-[12px] font-semibold hover:bg-[var(--paper-3)] disabled:opacity-60">{y.ad}</button>
+                  ))}
+                </div>
+                {sebepYanit.isError && <p role="alert" className="text-small text-[var(--st-dikkat)]">Yanıt kaydedilemedi, tekrar deneyin.</p>}
+              </div>
+            </div>
+          )}
           {nokta.ziyaret_edildi ? (
             <div className="flex flex-wrap items-center gap-2 text-small">
               <span>Ziyaret edildi.</span>
@@ -38,7 +64,7 @@ function Nokta({ gardenId, nokta, acik, ac, kayitSec }: { gardenId: string; nokt
               <label className="text-caption font-semibold text-[var(--ink-3)]" htmlFor={`tn-${nokta.anahtar}`}>Not</label>
               <textarea id={`tn-${nokta.anahtar}`} value={not} onChange={(e) => setNot(e.target.value)} maxLength={1000} rows={2} placeholder="Ne gördünüz? Kısa not…" className="w-full border border-[var(--rule-2)] bg-transparent p-2 text-[13px]" data-testid="tur-notu" />
               <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex min-h-9 cursor-pointer items-center border border-[var(--rule-2)] px-2.5 text-[12px] font-semibold hover:border-[var(--ink)] max-[560px]:min-h-11">
+                <label className="inline-flex min-h-11 cursor-pointer items-center border border-[var(--rule-2)] px-3 text-[12px] font-semibold hover:border-[var(--ink)]">
                   {foto ? 'Fotoğraf seçildi' : 'Fotoğraf'}
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" data-testid="tur-foto" onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
                 </label>

@@ -32,6 +32,7 @@ from bahcelab_backend.domain.fieldbook.models import (
     EventVerificationModel,
     FieldPhotoModel,
     FieldRecordModel,
+    GozlemDetayModel,
     TourVisitModel,
 )
 from bahcelab_backend.domain.fieldbook.schemas import (
@@ -41,10 +42,14 @@ from bahcelab_backend.domain.fieldbook.schemas import (
     DogrulukOzeti,
     FotoOnerisi,
     FotoYanit,
+    GozlemGirdisi,
+    GozlemYanit,
     KanitYanit,
     KayitGirdisi,
     KayitGuncelle,
     KayitYanit,
+    KontrolGrubu,
+    KontrolMaddesi,
     NoktaKonumu,
     OnYargiYanit,
     SahaTuru,
@@ -56,7 +61,7 @@ from bahcelab_backend.domain.gecmis.schemas import HasatOzeti
 from bahcelab_backend.domain.multiyear.grid import canonical_grid, pixel_center_lnglat
 from bahcelab_backend.domain.multiyear.repository import MultiyearRepository
 from bahcelab_backend.domain.notifications.models import NotificationModel
-from bahcelab_backend.shared.clock import TIMEZONE, today_istanbul
+from bahcelab_backend.shared.clock import TIMEZONE, bahce_bugunu, today_istanbul
 from bahcelab_backend.shared.errors import AppError, AppErrorCode
 from bahcelab_backend.shared.storage import StorageBackend
 
@@ -211,13 +216,51 @@ class FieldbookService:
     # ------------------------------------------------------------------ kayıtlar
     async def _record_response(self, garden_id: uuid.UUID, rows: list[tuple[FieldRecordModel, str | None]]) -> list[KayitYanit]:
         photos = await self._photos_of(garden_id, record_ids=[r.id for r, _ in rows])
+        detay = {d.record_id: d for d in (await self.session.execute(select(GozlemDetayModel).where(GozlemDetayModel.record_id.in_([r.id for r, _ in rows])))).scalars().all()} if rows else {}
         return [
             KayitYanit(
                 id=r.id, tur=r.tur, tarih=r.tarih, konum_tur=r.konum_tur, konum=json.loads(geo) if geo else None, aciklama=r.aciklama, ayrinti=r.ayrinti,  # type: ignore[arg-type]
-                fotograflar=photos.get(r.id, []), created_at=r.created_at,
+                fotograflar=photos.get(r.id, []), created_at=r.created_at, gozlem=self._gozlem_yanit(detay[r.id]) if r.id in detay else None,
             )
             for r, geo in rows
         ]
+
+    @staticmethod
+    def _gozlem_yanit(d: GozlemDetayModel) -> GozlemYanit:
+        g = cat.load_catalog().gunluk
+        kategori = next((k for k in g.gozlem_kategorileri if k.kod == d.kategori), None)
+        etiket = next((e for e in kategori.etiketler if e.kod == d.etiket), None) if kategori else None
+        ad = lambda grup, kod: next((x.ad for x in grup if x.kod == kod), None) if kod else None  # noqa: E731
+        return GozlemYanit(
+            kategori=d.kategori, kategori_ad=kategori.ad if kategori else d.kategori, etiket=d.etiket, etiket_ad=etiket.ad if etiket else d.etiket,
+            siddet=d.siddet, siddet_ad=ad(g.siddet, d.siddet), yayginlik=d.yayginlik, yayginlik_ad=ad(g.yayginlik, d.yayginlik),
+            sector_id=d.sector_id, kaynak=d.kaynak, iliski_anahtar=d.iliski_anahtar, konum_dogruluk_m=d.konum_dogruluk_m,  # type: ignore[arg-type]
+        )
+
+    async def _validate_gozlem(self, garden_id: uuid.UUID, g: GozlemGirdisi) -> None:
+        """Etiket kümesi, şiddet ve yaygınlık katalogdan (bilinmeyen kod 422); şiddet+yaygınlık kategoride zorunluysa eksik 422; vana bahçeye ait olmalı."""
+        cfg = cat.load_catalog().gunluk
+        kategori = next((k for k in cfg.gozlem_kategorileri if k.kod == g.kategori), None)
+        if kategori is None or g.etiket not in {e.kod for e in kategori.etiketler}:
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bilinmeyen gözlem kategorisi ya da etiketi.")
+        if g.siddet is not None and g.siddet not in {x.kod for x in cfg.siddet}:
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bilinmeyen şiddet değeri.")
+        if g.yayginlik is not None and g.yayginlik not in {x.kod for x in cfg.yayginlik}:
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Bilinmeyen yaygınlık değeri.")
+        if kategori.siddet_zorunlu and (g.siddet is None or g.yayginlik is None):
+            raise AppError(422, AppErrorCode.VALIDATION_ERROR, f"«{kategori.ad}» gözleminde şiddet ve yaygınlık zorunludur.")
+        if g.sector_id is not None:
+            ok = (await self.session.execute(text("SELECT 1 FROM irrigation_sectors WHERE id = :s AND garden_id = :g"), {"s": g.sector_id, "g": garden_id})).first()
+            if ok is None:
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Vana bu bahçeye ait değil.")
+
+    async def _write_gozlem(self, record_id: uuid.UUID, g: GozlemGirdisi) -> None:
+        d = await self.session.get(GozlemDetayModel, record_id)
+        if d is None:
+            self.session.add(GozlemDetayModel(record_id=record_id, kategori=g.kategori, etiket=g.etiket, siddet=g.siddet, yayginlik=g.yayginlik, sector_id=g.sector_id, kaynak="kullanici", konum_dogruluk_m=g.konum_dogruluk_m))
+        else:
+            d.kategori, d.etiket, d.siddet, d.yayginlik, d.sector_id, d.konum_dogruluk_m = g.kategori, g.etiket, g.siddet, g.yayginlik, g.sector_id, g.konum_dogruluk_m
+        await self.session.flush()
 
     async def _record_rows(self, garden_id: uuid.UUID, *extra: Any) -> list[tuple[FieldRecordModel, str | None]]:
         q = select(FieldRecordModel, func.ST_AsGeoJSON(FieldRecordModel.konum)).where(FieldRecordModel.garden_id == garden_id, *extra).order_by(FieldRecordModel.tarih.desc(), FieldRecordModel.created_at.desc())
@@ -225,17 +268,30 @@ class FieldbookService:
 
     async def create_record(self, garden_id: uuid.UUID, body: KayitGirdisi) -> KayitYanit:
         kind = await self._check_location(garden_id, body.konum) if body.konum else None
+        if body.gozlem is not None:
+            if body.tur != "gozlem":
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Etiket/şiddet/yaygınlık yalnız gözlem kaydında olur.")
+            await self._validate_gozlem(garden_id, body.gozlem)
         row = FieldRecordModel(garden_id=garden_id, tur=body.tur, tarih=body.tarih, konum_tur=kind, aciklama=body.aciklama, ayrinti=body.ayrinti, created_by=self.user_id)
         if body.konum:
             row.konum = func.ST_SetSRID(func.ST_GeomFromGeoJSON(json.dumps(body.konum)), 4326)
         self.session.add(row)
         await self.session.flush()
+        if body.gozlem is not None:
+            await self._write_gozlem(row.id, body.gozlem)
         return (await self._record_response(garden_id, await self._record_rows(garden_id, FieldRecordModel.id == row.id)))[0]
 
-    async def list_records(self, garden_id: uuid.UUID, *, tur: str | None = None, since: date | None = None, until: date | None = None) -> list[KayitYanit]:
+    async def list_records(self, garden_id: uuid.UUID, *, tur: str | None = None, since: date | None = None, until: date | None = None, kategori: str | None = None, etiket: str | None = None) -> list[KayitYanit]:
         extra: list[Any] = []
         if tur:
             extra.append(FieldRecordModel.tur == tur)
+        if kategori or etiket:
+            sub = select(GozlemDetayModel.record_id)
+            if kategori:
+                sub = sub.where(GozlemDetayModel.kategori == kategori)
+            if etiket:
+                sub = sub.where(GozlemDetayModel.etiket == etiket)
+            extra.append(FieldRecordModel.id.in_(sub))
         if since:
             extra.append(FieldRecordModel.tarih >= since)
         if until:
@@ -260,6 +316,14 @@ class FieldbookService:
                 yagis_mm(row.ayrinti)
             except ValueError as exc:
                 raise AppError(422, AppErrorCode.VALIDATION_ERROR, str(exc)) from exc
+        if "gozlem" in fields:
+            if body.gozlem is None:
+                await self.session.execute(delete(GozlemDetayModel).where(GozlemDetayModel.record_id == record_id))
+            elif row.tur != "gozlem":
+                raise AppError(422, AppErrorCode.VALIDATION_ERROR, "Etiket/şiddet/yaygınlık yalnız gözlem kaydında olur.")
+            else:
+                await self._validate_gozlem(garden_id, body.gozlem)
+                await self._write_gozlem(record_id, body.gozlem)
         if body.konumu_sil:
             row.konum, row.konum_tur = None, None
         elif body.konum:
@@ -423,15 +487,37 @@ class FieldbookService:
         rule = cat.load_catalog().saha
         center = await self._garden_center(garden_id)
         candidates: list[dict[str, Any]] = []
+        from bahcelab_backend.domain.sebep import (
+            servis as sebep_servis,  # geç içe aktarma: sebep ↔ fieldbook döngüsü olmasın
+        )
+
+        bugun = await bahce_bugunu(self.session, garden_id)
         for e in await list_events(self.session, garden_id):
-            if e.durum != "bekliyor":
+            optik = "s2_dusus" in e.turler
+            belirsiz = None
+            if optik and e.durum in ("olay", "bekliyor") and (bugun - e.bitis).days <= rule.tur_sebep_gun:
+                out = await sebep_servis.olay_sebep(self.session, garden_id, e.id)  # 10B: sebebi «belirsiz» kalan ve henüz yanıtlanmamış düşüş
+                if out is not None and out["secim"] is None and out["kullanici_yaniti"] is None:
+                    belirsiz = out
+            if belirsiz is None and e.durum != "bekliyor":
                 continue
             lng, lat = (e.ayrinti or {}).get("s2_dusus.merkez_lng"), (e.ayrinti or {}).get("s2_dusus.merkez_lat")
             here = (float(lng), float(lat)) if isinstance(lng, (int, float)) and isinstance(lat, (int, float)) else center
+            konum_notu = "" if here != center else " (konum: bahçe geneli)"
+            if belirsiz is not None:
+                candidates.append(
+                    {
+                        "anahtar": f"olay:{e.anahtar}", "tur": "sebep_belirsiz", "baslik": "Düşüşün sebebi belirsiz",
+                        "neden": "Uydu ve hava verisi bu düşüşün sebebini ayırt edemedi; sahada aşağıdaki maddelere bakın ve «Sebep buydu» yanıtını verin." + konum_notu,
+                        "lng": here[0], "lat": here[1], "onem": 5, "olay_anahtar": e.anahtar, "olay_id": e.id,
+                        "kontrol": [KontrolGrubu(sebep=k, ad=v["ad"], maddeler=[KontrolMaddesi(**m) for m in v["maddeler"]]) for k, v in belirsiz["kontrol_listesi"].items() if v["maddeler"]],
+                    }
+                )
+                continue
             candidates.append(
                 {
                     "anahtar": f"olay:{e.anahtar}", "tur": "bekliyor", "baslik": "Doğrulama bekleyen düşüş",
-                    "neden": "Son görüntüde ani canlılık düşüşü görüldü; sonraki net görüntü doğrulayacak. Sahada bakın." + ("" if here != center else " (konum: bahçe geneli)"),
+                    "neden": "Son görüntüde ani canlılık düşüşü görüldü; sonraki net görüntü doğrulayacak. Sahada bakın." + konum_notu,
                     "lng": here[0], "lat": here[1], "onem": 4, "olay_anahtar": e.anahtar,
                 }
             )
@@ -452,10 +538,10 @@ class FieldbookService:
         ordered = [pending[i] for i in order]
         points: list[TurNoktasi] = []
         for n, (c, d) in enumerate(zip(ordered, leg, strict=True), start=1):
-            points.append(TurNoktasi(anahtar=c["anahtar"], tur=c["tur"], baslik=c["baslik"], neden=c["neden"], lng=c["lng"], lat=c["lat"], sira=n, mesafe_m=round(d), ziyaret_edildi=False, ziyaret_zamani=None, kayit_id=None, olay_anahtar=c.get("olay_anahtar")))
+            points.append(TurNoktasi(anahtar=c["anahtar"], tur=c["tur"], baslik=c["baslik"], neden=c["neden"], lng=c["lng"], lat=c["lat"], sira=n, mesafe_m=round(d), ziyaret_edildi=False, ziyaret_zamani=None, kayit_id=None, olay_anahtar=c.get("olay_anahtar"), olay_id=c.get("olay_id"), kontrol=c.get("kontrol")))
         for k, c in enumerate(done, start=len(points) + 1):
             v = visits[c["anahtar"]]
-            points.append(TurNoktasi(anahtar=c["anahtar"], tur=c["tur"], baslik=c["baslik"], neden=c["neden"], lng=c["lng"], lat=c["lat"], sira=k, mesafe_m=0, ziyaret_edildi=True, ziyaret_zamani=v.ziyaret_zamani, kayit_id=v.record_id, olay_anahtar=c.get("olay_anahtar")))
+            points.append(TurNoktasi(anahtar=c["anahtar"], tur=c["tur"], baslik=c["baslik"], neden=c["neden"], lng=c["lng"], lat=c["lat"], sira=k, mesafe_m=0, ziyaret_edildi=True, ziyaret_zamani=v.ziyaret_zamani, kayit_id=v.record_id, olay_anahtar=c.get("olay_anahtar"), olay_id=c.get("olay_id"), kontrol=c.get("kontrol")))
         total = float(sum(leg))
         return SahaTuru(
             noktalar=points, baslangic=NoktaKonumu(lng=origin[0], lat=origin[1]), rota=[[origin[0], origin[1]], *[[p.lng, p.lat] for p in points if not p.ziyaret_edildi]], toplam_m=round(total),

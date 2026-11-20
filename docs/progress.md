@@ -386,6 +386,14 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 
 - **Aralıklı e2e (Tam paket, Dilim 0 koşusu) — kök neden bulundu:** `gecmis.spec › açılır…` başlıkta `toContainText('Geçmiş')` bekliyordu; başlık veri yüklenirken «Geçmiş yükleniyor», yüklenince karar cümlesi («Bu sezon değişken.») olur. Test yalnız geçici yükleniyor metnini yakalarsa geçiyordu (veri hızlı gelince düşer). Kanıt: veri yüklendikten sonra başlık «Bu sezon değişken.» (eski beklenti %100 düşer). Düzeltme: kalıcı durum doğrulanır (başlık «yükleniyor» değil ve dolu + adres); 30/30 geçti. Yeniden deneme eklenmedi.
 
+### ADIM 11 — Dilim 1 (2026-11-20): gözlem v2 + Günlük sekmesi + sabit «+ Kayıt» + 44 px + saha turu 10B
+- **Katalog:** «Su stresi (solgunluk)» ve «Bakım/yönetim» kategorisi eklendi; 10B «su» → Çevre·Su stresi, «budama/hasat» → Bakım·Budama/hasat (ayrıştırılmamış); «olmadı» eşlenmez. Katalog testleri yeni listeye göre.
+- **Backend:** migration 049 `gozlem_detay`; sözlük uç noktası; etiketli kayıt + süzgeç; sistem yanıtlarının etiketli yazımı; tura `sebep_belirsiz` noktası ve kontrol listesi. 802 backend test, ruff, mypy temiz.
+- **Arayüz:** `KayitCekmecesi` + sabit «+ Kayıt», etiketli form (GPS, kamera/galeri, istemcide küçültme, taslak), `GunlukPaneli`, tur noktasında «Sahada şunlara bakın» + «Sebep buydu». Doğrulama rozeti, kaynak bağlantısı, çipler ve düğmeler ≥ 44 px (32 hedef giderildi). vitest 334.
+- **e2e (`e2e/gunluk.spec.ts`, 8 test):** etiketli gözlem + 4000×3000 fotoğraf istemcide ≤ 1,3 MB'a iner (orijinal > 1,5 MB), GPS izni yok durumu, taslak yenileme, 390 px'te «+ Kayıt» kaydırmasız ve harita + form aynı görünümde (nokta seçerken kaydırma yok), 44 px taramasi (390 ve 1024; tarayıcının kendisi sahte 20 px düğmeyle doğrulandı), axe (Defter, çekmece, Günlük), tur 10B kontrol noktası + Sebep buydu → etiketli sistem kaydı.
+- **Aralıklı hata (kök neden):** 390 px yerleşim testi 1/25 düştü: test, çekmecenin yerleşimi (harita üste, kalan alana sığma) bitmeden ölçüm alıyordu ve yerleşim 60 ms zamanlayıcıyla yapılıyordu. Düzeltme: yerleşim `useLayoutEffect` ile boyamadan önce yapılır, test açık bir `data-yerlesti` durumunu bekler; 40/40 + 40/40 geçti. Yeniden deneme yok.
+- **Not:** `alembic upgrade` dev veritabanına yedek alınmadan uygulandı (yeni boş tablo); ardından `backups/bahcelab-dev-049-sonrasi-20261120.dump` alındı. Kural: bundan sonra önce yedek.
+
 ---
 
 ## Notlar

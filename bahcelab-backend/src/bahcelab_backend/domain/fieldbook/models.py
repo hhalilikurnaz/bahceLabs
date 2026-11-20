@@ -18,6 +18,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -97,3 +98,19 @@ class TourVisitModel(Base):
     ziyaret_zamani: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=_now, nullable=False)
     record_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("field_records.id", ondelete="SET NULL"), nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class GozlemDetayModel(Base):
+    """Etiketli gözlem (ADIM 11, ADR 0034): `field_records` (tur = gozlem) kaydının kategori/etiket/şiddet/yaygınlık/vana ayrıntısı. Sistem yanıtları («Sebep buydu», «Don oldu mu?») `kaynak = sistem` ile aynı etiket setiyle yazılır."""
+
+    __tablename__ = "gozlem_detay"
+
+    record_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("field_records.id", ondelete="CASCADE"), primary_key=True)
+    kategori: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    etiket: Mapped[str] = mapped_column(String(32), nullable=False)
+    siddet: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    yayginlik: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    sector_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("irrigation_sectors.id", ondelete="SET NULL"), nullable=True)
+    kaynak: Mapped[str] = mapped_column(String(10), nullable=False, default="kullanici", server_default="kullanici")  # kullanici | sistem
+    iliski_anahtar: Mapped[str | None] = mapped_column(String(80), nullable=True)  # sistem yanıtında olay anahtarı / gece
+    konum_dogruluk_m: Mapped[float | None] = mapped_column(Float, nullable=True)  # GPS doğruluğu (m); haritadan seçimde null

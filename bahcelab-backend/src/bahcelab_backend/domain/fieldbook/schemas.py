@@ -34,12 +34,39 @@ class FotoOnerisi(BaseModel):
     aciklama: str
 
 
+class GozlemGirdisi(BaseModel):
+    """Etiketli gözlem (ADR 0034): kategori/etiket/şiddet/yaygınlık katalogdan (`gunluk`) doğrulanır; vana bahçeye ait olmalı."""
+
+    kategori: str = Field(min_length=1, max_length=20)
+    etiket: str = Field(min_length=1, max_length=32)
+    siddet: str | None = None
+    yayginlik: str | None = None
+    sector_id: uuid.UUID | None = None
+    konum_dogruluk_m: float | None = Field(default=None, ge=0, le=100_000)  # GPS doğruluğu; haritadan seçimde yok
+
+
+class GozlemYanit(BaseModel):
+    kategori: str
+    kategori_ad: str
+    etiket: str
+    etiket_ad: str
+    siddet: str | None
+    siddet_ad: str | None
+    yayginlik: str | None
+    yayginlik_ad: str | None
+    sector_id: uuid.UUID | None
+    kaynak: Literal["kullanici", "sistem"]
+    iliski_anahtar: str | None
+    konum_dogruluk_m: float | None
+
+
 class KayitGirdisi(BaseModel):
     tur: KayitTuru
     tarih: date
     konum: dict[str, Any] | None = Field(default=None, description="GeoJSON Point (nokta) ya da Polygon (alan); bahçeye en çok 500 m uzaklıkta olmalı")
     aciklama: str | None = Field(default=None, max_length=1000)
     ayrinti: dict[str, Any] | None = None
+    gozlem: GozlemGirdisi | None = None  # yalnız tur = gozlem
 
     @field_validator("aciklama")
     @classmethod
@@ -60,6 +87,7 @@ class KayitGuncelle(BaseModel):
     aciklama: str | None = Field(default=None, max_length=1000)
     ayrinti: dict[str, Any] | None = None
     konumu_sil: bool = False
+    gozlem: GozlemGirdisi | None = None
 
 
 class KayitYanit(BaseModel):
@@ -72,6 +100,7 @@ class KayitYanit(BaseModel):
     ayrinti: dict[str, Any] | None
     fotograflar: list[FotoYanit]
     created_at: datetime
+    gozlem: GozlemYanit | None = None
 
 
 class KayitListesi(BaseModel):
@@ -157,9 +186,21 @@ class NoktaKonumu(BaseModel):
     lat: float
 
 
+class KontrolMaddesi(BaseModel):
+    metin: str
+    kaynak: str | None = None
+    url: str | None = None
+
+
+class KontrolGrubu(BaseModel):
+    sebep: str
+    ad: str
+    maddeler: list[KontrolMaddesi]
+
+
 class TurNoktasi(BaseModel):
     anahtar: str
-    tur: Literal["zayif_kesim", "stres_yamasi", "bekliyor"]
+    tur: Literal["zayif_kesim", "stres_yamasi", "bekliyor", "sebep_belirsiz"]
     baslik: str
     neden: str
     lng: float
@@ -170,6 +211,8 @@ class TurNoktasi(BaseModel):
     ziyaret_zamani: datetime | None
     kayit_id: uuid.UUID | None
     olay_anahtar: str | None = None
+    olay_id: uuid.UUID | None = None  # sebep_belirsiz: «Sebep buydu» yanıtı bu olaya yazılır
+    kontrol: list[KontrolGrubu] | None = None  # sebep_belirsiz: «Sahada şunlara bakın» maddeleri (katalog sebep.kontrol_listesi)
 
 
 class SahaTuru(BaseModel):
@@ -187,3 +230,27 @@ class ZiyaretGirdisi(BaseModel):
     nokta_anahtar: str = Field(min_length=1, max_length=160)
     kayit_id: uuid.UUID | None = None
     ziyaret_edildi: bool = True
+
+
+class SozlukEtiket(BaseModel):
+    kod: str
+    ad: str
+
+
+class SozlukKategori(BaseModel):
+    kod: str
+    ad: str
+    siddet_zorunlu: bool
+    etiketler: list[SozlukEtiket]
+
+
+class GunlukSozlugu(BaseModel):
+    """Gözlem sözlüğü (katalog `gunluk`; ön değer · mühendis onayı bekliyor): arayüz etiket seçeneklerini buradan alır, kod içine gömmez."""
+
+    surum: str
+    durum: str
+    kategoriler: list[SozlukKategori]
+    siddet: list[SozlukEtiket]
+    yayginlik: list[SozlukEtiket]
+    foto_uzun_kenar_px: int  # istemcide küçültme hedefi (uzun kenar)
+    foto_hedef_bayt: int  # istemci çıktısı için hedef boyut

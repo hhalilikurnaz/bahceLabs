@@ -110,7 +110,11 @@ async def geri_bildirim_yaz(session: AsyncSession, garden_id: uuid.UUID, gece: d
         {"g": garden_id, "n": gece, "y": yanit, "u": user_id},
     )
     await session.execute(text("DELETE FROM field_records WHERE garden_id = :g AND tur = 'gozlem' AND ayrinti->>'konu' = 'don_uyarisi' AND ayrinti->>'gece' = :n"), {"g": garden_id, "n": gece.isoformat()})
+    kayit_id = uuid.uuid4()
     await session.execute(
-        text("INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti, created_by) VALUES (gen_random_uuid(), :g, 'gozlem', :d, :a, CAST(:y AS jsonb), :u)"),
-        {"g": garden_id, "d": gece + timedelta(days=1), "a": f"Don uyarısı geri bildirimi ({gece:%d.%m.%Y} gecesi): {YANIT_AD[yanit]}", "y": json.dumps({"konu": "don_uyarisi", "gece": gece.isoformat(), "yanit": yanit}), "u": user_id},
+        text("INSERT INTO field_records (id, garden_id, tur, tarih, aciklama, ayrinti, created_by) VALUES (:i, :g, 'gozlem', :d, :a, CAST(:y AS jsonb), :u)"),
+        {"i": kayit_id, "g": garden_id, "d": gece + timedelta(days=1), "a": f"Don uyarısı geri bildirimi ({gece:%d.%m.%Y} gecesi): {YANIT_AD[yanit]}", "y": json.dumps({"konu": "don_uyarisi", "gece": gece.isoformat(), "yanit": yanit}), "u": user_id},
     )
+    from bahcelab_backend.domain.fieldbook import sistem
+
+    await sistem.etiket_yaz(session, kayit_id, "don_yaniti", yanit, gece.isoformat())  # «oldu» → Çevre/fizyolojik · Don; «olmadı»/«bilmiyorum» etiketsiz (don_geri_bildirim'de kalır)

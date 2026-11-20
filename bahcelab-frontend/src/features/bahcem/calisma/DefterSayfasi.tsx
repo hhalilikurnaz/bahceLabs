@@ -1,6 +1,6 @@
 import { DEFTER_KARAR } from '../lib/karar'
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useLayoutEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useSahaKayitlari, useSahaTuru } from '../api/sahaApi'
 import type { Garden } from '../api/types'
 import { dekar } from '../lib/format'
@@ -9,6 +9,7 @@ import '../varliklar/defter.css'
 import { DogrulamaBolumu } from './defter/DogrulamaBolumu'
 import { DogrulukBolumu } from './defter/DogrulukBolumu'
 import { KayitFormu, KayitListesi } from './defter/KayitBolumu'
+import { KayitCekmecesi } from './defter/KayitCekmecesi'
 import { SahaHaritasi } from './defter/SahaHaritasi'
 import { TurBolumu } from './defter/TurBolumu'
 import { useKonumSecimi } from './defter/useKonumSecimi'
@@ -18,7 +19,32 @@ import { useKonumSecimi } from './defter/useKonumSecimi'
  * Geçmiş sayfasından işlevce ayrıdır: Geçmiş zamanı gösterir, Defter sahadaki gerçeği toplar.
  */
 export function DefterSayfasi({ garden }: { garden: Garden }) {
-  const konum = useKonumSecimi()
+  const konum = useKonumSecimi(garden.id)
+  const [params, setParams] = useSearchParams()
+  const [kayitAcik, setKayitAcik] = useState(params.get('kayit') === 'yeni')
+  // ≤ 900 px: harita ekranın üstüne oturur, çekmece haritanın altında kalan yüksekliğe sığar (harita ile form AYNI görünümde). DOM'a doğrudan yazılır (dış sistem eşitlemesi).
+  const yerlestir = () => {
+    const kap = document.querySelector<HTMLElement>('[data-testid="defter-sayfasi"]')
+    const harita = document.querySelector<HTMLElement>('[data-testid="saha-haritasi"]')
+    const cekmece = document.querySelector<HTMLElement>('[data-testid="kayit-cekmecesi"]')
+    if (!kap || !harita || !cekmece) return
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      kap.scrollTo({ top: harita.getBoundingClientRect().top - kap.getBoundingClientRect().top + kap.scrollTop })
+      cekmece.style.maxHeight = `${Math.max(260, Math.floor(window.innerHeight - harita.getBoundingClientRect().bottom))}px`
+    } else cekmece.style.maxHeight = ''
+    cekmece.dataset.yerlesti = 'true'
+    window.dispatchEvent(new Event('resize')) // harita yeni yüksekliğine uysun
+  }
+  const kayitAc = () => setKayitAcik(true)
+  const kayitKapat = () => {
+    setKayitAcik(false)
+    if (params.has('kayit')) setParams((p) => (p.delete('kayit'), p), { replace: true })
+    window.setTimeout(() => window.dispatchEvent(new Event('resize')), 60)
+  }
+  // Açılınca (düğme ya da ?kayit=yeni) DOM güncellendikten sonra, boyamadan ÖNCE yerleştirilir: ara bir kare yok
+  useLayoutEffect(() => {
+    if (kayitAcik) yerlestir()
+  }, [kayitAcik]) // eslint-disable-line react-hooks/exhaustive-deps
   const [seciliKayit, setSeciliKayit] = useState<string | null>(null)
   const [seciliNokta, setSeciliNokta] = useState<string | null>(null)
   const sec = (id: string) => (/^(olay|bolge|yama):/.test(id) ? setSeciliNokta(id) : setSeciliKayit(id)) // tur noktası anahtarları ön ekli; kayıtlar kimlik
@@ -34,10 +60,10 @@ export function DefterSayfasi({ garden }: { garden: Garden }) {
         <span className="text-small text-[var(--ink-3)]">{garden.ad} · {dekar(garden.alanDekar)} · sahaya çıkarken, yazdırılabilir</span>
       </div>
       <div className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-0 max-[900px]:grid-cols-[minmax(0,1fr)]">
-        <section aria-label="Saha haritası" className="sticky top-0 h-[calc(100vh-170px)] min-h-[420px] border-r border-[var(--rule)] max-[900px]:relative max-[900px]:h-[56vh] max-[900px]:border-r-0">
+        <section aria-label="Saha haritası" data-testid="saha-haritasi" className={`sticky top-0 h-[calc(100vh-170px)] min-h-[420px] border-r border-[var(--rule)] max-[900px]:border-r-0 ${kayitAcik ? 'max-[900px]:z-20 max-[900px]:h-[30dvh] max-[900px]:min-h-0' : 'max-[900px]:relative max-[900px]:h-[56vh]'}`}>
           <SahaHaritasi garden={garden} kayitlar={kayitlar} tur={tur} konum={konum} secili={seciliKayit ?? seciliNokta} sec={sec} kayitlarGorunur={kayitlarGorunur} />
-          <label className="absolute left-3 top-3 z-10 flex min-h-9 items-center gap-2 border border-[var(--rule-2)] bg-[var(--paper)] px-2.5 text-[12px] font-semibold max-[560px]:min-h-11">
-            <input type="checkbox" checked={kayitlarGorunur} onChange={(e) => setKayitlarGorunur(e.target.checked)} data-testid="kayit-katmani" /> Saha kayıtları ({kayitlar.filter((k) => k.konum).length})
+          <label className="absolute left-3 top-3 z-10 flex min-h-11 items-center gap-2 border border-[var(--rule-2)] bg-[var(--paper)] px-3 text-[12px] font-semibold">
+            <input type="checkbox" className="h-5 w-5" checked={kayitlarGorunur} onChange={(e) => setKayitlarGorunur(e.target.checked)} data-testid="kayit-katmani" /> Saha kayıtları ({kayitlar.filter((k) => k.konum).length})
           </label>
         </section>
         <div className="grid content-start gap-7 px-5 py-5 max-[560px]:px-3">
@@ -47,11 +73,19 @@ export function DefterSayfasi({ garden }: { garden: Garden }) {
           <section aria-label="Saha kayıtları ve yeni kayıt">
             <span className="eyebrow">KAYITLAR</span>
             <h2 className="serif mb-2 mt-1 text-[22px] leading-tight">Sahadan notlar.</h2>
-            <KayitFormu gardenId={garden.id} konum={konum} />
+            <button type="button" onClick={kayitAc} data-testid="kayit-ekle-satir" className="btn primary">+ Yeni kayıt</button>
             <div className="mt-4"><KayitListesi gardenId={garden.id} secili={seciliKayit} sec={setSeciliKayit} /></div>
           </section>
         </div>
       </div>
+      {!kayitAcik && (
+        <button type="button" onClick={kayitAc} data-testid="kayit-ekle" className="btn primary fixed bottom-4 right-4 z-30 !min-h-12 px-5 shadow-lg" aria-label="Yeni kayıt ekle">+ Kayıt</button>
+      )}
+      {kayitAcik && (
+        <KayitCekmecesi kapat={kayitKapat}>
+          <KayitFormu gardenId={garden.id} konum={konum} kaydedildi={kayitKapat} />
+        </KayitCekmecesi>
+      )}
     </div>
   )
 }

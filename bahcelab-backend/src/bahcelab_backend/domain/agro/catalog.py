@@ -524,6 +524,7 @@ class SahaKurali(KuralBlok):
     tur_hiz_m_dk: float = Field(default=55.0, gt=0)  # saha turu süre tahmini: yürüyüş hızı (bahçe içi, ağaç aralarında)
     tur_nokta_dk: float = Field(default=4.0, ge=0)  # nokta başına kontrol süresi
     tur_azami_nokta: int = Field(default=12, ge=1)  # tura en çok bu kadar nokta alınır (en önemlileri)
+    tur_sebep_gun: int = Field(default=45, ge=1)  # 10B: son bu kadar günde görülen, sebebi «belirsiz» kalan ve henüz «Sebep buydu» yanıtı olmayan düşüşler kontrol noktası olur
 
 
 class DisKanitKurali(KuralBlok):
@@ -647,6 +648,7 @@ class GozlemEtiketi(BaseModel):
 class GozlemKategorisi(BaseModel):
     kod: str = Field(pattern=r"^[a-z0-9_]+$")
     ad: str = Field(min_length=1)
+    siddet_zorunlu: bool = True  # şiddet + yaygınlık bu kategoride zorunlu mu (fenoloji, bakım ve genel gözlemde anlamsız → isteğe bağlı)
     etiketler: list[GozlemEtiketi] = Field(min_length=1)
 
 

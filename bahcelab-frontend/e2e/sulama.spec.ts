@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { animasyonlarBitsin, createGarden, newUser, seedGecici, seedScenes, seedWater } from './yardimcilar'
+import { animasyonlarBitsin, createGarden, kayitAc, newUser, seedGecici, seedScenes, seedWater } from './yardimcilar'
 
 /** Sulama paneli (9H-S4 dilim 1), GERÇEK arka uçla: ERA5 + toprak + uydu tohumlanır (tests/support); FAO-56 motoru, vanalar, panel ve simülasyon gerçek çalışır. */
 const PROFIL = { sistem: 'damla', damlatici_sayisi: 4, damlatici_debi_lh: 4, sira_aralik_m: 5, agac_aralik_m: 4, pompa_kw: 7.5, pompa_debi_m3h: 40, enerji: 'sebeke' }
@@ -235,12 +235,14 @@ test('geçici günler taralı ve notlu; bahçe yağış ölçümü seriden önce
   seedGecici(g.id, 5) // son 5 gün (bugün dahil) ERA5 kesinleşmemiş
   // Saha Defteri: arayüzden «Yağış ölçümü (mm)» kaydı
   await page.goto(`/bahceler/${g.id}/defter`)
+  await kayitAc(page)
   await page.getByTestId('kayit-tur-yagis').click()
   await expect(page.getByTestId('kayit-kaydet')).toBeDisabled() // mm girilmeden kaydedilmez
   await page.getByTestId('yagis-mm').fill('21,5')
   await page.getByTestId('kayit-tarih').fill(new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10))
   await page.getByTestId('kayit-kaydet').click()
-  await expect(page.getByTestId('kayit-tur-yagis')).toBeVisible()
+  await expect(page.getByTestId('kayit-cekmecesi')).toHaveCount(0) // kayıt eklenince çekmece kapanır
+  await expect(page.getByTestId('kayit-satiri').first()).toContainText('Yağış ölçümü')
   await page.goto(yol(g.id))
   await expect(page.getByTestId('sulama-kpi')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByTestId('gecici-notu')).toContainText('Son 5 gün geçici')
