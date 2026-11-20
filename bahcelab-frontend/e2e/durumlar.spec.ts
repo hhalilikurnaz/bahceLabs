@@ -38,10 +38,17 @@ test('görüntüsü olmayan bahçede harita dürüst boş durum gösterir', asyn
   await expect(page.getByTestId('tarih-kutusu')).toContainText('görüntü yok')
 })
 
-test('Durum: veri yetersizken «Normal» sözcüğü ve büyük sayı gösterilmez (aynı ekranda iki çelişen durum yok)', async ({ page }) => {
+test('Durum: sunucu «veri yok» derken «Normal» sözcüğü ve büyük sayı gösterilmez (eski görüntünün bandı normal olsa bile)', async ({ page }) => {
   await newUser(page)
   const g = await createGarden(page.request, { ad: 'Veri Yok', lng: 27.71, lat: 38.71 })
+  seedScenes(g.id) // bahçenin dönem bandı var: konum «normal» çıkabilir
   await page.route('**/api/gardens/*/weather', (route) => route.abort())
+  // Gerçek yanıt alınır, YALNIZ durum alanı «veri yok»a çevrilir (jlnnlk'teki çelişkinin aynısı: bant normal, durum veri yok). Arka plan beslemesinin zamanlamasından bağımsız.
+  await page.route('**/api/gardens/*/durum', async (route) => {
+    const r = await route.fetch()
+    const j = await r.json()
+    await route.fulfill({ response: r, json: { ...j, durum: 'veri_yok', etiket: 'Veri yok', ozet: 'Durum için yeterli veri yok.' } })
+  })
   await page.goto(`/bahceler/${g.id}`)
   const kart = page.getByTestId('durum-karti')
   await expect(kart).toHaveAttribute('data-kademe', 'veri_yok', { timeout: 30_000 })

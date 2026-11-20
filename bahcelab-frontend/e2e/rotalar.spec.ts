@@ -20,8 +20,8 @@ test('bahçe seçilince URL, sekmeler, geri tuşu ve derin bağlantı çalışı
 
   await page.goto(`/bahceler/${garden.id}/gunluk`)
   await expect(page.getByRole('tab', { name: 'Günlük', selected: true })).toBeVisible()
-  await expect(page.getByTestId('panel-gunluk').getByRole('heading', { name: 'Günlük' })).toBeVisible()
-  await expect(page.getByTestId('panel-gunluk').getByText('yakında', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('panel-gunluk').getByTestId('gunluk-kayit-ekle')).toBeVisible() // Günlük artık gerçek içerik: «+ Kayıt» ve kayıt akışı
+  await expect(page.getByTestId('gunluk-bos')).toBeVisible()
 
   await page.goto(`/bahceler/${garden.id}/su`)
   await expect(page.getByTestId('sulama-karti')).toBeVisible()

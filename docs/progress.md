@@ -394,6 +394,8 @@ ADR 0032; migration 046; belge `docs/design/u10-d2-ilkeler-tablosu.md`, ekranlar
 - **Aralıklı hata (kök neden):** 390 px yerleşim testi 1/25 düştü: test, çekmecenin yerleşimi (harita üste, kalan alana sığma) bitmeden ölçüm alıyordu ve yerleşim 60 ms zamanlayıcıyla yapılıyordu. Düzeltme: yerleşim `useLayoutEffect` ile boyamadan önce yapılır, test açık bir `data-yerlesti` durumunu bekler; 40/40 + 40/40 geçti. Yeniden deneme yok.
 - **Not:** `alembic upgrade` dev veritabanına yedek alınmadan uygulandı (yeni boş tablo); ardından `backups/bahcelab-dev-049-sonrasi-20261120.dump` alındı. Kural: bundan sonra önce yedek.
 
+- **Tam paket (Dilim 1 koşusu) — 4 hata:** (1) `rotalar` Günlük sekmesi eski «yakında» yer tutucusunu bekliyordu: Günlük gerçek içerik oldu, test güncellendi (benim eksiğim: alt küme koşusunda rotalar yoktu). (2) `durumlar › veri yetersizken`: bahçe konumu gerçek olduğundan arka plan beslemesi zamanla veri yazıp durumu «izle»ye çevirebiliyordu (test zamanlamaya bağlıydı); test artık gerçek `/durum` yanıtını alıp yalnız durum alanını «veri yok»a çevirir (jlnnlk çelişkisinin aynısı: bant normal, durum veri yok). (3-4) `ic-izleme` (açık/koyu): `seedIzleme` 240 sn zaman aşımı (CI'a özgü; yerel tam koşu 168/168 geçti, 12,9 dk). Kök neden KANITLANAMADI; `seedIzleme` süresi artık günlüğe yazılıyor (tanı). Açık madde.
+
 ---
 
 ## Notlar

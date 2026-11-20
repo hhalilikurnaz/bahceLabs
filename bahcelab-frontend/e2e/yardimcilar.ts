@@ -187,7 +187,12 @@ export function seedSebep(gardenId: string, mod: 'belirsiz' | 'kapi'): void {
 
 /** Test aracı: iç izleme ekranı için GERÇEK izleme işlerini (günlük akış anlık görüntüsü + haftalık uyum) geçmiş günler için koşturur (ağ yok). */
 export function seedIzleme(gun = 21): void {
-  execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_izleme', String(gun)], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 240_000, maxBuffer: 512 * 1024 * 1024 })
+  const t0 = Date.now()
+  try {
+    execFileSync('../bahcelab-backend/.venv/bin/python', ['-m', 'tests.support.seed_izleme', String(gun)], { cwd: '../bahcelab-backend', env: backendEnv(), stdio: 'pipe', timeout: 240_000, maxBuffer: 512 * 1024 * 1024 })
+  } finally {
+    console.log(`seedIzleme ${Math.round((Date.now() - t0) / 1000)} sn`) // tanı: bahçe sayısı arttıkça süre uzar; zaman aşımı olursa CI günlüğünde süre görünür
+  }
 }
 
 /** Test aracı: sulama sistemi kontrol işareti için NDMI serisini yazar (önceki 3 sezon ≈ 0,30; son iki sahne düşük). `vana`: V1 normal, V2 düşük. */
